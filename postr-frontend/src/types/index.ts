@@ -57,6 +57,13 @@ export interface FollowResponse {
   followerCount: number;
 }
 
+export interface TimelineItem {
+  type: 'post' | 'repost';
+  createdAt: string;
+  post: Post;
+  repostedBy?: User;
+}
+
 export interface AuthResponse {
   token: string;
   user: User;

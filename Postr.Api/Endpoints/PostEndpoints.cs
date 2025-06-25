@@ -46,13 +46,13 @@ public static class PostEndpoints
         posts.MapGet("/timeline", [Authorize] async (ClaimsPrincipal user, IPostService postService, int page = 1, int pageSize = 20) =>
         {
             var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var posts = await postService.GetTimelineAsync(userId, page, pageSize);
-            
-            return Results.Ok(posts);
+            var timeline = await postService.GetTimelineWithRepostsAsync(userId, page, pageSize);
+
+            return Results.Ok(timeline);
         })
         .WithName("GetTimeline")
-        .WithSummary("Get user timeline")
-        .Produces<IEnumerable<PostDto>>(200)
+        .WithSummary("Get timeline feed with reposts")
+        .Produces<IEnumerable<TimelineItemDto>>(200)
         .Produces(401);
 
         // Get user posts

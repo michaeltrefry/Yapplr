@@ -13,9 +13,10 @@ import UserAvatar from './UserAvatar';
 interface PostCardProps {
   post: Post;
   showCommentsDefault?: boolean; // For profile pages
+  showBorder?: boolean;
 }
 
-export default function PostCard({ post, showCommentsDefault = false }: PostCardProps) {
+export default function PostCard({ post, showCommentsDefault = false, showBorder = true }: PostCardProps) {
   const [showComments, setShowComments] = useState(showCommentsDefault);
   const [commentText, setCommentText] = useState('');
   const queryClient = useQueryClient();
@@ -67,7 +68,7 @@ export default function PostCard({ post, showCommentsDefault = false }: PostCard
   };
 
   return (
-    <article className="border-b border-gray-200 p-4 hover:bg-gray-50/50 transition-colors">
+    <article className={`p-4 hover:bg-gray-50/50 transition-colors ${showBorder ? 'border-b border-gray-200' : ''}`}>
       <div className="flex space-x-3">
         {/* Avatar */}
         <UserAvatar user={post.user} size="lg" />

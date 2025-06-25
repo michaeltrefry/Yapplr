@@ -79,6 +79,81 @@ public class PostService : IPostService
         return posts.Select(p => MapToPostDto(p, userId));
     }
 
+    public async Task<IEnumerable<TimelineItemDto>> GetTimelineWithRepostsAsync(int userId, int page = 1, int pageSize = 20)
+    {
+        // Get user's following list for privacy filtering
+        var followingIds = await _context.Follows
+            .Where(f => f.FollowerId == userId)
+            .Select(f => f.FollowingId)
+            .ToListAsync();
+
+        // Create a larger page size for fetching since we'll filter and sort in memory
+        var fetchSize = pageSize * 3; // Fetch more to account for mixed posts and reposts
+
+        // Get original posts with basic data
+        var posts = await _context.Posts
+            .Include(p => p.User)
+            .Include(p => p.Likes)
+            .Include(p => p.Comments)
+            .Include(p => p.Reposts)
+            .Where(p =>
+                p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
+                p.UserId == userId || // User's own posts are always visible
+                (p.Privacy == PostPrivacy.Followers && followingIds.Contains(p.UserId))) // Followers-only posts visible if following the author
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(fetchSize)
+            .ToListAsync();
+
+        // Get reposts from followed users and self
+        var reposts = await _context.Reposts
+            .Include(r => r.User)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.User)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.Likes)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.Comments)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.Reposts)
+            .Where(r => r.UserId == userId || followingIds.Contains(r.UserId)) // Reposts from self or followed users
+            .Where(r =>
+                r.Post.Privacy == PostPrivacy.Public || // Public posts can be reposted
+                r.Post.UserId == userId || // User's own posts
+                (r.Post.Privacy == PostPrivacy.Followers && followingIds.Contains(r.Post.UserId))) // Followers-only posts if following original author
+            .OrderByDescending(r => r.CreatedAt)
+            .Take(fetchSize)
+            .ToListAsync();
+
+        // Convert to timeline items in memory (no EF translation issues)
+        var timelineItems = new List<TimelineItemDto>();
+
+        // Add original posts
+        foreach (var post in posts)
+        {
+            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, MapToPostDto(post, userId), null));
+        }
+
+        // Add reposts
+        foreach (var repost in reposts)
+        {
+            var repostedByUser = new UserDto(
+                repost.User.Id, repost.User.Email, repost.User.Username, repost.User.Bio,
+                repost.User.Birthday, repost.User.Pronouns, repost.User.Tagline,
+                repost.User.ProfileImageFileName, repost.User.CreatedAt);
+
+            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, MapToPostDto(repost.Post, userId), repostedByUser));
+        }
+
+        // Sort by creation date and apply pagination
+        var result = timelineItems
+            .OrderByDescending(item => item.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return result;
+    }
+
     public async Task<IEnumerable<PostDto>> GetUserPostsAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
     {
         // Check if current user is following the target user

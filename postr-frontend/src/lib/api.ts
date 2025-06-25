@@ -11,6 +11,7 @@ import type {
   UserProfile,
   UpdateUserData,
   FollowResponse,
+  TimelineItem,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -115,7 +116,7 @@ export const postApi = {
     return response.data;
   },
 
-  getTimeline: async (page = 1, pageSize = 20): Promise<Post[]> => {
+  getTimeline: async (page = 1, pageSize = 20): Promise<TimelineItem[]> => {
     const response = await api.get(`/posts/timeline?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },

@@ -3,9 +3,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { postApi } from '@/lib/api';
 import PostCard from './PostCard';
+import TimelineItemCard from './TimelineItemCard';
 
 export default function Timeline() {
-  const { data: posts, isLoading, error } = useQuery({
+  const { data: timelineItems, isLoading, error } = useQuery({
     queryKey: ['timeline'],
     queryFn: () => postApi.getTimeline(),
   });
@@ -26,7 +27,7 @@ export default function Timeline() {
     );
   }
 
-  if (!posts || posts.length === 0) {
+  if (!timelineItems || timelineItems.length === 0) {
     return (
       <div className="p-8 text-center">
         <div className="text-gray-500">
@@ -39,8 +40,8 @@ export default function Timeline() {
 
   return (
     <div>
-      {posts.map((post) => (
-        <PostCard key={post.id} post={post} />
+      {timelineItems.map((item) => (
+        <TimelineItemCard key={`${item.type}-${item.post.id}-${item.createdAt}`} item={item} />
       ))}
     </div>
   );
