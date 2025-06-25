@@ -60,9 +60,9 @@ export default function PostPage({ params }: PostPageProps) {
           <Sidebar />
           <main className="flex-1 max-w-2xl mx-auto px-4 py-8">
             <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-              <h1 className="text-xl font-semibold text-gray-900 mb-2">Post not found</h1>
+              <h1 className="text-xl font-semibold text-gray-900 mb-2">Yap not found</h1>
               <p className="text-gray-600 mb-4">
-                The post you're looking for doesn't exist or has been deleted.
+                The yap you&apos;re looking for doesn&apos;t exist or has been deleted.
               </p>
               <button
                 onClick={() => router.push('/')}
@@ -95,13 +95,13 @@ export default function PostPage({ params }: PostPageProps) {
             {!user && (
               <div className="flex items-center space-x-4">
                 <Link
-                  href={`/login?redirect=${encodeURIComponent(`/post/${id}`)}`}
+                  href={`/login?redirect=${encodeURIComponent(`/yap/${id}`)}`}
                   className="text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Sign in
                 </Link>
                 <Link
-                  href={`/register?redirect=${encodeURIComponent(`/post/${id}`)}`}
+                  href={`/register?redirect=${encodeURIComponent(`/yap/${id}`)}`}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Sign up
@@ -120,17 +120,17 @@ export default function PostPage({ params }: PostPageProps) {
           {!user && (
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
               <p className="text-blue-800 mb-3">
-                Join Postr to like, comment, and share posts!
+                Join Yapplr to like, comment, and share yaps!
               </p>
               <div className="flex items-center justify-center space-x-4">
                 <Link
-                  href={`/login?redirect=${encodeURIComponent(`/post/${id}`)}`}
+                  href={`/login?redirect=${encodeURIComponent(`/yap/${id}`)}`}
                   className="text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Sign in
                 </Link>
                 <Link
-                  href={`/register?redirect=${encodeURIComponent(`/post/${id}`)}`}
+                  href={`/register?redirect=${encodeURIComponent(`/yap/${id}`)}`}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Sign up

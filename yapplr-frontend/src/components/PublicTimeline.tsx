@@ -2,19 +2,18 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { postApi } from '@/lib/api';
-import PostCard from './PostCard';
 import TimelineItemCard from './TimelineItemCard';
 
-export default function Timeline() {
+export default function PublicTimeline() {
   const { data: timelineItems, isLoading, error } = useQuery({
-    queryKey: ['timeline'],
-    queryFn: () => postApi.getTimeline(),
+    queryKey: ['publicTimeline'],
+    queryFn: () => postApi.getPublicTimeline(),
   });
 
   if (isLoading) {
     return (
       <div className="p-8 text-center">
-        <div className="text-gray-500">Loading posts...</div>
+        <div className="text-gray-500">Loading yaps...</div>
       </div>
     );
   }
@@ -22,7 +21,7 @@ export default function Timeline() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <div className="text-red-500">Failed to load posts</div>
+        <div className="text-red-500">Failed to load yaps</div>
       </div>
     );
   }
@@ -31,7 +30,7 @@ export default function Timeline() {
     return (
       <div className="p-8 text-center">
         <div className="text-gray-500">
-          <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
+          <h3 className="text-lg font-semibold mb-2">No yaps yet</h3>
           <p>Be the first to share something!</p>
         </div>
       </div>

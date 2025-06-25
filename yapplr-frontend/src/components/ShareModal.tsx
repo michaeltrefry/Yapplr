@@ -17,17 +17,17 @@ export default function ShareModal({ isOpen, onClose, post }: ShareModalProps) {
   if (!isOpen) return null;
 
   // Generate the post URL
-  const postUrl = `${window.location.origin}/post/${post.id}`;
+  const postUrl = `${window.location.origin}/yap/${post.id}`;
 
   // Social media sharing URLs
   const shareUrls = {
     twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-      `Check out this post by @${post.user.username}`
+      `Check out this yap by @${post.user.username}`
     )}&url=${encodeURIComponent(postUrl)}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`,
     reddit: `https://reddit.com/submit?url=${encodeURIComponent(postUrl)}&title=${encodeURIComponent(
-      `Post by ${post.user.username}`
+      `Yap by ${post.user.username}`
     )}`,
   };
 

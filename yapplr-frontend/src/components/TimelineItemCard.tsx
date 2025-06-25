@@ -24,7 +24,7 @@ export default function TimelineItemCard({ item }: TimelineItemCardProps) {
         <Repeat2 className="w-4 h-4 mr-2" />
         <UserAvatar user={item.repostedBy!} size="sm" />
         <span className="ml-2">
-          <span className="font-semibold text-gray-700">{item.repostedBy!.username}</span> reposted
+          <span className="font-semibold text-gray-700">{item.repostedBy!.username}</span> reyapped
         </span>
         <span className="ml-2">·</span>
         <span className="ml-2">{formatDate(item.createdAt)}</span>

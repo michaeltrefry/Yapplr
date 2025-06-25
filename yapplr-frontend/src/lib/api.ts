@@ -102,6 +102,11 @@ export const userApi = {
     const response = await api.delete(`/users/${userId}/follow`);
     return response.data;
   },
+
+  getFollowing: async (): Promise<User[]> => {
+    const response = await api.get('/users/me/following');
+    return response.data;
+  },
 };
 
 // Post API
@@ -118,6 +123,11 @@ export const postApi = {
 
   getTimeline: async (page = 1, pageSize = 20): Promise<TimelineItem[]> => {
     const response = await api.get(`/posts/timeline?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  getPublicTimeline: async (page = 1, pageSize = 20): Promise<TimelineItem[]> => {
+    const response = await api.get(`/posts/public?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 

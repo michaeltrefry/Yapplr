@@ -7,7 +7,7 @@ import { userApi, postApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/utils';
 import { Calendar } from 'lucide-react';
-import PostCard from '@/components/PostCard';
+
 import TimelineItemCard from '@/components/TimelineItemCard';
 import Sidebar from '@/components/Sidebar';
 import UserAvatar from '@/components/UserAvatar';
@@ -209,7 +209,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             <div>
               {timelineLoading ? (
                 <div className="p-8 text-center">
-                  <div className="text-gray-500">Loading posts...</div>
+                  <div className="text-gray-500">Loading yaps...</div>
                 </div>
               ) : timelineItems && timelineItems.length > 0 ? (
                 timelineItems.map((item) => (
@@ -218,7 +218,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               ) : (
                 <div className="p-8 text-center">
                   <div className="text-gray-500">
-                    {isOwnProfile ? "You haven't posted anything yet" : "No posts yet"}
+                    {isOwnProfile ? "You haven't yapped anything yet" : "No yaps yet"}
                   </div>
                 </div>
               )}

@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Home, User, Search, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import FollowingList from './FollowingList';
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
@@ -19,8 +20,8 @@ export default function Sidebar() {
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-blue-600 hidden lg:block">Postr</h1>
-          <h1 className="text-2xl font-bold text-blue-600 lg:hidden">P</h1>
+          <h1 className="text-2xl font-bold text-blue-600 hidden lg:block">Yapplr</h1>
+          <h1 className="text-2xl font-bold text-blue-600 lg:hidden">Y</h1>
         </div>
 
         {/* Navigation */}
@@ -48,6 +49,14 @@ export default function Sidebar() {
             <User className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Profile</span>
           </Link>
+
+          {/* Following Section */}
+          <div className="mt-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 px-3 hidden lg:block">
+              Following
+            </h3>
+            <FollowingList />
+          </div>
         </nav>
 
         {/* User Info & Logout */}

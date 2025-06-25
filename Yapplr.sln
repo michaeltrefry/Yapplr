@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Postr.Api", "Postr.Api\Postr.Api.csproj", "{3ED8928E-AD39-1B54-46F8-B773DA061435}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yapplr.Api", "Yapplr.Api\Yapplr.Api.csproj", "{3ED8928E-AD39-1B54-46F8-B773DA061435}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

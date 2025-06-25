@@ -189,7 +189,7 @@ export default function CreatePost() {
                   disabled={!content.trim() || remainingChars < 0 || createPostMutation.isPending || uploadImageMutation.isPending}
                   className="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {createPostMutation.isPending ? 'Posting...' : uploadImageMutation.isPending ? 'Uploading...' : 'Post'}
+                  {createPostMutation.isPending ? 'Yapping...' : uploadImageMutation.isPending ? 'Uploading...' : 'Yap'}
                 </button>
               </div>
             </div>
