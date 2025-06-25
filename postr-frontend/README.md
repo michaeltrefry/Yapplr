@@ -11,7 +11,7 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **User Profiles**: Complete profile management with profile images
 - **Follow System**: Follow/unfollow users with real-time counts
 - **Post Privacy**: Create posts with Public, Followers, or Private visibility
-- **Social Features**: Posts, likes, comments, reposts with real-time updates
+- **Social Features**: Posts, likes, comments, reposts with timeline integration
 - **Image Upload**: Upload and display images in posts and profiles
 - **Search**: Find users by username or bio
 
@@ -88,9 +88,10 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - Upload images to posts and profiles
 - Like and unlike posts with real-time counts
 - Comment on posts with expandable comment sections
-- Repost functionality with visual indicators
+- Repost functionality with timeline integration and attribution
 - Follow/unfollow users with instant UI updates
 - Privacy-aware timeline filtering
+- Mixed timeline showing both posts and reposts chronologically
 - Real-time interaction counts and follower statistics
 
 ## Pages & Components
@@ -105,8 +106,9 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 ### Key Components
 - **CreatePost** - Post creation with privacy selector and image upload
 - **PostCard** - Post display with privacy indicators and social actions
+- **TimelineItemCard** - Unified display for posts and reposts with attribution
 - **UserAvatar** - Consistent user avatar display throughout the app
-- **Timeline** - Privacy-filtered post feed
+- **Timeline** - Mixed timeline with posts and reposts, privacy-filtered
 - **CommentList** - Expandable comment sections
 - **Sidebar** - Navigation with responsive design
 

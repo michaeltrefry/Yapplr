@@ -181,6 +181,97 @@ public class PostService : IPostService
         return posts.Select(p => MapToPostDto(p, currentUserId));
     }
 
+    public async Task<IEnumerable<TimelineItemDto>> GetUserTimelineAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
+    {
+        // Check if current user is following the target user (for privacy filtering)
+        var isFollowing = false;
+        if (currentUserId.HasValue && currentUserId.Value != userId)
+        {
+            isFollowing = await _context.Follows
+                .AnyAsync(f => f.FollowerId == currentUserId.Value && f.FollowingId == userId);
+        }
+
+        var fetchSize = pageSize * 2; // Fetch more to account for mixed posts and reposts
+
+        // Get user's original posts
+        var posts = await _context.Posts
+            .Include(p => p.User)
+            .Include(p => p.Likes)
+            .Include(p => p.Comments)
+            .Include(p => p.Reposts)
+            .Where(p => p.UserId == userId &&
+                (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
+                 currentUserId == userId || // User's own posts are always visible
+                 (p.Privacy == PostPrivacy.Followers && isFollowing))) // Followers-only posts visible if following
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(fetchSize)
+            .ToListAsync();
+
+        // Get user's reposts
+        var reposts = await _context.Reposts
+            .Include(r => r.User)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.User)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.Likes)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.Comments)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.Reposts)
+            .Where(r => r.UserId == userId) // Reposts by this user
+            .Where(r =>
+                r.Post.Privacy == PostPrivacy.Public || // Public posts can be seen
+                r.Post.UserId == currentUserId || // Current user's own posts
+                (r.Post.Privacy == PostPrivacy.Followers && currentUserId == userId)) // User viewing their own reposts
+            .OrderByDescending(r => r.CreatedAt)
+            .Take(fetchSize)
+            .ToListAsync();
+
+        // Filter reposts based on whether current user follows the original authors (for followers-only posts)
+        if (currentUserId.HasValue && currentUserId.Value != userId)
+        {
+            var followingIds = await _context.Follows
+                .Where(f => f.FollowerId == currentUserId.Value)
+                .Select(f => f.FollowingId)
+                .ToListAsync();
+
+            reposts = reposts.Where(r =>
+                r.Post.Privacy == PostPrivacy.Public ||
+                r.Post.UserId == currentUserId ||
+                (r.Post.Privacy == PostPrivacy.Followers && followingIds.Contains(r.Post.UserId)))
+                .ToList();
+        }
+
+        // Convert to timeline items in memory
+        var timelineItems = new List<TimelineItemDto>();
+
+        // Add original posts
+        foreach (var post in posts)
+        {
+            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, MapToPostDto(post, currentUserId), null));
+        }
+
+        // Add reposts
+        foreach (var repost in reposts)
+        {
+            var repostedByUser = new UserDto(
+                repost.User.Id, repost.User.Email, repost.User.Username, repost.User.Bio,
+                repost.User.Birthday, repost.User.Pronouns, repost.User.Tagline,
+                repost.User.ProfileImageFileName, repost.User.CreatedAt);
+
+            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, MapToPostDto(repost.Post, currentUserId), repostedByUser));
+        }
+
+        // Sort by creation date and apply pagination
+        var result = timelineItems
+            .OrderByDescending(item => item.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return result;
+    }
+
     public async Task<bool> DeletePostAsync(int postId, int userId)
     {
         var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postId && p.UserId == userId);

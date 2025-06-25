@@ -58,17 +58,32 @@ public static class PostEndpoints
         // Get user posts
         posts.MapGet("/user/{userId:int}", async (int userId, ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 20) =>
         {
-            var currentUserId = user?.Identity?.IsAuthenticated == true 
-                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value) 
+            var currentUserId = user?.Identity?.IsAuthenticated == true
+                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
                 : (int?)null;
-            
+
             var posts = await postService.GetUserPostsAsync(userId, currentUserId, page, pageSize);
-            
+
             return Results.Ok(posts);
         })
         .WithName("GetUserPosts")
         .WithSummary("Get posts by user")
         .Produces<IEnumerable<PostDto>>(200);
+
+        // Get user timeline (posts + reposts)
+        posts.MapGet("/user/{userId}/timeline", async (int userId, ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 20) =>
+        {
+            var currentUserId = user?.Identity?.IsAuthenticated == true
+                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
+                : (int?)null;
+
+            var userTimeline = await postService.GetUserTimelineAsync(userId, currentUserId, page, pageSize);
+
+            return Results.Ok(userTimeline);
+        })
+        .WithName("GetUserTimeline")
+        .WithSummary("Get user timeline (posts and reposts)")
+        .Produces<IEnumerable<TimelineItemDto>>(200);
 
         // Delete post
         posts.MapDelete("/{id:int}", [Authorize] async (int id, ClaimsPrincipal user, IPostService postService) =>

@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/utils';
 import { Calendar } from 'lucide-react';
 import PostCard from '@/components/PostCard';
+import TimelineItemCard from '@/components/TimelineItemCard';
 import Sidebar from '@/components/Sidebar';
 import UserAvatar from '@/components/UserAvatar';
 
@@ -28,9 +29,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     queryFn: () => userApi.getUserProfile(username),
   });
 
-  const { data: posts, isLoading: postsLoading } = useQuery({
-    queryKey: ['userPosts', profile?.id],
-    queryFn: () => postApi.getUserPosts(profile!.id),
+  const { data: timelineItems, isLoading: timelineLoading } = useQuery({
+    queryKey: ['userTimeline', profile?.id],
+    queryFn: () => postApi.getUserTimeline(profile!.id),
     enabled: !!profile?.id,
   });
 
@@ -204,15 +205,15 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               </div>
             </div>
 
-            {/* Posts */}
+            {/* Posts and Reposts */}
             <div>
-              {postsLoading ? (
+              {timelineLoading ? (
                 <div className="p-8 text-center">
                   <div className="text-gray-500">Loading posts...</div>
                 </div>
-              ) : posts && posts.length > 0 ? (
-                posts.map((post) => (
-                  <PostCard key={post.id} post={post} showCommentsDefault={true} />
+              ) : timelineItems && timelineItems.length > 0 ? (
+                timelineItems.map((item) => (
+                  <TimelineItemCard key={`${item.type}-${item.post.id}-${item.createdAt}`} item={item} />
                 ))
               ) : (
                 <div className="p-8 text-center">

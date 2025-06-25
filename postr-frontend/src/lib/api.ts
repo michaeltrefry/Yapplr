@@ -126,6 +126,11 @@ export const postApi = {
     return response.data;
   },
 
+  getUserTimeline: async (userId: number, page = 1, pageSize = 20): Promise<TimelineItem[]> => {
+    const response = await api.get(`/posts/user/${userId}/timeline?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
   deletePost: async (id: number): Promise<void> => {
     await api.delete(`/posts/${id}`);
   },

@@ -10,7 +10,7 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
 - **Social Features**: Like, comment, and repost functionality
 - **Follow System**: Users can follow/unfollow each other with follower/following counts
 - **User Profiles**: Username, bio, birthday, pronouns, tagline, and profile images
-- **Timeline**: Smart timeline with privacy-aware post filtering
+- **Timeline**: Smart timeline with posts and reposts, privacy-aware filtering
 - **Image Upload**: Server-side image storage and serving
 - **Password Reset**: Email-based password reset with AWS SES integration
 - **Authentication**: JWT-based authentication with secure password hashing
@@ -96,8 +96,9 @@ The API will be available at:
 ### Posts
 - `POST /api/posts` - Create new post with privacy settings (authenticated)
 - `GET /api/posts/{id}` - Get post by ID
-- `GET /api/posts/timeline` - Get privacy-filtered timeline feed (authenticated)
+- `GET /api/posts/timeline` - Get timeline with posts and reposts (authenticated)
 - `GET /api/posts/user/{userId}` - Get user's posts (privacy-filtered)
+- `GET /api/posts/user/{userId}/timeline` - Get user timeline with posts and reposts
 - `DELETE /api/posts/{id}` - Delete post (authenticated, own posts only)
 
 ### Social Features
