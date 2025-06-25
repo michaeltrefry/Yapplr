@@ -10,6 +10,7 @@ import type {
   User,
   UserProfile,
   UpdateUserData,
+  FollowResponse,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -72,6 +73,32 @@ export const userApi = {
 
   searchUsers: async (query: string): Promise<User[]> => {
     const response = await api.get(`/users/search/${query}`);
+    return response.data;
+  },
+
+  uploadProfileImage: async (file: File): Promise<User> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/users/me/profile-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  removeProfileImage: async (): Promise<User> => {
+    const response = await api.delete('/users/me/profile-image');
+    return response.data;
+  },
+
+  followUser: async (userId: number): Promise<FollowResponse> => {
+    const response = await api.post(`/users/${userId}/follow`);
+    return response.data;
+  },
+
+  unfollowUser: async (userId: number): Promise<FollowResponse> => {
+    const response = await api.delete(`/users/${userId}/follow`);
     return response.data;
   },
 };

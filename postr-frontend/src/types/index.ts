@@ -6,6 +6,7 @@ export interface User {
   birthday?: string;
   pronouns: string;
   tagline: string;
+  profileImageFileName: string;
   createdAt: string;
 }
 
@@ -16,8 +17,12 @@ export interface UserProfile {
   birthday?: string;
   pronouns: string;
   tagline: string;
+  profileImageFileName: string;
   createdAt: string;
   postCount: number;
+  followerCount: number;
+  followingCount: number;
+  isFollowedByCurrentUser: boolean;
 }
 
 export interface Post {
@@ -38,6 +43,11 @@ export interface Comment {
   content: string;
   createdAt: string;
   user: User;
+}
+
+export interface FollowResponse {
+  isFollowing: boolean;
+  followerCount: number;
 }
 
 export interface AuthResponse {

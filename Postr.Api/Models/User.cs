@@ -40,4 +40,8 @@ public class User
     public ICollection<Like> Likes { get; set; } = new List<Like>();
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<Repost> Reposts { get; set; } = new List<Repost>();
+
+    // Follow relationships
+    public ICollection<Follow> Followers { get; set; } = new List<Follow>(); // Users following this user
+    public ICollection<Follow> Following { get; set; } = new List<Follow>(); // Users this user is following
 }

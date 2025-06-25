@@ -38,15 +38,17 @@ public static class UserEndpoints
         .Produces(401)
         .Produces(404);
 
-        users.MapGet("/{username}", async (string username, IUserService userService) =>
+        users.MapGet("/{username}", [Authorize] async (string username, ClaimsPrincipal user, IUserService userService) =>
         {
-            var userProfile = await userService.GetUserProfileAsync(username);
-            
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userProfile = await userService.GetUserProfileAsync(username, currentUserId);
+
             return userProfile == null ? Results.NotFound() : Results.Ok(userProfile);
         })
         .WithName("GetUserProfile")
         .WithSummary("Get user profile by username")
         .Produces<UserProfileDto>(200)
+        .Produces(401)
         .Produces(404);
 
         users.MapGet("/search/{query}", async (string query, IUserService userService) =>
@@ -93,5 +95,33 @@ public static class UserEndpoints
         .Produces<UserDto>(200)
         .Produces(401)
         .Produces(404);
+
+        users.MapPost("/{userId}/follow", [Authorize] async (int userId, ClaimsPrincipal user, IUserService userService) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            if (currentUserId == userId)
+                return Results.BadRequest("Cannot follow yourself");
+
+            var result = await userService.FollowUserAsync(currentUserId, userId);
+            return Results.Ok(result);
+        })
+        .WithName("FollowUser")
+        .WithSummary("Follow a user")
+        .Produces<FollowResponseDto>(200)
+        .Produces(400)
+        .Produces(401);
+
+        users.MapDelete("/{userId}/follow", [Authorize] async (int userId, ClaimsPrincipal user, IUserService userService) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var result = await userService.UnfollowUserAsync(currentUserId, userId);
+            return Results.Ok(result);
+        })
+        .WithName("UnfollowUser")
+        .WithSummary("Unfollow a user")
+        .Produces<FollowResponseDto>(200)
+        .Produces(401);
     }
 }

@@ -45,7 +45,10 @@ public record UserProfileDto(
     string Tagline,
     string ProfileImageFileName,
     DateTime CreatedAt,
-    int PostCount
+    int PostCount,
+    int FollowerCount,
+    int FollowingCount,
+    bool IsFollowedByCurrentUser
 );
 
 public record AuthResponseDto(
@@ -60,4 +63,9 @@ public record ForgotPasswordDto(
 public record ResetPasswordDto(
     [Required] string Token,
     [Required][MinLength(6)] string NewPassword
+);
+
+public record FollowResponseDto(
+    bool IsFollowing,
+    int FollowerCount
 );

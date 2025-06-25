@@ -5,6 +5,7 @@ import { postApi } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { Comment } from '@/types';
 import Link from 'next/link';
+import UserAvatar from './UserAvatar';
 
 interface CommentListProps {
   postId: number;
@@ -55,13 +56,7 @@ function CommentItem({ comment }: CommentItemProps) {
   return (
     <div className="flex space-x-3">
       {/* Avatar */}
-      <Link href={`/profile/${comment.user.username}`}>
-        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-blue-700 transition-colors">
-          <span className="text-white font-semibold text-xs">
-            {comment.user.username.charAt(0).toUpperCase()}
-          </span>
-        </div>
-      </Link>
+      <UserAvatar user={comment.user} size="sm" />
 
       {/* Comment Content */}
       <div className="flex-1 min-w-0">

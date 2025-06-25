@@ -14,6 +14,7 @@ public class PostrDbContext : DbContext
     public DbSet<Like> Likes { get; set; }
     public DbSet<Comment> Comments { get; set; }
     public DbSet<Repost> Reposts { get; set; }
+    public DbSet<Follow> Follows { get; set; }
     public DbSet<PasswordReset> PasswordResets { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -84,6 +85,21 @@ public class PostrDbContext : DbContext
             entity.HasOne(e => e.Post)
                   .WithMany(e => e.Reposts)
                   .HasForeignKey(e => e.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Follow configuration
+        modelBuilder.Entity<Follow>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.FollowerId, e.FollowingId }).IsUnique(); // Prevent duplicate follows
+            entity.HasOne(e => e.Follower)
+                  .WithMany(e => e.Following)
+                  .HasForeignKey(e => e.FollowerId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Following)
+                  .WithMany(e => e.Followers)
+                  .HasForeignKey(e => e.FollowingId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 

@@ -1,18 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { userApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Camera, X } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
+import UserAvatar from '@/components/UserAvatar';
 import type { UpdateUserData } from '@/types';
 
 export default function EditProfilePage() {
   const { user, updateUser } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<UpdateUserData>({
     bio: user?.bio || '',
@@ -21,21 +23,49 @@ export default function EditProfilePage() {
     birthday: user?.birthday || '',
   });
 
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+
   const updateMutation = useMutation({
     mutationFn: (data: UpdateUserData) => userApi.updateCurrentUser(data),
     onSuccess: (updatedUser) => {
       // Update the auth context
       updateUser(updatedUser);
-      
+
       // Invalidate and refetch profile queries
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      
+
       // Navigate back to profile
       router.push(`/profile/${user?.username}`);
     },
     onError: (error) => {
       console.error('Failed to update profile:', error);
+    },
+  });
+
+  const uploadImageMutation = useMutation({
+    mutationFn: (file: File) => userApi.uploadProfileImage(file),
+    onSuccess: (updatedUser) => {
+      updateUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      setProfileImagePreview(null);
+    },
+    onError: (error) => {
+      console.error('Failed to upload profile image:', error);
+    },
+  });
+
+  const removeImageMutation = useMutation({
+    mutationFn: () => userApi.removeProfileImage(),
+    onSuccess: (updatedUser) => {
+      updateUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      setProfileImagePreview(null);
+    },
+    onError: (error) => {
+      console.error('Failed to remove profile image:', error);
     },
   });
 
@@ -76,6 +106,41 @@ export default function EditProfilePage() {
 
   const handleCancel = () => {
     router.push(`/profile/${user?.username}`);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image must be less than 5MB');
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfileImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload the image
+      uploadImageMutation.mutate(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    removeImageMutation.mutate();
+  };
+
+  const triggerImageSelect = () => {
+    fileInputRef.current?.click();
   };
 
   if (!user) {
@@ -129,15 +194,63 @@ export default function EditProfilePage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               {/* Profile Picture Section */}
               <div className="flex items-center space-x-4 pb-6 border-b border-gray-200">
-                <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-2xl">
-                    {user.username.charAt(0).toUpperCase()}
-                  </span>
+                <div className="relative">
+                  {profileImagePreview ? (
+                    <img
+                      src={profileImagePreview}
+                      alt="Profile preview"
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                  ) : (
+                    <UserAvatar user={user} size="xl" clickable={false} />
+                  )}
+
+                  {/* Camera overlay */}
+                  <button
+                    type="button"
+                    onClick={triggerImageSelect}
+                    disabled={uploadImageMutation.isPending}
+                    className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity disabled:opacity-50"
+                  >
+                    <Camera className="w-6 h-6 text-white" />
+                  </button>
                 </div>
-                <div>
+
+                <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">{user.username}</h3>
                   <p className="text-sm text-gray-500">@{user.username}</p>
+
+                  <div className="flex space-x-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={triggerImageSelect}
+                      disabled={uploadImageMutation.isPending}
+                      className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                    >
+                      {uploadImageMutation.isPending ? 'Uploading...' : 'Change photo'}
+                    </button>
+
+                    {(user.profileImageFileName || profileImagePreview) && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        disabled={removeImageMutation.isPending}
+                        className="text-sm text-red-600 hover:text-red-700 disabled:opacity-50"
+                      >
+                        {removeImageMutation.isPending ? 'Removing...' : 'Remove'}
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
               </div>
 
               {/* Bio */}

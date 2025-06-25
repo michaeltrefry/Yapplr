@@ -8,6 +8,7 @@ import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import CommentList from './CommentList';
+import UserAvatar from './UserAvatar';
 
 interface PostCardProps {
   post: Post;
@@ -69,13 +70,7 @@ export default function PostCard({ post, showCommentsDefault = false }: PostCard
     <article className="border-b border-gray-200 p-4 hover:bg-gray-50/50 transition-colors">
       <div className="flex space-x-3">
         {/* Avatar */}
-        <Link href={`/profile/${post.user.username}`}>
-          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-blue-700 transition-colors">
-            <span className="text-white font-semibold text-lg">
-              {post.user.username.charAt(0).toUpperCase()}
-            </span>
-          </div>
-        </Link>
+        <UserAvatar user={post.user} size="lg" />
 
         {/* Content */}
         <div className="flex-1 min-w-0">

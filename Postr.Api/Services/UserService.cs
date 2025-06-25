@@ -24,17 +24,27 @@ public class UserService : IUserService
                           user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
     }
 
-    public async Task<UserProfileDto?> GetUserProfileAsync(string username)
+    public async Task<UserProfileDto?> GetUserProfileAsync(string username, int? currentUserId = null)
     {
         var user = await _context.Users
             .Include(u => u.Posts)
+            .Include(u => u.Followers)
+            .Include(u => u.Following)
             .FirstOrDefaultAsync(u => u.Username == username);
-        
+
         if (user == null)
             return null;
 
+        var isFollowedByCurrentUser = false;
+        if (currentUserId.HasValue)
+        {
+            isFollowedByCurrentUser = await _context.Follows
+                .AnyAsync(f => f.FollowerId == currentUserId.Value && f.FollowingId == user.Id);
+        }
+
         return new UserProfileDto(user.Id, user.Username, user.Bio, user.Birthday,
-                                 user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.Posts.Count);
+                                 user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt,
+                                 user.Posts.Count, user.Followers.Count, user.Following.Count, isFollowedByCurrentUser);
     }
 
     public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateDto)
@@ -117,5 +127,53 @@ public class UserService : IUserService
 
         return new UserDto(user.Id, user.Email, user.Username, user.Bio,
                           user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
+    }
+
+    public async Task<FollowResponseDto> FollowUserAsync(int followerId, int followingId)
+    {
+        // Check if already following
+        var existingFollow = await _context.Follows
+            .FirstOrDefaultAsync(f => f.FollowerId == followerId && f.FollowingId == followingId);
+
+        if (existingFollow != null)
+        {
+            // Already following, return current status
+            var currentFollowerCount = await _context.Follows
+                .CountAsync(f => f.FollowingId == followingId);
+            return new FollowResponseDto(true, currentFollowerCount);
+        }
+
+        // Create new follow relationship
+        var follow = new Models.Follow
+        {
+            FollowerId = followerId,
+            FollowingId = followingId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Follows.Add(follow);
+        await _context.SaveChangesAsync();
+
+        var followerCount = await _context.Follows
+            .CountAsync(f => f.FollowingId == followingId);
+
+        return new FollowResponseDto(true, followerCount);
+    }
+
+    public async Task<FollowResponseDto> UnfollowUserAsync(int followerId, int followingId)
+    {
+        var follow = await _context.Follows
+            .FirstOrDefaultAsync(f => f.FollowerId == followerId && f.FollowingId == followingId);
+
+        if (follow != null)
+        {
+            _context.Follows.Remove(follow);
+            await _context.SaveChangesAsync();
+        }
+
+        var followerCount = await _context.Follows
+            .CountAsync(f => f.FollowingId == followingId);
+
+        return new FollowResponseDto(false, followerCount);
     }
 }
