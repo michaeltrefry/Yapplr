@@ -7,9 +7,12 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Clean 2015 Twitter-inspired Design**: Simple, focused interface
 - **Responsive Layout**: Works seamlessly on desktop and mobile
 - **Real-time Updates**: Live timeline with social interactions
-- **Authentication**: Secure login and registration
-- **User Profiles**: Complete profile management
-- **Social Features**: Posts, likes, comments, reposts
+- **Authentication**: Secure login, registration, and password reset
+- **User Profiles**: Complete profile management with profile images
+- **Follow System**: Follow/unfollow users with real-time counts
+- **Post Privacy**: Create posts with Public, Followers, or Private visibility
+- **Social Features**: Posts, likes, comments, reposts with real-time updates
+- **Image Upload**: Upload and display images in posts and profiles
 - **Search**: Find users by username or bio
 
 ## Tech Stack
@@ -62,16 +65,54 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - Collapsible sidebar on smaller screens
 - Touch-friendly interactions
 
+### Follow System
+- Follow/unfollow buttons on user profiles
+- Real-time follower and following counts
+- Follow status indicators
+- Privacy-aware content filtering based on relationships
+
+### Post Privacy
+- Three privacy levels: Public, Followers, Private
+- Visual privacy indicators on posts
+- Smart timeline filtering based on user relationships
+- Privacy selector in post creation form
+
+### Profile Management
+- Upload and manage profile images
+- Edit profile information (bio, pronouns, tagline, birthday)
+- View follower/following statistics
+- Dedicated profile pages with user posts
+
 ### Social Features
-- Create posts (256 character limit)
-- Like and unlike posts
-- Comment on posts
-- Repost functionality
-- Real-time interaction counts
+- Create posts (256 character limit) with privacy settings
+- Upload images to posts and profiles
+- Like and unlike posts with real-time counts
+- Comment on posts with expandable comment sections
+- Repost functionality with visual indicators
+- Follow/unfollow users with instant UI updates
+- Privacy-aware timeline filtering
+- Real-time interaction counts and follower statistics
+
+## Pages & Components
+
+### Main Pages
+- **Home** (`/`) - Timeline with post creation and privacy selector
+- **Profile** (`/profile/[username]`) - User profiles with follow buttons and post filtering
+- **Profile Edit** (`/profile/edit`) - Profile management with image upload
+- **Login/Register** - Authentication with password reset functionality
+- **Forgot/Reset Password** - Email-based password recovery
+
+### Key Components
+- **CreatePost** - Post creation with privacy selector and image upload
+- **PostCard** - Post display with privacy indicators and social actions
+- **UserAvatar** - Consistent user avatar display throughout the app
+- **Timeline** - Privacy-filtered post feed
+- **CommentList** - Expandable comment sections
+- **Sidebar** - Navigation with responsive design
 
 ## API Integration
 
-The frontend communicates with the Postr API for all data operations including authentication, posts, users, and social interactions.
+The frontend communicates with the Postr API for all data operations including authentication, posts, users, social interactions, follow relationships, and image management.
 
 ## Development
 

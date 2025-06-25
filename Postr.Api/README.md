@@ -4,11 +4,15 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
 
 ## Features
 
-- **User Management**: Registration, login, profile management
+- **User Management**: Registration, login, profile management with profile images
 - **Posts**: Create text posts (up to 256 characters) with optional images
+- **Post Privacy**: Three privacy levels - Public, Followers-only, and Private posts
 - **Social Features**: Like, comment, and repost functionality
-- **User Profiles**: Username, bio, birthday, pronouns, and tagline
-- **Timeline**: View posts from all users (timeline feed)
+- **Follow System**: Users can follow/unfollow each other with follower/following counts
+- **User Profiles**: Username, bio, birthday, pronouns, tagline, and profile images
+- **Timeline**: Smart timeline with privacy-aware post filtering
+- **Image Upload**: Server-side image storage and serving
+- **Password Reset**: Email-based password reset with AWS SES integration
 - **Authentication**: JWT-based authentication with secure password hashing
 
 ## Tech Stack
@@ -18,6 +22,8 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
 - **Entity Framework Core** - ORM
 - **JWT Bearer** - Authentication
 - **BCrypt** - Password hashing
+- **AWS SES** - Email service for password reset
+- **File System Storage** - Image upload and serving
 
 ## Getting Started
 
@@ -72,18 +78,26 @@ The API will be available at:
 ### Authentication
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login user
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/reset-password` - Reset password with token
 
 ### Users
 - `GET /api/users/me` - Get current user profile (authenticated)
 - `PUT /api/users/me` - Update current user profile (authenticated)
-- `GET /api/users/{username}` - Get user profile by username
+- `GET /api/users/{username}` - Get user profile by username (authenticated)
 - `GET /api/users/search/{query}` - Search users
+- `POST /api/users/me/profile-image` - Upload profile image (authenticated)
+- `DELETE /api/users/me/profile-image` - Remove profile image (authenticated)
+
+### Follow System
+- `POST /api/users/{userId}/follow` - Follow a user (authenticated)
+- `DELETE /api/users/{userId}/follow` - Unfollow a user (authenticated)
 
 ### Posts
-- `POST /api/posts` - Create new post (authenticated)
+- `POST /api/posts` - Create new post with privacy settings (authenticated)
 - `GET /api/posts/{id}` - Get post by ID
-- `GET /api/posts/timeline` - Get timeline feed (authenticated)
-- `GET /api/posts/user/{userId}` - Get user's posts
+- `GET /api/posts/timeline` - Get privacy-filtered timeline feed (authenticated)
+- `GET /api/posts/user/{userId}` - Get user's posts (privacy-filtered)
 - `DELETE /api/posts/{id}` - Delete post (authenticated, own posts only)
 
 ### Social Features
@@ -96,6 +110,11 @@ The API will be available at:
 - `POST /api/posts/{id}/comments` - Add comment to post (authenticated)
 - `GET /api/posts/{id}/comments` - Get post comments
 - `DELETE /api/posts/comments/{commentId}` - Delete comment (authenticated, own comments only)
+
+### Images
+- `POST /api/images/upload` - Upload image file (authenticated)
+- `GET /api/images/{fileName}` - Serve uploaded image
+- `DELETE /api/images/{fileName}` - Delete image file (authenticated)
 
 ## Authentication
 
@@ -114,10 +133,13 @@ Authorization: Bearer <your-jwt-token>
 - Birthday (optional)
 - Pronouns (up to 100 characters)
 - Tagline (up to 200 characters)
+- Profile image (optional)
+- Follower/Following counts
 
 ### Post
 - Content (1-256 characters)
-- Image URL (optional)
+- Image file (optional)
+- Privacy level (Public, Followers, Private)
 - User (author)
 - Like/Comment/Repost counts
 
@@ -125,6 +147,16 @@ Authorization: Bearer <your-jwt-token>
 - Content (1-256 characters)
 - User (author)
 - Post (parent post)
+
+### Follow
+- Follower (user who follows)
+- Following (user being followed)
+- Created timestamp
+
+### Post Privacy Levels
+- **Public**: Visible to everyone
+- **Followers**: Only visible to followers and the author
+- **Private**: Only visible to the author
 
 ## Development
 
