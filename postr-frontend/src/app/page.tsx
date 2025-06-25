@@ -1,0 +1,58 @@
+'use client';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import Timeline from '@/components/Timeline';
+import Sidebar from '@/components/Sidebar';
+import CreatePost from '@/components/CreatePost';
+
+export default function Home() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto flex">
+        {/* Sidebar */}
+        <div className="w-16 lg:w-64 fixed h-full z-10">
+          <Sidebar />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 ml-16 lg:ml-64">
+          <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
+            {/* Header */}
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
+              <h1 className="text-xl font-bold">Home</h1>
+            </div>
+
+            {/* Create Post */}
+            <CreatePost />
+
+            {/* Timeline */}
+            <Timeline />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
