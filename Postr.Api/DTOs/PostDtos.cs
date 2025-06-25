@@ -1,16 +1,19 @@
 using System.ComponentModel.DataAnnotations;
+using Postr.Api.Models;
 
 namespace Postr.Api.DTOs;
 
 public record CreatePostDto(
     [Required][StringLength(256, MinimumLength = 1)] string Content,
-    string? ImageFileName = null
+    string? ImageFileName = null,
+    PostPrivacy Privacy = PostPrivacy.Public
 );
 
 public record PostDto(
     int Id,
     string Content,
     string? ImageUrl,
+    PostPrivacy Privacy,
     DateTime CreatedAt,
     UserDto User,
     int LikeCount,

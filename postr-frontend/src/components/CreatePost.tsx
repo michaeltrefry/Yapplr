@@ -5,12 +5,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { postApi, imageApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Image, X } from 'lucide-react';
+import { PostPrivacy } from '@/types';
 
 export default function CreatePost() {
   const [content, setContent] = useState('');
   const [, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [privacy, setPrivacy] = useState<PostPrivacy>(PostPrivacy.Public);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -29,6 +31,7 @@ export default function CreatePost() {
       setSelectedFile(null);
       setImagePreview(null);
       setUploadedFileName(null);
+      setPrivacy(PostPrivacy.Public);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -82,6 +85,7 @@ export default function CreatePost() {
     createPostMutation.mutate({
       content: content.trim(),
       imageFileName: uploadedFileName || undefined,
+      privacy: privacy,
     });
   };
 
@@ -153,6 +157,19 @@ export default function CreatePost() {
                 >
                   <Image className="w-5 h-5" />
                 </button>
+
+                {/* Privacy Selector */}
+                <div className="relative">
+                  <select
+                    value={privacy}
+                    onChange={(e) => setPrivacy(Number(e.target.value) as PostPrivacy)}
+                    className="appearance-none bg-transparent border border-gray-300 rounded-full px-3 py-1 pr-8 text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value={PostPrivacy.Public}>🌍 Public</option>
+                    <option value={PostPrivacy.Followers}>👥 Followers</option>
+                    <option value={PostPrivacy.Private}>🔒 Private</option>
+                  </select>
+                </div>
               </div>
 
               <div className="flex items-center space-x-3">

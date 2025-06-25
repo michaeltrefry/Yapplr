@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Post } from '@/types';
+import { Post, PostPrivacy } from '@/types';
 import { formatDate, formatNumber } from '@/lib/utils';
-import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Users, Lock } from 'lucide-react';
 import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -87,6 +87,20 @@ export default function PostCard({ post, showCommentsDefault = false }: PostCard
             <span className="text-gray-500 text-sm">
               {formatDate(post.createdAt)}
             </span>
+            {/* Privacy Indicator */}
+            {post.privacy !== PostPrivacy.Public && (
+              <>
+                <span className="text-gray-500">·</span>
+                <span className="text-gray-500 text-sm flex items-center">
+                  {post.privacy === PostPrivacy.Followers ? (
+                    <Users className="w-3 h-3 mr-1" />
+                  ) : (
+                    <Lock className="w-3 h-3 mr-1" />
+                  )}
+                  {post.privacy === PostPrivacy.Followers ? 'Followers' : 'Private'}
+                </span>
+              </>
+            )}
             <div className="ml-auto">
               <button className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
                 <MoreHorizontal className="w-4 h-4" />

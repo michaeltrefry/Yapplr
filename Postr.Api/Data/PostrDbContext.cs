@@ -37,6 +37,9 @@ public class PostrDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Content).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Privacy)
+                  .HasConversion<int>()
+                  .HasDefaultValue(PostPrivacy.Public);
             entity.HasOne(e => e.User)
                   .WithMany(e => e.Posts)
                   .HasForeignKey(e => e.UserId)

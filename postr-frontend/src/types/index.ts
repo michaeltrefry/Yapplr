@@ -1,3 +1,9 @@
+export enum PostPrivacy {
+  Public = 0,
+  Followers = 1,
+  Private = 2,
+}
+
 export interface User {
   id: number;
   email: string;
@@ -29,6 +35,7 @@ export interface Post {
   id: number;
   content: string;
   imageUrl?: string;
+  privacy: PostPrivacy;
   createdAt: string;
   user: User;
   likeCount: number;
@@ -73,6 +80,7 @@ export interface LoginData {
 export interface CreatePostData {
   content: string;
   imageFileName?: string;
+  privacy?: PostPrivacy;
 }
 
 export interface CreateCommentData {

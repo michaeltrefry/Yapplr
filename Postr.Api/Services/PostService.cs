@@ -22,6 +22,7 @@ public class PostService : IPostService
         {
             Content = createDto.Content,
             ImageFileName = createDto.ImageFileName,
+            Privacy = createDto.Privacy,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -55,13 +56,21 @@ public class PostService : IPostService
 
     public async Task<IEnumerable<PostDto>> GetTimelineAsync(int userId, int page = 1, int pageSize = 20)
     {
-        // For now, just return all posts ordered by creation date
-        // In a real app, you'd implement following logic here
+        // Get user's following list for privacy filtering
+        var followingIds = await _context.Follows
+            .Where(f => f.FollowerId == userId)
+            .Select(f => f.FollowingId)
+            .ToListAsync();
+
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .Where(p =>
+                p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
+                p.UserId == userId || // User's own posts are always visible
+                (p.Privacy == PostPrivacy.Followers && followingIds.Contains(p.UserId))) // Followers-only posts visible if following the author
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -72,12 +81,23 @@ public class PostService : IPostService
 
     public async Task<IEnumerable<PostDto>> GetUserPostsAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
     {
+        // Check if current user is following the target user
+        var isFollowing = false;
+        if (currentUserId.HasValue && currentUserId.Value != userId)
+        {
+            isFollowing = await _context.Follows
+                .AnyAsync(f => f.FollowerId == currentUserId.Value && f.FollowingId == userId);
+        }
+
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
-            .Where(p => p.UserId == userId)
+            .Where(p => p.UserId == userId &&
+                (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
+                 currentUserId == userId || // User's own posts are always visible
+                 (p.Privacy == PostPrivacy.Followers && isFollowing))) // Followers-only posts visible if following
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -223,7 +243,7 @@ public class PostService : IPostService
             }
         }
 
-        return new PostDto(post.Id, post.Content, imageUrl, post.CreatedAt, userDto,
+        return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, userDto,
                           post.Likes.Count, post.Comments.Count, post.Reposts.Count, isLiked, isReposted);
     }
 

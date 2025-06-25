@@ -11,9 +11,11 @@ public class Post
     public string Content { get; set; } = string.Empty;
     
     public string? ImageFileName { get; set; }
-    
+
+    public PostPrivacy Privacy { get; set; } = PostPrivacy.Public;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     
     // Foreign key
