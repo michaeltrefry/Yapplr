@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import CommentList from './CommentList';
 import UserAvatar from './UserAvatar';
+import ShareModal from './ShareModal';
 
 interface PostCardProps {
   post: Post;
@@ -19,6 +20,7 @@ interface PostCardProps {
 export default function PostCard({ post, showCommentsDefault = false, showBorder = true }: PostCardProps) {
   const [showComments, setShowComments] = useState(showCommentsDefault);
   const [commentText, setCommentText] = useState('');
+  const [showShareModal, setShowShareModal] = useState(false);
   const queryClient = useQueryClient();
 
   const likeMutation = useMutation({
@@ -68,7 +70,8 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   };
 
   return (
-    <article className={`p-4 hover:bg-gray-50/50 transition-colors ${showBorder ? 'border-b border-gray-200' : ''}`}>
+    <>
+      <article className={`p-4 hover:bg-gray-50/50 transition-colors ${showBorder ? 'border-b border-gray-200' : ''}`}>
       <div className="flex space-x-3">
         {/* Avatar */}
         <UserAvatar user={post.user} size="lg" />
@@ -169,7 +172,10 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               <span className="text-sm">{formatNumber(post.likeCount)}</span>
             </button>
 
-            <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors group">
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors group"
+            >
               <div className="p-2 rounded-full group-hover:bg-blue-50">
                 <Share className="w-5 h-5" />
               </div>
@@ -209,5 +215,13 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
         </div>
       </div>
     </article>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        post={post}
+      />
+    </>
   );
 }

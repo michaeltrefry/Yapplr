@@ -11,6 +11,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Likes**: Like and unlike posts with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates
 - **User Profiles**: Complete profile management with bio, pronouns, tagline, and profile images
+- **Post Sharing**: Share posts with social media integration and direct link copying
 
 ### Privacy & Security
 - **Post Privacy**: Three levels - Public (everyone), Followers (followers only), Private (author only)
@@ -24,6 +25,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Image Upload**: Server-side image storage for posts and profile pictures
 - **User Search**: Find users by username or bio content
 - **Clean UI**: 2015 Twitter-inspired design with modern touches
+- **Individual Post Pages**: Dedicated URLs for each post with shareable links
+- **Share Modal**: Popup sharing interface with social media integration (Twitter, Facebook, LinkedIn, Reddit)
 
 ## 🛠 Tech Stack
 
@@ -153,6 +156,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `POST /api/auth/reset-password` - Reset password with token
 
 ### Social Features
+- `GET /api/posts/{id}` - Get individual post by ID (for sharing)
 - `GET /api/posts/timeline` - Get timeline with posts and reposts
 - `GET /api/posts/user/{userId}/timeline` - Get user timeline (posts + reposts)
 - `POST /api/posts/{id}/repost` - Repost a post

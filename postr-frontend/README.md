@@ -93,6 +93,10 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - Privacy-aware timeline filtering
 - Mixed timeline showing both posts and reposts chronologically
 - Real-time interaction counts and follower statistics
+- Share posts with popup modal featuring:
+  - Copy direct link to post functionality
+  - Social media sharing to Twitter, Facebook, LinkedIn, and Reddit
+  - Post preview with user attribution
 
 ## Pages & Components
 
@@ -100,6 +104,7 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Home** (`/`) - Timeline with post creation and privacy selector
 - **Profile** (`/profile/[username]`) - User profiles with follow buttons and post filtering
 - **Profile Edit** (`/profile/edit`) - Profile management with image upload
+- **Post Detail** (`/post/[id]`) - Individual post pages with comments and sharing
 - **Login/Register** - Authentication with password reset functionality
 - **Forgot/Reset Password** - Email-based password recovery
 
@@ -110,6 +115,7 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **UserAvatar** - Consistent user avatar display throughout the app
 - **Timeline** - Mixed timeline with posts and reposts, privacy-filtered
 - **CommentList** - Expandable comment sections
+- **ShareModal** - Post sharing modal with social media integration and link copying
 - **Sidebar** - Navigation with responsive design
 
 ## API Integration
