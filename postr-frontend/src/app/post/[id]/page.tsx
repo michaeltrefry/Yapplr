@@ -3,6 +3,7 @@
 import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { postApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import PostCard from '@/components/PostCard';
@@ -24,11 +25,6 @@ export default function PostPage({ params }: PostPageProps) {
     queryKey: ['post', parseInt(id)],
     queryFn: () => postApi.getPost(parseInt(id)),
   });
-
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
 
   if (isLoading) {
     return (
@@ -84,10 +80,10 @@ export default function PostPage({ params }: PostPageProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto flex">
-        <Sidebar />
-        <main className="flex-1 max-w-2xl mx-auto px-4 py-8">
+        {user && <Sidebar />}
+        <main className={`flex-1 max-w-2xl mx-auto px-4 py-8 ${!user ? 'max-w-4xl' : ''}`}>
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <button
               onClick={() => router.back()}
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -95,14 +91,53 @@ export default function PostPage({ params }: PostPageProps) {
               <ArrowLeft className="w-5 h-5" />
               <span>Back</span>
             </button>
+
+            {!user && (
+              <div className="flex items-center space-x-4">
+                <Link
+                  href={`/login?redirect=${encodeURIComponent(`/post/${id}`)}`}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href={`/register?redirect=${encodeURIComponent(`/post/${id}`)}`}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Post */}
-          <PostCard 
-            post={post} 
+          <PostCard
+            post={post}
             showCommentsDefault={true}
             showBorder={true}
           />
+
+          {!user && (
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+              <p className="text-blue-800 mb-3">
+                Join Postr to like, comment, and share posts!
+              </p>
+              <div className="flex items-center justify-center space-x-4">
+                <Link
+                  href={`/login?redirect=${encodeURIComponent(`/post/${id}`)}`}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href={`/register?redirect=${encodeURIComponent(`/post/${id}`)}`}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Sign up
+                </Link>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

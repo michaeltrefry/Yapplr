@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function RegisterPage() {
@@ -19,6 +19,8 @@ export default function RegisterPage() {
   
   const { register } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || '/';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -34,7 +36,7 @@ export default function RegisterPage() {
 
     try {
       await register(formData);
-      router.push('/');
+      router.push(redirectUrl);
     } catch (err) {
       setError('Registration failed');
     } finally {
