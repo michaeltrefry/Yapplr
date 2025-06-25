@@ -207,7 +207,7 @@ public class PostService : IPostService
     {
         var userDto = new UserDto(post.User.Id, post.User.Email, post.User.Username,
                                  post.User.Bio, post.User.Birthday, post.User.Pronouns,
-                                 post.User.Tagline, post.User.CreatedAt);
+                                 post.User.Tagline, post.User.ProfileImageFileName, post.User.CreatedAt);
 
         var isLiked = currentUserId.HasValue && post.Likes.Any(l => l.UserId == currentUserId.Value);
         var isReposted = currentUserId.HasValue && post.Reposts.Any(r => r.UserId == currentUserId.Value);
@@ -229,9 +229,9 @@ public class PostService : IPostService
 
     private CommentDto MapToCommentDto(Comment comment)
     {
-        var userDto = new UserDto(comment.User.Id, comment.User.Email, comment.User.Username, 
-                                 comment.User.Bio, comment.User.Birthday, comment.User.Pronouns, 
-                                 comment.User.Tagline, comment.User.CreatedAt);
+        var userDto = new UserDto(comment.User.Id, comment.User.Email, comment.User.Username,
+                                 comment.User.Bio, comment.User.Birthday, comment.User.Pronouns,
+                                 comment.User.Tagline, comment.User.ProfileImageFileName, comment.User.CreatedAt);
 
         return new CommentDto(comment.Id, comment.Content, comment.CreatedAt, userDto);
     }

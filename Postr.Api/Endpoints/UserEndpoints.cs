@@ -57,5 +57,41 @@ public static class UserEndpoints
         .WithName("SearchUsers")
         .WithSummary("Search users by username or bio")
         .Produces<IEnumerable<UserDto>>(200);
+
+        users.MapPost("/me/profile-image", [Authorize] async (IFormFile file, ClaimsPrincipal user, IUserService userService, IImageService imageService) =>
+        {
+            try
+            {
+                var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                var fileName = await imageService.SaveImageAsync(file);
+                var userDto = await userService.UpdateProfileImageAsync(userId, fileName);
+
+                return userDto == null ? Results.NotFound() : Results.Ok(userDto);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("UploadProfileImage")
+        .WithSummary("Upload profile image for current user")
+        .Produces<UserDto>(200)
+        .Produces(400)
+        .Produces(401)
+        .Produces(404)
+        .DisableAntiforgery();
+
+        users.MapDelete("/me/profile-image", [Authorize] async (ClaimsPrincipal user, IUserService userService, IImageService imageService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userDto = await userService.RemoveProfileImageAsync(userId, imageService);
+
+            return userDto == null ? Results.NotFound() : Results.Ok(userDto);
+        })
+        .WithName("RemoveProfileImage")
+        .WithSummary("Remove profile image for current user")
+        .Produces<UserDto>(200)
+        .Produces(401)
+        .Produces(404);
     }
 }

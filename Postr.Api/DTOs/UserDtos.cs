@@ -32,6 +32,7 @@ public record UserDto(
     DateTime? Birthday,
     string Pronouns,
     string Tagline,
+    string ProfileImageFileName,
     DateTime CreatedAt
 );
 
@@ -42,6 +43,7 @@ public record UserProfileDto(
     DateTime? Birthday,
     string Pronouns,
     string Tagline,
+    string ProfileImageFileName,
     DateTime CreatedAt,
     int PostCount
 );

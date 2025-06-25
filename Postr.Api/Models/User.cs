@@ -27,7 +27,10 @@ public class User
     
     [StringLength(200)]
     public string Tagline { get; set; } = string.Empty;
-    
+
+    [StringLength(255)]
+    public string ProfileImageFileName { get; set; } = string.Empty;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

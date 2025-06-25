@@ -55,8 +55,8 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
 
         var token = GenerateJwtToken(user);
-        var userDto = new UserDto(user.Id, user.Email, user.Username, user.Bio, 
-                                 user.Birthday, user.Pronouns, user.Tagline, user.CreatedAt);
+        var userDto = new UserDto(user.Id, user.Email, user.Username, user.Bio,
+                                 user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
 
         return new AuthResponseDto(token, userDto);
     }
@@ -71,8 +71,8 @@ public class AuthService : IAuthService
         }
 
         var token = GenerateJwtToken(user);
-        var userDto = new UserDto(user.Id, user.Email, user.Username, user.Bio, 
-                                 user.Birthday, user.Pronouns, user.Tagline, user.CreatedAt);
+        var userDto = new UserDto(user.Id, user.Email, user.Username, user.Bio,
+                                 user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
 
         return new AuthResponseDto(token, userDto);
     }

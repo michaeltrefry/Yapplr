@@ -20,8 +20,8 @@ public class UserService : IUserService
         if (user == null)
             return null;
 
-        return new UserDto(user.Id, user.Email, user.Username, user.Bio, 
-                          user.Birthday, user.Pronouns, user.Tagline, user.CreatedAt);
+        return new UserDto(user.Id, user.Email, user.Username, user.Bio,
+                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
     }
 
     public async Task<UserProfileDto?> GetUserProfileAsync(string username)
@@ -33,8 +33,8 @@ public class UserService : IUserService
         if (user == null)
             return null;
 
-        return new UserProfileDto(user.Id, user.Username, user.Bio, user.Birthday, 
-                                 user.Pronouns, user.Tagline, user.CreatedAt, user.Posts.Count);
+        return new UserProfileDto(user.Id, user.Username, user.Bio, user.Birthday,
+                                 user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.Posts.Count);
     }
 
     public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateDto)
@@ -61,8 +61,8 @@ public class UserService : IUserService
 
         await _context.SaveChangesAsync();
 
-        return new UserDto(user.Id, user.Email, user.Username, user.Bio, 
-                          user.Birthday, user.Pronouns, user.Tagline, user.CreatedAt);
+        return new UserDto(user.Id, user.Email, user.Username, user.Bio,
+                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
     }
 
     public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query)
@@ -72,7 +72,50 @@ public class UserService : IUserService
             .Take(20) // Limit results
             .ToListAsync();
 
-        return users.Select(u => new UserDto(u.Id, u.Email, u.Username, u.Bio, 
-                                           u.Birthday, u.Pronouns, u.Tagline, u.CreatedAt));
+        return users.Select(u => new UserDto(u.Id, u.Email, u.Username, u.Bio,
+                                           u.Birthday, u.Pronouns, u.Tagline, u.ProfileImageFileName, u.CreatedAt));
+    }
+
+    public async Task<UserDto?> UpdateProfileImageAsync(int userId, string fileName)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            return null;
+
+        // Delete old profile image if it exists
+        if (!string.IsNullOrEmpty(user.ProfileImageFileName))
+        {
+            // Note: We could delete the old image file here, but we'll keep it simple for now
+            // In production, you might want to clean up old files
+        }
+
+        user.ProfileImageFileName = fileName;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return new UserDto(user.Id, user.Email, user.Username, user.Bio,
+                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
+    }
+
+    public async Task<UserDto?> RemoveProfileImageAsync(int userId, IImageService imageService)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            return null;
+
+        // Delete the image file if it exists
+        if (!string.IsNullOrEmpty(user.ProfileImageFileName))
+        {
+            imageService.DeleteImage(user.ProfileImageFileName);
+        }
+
+        user.ProfileImageFileName = string.Empty;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return new UserDto(user.Id, user.Email, user.Username, user.Bio,
+                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
     }
 }
