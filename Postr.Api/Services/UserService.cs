@@ -176,4 +176,26 @@ public class UserService : IUserService
 
         return new FollowResponseDto(false, followerCount);
     }
+
+    public async Task<IEnumerable<UserDto>> GetFollowingAsync(int userId)
+    {
+        var following = await _context.Follows
+            .Include(f => f.Following)
+            .Where(f => f.FollowerId == userId)
+            .OrderBy(f => f.Following.Username)
+            .Select(f => new UserDto(
+                f.Following.Id,
+                f.Following.Email,
+                f.Following.Username,
+                f.Following.Bio,
+                f.Following.Birthday,
+                f.Following.Pronouns,
+                f.Following.Tagline,
+                f.Following.ProfileImageFileName,
+                f.Following.CreatedAt
+            ))
+            .ToListAsync();
+
+        return following;
+    }
 }

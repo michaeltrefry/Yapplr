@@ -90,6 +90,7 @@ The API will be available at:
 - `DELETE /api/users/me/profile-image` - Remove profile image (authenticated)
 
 ### Follow System
+- `GET /api/users/me/following` - Get users that current user is following (authenticated)
 - `POST /api/users/{userId}/follow` - Follow a user (authenticated)
 - `DELETE /api/users/{userId}/follow` - Unfollow a user (authenticated)
 

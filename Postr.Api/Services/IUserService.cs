@@ -12,4 +12,5 @@ public interface IUserService
     Task<UserDto?> RemoveProfileImageAsync(int userId, IImageService imageService);
     Task<FollowResponseDto> FollowUserAsync(int followerId, int followingId);
     Task<FollowResponseDto> UnfollowUserAsync(int followerId, int followingId);
+    Task<IEnumerable<UserDto>> GetFollowingAsync(int userId);
 }

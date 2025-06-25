@@ -123,5 +123,16 @@ public static class UserEndpoints
         .WithSummary("Unfollow a user")
         .Produces<FollowResponseDto>(200)
         .Produces(401);
+
+        users.MapGet("/me/following", [Authorize] async (ClaimsPrincipal user, IUserService userService) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var following = await userService.GetFollowingAsync(currentUserId);
+            return Results.Ok(following);
+        })
+        .WithName("GetFollowing")
+        .WithSummary("Get users that the current user is following")
+        .Produces<IEnumerable<UserDto>>(200)
+        .Produces(401);
     }
 }
