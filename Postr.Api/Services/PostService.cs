@@ -154,6 +154,74 @@ public class PostService : IPostService
         return result;
     }
 
+    public async Task<IEnumerable<TimelineItemDto>> GetPublicTimelineAsync(int? currentUserId = null, int page = 1, int pageSize = 20)
+    {
+        // For public timeline, we only show public posts and reposts of public posts
+        var fetchSize = pageSize * 2; // Fetch more to account for mixed posts and reposts
+
+        // Get public posts only
+        var posts = await _context.Posts
+            .Include(p => p.User)
+            .Include(p => p.Likes)
+            .Include(p => p.Comments)
+            .Include(p => p.Reposts)
+            .Where(p => p.Privacy == PostPrivacy.Public) // Only public posts
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(fetchSize)
+            .ToListAsync();
+
+        // Get reposts of public posts only
+        var reposts = await _context.Reposts
+            .Include(r => r.User)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.User)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.Likes)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.Comments)
+            .Include(r => r.Post)
+            .ThenInclude(p => p.Reposts)
+            .Where(r => r.Post.Privacy == PostPrivacy.Public) // Only reposts of public posts
+            .OrderByDescending(r => r.CreatedAt)
+            .Take(fetchSize)
+            .ToListAsync();
+
+        // Combine posts and reposts into timeline items
+        var timelineItems = new List<TimelineItemDto>();
+
+        // Add original posts
+        timelineItems.AddRange(posts.Select(p => new TimelineItemDto(
+            "post",
+            p.CreatedAt,
+            MapToPostDto(p, currentUserId)
+        )));
+
+        // Add reposts
+        timelineItems.AddRange(reposts.Select(r => new TimelineItemDto(
+            "repost",
+            r.CreatedAt,
+            MapToPostDto(r.Post, currentUserId),
+            new UserDto(
+                r.User.Id,
+                r.User.Email,
+                r.User.Username,
+                r.User.Bio,
+                r.User.Birthday,
+                r.User.Pronouns,
+                r.User.Tagline,
+                r.User.ProfileImageFileName,
+                r.User.CreatedAt
+            )
+        )));
+
+        // Sort by creation date and take the requested page
+        return timelineItems
+            .OrderByDescending(item => item.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
     public async Task<IEnumerable<PostDto>> GetUserPostsAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
     {
         // Check if current user is following the target user

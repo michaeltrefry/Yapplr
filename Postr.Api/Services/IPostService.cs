@@ -8,6 +8,7 @@ public interface IPostService
     Task<PostDto?> GetPostByIdAsync(int postId, int? currentUserId = null);
     Task<IEnumerable<PostDto>> GetTimelineAsync(int userId, int page = 1, int pageSize = 20);
     Task<IEnumerable<TimelineItemDto>> GetTimelineWithRepostsAsync(int userId, int page = 1, int pageSize = 20);
+    Task<IEnumerable<TimelineItemDto>> GetPublicTimelineAsync(int? currentUserId = null, int page = 1, int pageSize = 20);
     Task<IEnumerable<PostDto>> GetUserPostsAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20);
     Task<IEnumerable<TimelineItemDto>> GetUserTimelineAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20);
     Task<bool> DeletePostAsync(int postId, int userId);

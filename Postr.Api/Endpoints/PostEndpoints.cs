@@ -42,7 +42,7 @@ public static class PostEndpoints
         .Produces<PostDto>(200)
         .Produces(404);
 
-        // Get timeline
+        // Get timeline (authenticated)
         posts.MapGet("/timeline", [Authorize] async (ClaimsPrincipal user, IPostService postService, int page = 1, int pageSize = 20) =>
         {
             var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -54,6 +54,21 @@ public static class PostEndpoints
         .WithSummary("Get timeline feed with reposts")
         .Produces<IEnumerable<TimelineItemDto>>(200)
         .Produces(401);
+
+        // Get public timeline (no authentication required)
+        posts.MapGet("/public", async (ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 20) =>
+        {
+            var currentUserId = user?.Identity?.IsAuthenticated == true
+                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
+                : (int?)null;
+
+            var timeline = await postService.GetPublicTimelineAsync(currentUserId, page, pageSize);
+
+            return Results.Ok(timeline);
+        })
+        .WithName("GetPublicTimeline")
+        .WithSummary("Get public timeline feed (no authentication required)")
+        .Produces<IEnumerable<TimelineItemDto>>(200);
 
         // Get user posts
         posts.MapGet("/user/{userId:int}", async (int userId, ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 20) =>
