@@ -16,9 +16,10 @@ interface PostCardProps {
   item: TimelineItem;
   onLike: (postId: number) => void;
   onRepost: (postId: number) => void;
+  onUserPress?: (username: string) => void;
 }
 
-export default function PostCard({ item, onLike, onRepost }: PostCardProps) {
+export default function PostCard({ item, onLike, onRepost, onUserPress }: PostCardProps) {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
@@ -26,7 +27,11 @@ export default function PostCard({ item, onLike, onRepost }: PostCardProps) {
   return (
     <View style={styles.postCard}>
       <View style={styles.postHeader}>
-        <View style={styles.userInfo}>
+        <TouchableOpacity
+          style={styles.userInfo}
+          onPress={() => onUserPress?.(item.post.user.username)}
+          activeOpacity={0.7}
+        >
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
               {item.post.user.username.charAt(0).toUpperCase()}
@@ -38,14 +43,18 @@ export default function PostCard({ item, onLike, onRepost }: PostCardProps) {
               {new Date(item.post.createdAt).toLocaleDateString()}
             </Text>
           </View>
-        </View>
+        </TouchableOpacity>
         {item.type === 'repost' && item.repostedBy && (
-          <View style={styles.repostBadge}>
+          <TouchableOpacity
+            style={styles.repostBadge}
+            onPress={() => onUserPress?.(item.repostedBy!.username)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="repeat" size={14} color="#10B981" />
             <Text style={styles.repostText}>
               Reposted by @{item.repostedBy.username}
             </Text>
-          </View>
+          </TouchableOpacity>
         )}
       </View>
 

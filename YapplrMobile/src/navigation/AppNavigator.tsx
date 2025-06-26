@@ -10,18 +10,30 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import HomeScreen from '../screens/main/HomeScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
+import UserProfileScreen from '../screens/main/UserProfileScreen';
 import MessagesScreen from '../screens/main/MessagesScreen';
 import SearchScreen from '../screens/main/SearchScreen';
 
-const Stack = createStackNavigator();
+export type RootStackParamList = {
+  MainTabs: undefined;
+  UserProfile: { username: string };
+};
+
+export type AuthStackParamList = {
+  Login: undefined;
+  Register: undefined;
+};
+
+const Stack = createStackNavigator<RootStackParamList>();
+const AuthStack = createStackNavigator<AuthStackParamList>();
 const Tab = createBottomTabNavigator();
 
-function AuthStack() {
+function AuthStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-    </Stack.Navigator>
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+    </AuthStack.Navigator>
   );
 }
 
@@ -62,12 +74,16 @@ function MainTabs() {
 function MainStack() {
   return (
     <Stack.Navigator>
-      <Stack.Screen 
-        name="MainTabs" 
-        component={MainTabs} 
+      <Stack.Screen
+        name="MainTabs"
+        component={MainTabs}
         options={{ headerShown: false }}
       />
-      {/* Add other screens like PostDetail, UserProfile, etc. */}
+      <Stack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -81,7 +97,7 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer>
-      {isAuthenticated ? <MainStack /> : <AuthStack />}
+      {isAuthenticated ? <MainStack /> : <AuthStackNavigator />}
     </NavigationContainer>
   );
 }

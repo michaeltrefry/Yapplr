@@ -11,12 +11,16 @@ import {
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { TimelineItem } from '../../types';
 import CreatePostModal from '../../components/CreatePostModal';
 import PostCard from '../../components/PostCard';
+import { RootStackParamList } from '../../navigation/AppNavigator';
 
-export default function HomeScreen() {
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MainTabs'>;
+
+export default function HomeScreen({ navigation }: { navigation: HomeScreenNavigationProp }) {
   const { api, user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -70,6 +74,10 @@ export default function HomeScreen() {
     }
   };
 
+  const handleUserPress = (username: string) => {
+    navigation.navigate('UserProfile', { username });
+  };
+
   const renderTimelineItem = ({ item }: { item: TimelineItem }) => {
     // Debug: Log posts with images
     if (item.post.imageUrl) {
@@ -84,6 +92,7 @@ export default function HomeScreen() {
         item={item}
         onLike={handleLikePost}
         onRepost={handleRepost}
+        onUserPress={handleUserPress}
       />
     );
   };

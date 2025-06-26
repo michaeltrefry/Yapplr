@@ -65,12 +65,19 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Search**: User search functionality
 - ✅ **Messages**: Conversation list with unread counts
 - ✅ **Profile**: User profile with logout
+- ✅ **User Profiles**: View other users' profiles and posts
 
 ### **Post Management**
 - ✅ **Create Posts**: Text and image post creation
 - ✅ **Image Upload**: Gallery picker integration
 - ✅ **Timeline Display**: Posts with images and interactions
 - ✅ **Like/Repost**: Social interaction features
+
+### **Navigation & User Interaction**
+- ✅ **User Profile Navigation**: Tap avatars/usernames to view profiles
+- ✅ **Profile Timeline**: View user's posts and reposts
+- ✅ **Cross-Profile Navigation**: Navigate between different user profiles
+- ✅ **Back Navigation**: Proper navigation stack management
 
 ### **Image Functionality**
 - ✅ **Image Upload**: Select from device gallery
@@ -110,7 +117,7 @@ YapplrMobile/
 │   ├── components/
 │   │   ├── CreatePostModal.tsx      # Post creation with image upload
 │   │   ├── ImageViewer.tsx          # Full-screen image viewer
-│   │   └── PostCard.tsx             # Timeline post display
+│   │   └── PostCard.tsx             # Timeline post display with user navigation
 │   ├── contexts/
 │   │   └── AuthContext.tsx          # Authentication state management
 │   ├── navigation/
@@ -123,7 +130,8 @@ YapplrMobile/
 │   │       ├── HomeScreen.tsx       # Timeline/feed with posts
 │   │       ├── SearchScreen.tsx     # User search
 │   │       ├── MessagesScreen.tsx   # Conversations
-│   │       └── ProfileScreen.tsx    # User profile
+│   │       ├── ProfileScreen.tsx    # Current user profile
+│   │       └── UserProfileScreen.tsx # Other users' profiles
 │   ├── types/
 │   │   └── index.ts                 # TypeScript type definitions
 │   ├── utils/
@@ -153,7 +161,7 @@ For development with physical devices:
 1. **Camera Integration**: Add camera capture for posts
 2. **Push Notifications**: Real-time message and interaction alerts
 3. **Comments System**: Add comment creation and display
-4. **User Profiles**: Enhanced profile viewing and editing
+4. **Follow/Unfollow**: Implement follow functionality in user profiles
 
 ### **Advanced Features**
 1. **Real-time Updates**: WebSocket integration for live features
@@ -220,6 +228,8 @@ The Yapplr mobile app now has **full feature parity** with the web frontend for 
 - ✅ **Post Creation**: Text and image posts with gallery picker
 - ✅ **Image Viewing**: Full-screen viewer with pinch-to-zoom
 - ✅ **Social Features**: Like, repost, and user interactions
+- ✅ **User Profiles**: Navigate to user profiles by tapping avatars/names
+- ✅ **Profile Timeline**: View any user's posts and profile information
 - ✅ **Real-time Updates**: Live timeline refresh
 
 The app is ready for production use and further feature development!

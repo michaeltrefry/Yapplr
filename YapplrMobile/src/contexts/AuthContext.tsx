@@ -99,7 +99,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(response.user);
     } catch (error) {
       console.error('Login error:', error);
-      if (error.message?.includes('Network')) {
+      if (error instanceof Error && error.message?.includes('Network')) {
         console.error('Network error during login - check API server and network connection');
       }
       throw error;

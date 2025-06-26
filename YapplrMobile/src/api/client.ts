@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, User, TimelineItem, ConversationListItem, CreatePostData, Post, ImageUploadResponse } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, CreatePostData, Post, ImageUploadResponse } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -106,11 +106,21 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
       repostPost: async (postId: number): Promise<void> => {
         await client.post(`/api/posts/${postId}/repost`);
       },
+
+      getUserTimeline: async (userId: number, page: number, limit: number): Promise<TimelineItem[]> => {
+        const response = await client.get(`/api/posts/user/${userId}/timeline?page=${page}&pageSize=${limit}`);
+        return response.data;
+      },
     },
 
     users: {
       searchUsers: async (query: string): Promise<User[]> => {
         const response = await client.get(`/api/users/search?q=${encodeURIComponent(query)}`);
+        return response.data;
+      },
+
+      getUserProfile: async (username: string): Promise<UserProfile> => {
+        const response = await client.get(`/api/users/${username}`);
         return response.data;
       },
     },

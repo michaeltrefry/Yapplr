@@ -13,6 +13,21 @@ export interface User {
   lastSeenAt?: string;
 }
 
+export interface UserProfile {
+  id: number;
+  username: string;
+  bio: string;
+  birthday?: string;
+  pronouns: string;
+  tagline: string;
+  profileImageFileName: string;
+  createdAt: string;
+  postCount: number;
+  followerCount: number;
+  followingCount: number;
+  isFollowedByCurrentUser: boolean;
+}
+
 export interface LoginData {
   email: string;
   password: string;
@@ -102,9 +117,11 @@ export interface YapplrApi {
     createPost: (data: CreatePostData) => Promise<Post>;
     likePost: (postId: number) => Promise<void>;
     repostPost: (postId: number) => Promise<void>;
+    getUserTimeline: (userId: number, page: number, limit: number) => Promise<TimelineItem[]>;
   };
   users: {
     searchUsers: (query: string) => Promise<User[]>;
+    getUserProfile: (username: string) => Promise<UserProfile>;
   };
   messages: {
     getConversations: () => Promise<ConversationListItem[]>;
