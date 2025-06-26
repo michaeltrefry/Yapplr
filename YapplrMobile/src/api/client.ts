@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, CreatePostData, Post, ImageUploadResponse } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -121,6 +121,16 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
       getUserProfile: async (username: string): Promise<UserProfile> => {
         const response = await client.get(`/api/users/${username}`);
+        return response.data;
+      },
+
+      follow: async (userId: number): Promise<FollowResponse> => {
+        const response = await client.post(`/api/users/${userId}/follow`);
+        return response.data;
+      },
+
+      unfollow: async (userId: number): Promise<FollowResponse> => {
+        const response = await client.delete(`/api/users/${userId}/follow`);
         return response.data;
       },
     },

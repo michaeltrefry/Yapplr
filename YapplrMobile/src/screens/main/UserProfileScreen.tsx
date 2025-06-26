@@ -10,7 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
@@ -24,6 +24,7 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
   const { username } = route.params;
   const { api, user: currentUser } = useAuth();
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+  const queryClient = useQueryClient();
 
   const isOwnProfile = currentUser?.username === username;
 
@@ -58,6 +59,50 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     retry: 1,
   });
 
+  // Follow mutation
+  const followMutation = useMutation({
+    mutationFn: (userId: number) => api.users.follow(userId),
+    onSuccess: (data) => {
+      // Update the profile data with new follow status and count
+      queryClient.setQueryData(['userProfile', username], (oldData: any) => {
+        if (oldData) {
+          return {
+            ...oldData,
+            isFollowedByCurrentUser: data.isFollowing,
+            followerCount: data.followerCount,
+          };
+        }
+        return oldData;
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to follow user:', error);
+      Alert.alert('Error', 'Failed to follow user. Please try again.');
+    },
+  });
+
+  // Unfollow mutation
+  const unfollowMutation = useMutation({
+    mutationFn: (userId: number) => api.users.unfollow(userId),
+    onSuccess: (data) => {
+      // Update the profile data with new follow status and count
+      queryClient.setQueryData(['userProfile', username], (oldData: any) => {
+        if (oldData) {
+          return {
+            ...oldData,
+            isFollowedByCurrentUser: data.isFollowing,
+            followerCount: data.followerCount,
+          };
+        }
+        return oldData;
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to unfollow user:', error);
+      Alert.alert('Error', 'Failed to unfollow user. Please try again.');
+    },
+  });
+
   const handleLikePost = async (postId: number) => {
     try {
       await api.posts.likePost(postId);
@@ -78,6 +123,16 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
 
   const onRefresh = async () => {
     await Promise.all([refetchProfile(), refetchTimeline()]);
+  };
+
+  const handleFollowToggle = async () => {
+    if (!profile) return;
+
+    if (profile.isFollowedByCurrentUser) {
+      unfollowMutation.mutate(profile.id);
+    } else {
+      followMutation.mutate(profile.id);
+    }
   };
 
   const handleStartConversation = async () => {
@@ -209,14 +264,20 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
                     styles.followButton,
                     profile.isFollowedByCurrentUser && styles.followingButton
                   ]}
+                  onPress={handleFollowToggle}
+                  disabled={followMutation.isPending || unfollowMutation.isPending}
                 >
-                  <Text style={[
-                    styles.actionButtonText,
-                    styles.followButtonText,
-                    profile.isFollowedByCurrentUser && styles.followingButtonText
-                  ]}>
-                    {profile.isFollowedByCurrentUser ? 'Following' : 'Follow'}
-                  </Text>
+                  {(followMutation.isPending || unfollowMutation.isPending) ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={[
+                      styles.actionButtonText,
+                      styles.followButtonText,
+                      profile.isFollowedByCurrentUser && styles.followingButtonText
+                    ]}>
+                      {profile.isFollowedByCurrentUser ? 'Following' : 'Follow'}
+                    </Text>
+                  )}
                 </TouchableOpacity>
 
                 {canMessageData?.canMessage && (

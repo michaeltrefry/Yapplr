@@ -120,6 +120,11 @@ export interface SendMessageData {
   imageFileName?: string;
 }
 
+export interface FollowResponse {
+  isFollowing: boolean;
+  followerCount: number;
+}
+
 export interface ImageUploadResponse {
   fileName: string;
   imageUrl: string;
@@ -142,6 +147,8 @@ export interface YapplrApi {
   users: {
     searchUsers: (query: string) => Promise<User[]>;
     getUserProfile: (username: string) => Promise<UserProfile>;
+    follow: (userId: number) => Promise<FollowResponse>;
+    unfollow: (userId: number) => Promise<FollowResponse>;
   };
   messages: {
     getConversations: () => Promise<ConversationListItem[]>;

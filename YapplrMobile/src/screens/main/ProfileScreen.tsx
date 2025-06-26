@@ -6,12 +6,22 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, api } = useAuth();
+
+  // Fetch full profile data for current user
+  const { data: profile, isLoading, error } = useQuery({
+    queryKey: ['userProfile', user?.username],
+    queryFn: () => api.users.getUserProfile(user!.username),
+    enabled: !!user?.username,
+    retry: 2,
+  });
 
   const handleLogout = () => {
     Alert.alert(
@@ -28,6 +38,39 @@ export default function ProfileScreen() {
     return null;
   }
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <TouchableOpacity onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={24} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <TouchableOpacity onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={24} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load profile</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -40,28 +83,28 @@ export default function ProfileScreen() {
       <View style={styles.profileSection}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {user.username.charAt(0).toUpperCase()}
+            {profile.username.charAt(0).toUpperCase()}
           </Text>
         </View>
-        
-        <Text style={styles.username}>@{user.username}</Text>
+
+        <Text style={styles.username}>@{profile.username}</Text>
         <Text style={styles.email}>{user.email}</Text>
-        
-        {user.bio && (
-          <Text style={styles.bio}>{user.bio}</Text>
+
+        {profile.bio && (
+          <Text style={styles.bio}>{profile.bio}</Text>
         )}
 
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statNumber}>{profile.postCount}</Text>
             <Text style={styles.statLabel}>Posts</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statNumber}>{profile.followingCount}</Text>
             <Text style={styles.statLabel}>Following</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statNumber}>{profile.followerCount}</Text>
             <Text style={styles.statLabel}>Followers</Text>
           </View>
         </View>
@@ -183,5 +226,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1F2937',
     marginLeft: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
   },
 });
