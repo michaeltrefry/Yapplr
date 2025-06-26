@@ -69,3 +69,16 @@ public record FollowResponseDto(
     bool IsFollowing,
     int FollowerCount
 );
+
+public record UserWithOnlineStatusDto(
+    int Id,
+    string Email,
+    string Username,
+    string Bio,
+    DateTime? Birthday,
+    string Pronouns,
+    string Tagline,
+    string ProfileImageFileName,
+    DateTime CreatedAt,
+    bool IsOnline
+);

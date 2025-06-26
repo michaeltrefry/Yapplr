@@ -14,4 +14,5 @@ public interface IUserService
     Task<FollowResponseDto> FollowUserAsync(int followerId, int followingId);
     Task<FollowResponseDto> UnfollowUserAsync(int followerId, int followingId);
     Task<IEnumerable<UserDto>> GetFollowingAsync(int userId);
+    Task<IEnumerable<UserWithOnlineStatusDto>> GetFollowingWithOnlineStatusAsync(int userId);
 }

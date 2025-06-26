@@ -16,6 +16,19 @@ export interface User {
   createdAt: string;
 }
 
+export interface UserWithOnlineStatus {
+  id: number;
+  email: string;
+  username: string;
+  bio: string;
+  birthday?: string;
+  pronouns: string;
+  tagline: string;
+  profileImageFileName: string;
+  createdAt: string;
+  isOnline: boolean;
+}
+
 export interface UserProfile {
   id: number;
   username: string;

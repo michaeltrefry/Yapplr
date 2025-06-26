@@ -124,6 +124,7 @@ The frontend will be available at `http://localhost:3000`
 - **Privacy Integration**: Following relationships affect content visibility
 - **Profile Integration**: Follow/unfollow buttons on user profiles
 - **Timeline Impact**: Following users affects your timeline content
+- **Online Status**: Green circle indicators showing when followed users are currently online (active within 5 minutes)
 
 ### User Management & Privacy
 - **User Blocking**: Block users to prevent interactions and hide content
@@ -206,6 +207,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `GET /api/users/{username}` - Get user profile
 - `POST /api/users/{userId}/follow` - Follow user
 - `DELETE /api/users/{userId}/follow` - Unfollow user
+- `GET /api/users/me/following/online-status` - Get following users with their online status
 - `POST /api/users/me/profile-image` - Upload profile image
 
 ### Blocking System

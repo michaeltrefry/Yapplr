@@ -6,6 +6,7 @@ using Amazon.SimpleEmail;
 using Yapplr.Api.Data;
 using Yapplr.Api.Services;
 using Yapplr.Api.Endpoints;
+using Yapplr.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -102,6 +103,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
+app.UseMiddleware<UserActivityMiddleware>();
 app.UseAuthorization();
 
 // Map API endpoints

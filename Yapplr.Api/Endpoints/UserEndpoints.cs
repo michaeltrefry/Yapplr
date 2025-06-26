@@ -138,5 +138,16 @@ public static class UserEndpoints
         .WithSummary("Get users that the current user is following")
         .Produces<IEnumerable<UserDto>>(200)
         .Produces(401);
+
+        users.MapGet("/me/following/online-status", [Authorize] async (ClaimsPrincipal user, IUserService userService) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var following = await userService.GetFollowingWithOnlineStatusAsync(currentUserId);
+            return Results.Ok(following);
+        })
+        .WithName("GetFollowingWithOnlineStatus")
+        .WithSummary("Get users that the current user is following with their online status")
+        .Produces<IEnumerable<UserWithOnlineStatusDto>>(200)
+        .Produces(401);
     }
 }

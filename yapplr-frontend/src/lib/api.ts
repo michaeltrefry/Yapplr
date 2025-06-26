@@ -10,6 +10,7 @@ import type {
   CreateCommentData,
   UpdateCommentData,
   User,
+  UserWithOnlineStatus,
   UserProfile,
   UpdateUserData,
   FollowResponse,
@@ -116,6 +117,11 @@ export const userApi = {
 
   getFollowing: async (): Promise<User[]> => {
     const response = await api.get('/users/me/following');
+    return response.data;
+  },
+
+  getFollowingWithOnlineStatus: async (): Promise<UserWithOnlineStatus[]> => {
+    const response = await api.get('/users/me/following/online-status');
     return response.data;
   },
 };
