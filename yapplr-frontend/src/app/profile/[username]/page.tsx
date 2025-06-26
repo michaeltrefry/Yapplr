@@ -1,14 +1,14 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { userApi, postApi } from '@/lib/api';
+import { userApi, postApi, blockApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/utils';
-import { Calendar } from 'lucide-react';
+import { Calendar, Shield, ShieldOff } from 'lucide-react';
 
-import TimelineItemCard from '@/components/TimelineItemCard';
+import UserTimeline from '@/components/UserTimeline';
 import Sidebar from '@/components/Sidebar';
 import UserAvatar from '@/components/UserAvatar';
 
@@ -23,16 +23,19 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const { username } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', username],
     queryFn: () => userApi.getUserProfile(username),
   });
 
-  const { data: timelineItems, isLoading: timelineLoading } = useQuery({
-    queryKey: ['userTimeline', profile?.id],
-    queryFn: () => postApi.getUserTimeline(profile!.id),
-    enabled: !!profile?.id,
+
+
+  const { data: blockStatus } = useQuery({
+    queryKey: ['blockStatus', profile?.id],
+    queryFn: () => blockApi.getBlockStatus(profile!.id),
+    enabled: !!profile?.id && !!currentUser && profile.id !== currentUser.id,
   });
 
   const followMutation = useMutation({
@@ -49,6 +52,27 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     },
   });
 
+  const blockMutation = useMutation({
+    mutationFn: (userId: number) => blockApi.blockUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blockStatus', profile?.id] });
+      queryClient.invalidateQueries({ queryKey: ['profile', username] }); // Refresh profile to show unfollow
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline', profile?.id] });
+      queryClient.invalidateQueries({ queryKey: ['following'] }); // Refresh following list
+      setShowBlockConfirm(false);
+    },
+  });
+
+  const unblockMutation = useMutation({
+    mutationFn: (userId: number) => blockApi.unblockUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blockStatus', profile?.id] });
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline', profile?.id] });
+    },
+  });
+
   const handleFollowToggle = () => {
     if (!profile) return;
 
@@ -57,6 +81,21 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     } else {
       followMutation.mutate(profile.id);
     }
+  };
+
+  const handleBlockToggle = () => {
+    if (!profile) return;
+
+    if (blockStatus?.isBlocked) {
+      unblockMutation.mutate(profile.id);
+    } else {
+      setShowBlockConfirm(true);
+    }
+  };
+
+  const handleConfirmBlock = () => {
+    if (!profile) return;
+    blockMutation.mutate(profile.id);
   };
 
   if (profileLoading) {
@@ -144,22 +183,42 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     Edit profile
                   </button>
                 ) : (
-                  <button
-                    onClick={handleFollowToggle}
-                    disabled={followMutation.isPending || unfollowMutation.isPending}
-                    className={`px-4 py-2 rounded-full font-semibold transition-colors disabled:opacity-50 ${
-                      profile.isFollowedByCurrentUser
-                        ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                        : 'bg-blue-500 text-white hover:bg-blue-600'
-                    }`}
-                  >
-                    {followMutation.isPending || unfollowMutation.isPending
-                      ? '...'
-                      : profile.isFollowedByCurrentUser
-                      ? 'Unfollow'
-                      : 'Follow'
-                    }
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={handleFollowToggle}
+                      disabled={followMutation.isPending || unfollowMutation.isPending}
+                      className={`px-4 py-2 rounded-full font-semibold transition-colors disabled:opacity-50 ${
+                        profile.isFollowedByCurrentUser
+                          ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                          : 'bg-blue-500 text-white hover:bg-blue-600'
+                      }`}
+                    >
+                      {followMutation.isPending || unfollowMutation.isPending
+                        ? '...'
+                        : profile.isFollowedByCurrentUser
+                        ? 'Unfollow'
+                        : 'Follow'
+                      }
+                    </button>
+                    <button
+                      onClick={handleBlockToggle}
+                      disabled={blockMutation.isPending || unblockMutation.isPending}
+                      className={`px-3 py-2 rounded-full font-semibold transition-colors disabled:opacity-50 ${
+                        blockStatus?.isBlocked
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200 border border-green-300'
+                          : 'bg-red-100 text-red-800 hover:bg-red-200 border border-red-300'
+                      }`}
+                      title={blockStatus?.isBlocked ? 'Unblock user' : 'Block user'}
+                    >
+                      {blockMutation.isPending || unblockMutation.isPending ? (
+                        '...'
+                      ) : blockStatus?.isBlocked ? (
+                        <ShieldOff className="w-4 h-4" />
+                      ) : (
+                        <Shield className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -206,26 +265,39 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             </div>
 
             {/* Posts and Reposts */}
-            <div>
-              {timelineLoading ? (
-                <div className="p-8 text-center">
-                  <div className="text-gray-500">Loading yaps...</div>
-                </div>
-              ) : timelineItems && timelineItems.length > 0 ? (
-                timelineItems.map((item) => (
-                  <TimelineItemCard key={`${item.type}-${item.post.id}-${item.createdAt}`} item={item} />
-                ))
-              ) : (
-                <div className="p-8 text-center">
-                  <div className="text-gray-500">
-                    {isOwnProfile ? "You haven't yapped anything yet" : "No yaps yet"}
-                  </div>
-                </div>
-              )}
-            </div>
+            <UserTimeline userId={profile.id} isOwnProfile={isOwnProfile} />
           </div>
         </div>
       </div>
+
+      {/* Block Confirmation Modal */}
+      {showBlockConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Block @{profile?.username}?</h3>
+            <p className="text-gray-600 mb-6">
+              They won't be able to see your posts or interact with you. You won't see their content either.
+              {profile?.isFollowedByCurrentUser && " You will also unfollow each other."}
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowBlockConfirm(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                disabled={blockMutation.isPending}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmBlock}
+                disabled={blockMutation.isPending}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {blockMutation.isPending ? 'Blocking...' : 'Block'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

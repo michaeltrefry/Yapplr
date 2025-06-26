@@ -9,21 +9,32 @@ public record CreatePostDto(
     PostPrivacy Privacy = PostPrivacy.Public
 );
 
+public record UpdatePostDto(
+    [Required][StringLength(256, MinimumLength = 1)] string Content,
+    PostPrivacy Privacy = PostPrivacy.Public
+);
+
 public record PostDto(
     int Id,
     string Content,
     string? ImageUrl,
     PostPrivacy Privacy,
     DateTime CreatedAt,
+    DateTime UpdatedAt,
     UserDto User,
     int LikeCount,
     int CommentCount,
     int RepostCount,
     bool IsLikedByCurrentUser = false,
-    bool IsRepostedByCurrentUser = false
+    bool IsRepostedByCurrentUser = false,
+    bool IsEdited = false
 );
 
 public record CreateCommentDto(
+    [Required][StringLength(256, MinimumLength = 1)] string Content
+);
+
+public record UpdateCommentDto(
     [Required][StringLength(256, MinimumLength = 1)] string Content
 );
 
@@ -31,7 +42,9 @@ public record CommentDto(
     int Id,
     string Content,
     DateTime CreatedAt,
-    UserDto User
+    DateTime UpdatedAt,
+    UserDto User,
+    bool IsEdited = false
 );
 
 public record TimelineItemDto(

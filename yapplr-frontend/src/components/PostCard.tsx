@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Post, PostPrivacy } from '@/types';
 import { formatDate, formatNumber } from '@/lib/utils';
-import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3 } from 'lucide-react';
 import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -24,6 +24,9 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const [commentText, setCommentText] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(post.content);
+  const [editPrivacy, setEditPrivacy] = useState(post.privacy);
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -59,6 +62,17 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: () => postApi.updatePost(post.id, { content: editContent, privacy: editPrivacy }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['post', post.id] });
+      queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
+      setIsEditing(false);
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: () => postApi.deletePost(post.id),
     onSuccess: () => {
@@ -81,6 +95,18 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     e.preventDefault();
     if (!commentText.trim()) return;
     commentMutation.mutate();
+  };
+
+  const handleEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editContent.trim()) return;
+    editMutation.mutate();
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditContent(post.content);
+    setEditPrivacy(post.privacy);
   };
 
   const handleDelete = () => {
@@ -110,6 +136,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
             <span className="text-gray-500">·</span>
             <span className="text-gray-500 text-sm">
               {formatDate(post.createdAt)}
+              {post.isEdited && <span className="ml-1">(edited)</span>}
             </span>
             {/* Privacy Indicator */}
             {post.privacy !== PostPrivacy.Public && (
@@ -126,7 +153,15 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               </>
             )}
             {isOwner && (
-              <div className="ml-auto">
+              <div className="ml-auto flex space-x-1">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                  title="Edit post"
+                  disabled={editMutation.isPending || isEditing}
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
@@ -141,7 +176,47 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
 
           {/* Post Content */}
           <div className="mt-1">
-            <p className="text-gray-900 whitespace-pre-wrap">{post.content}</p>
+            {isEditing ? (
+              <form onSubmit={handleEdit} className="space-y-3">
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full text-gray-900 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  rows={3}
+                  maxLength={256}
+                />
+                <div className="flex items-center justify-between">
+                  <select
+                    value={editPrivacy}
+                    onChange={(e) => setEditPrivacy(Number(e.target.value) as PostPrivacy)}
+                    className="text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value={PostPrivacy.Public}>Public</option>
+                    <option value={PostPrivacy.Followers}>Followers</option>
+                    <option value={PostPrivacy.Private}>Private</option>
+                  </select>
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                      disabled={editMutation.isPending}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!editContent.trim() || editMutation.isPending}
+                      className="px-4 py-1 text-sm bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {editMutation.isPending ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              <p className="text-gray-900 whitespace-pre-wrap">{post.content}</p>
+            )}
             
             {/* Image */}
             {post.imageUrl && (

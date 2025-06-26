@@ -44,4 +44,8 @@ public class User
     // Follow relationships
     public ICollection<Follow> Followers { get; set; } = new List<Follow>(); // Users following this user
     public ICollection<Follow> Following { get; set; } = new List<Follow>(); // Users this user is following
+
+    // Block relationships
+    public ICollection<Block> BlockedUsers { get; set; } = new List<Block>(); // Users this user has blocked
+    public ICollection<Block> BlockedByUsers { get; set; } = new List<Block>(); // Users who have blocked this user
 }

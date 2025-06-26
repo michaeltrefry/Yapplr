@@ -7,7 +7,7 @@ import { Comment } from '@/types';
 import Link from 'next/link';
 import UserAvatar from './UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit3 } from 'lucide-react';
 import { useState } from 'react';
 
 interface CommentListProps {
@@ -58,8 +58,20 @@ interface CommentItemProps {
 
 function CommentItem({ comment, postId }: CommentItemProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  const editMutation = useMutation({
+    mutationFn: () => postApi.updateComment(comment.id, { content: editContent }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['post', postId] });
+      setIsEditing(false);
+    },
+  });
 
   const deleteMutation = useMutation({
     mutationFn: () => postApi.deleteComment(comment.id),
@@ -70,6 +82,17 @@ function CommentItem({ comment, postId }: CommentItemProps) {
       setShowDeleteConfirm(false);
     },
   });
+
+  const handleEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editContent.trim()) return;
+    editMutation.mutate();
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditContent(comment.content);
+  };
 
   const handleDelete = () => {
     deleteMutation.mutate();
@@ -95,9 +118,18 @@ function CommentItem({ comment, postId }: CommentItemProps) {
           <span className="text-gray-500 text-sm">·</span>
           <span className="text-gray-500 text-xs">
             {formatDate(comment.createdAt)}
+            {comment.isEdited && <span className="ml-1">(edited)</span>}
           </span>
           {isOwner && (
-            <div className="ml-auto">
+            <div className="ml-auto flex space-x-1">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                title="Edit comment"
+                disabled={editMutation.isPending || isEditing}
+              >
+                <Edit3 className="w-3 h-3" />
+              </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
@@ -112,7 +144,36 @@ function CommentItem({ comment, postId }: CommentItemProps) {
 
         {/* Comment Text */}
         <div className="mt-1">
-          <p className="text-gray-900 text-sm whitespace-pre-wrap">{comment.content}</p>
+          {isEditing ? (
+            <form onSubmit={handleEdit} className="space-y-2">
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="w-full text-sm text-gray-900 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows={2}
+                maxLength={256}
+              />
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                  disabled={editMutation.isPending}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!editContent.trim() || editMutation.isPending}
+                  className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {editMutation.isPending ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p className="text-gray-900 text-sm whitespace-pre-wrap">{comment.content}</p>
+          )}
         </div>
       </div>
 

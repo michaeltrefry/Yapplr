@@ -43,7 +43,7 @@ public static class PostEndpoints
         .Produces(404);
 
         // Get timeline (authenticated)
-        posts.MapGet("/timeline", [Authorize] async (ClaimsPrincipal user, IPostService postService, int page = 1, int pageSize = 20) =>
+        posts.MapGet("/timeline", [Authorize] async (ClaimsPrincipal user, IPostService postService, int page = 1, int pageSize = 25) =>
         {
             var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var timeline = await postService.GetTimelineWithRepostsAsync(userId, page, pageSize);
@@ -56,7 +56,7 @@ public static class PostEndpoints
         .Produces(401);
 
         // Get public timeline (no authentication required)
-        posts.MapGet("/public", async (ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 20) =>
+        posts.MapGet("/public", async (ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 25) =>
         {
             var currentUserId = user?.Identity?.IsAuthenticated == true
                 ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
@@ -71,7 +71,7 @@ public static class PostEndpoints
         .Produces<IEnumerable<TimelineItemDto>>(200);
 
         // Get user posts
-        posts.MapGet("/user/{userId:int}", async (int userId, ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 20) =>
+        posts.MapGet("/user/{userId:int}", async (int userId, ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 25) =>
         {
             var currentUserId = user?.Identity?.IsAuthenticated == true
                 ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
@@ -86,7 +86,7 @@ public static class PostEndpoints
         .Produces<IEnumerable<PostDto>>(200);
 
         // Get user timeline (posts + reposts)
-        posts.MapGet("/user/{userId}/timeline", async (int userId, ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 20) =>
+        posts.MapGet("/user/{userId}/timeline", async (int userId, ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 25) =>
         {
             var currentUserId = user?.Identity?.IsAuthenticated == true
                 ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
@@ -100,12 +100,27 @@ public static class PostEndpoints
         .WithSummary("Get user timeline (posts and reposts)")
         .Produces<IEnumerable<TimelineItemDto>>(200);
 
+        // Update post
+        posts.MapPut("/{id:int}", [Authorize] async (int id, [FromBody] UpdatePostDto updateDto, ClaimsPrincipal user, IPostService postService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var post = await postService.UpdatePostAsync(id, userId, updateDto);
+
+            return post == null ? Results.NotFound() : Results.Ok(post);
+        })
+        .WithName("UpdatePost")
+        .WithSummary("Update a post")
+        .Produces<PostDto>(200)
+        .Produces(400)
+        .Produces(401)
+        .Produces(404);
+
         // Delete post
         posts.MapDelete("/{id:int}", [Authorize] async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var success = await postService.DeletePostAsync(id, userId);
-            
+
             return success ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DeletePost")
@@ -191,11 +206,25 @@ public static class PostEndpoints
         .WithSummary("Get post comments")
         .Produces<IEnumerable<CommentDto>>(200);
 
+        posts.MapPut("/comments/{commentId:int}", [Authorize] async (int commentId, [FromBody] UpdateCommentDto updateDto, ClaimsPrincipal user, IPostService postService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var comment = await postService.UpdateCommentAsync(commentId, userId, updateDto);
+
+            return comment == null ? Results.NotFound() : Results.Ok(comment);
+        })
+        .WithName("UpdateComment")
+        .WithSummary("Update a comment")
+        .Produces<CommentDto>(200)
+        .Produces(400)
+        .Produces(401)
+        .Produces(404);
+
         posts.MapDelete("/comments/{commentId:int}", [Authorize] async (int commentId, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var success = await postService.DeleteCommentAsync(commentId, userId);
-            
+
             return success ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DeleteComment")

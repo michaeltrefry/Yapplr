@@ -37,19 +37,23 @@ export interface Post {
   imageUrl?: string;
   privacy: PostPrivacy;
   createdAt: string;
+  updatedAt: string;
   user: User;
   likeCount: number;
   commentCount: number;
   repostCount: number;
   isLikedByCurrentUser: boolean;
   isRepostedByCurrentUser: boolean;
+  isEdited: boolean;
 }
 
 export interface Comment {
   id: number;
   content: string;
   createdAt: string;
+  updatedAt: string;
   user: User;
+  isEdited: boolean;
 }
 
 export interface FollowResponse {
@@ -90,8 +94,25 @@ export interface CreatePostData {
   privacy?: PostPrivacy;
 }
 
+export interface UpdatePostData {
+  content: string;
+  privacy?: PostPrivacy;
+}
+
 export interface CreateCommentData {
   content: string;
+}
+
+export interface UpdateCommentData {
+  content: string;
+}
+
+export interface BlockResponse {
+  message: string;
+}
+
+export interface BlockStatusResponse {
+  isBlocked: boolean;
 }
 
 export interface UpdateUserData {

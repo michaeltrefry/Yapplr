@@ -6,7 +6,12 @@ import { useEffect, useRef } from 'react';
 import { ArrowUp } from 'lucide-react';
 import TimelineItemCard from './TimelineItemCard';
 
-export default function PublicTimeline() {
+interface UserTimelineProps {
+  userId: number;
+  isOwnProfile: boolean;
+}
+
+export default function UserTimeline({ userId, isOwnProfile }: UserTimelineProps) {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -17,8 +22,8 @@ export default function PublicTimeline() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['publicTimeline'],
-    queryFn: ({ pageParam = 1 }) => postApi.getPublicTimeline(pageParam, 25),
+    queryKey: ['userTimeline', userId],
+    queryFn: ({ pageParam = 1 }) => postApi.getUserTimeline(userId, pageParam, 25),
     getNextPageParam: (lastPage, allPages) => {
       // If the last page has fewer than 25 items, we've reached the end
       if (lastPage.length < 25) {
@@ -27,6 +32,7 @@ export default function PublicTimeline() {
       return allPages.length + 1;
     },
     initialPageParam: 1,
+    enabled: !!userId,
   });
 
   // Intersection Observer for infinite scroll
@@ -85,8 +91,7 @@ export default function PublicTimeline() {
     return (
       <div className="p-8 text-center">
         <div className="text-gray-500">
-          <h3 className="text-lg font-semibold mb-2">No yaps yet</h3>
-          <p>Be the first to share something!</p>
+          {isOwnProfile ? "You haven't yapped anything yet" : "No yaps yet"}
         </div>
       </div>
     );
@@ -97,7 +102,7 @@ export default function PublicTimeline() {
       {timelineItems.map((item) => (
         <TimelineItemCard key={`${item.type}-${item.post.id}-${item.createdAt}`} item={item} />
       ))}
-
+      
       {/* Load more trigger */}
       <div ref={loadMoreRef} className="h-20 flex flex-col items-center justify-center space-y-3">
         {isFetchingNextPage ? (

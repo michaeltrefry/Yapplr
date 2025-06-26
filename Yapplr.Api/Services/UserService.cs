@@ -7,10 +7,12 @@ namespace Yapplr.Api.Services;
 public class UserService : IUserService
 {
     private readonly YapplrDbContext _context;
+    private readonly IBlockService _blockService;
 
-    public UserService(YapplrDbContext context)
+    public UserService(YapplrDbContext context, IBlockService blockService)
     {
         _context = context;
+        _blockService = blockService;
     }
 
     public async Task<UserDto?> GetUserByIdAsync(int userId)
@@ -84,6 +86,42 @@ public class UserService : IUserService
 
         return users.Select(u => new UserDto(u.Id, u.Email, u.Username, u.Bio,
                                            u.Birthday, u.Pronouns, u.Tagline, u.ProfileImageFileName, u.CreatedAt));
+    }
+
+    public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query, int? currentUserId)
+    {
+        var users = await _context.Users
+            .Where(u => u.Username.Contains(query) || u.Bio.Contains(query))
+            .Take(20) // Limit results
+            .ToListAsync();
+
+        // Filter out blocked users if current user is provided
+        if (currentUserId.HasValue)
+        {
+            var blockedUserIds = await GetBlockedUserIdsAsync(currentUserId.Value);
+            users = users.Where(u => !blockedUserIds.Contains(u.Id)).ToList();
+        }
+
+        return users.Select(u => new UserDto(u.Id, u.Email, u.Username, u.Bio,
+                                           u.Birthday, u.Pronouns, u.Tagline, u.ProfileImageFileName, u.CreatedAt));
+    }
+
+    private async Task<List<int>> GetBlockedUserIdsAsync(int userId)
+    {
+        // Get users that the current user has blocked
+        var blockedByUser = await _context.Blocks
+            .Where(b => b.BlockerId == userId)
+            .Select(b => b.BlockedId)
+            .ToListAsync();
+
+        // Get users that have blocked the current user
+        var blockedByOthers = await _context.Blocks
+            .Where(b => b.BlockedId == userId)
+            .Select(b => b.BlockerId)
+            .ToListAsync();
+
+        // Combine both lists to filter out all blocked relationships
+        return blockedByUser.Concat(blockedByOthers).Distinct().ToList();
     }
 
     public async Task<UserDto?> UpdateProfileImageAsync(int userId, string fileName)

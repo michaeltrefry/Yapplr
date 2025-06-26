@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { Home, User, Search, LogOut } from 'lucide-react';
+import { Home, User, Search, LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import FollowingList from './FollowingList';
@@ -48,6 +48,14 @@ export default function Sidebar() {
           >
             <User className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Profile</span>
+          </Link>
+
+          <Link
+            href="/settings"
+            className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Settings className="w-6 h-6" />
+            <span className="text-lg hidden lg:block">Settings</span>
           </Link>
 
           {/* Following Section */}

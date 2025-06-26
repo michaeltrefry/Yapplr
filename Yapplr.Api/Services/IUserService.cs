@@ -8,6 +8,7 @@ public interface IUserService
     Task<UserProfileDto?> GetUserProfileAsync(string username, int? currentUserId = null);
     Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateDto);
     Task<IEnumerable<UserDto>> SearchUsersAsync(string query);
+    Task<IEnumerable<UserDto>> SearchUsersAsync(string query, int? currentUserId);
     Task<UserDto?> UpdateProfileImageAsync(int userId, string fileName);
     Task<UserDto?> RemoveProfileImageAsync(int userId, IImageService imageService);
     Task<FollowResponseDto> FollowUserAsync(int followerId, int followingId);

@@ -15,6 +15,7 @@ public class YapplrDbContext : DbContext
     public DbSet<Comment> Comments { get; set; }
     public DbSet<Repost> Reposts { get; set; }
     public DbSet<Follow> Follows { get; set; }
+    public DbSet<Block> Blocks { get; set; }
     public DbSet<PasswordReset> PasswordResets { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -104,6 +105,21 @@ public class YapplrDbContext : DbContext
                   .WithMany(e => e.Followers)
                   .HasForeignKey(e => e.FollowingId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Block configuration
+        modelBuilder.Entity<Block>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.BlockerId, e.BlockedId }).IsUnique(); // Prevent duplicate blocks
+            entity.HasOne(e => e.Blocker)
+                  .WithMany(e => e.BlockedUsers)
+                  .HasForeignKey(e => e.BlockerId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Blocked)
+                  .WithMany(e => e.BlockedByUsers)
+                  .HasForeignKey(e => e.BlockedId)
+                  .OnDelete(DeleteBehavior.Restrict); // Don't cascade delete when blocked user is deleted
         });
 
         // PasswordReset configuration

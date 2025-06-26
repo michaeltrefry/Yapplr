@@ -7,9 +7,13 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Clean 2015 Twitter-inspired Design**: Simple, focused interface
 - **Responsive Layout**: Works seamlessly on desktop and mobile
 - **Real-time Updates**: Live timeline with social interactions
+- **Infinite Scroll**: Smooth pagination with 25 posts per page for optimal performance
+- **Return to Top**: Convenient navigation button when reaching the end of timelines
 - **Authentication**: Secure login, registration, and password reset
 - **User Profiles**: Complete profile management with profile images
 - **Follow System**: Follow/unfollow users with real-time counts
+- **User Blocking**: Block/unblock users with automatic unfollowing and content filtering
+- **Settings Management**: Dedicated settings page with blocklist management
 - **Yap Privacy**: Create yaps with Public, Followers, or Private visibility
 - **Social Features**: Yaps, likes, comments, reyaps with timeline integration
 - **Content Management**: Delete your own yaps, comments, and reyaps with confirmation dialogs
@@ -107,9 +111,11 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 ## Pages & Components
 
 ### Main Pages
-- **Home** (`/`) - Timeline with yap creation and privacy selector
-- **Profile** (`/profile/[username]`) - User profiles with follow buttons and yap filtering
+- **Home** (`/`) - Timeline with yap creation, privacy selector, and infinite scroll
+- **Profile** (`/profile/[username]`) - User profiles with follow/block buttons and infinite scroll timeline
 - **Profile Edit** (`/profile/edit`) - Profile management with image upload
+- **Settings** (`/settings`) - Settings hub with organized sections
+- **Blocklist** (`/settings/blocklist`) - Manage blocked users with unblock functionality
 - **Yap Detail** (`/yap/[id]`) - Individual yap pages with comments and sharing
 - **Login/Register** - Authentication with password reset functionality
 - **Forgot/Reset Password** - Email-based password recovery
@@ -119,10 +125,13 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **PostCard** - Yap display with privacy indicators, social actions, and delete functionality
 - **TimelineItemCard** - Unified display for yaps and reyaps with attribution and delete options
 - **UserAvatar** - Consistent user avatar display throughout the app
-- **Timeline** - Mixed timeline with yaps and reyaps, privacy-filtered
+- **Timeline** - Mixed timeline with infinite scroll, yaps and reyaps, privacy-filtered
+- **PublicTimeline** - Public timeline with infinite scroll for unauthenticated users
+- **UserTimeline** - User-specific timeline with infinite scroll for profile pages
+- **BlockedUsersList** - Blocklist management with unblock functionality
 - **CommentList** - Expandable comment sections with delete functionality for own comments
 - **ShareModal** - Yap sharing modal with social media integration and link copying
-- **Sidebar** - Navigation with responsive design
+- **Sidebar** - Navigation with responsive design and settings link
 
 ## Code Quality
 
@@ -133,8 +142,10 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Type Safety**: Full TypeScript coverage
 
 ### Performance Optimizations
+- **Infinite Scroll**: Pagination with 25 posts per page reduces initial load time and memory usage
+- **Intersection Observer**: Efficient scroll detection for automatic loading
 - **Next.js Image**: Optimized image loading with proper configuration
-- **React Query**: Efficient data fetching and caching
+- **React Query**: Efficient data fetching and caching with useInfiniteQuery
 - **Code Splitting**: Automatic route-based code splitting
 - **Optimistic Updates**: Immediate UI feedback for user actions
 

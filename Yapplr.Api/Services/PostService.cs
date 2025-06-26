@@ -9,11 +9,13 @@ public class PostService : IPostService
 {
     private readonly YapplrDbContext _context;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IBlockService _blockService;
 
-    public PostService(YapplrDbContext context, IHttpContextAccessor httpContextAccessor)
+    public PostService(YapplrDbContext context, IHttpContextAccessor httpContextAccessor, IBlockService blockService)
     {
         _context = context;
         _httpContextAccessor = httpContextAccessor;
+        _blockService = blockService;
     }
 
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
@@ -64,15 +66,19 @@ public class PostService : IPostService
             .Select(f => f.FollowingId)
             .ToListAsync();
 
+        // Get blocked user IDs to filter them out
+        var blockedUserIds = await GetBlockedUserIdsAsync(userId);
+
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
             .Where(p =>
-                p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
+                !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
+                (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                 p.UserId == userId || // User's own posts are always visible
-                (p.Privacy == PostPrivacy.Followers && followingIds.Contains(p.UserId))) // Followers-only posts visible if following the author
+                (p.Privacy == PostPrivacy.Followers && followingIds.Contains(p.UserId)))) // Followers-only posts visible if following the author
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -89,6 +95,9 @@ public class PostService : IPostService
             .Select(f => f.FollowingId)
             .ToListAsync();
 
+        // Get blocked user IDs to filter them out
+        var blockedUserIds = await GetBlockedUserIdsAsync(userId);
+
         // Create a larger page size for fetching since we'll filter and sort in memory
         var fetchSize = pageSize * 3; // Fetch more to account for mixed posts and reposts
 
@@ -100,9 +109,10 @@ public class PostService : IPostService
             .Include(p => p.Reposts)
             .AsSplitQuery()
             .Where(p =>
-                p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
+                !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
+                (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                 p.UserId == userId || // User's own posts are always visible
-                (p.Privacy == PostPrivacy.Followers && followingIds.Contains(p.UserId))) // Followers-only posts visible if following the author
+                (p.Privacy == PostPrivacy.Followers && followingIds.Contains(p.UserId)))) // Followers-only posts visible if following the author
             .OrderByDescending(p => p.CreatedAt)
             .Take(fetchSize)
             .ToListAsync();
@@ -119,7 +129,10 @@ public class PostService : IPostService
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
             .AsSplitQuery()
-            .Where(r => r.UserId == userId || followingIds.Contains(r.UserId)) // Reposts from self or followed users
+            .Where(r =>
+                !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
+                !blockedUserIds.Contains(r.Post.UserId) && // Filter out reposts of posts from blocked users
+                (r.UserId == userId || followingIds.Contains(r.UserId))) // Reposts from self or followed users
             .Where(r =>
                 r.Post.Privacy == PostPrivacy.Public || // Public posts can be reposted
                 r.Post.UserId == userId || // User's own posts
@@ -163,6 +176,13 @@ public class PostService : IPostService
         // For public timeline, we only show public posts and reposts of public posts
         var fetchSize = pageSize * 2; // Fetch more to account for mixed posts and reposts
 
+        // Get blocked user IDs if user is authenticated
+        var blockedUserIds = new List<int>();
+        if (currentUserId.HasValue)
+        {
+            blockedUserIds = await GetBlockedUserIdsAsync(currentUserId.Value);
+        }
+
         // Get public posts only
         var posts = await _context.Posts
             .Include(p => p.User)
@@ -170,7 +190,9 @@ public class PostService : IPostService
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
             .AsSplitQuery()
-            .Where(p => p.Privacy == PostPrivacy.Public) // Only public posts
+            .Where(p =>
+                p.Privacy == PostPrivacy.Public && // Only public posts
+                !blockedUserIds.Contains(p.UserId)) // Filter out blocked users
             .OrderByDescending(p => p.CreatedAt)
             .Take(fetchSize)
             .ToListAsync();
@@ -187,7 +209,10 @@ public class PostService : IPostService
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
             .AsSplitQuery()
-            .Where(r => r.Post.Privacy == PostPrivacy.Public) // Only reposts of public posts
+            .Where(r =>
+                r.Post.Privacy == PostPrivacy.Public && // Only reposts of public posts
+                !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
+                !blockedUserIds.Contains(r.Post.UserId)) // Filter out reposts of posts from blocked users
             .OrderByDescending(r => r.CreatedAt)
             .Take(fetchSize)
             .ToListAsync();
@@ -230,6 +255,17 @@ public class PostService : IPostService
 
     public async Task<IEnumerable<PostDto>> GetUserPostsAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
     {
+        // Check if current user is blocked by the profile owner or has blocked them
+        if (currentUserId.HasValue && currentUserId.Value != userId)
+        {
+            var isBlocked = await _blockService.IsUserBlockedAsync(currentUserId.Value, userId) ||
+                           await _blockService.IsBlockedByUserAsync(currentUserId.Value, userId);
+            if (isBlocked)
+            {
+                return new List<PostDto>(); // Return empty list if blocked
+            }
+        }
+
         // Check if current user is following the target user
         var isFollowing = false;
         if (currentUserId.HasValue && currentUserId.Value != userId)
@@ -258,6 +294,17 @@ public class PostService : IPostService
 
     public async Task<IEnumerable<TimelineItemDto>> GetUserTimelineAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
     {
+        // Check if current user is blocked by the profile owner or has blocked them
+        if (currentUserId.HasValue && currentUserId.Value != userId)
+        {
+            var isBlocked = await _blockService.IsUserBlockedAsync(currentUserId.Value, userId) ||
+                           await _blockService.IsBlockedByUserAsync(currentUserId.Value, userId);
+            if (isBlocked)
+            {
+                return new List<TimelineItemDto>(); // Return empty list if blocked
+            }
+        }
+
         // Check if current user is following the target user (for privacy filtering)
         var isFollowing = false;
         if (currentUserId.HasValue && currentUserId.Value != userId)
@@ -454,6 +501,24 @@ public class PostService : IPostService
         return comments.Select(MapToCommentDto);
     }
 
+    public async Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId, int? currentUserId = null)
+    {
+        var comments = await _context.Comments
+            .Include(c => c.User)
+            .Where(c => c.PostId == postId)
+            .OrderBy(c => c.CreatedAt)
+            .ToListAsync();
+
+        // Filter out comments from blocked users if user is authenticated
+        if (currentUserId.HasValue)
+        {
+            var blockedUserIds = await GetBlockedUserIdsAsync(currentUserId.Value);
+            comments = comments.Where(c => !blockedUserIds.Contains(c.UserId)).ToList();
+        }
+
+        return comments.Select(MapToCommentDto);
+    }
+
     public async Task<bool> DeleteCommentAsync(int commentId, int userId)
     {
         var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == userId);
@@ -486,8 +551,10 @@ public class PostService : IPostService
             }
         }
 
-        return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, userDto,
-                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, isLiked, isReposted);
+        var isEdited = post.UpdatedAt > post.CreatedAt.AddMinutes(1); // Consider edited if updated more than 1 minute after creation
+
+        return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
+                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, isLiked, isReposted, isEdited);
     }
 
     private CommentDto MapToCommentDto(Comment comment)
@@ -496,6 +563,64 @@ public class PostService : IPostService
                                  comment.User.Bio, comment.User.Birthday, comment.User.Pronouns,
                                  comment.User.Tagline, comment.User.ProfileImageFileName, comment.User.CreatedAt);
 
-        return new CommentDto(comment.Id, comment.Content, comment.CreatedAt, userDto);
+        var isEdited = comment.UpdatedAt > comment.CreatedAt.AddMinutes(1); // Consider edited if updated more than 1 minute after creation
+
+        return new CommentDto(comment.Id, comment.Content, comment.CreatedAt, comment.UpdatedAt, userDto, isEdited);
+    }
+
+    public async Task<PostDto?> UpdatePostAsync(int postId, int userId, UpdatePostDto updateDto)
+    {
+        var post = await _context.Posts
+            .Include(p => p.User)
+            .Include(p => p.Likes)
+            .Include(p => p.Comments)
+            .Include(p => p.Reposts)
+            .FirstOrDefaultAsync(p => p.Id == postId);
+
+        if (post == null || post.UserId != userId)
+            return null;
+
+        post.Content = updateDto.Content;
+        post.Privacy = updateDto.Privacy;
+        post.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return MapToPostDto(post, userId);
+    }
+
+    public async Task<CommentDto?> UpdateCommentAsync(int commentId, int userId, UpdateCommentDto updateDto)
+    {
+        var comment = await _context.Comments
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.Id == commentId);
+
+        if (comment == null || comment.UserId != userId)
+            return null;
+
+        comment.Content = updateDto.Content;
+        comment.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return MapToCommentDto(comment);
+    }
+
+    private async Task<List<int>> GetBlockedUserIdsAsync(int userId)
+    {
+        // Get users that the current user has blocked
+        var blockedByUser = await _context.Blocks
+            .Where(b => b.BlockerId == userId)
+            .Select(b => b.BlockedId)
+            .ToListAsync();
+
+        // Get users that have blocked the current user
+        var blockedByOthers = await _context.Blocks
+            .Where(b => b.BlockedId == userId)
+            .Select(b => b.BlockerId)
+            .ToListAsync();
+
+        // Combine both lists to filter out all blocked relationships
+        return blockedByUser.Concat(blockedByOthers).Distinct().ToList();
     }
 }

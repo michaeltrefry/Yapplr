@@ -22,6 +22,33 @@ namespace Yapplr.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Yapplr.Api.Models.Block", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BlockedId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BlockerId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BlockedId");
+
+                    b.HasIndex("BlockerId", "BlockedId")
+                        .IsUnique();
+
+                    b.ToTable("Blocks");
+                });
+
             modelBuilder.Entity("Yapplr.Api.Models.Comment", b =>
                 {
                     b.Property<int>("Id")
@@ -278,6 +305,25 @@ namespace Yapplr.Api.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Yapplr.Api.Models.Block", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.User", "Blocked")
+                        .WithMany("BlockedByUsers")
+                        .HasForeignKey("BlockedId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Yapplr.Api.Models.User", "Blocker")
+                        .WithMany("BlockedUsers")
+                        .HasForeignKey("BlockerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Blocked");
+
+                    b.Navigation("Blocker");
+                });
+
             modelBuilder.Entity("Yapplr.Api.Models.Comment", b =>
                 {
                     b.HasOne("Yapplr.Api.Models.Post", "Post")
@@ -387,6 +433,10 @@ namespace Yapplr.Api.Migrations
 
             modelBuilder.Entity("Yapplr.Api.Models.User", b =>
                 {
+                    b.Navigation("BlockedByUsers");
+
+                    b.Navigation("BlockedUsers");
+
                     b.Navigation("Comments");
 
                     b.Navigation("Followers");

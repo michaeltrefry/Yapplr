@@ -5,13 +5,17 @@ import type {
   RegisterData,
   Post,
   CreatePostData,
+  UpdatePostData,
   Comment,
   CreateCommentData,
+  UpdateCommentData,
   User,
   UserProfile,
   UpdateUserData,
   FollowResponse,
   TimelineItem,
+  BlockResponse,
+  BlockStatusResponse,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -121,23 +125,28 @@ export const postApi = {
     return response.data;
   },
 
-  getTimeline: async (page = 1, pageSize = 20): Promise<TimelineItem[]> => {
+  getTimeline: async (page = 1, pageSize = 25): Promise<TimelineItem[]> => {
     const response = await api.get(`/posts/timeline?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
-  getPublicTimeline: async (page = 1, pageSize = 20): Promise<TimelineItem[]> => {
+  getPublicTimeline: async (page = 1, pageSize = 25): Promise<TimelineItem[]> => {
     const response = await api.get(`/posts/public?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
-  getUserPosts: async (userId: number, page = 1, pageSize = 20): Promise<Post[]> => {
+  getUserPosts: async (userId: number, page = 1, pageSize = 25): Promise<Post[]> => {
     const response = await api.get(`/posts/user/${userId}?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
-  getUserTimeline: async (userId: number, page = 1, pageSize = 20): Promise<TimelineItem[]> => {
+  getUserTimeline: async (userId: number, page = 1, pageSize = 25): Promise<TimelineItem[]> => {
     const response = await api.get(`/posts/user/${userId}/timeline?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  updatePost: async (id: number, data: UpdatePostData): Promise<Post> => {
+    const response = await api.put(`/posts/${id}`, data);
     return response.data;
   },
 
@@ -171,6 +180,11 @@ export const postApi = {
     return response.data;
   },
 
+  updateComment: async (commentId: number, data: UpdateCommentData): Promise<Comment> => {
+    const response = await api.put(`/posts/comments/${commentId}`, data);
+    return response.data;
+  },
+
   deleteComment: async (commentId: number): Promise<void> => {
     await api.delete(`/posts/comments/${commentId}`);
   },
@@ -192,6 +206,29 @@ export const imageApi = {
 
   deleteImage: async (fileName: string): Promise<void> => {
     await api.delete(`/images/${fileName}`);
+  },
+};
+
+// Block API
+export const blockApi = {
+  blockUser: async (userId: number): Promise<BlockResponse> => {
+    const response = await api.post(`/blocks/users/${userId}`);
+    return response.data;
+  },
+
+  unblockUser: async (userId: number): Promise<BlockResponse> => {
+    const response = await api.delete(`/blocks/users/${userId}`);
+    return response.data;
+  },
+
+  getBlockStatus: async (userId: number): Promise<BlockStatusResponse> => {
+    const response = await api.get(`/blocks/users/${userId}/status`);
+    return response.data;
+  },
+
+  getBlockedUsers: async (): Promise<User[]> => {
+    const response = await api.get('/blocks');
+    return response.data;
   },
 };
 

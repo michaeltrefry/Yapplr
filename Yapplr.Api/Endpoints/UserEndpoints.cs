@@ -51,9 +51,13 @@ public static class UserEndpoints
         .Produces(401)
         .Produces(404);
 
-        users.MapGet("/search/{query}", async (string query, IUserService userService) =>
+        users.MapGet("/search/{query}", async (string query, ClaimsPrincipal? user, IUserService userService) =>
         {
-            var users = await userService.SearchUsersAsync(query);
+            var currentUserId = user?.Identity?.IsAuthenticated == true
+                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
+                : (int?)null;
+
+            var users = await userService.SearchUsersAsync(query, currentUserId);
             return Results.Ok(users);
         })
         .WithName("SearchUsers")

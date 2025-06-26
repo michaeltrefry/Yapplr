@@ -13,6 +13,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **User Profiles**: Complete profile management with bio, pronouns, tagline, and profile images
 - **Yap Sharing**: Share yaps with social media integration and direct link copying
 - **Content Management**: Delete your own yaps, comments, and reyaps with confirmation dialogs
+- **User Blocking**: Block/unblock users with automatic unfollowing and content filtering
+- **Settings Management**: Dedicated settings page with blocklist management
 
 ### Privacy & Security
 - **Yap Privacy**: Three levels - Public (everyone), Followers (followers only), Private (author only)
@@ -23,6 +25,8 @@ A complete Twitter-like social media platform built with modern web technologies
 ### User Experience
 - **Responsive Design**: Mobile-first approach with collapsible sidebar
 - **Real-time Updates**: Live timeline with instant social interaction feedback
+- **Infinite Scroll**: Smooth pagination with 25 posts per page for optimal performance
+- **Return to Top**: Convenient navigation button when reaching the end of timelines
 - **Image Upload**: Server-side image storage for yaps and profile pictures
 - **User Search**: Find users by username or bio content
 - **Clean UI**: 2015 Twitter-inspired design with modern touches
@@ -96,6 +100,8 @@ The frontend will be available at `http://localhost:3000`
 
 ### Timeline & Reyaps
 - **Mixed Timeline**: Shows both original yaps and reyaps chronologically
+- **Infinite Scroll**: Automatic loading of 25 posts per page with smooth pagination
+- **Return to Top**: Quick navigation button when reaching the end of content
 - **Reyap Attribution**: Clear "User reyapped" headers with original content
 - **Privacy Respect**: Only shows reyaps of content you're allowed to see
 - **User Profiles**: Both original yaps and reyaps appear on user profiles
@@ -111,6 +117,13 @@ The frontend will be available at `http://localhost:3000`
 - **Privacy Integration**: Following relationships affect content visibility
 - **Profile Integration**: Follow/unfollow buttons on user profiles
 - **Timeline Impact**: Following users affects your timeline content
+
+### User Management & Privacy
+- **User Blocking**: Block users to prevent interactions and hide content
+- **Automatic Unfollowing**: Blocking automatically removes follow relationships
+- **Settings Page**: Dedicated settings interface with organized sections
+- **Blocklist Management**: View and unblock previously blocked users
+- **Privacy Controls**: Comprehensive privacy system with relationship-based filtering
 
 ### Image Management
 - **Yap Images**: Upload images with yaps (server-side storage)
@@ -160,8 +173,9 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 
 ### Social Features
 - `GET /api/posts/{id}` - Get individual yap by ID (for sharing)
-- `GET /api/posts/timeline` - Get timeline with yaps and reyaps
-- `GET /api/posts/user/{userId}/timeline` - Get user timeline (yaps + reyaps)
+- `GET /api/posts/timeline` - Get timeline with yaps and reyaps (paginated, 25 per page)
+- `GET /api/posts/public` - Get public timeline (paginated, 25 per page)
+- `GET /api/posts/user/{userId}/timeline` - Get user timeline (yaps + reyaps, paginated)
 - `POST /api/posts/{id}/repost` - Reyap a yap
 - `DELETE /api/posts/{id}/repost` - Remove reyap
 - `POST /api/posts/{id}/like` - Like a yap
@@ -174,6 +188,12 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `POST /api/users/{userId}/follow` - Follow user
 - `DELETE /api/users/{userId}/follow` - Unfollow user
 - `POST /api/users/me/profile-image` - Upload profile image
+
+### Blocking System
+- `POST /api/blocks/users/{userId}` - Block a user
+- `DELETE /api/blocks/users/{userId}` - Unblock a user
+- `GET /api/blocks/users/{userId}/status` - Check if user is blocked
+- `GET /api/blocks` - Get list of blocked users
 
 ## 🔒 Security Features
 
