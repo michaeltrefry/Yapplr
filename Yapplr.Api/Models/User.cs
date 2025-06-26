@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Postr.Api.Models;
+namespace Yapplr.Api.Models;
 
 public class User
 {

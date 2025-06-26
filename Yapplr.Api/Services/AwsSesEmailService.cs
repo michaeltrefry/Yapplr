@@ -2,7 +2,7 @@ using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
 using System.Text;
 
-namespace Postr.Api.Services;
+namespace Yapplr.Api.Services;
 
 public class AwsSesEmailService : IEmailService
 {
@@ -22,7 +22,7 @@ public class AwsSesEmailService : IEmailService
 
     public async Task<bool> SendPasswordResetEmailAsync(string toEmail, string username, string resetToken, string resetUrl)
     {
-        var subject = "Reset Your Postr Password";
+        var subject = "Reset Your Yapplr Password";
         var htmlBody = GeneratePasswordResetHtml(username, resetUrl);
         var textBody = GeneratePasswordResetText(username, resetUrl);
 
@@ -35,7 +35,7 @@ public class AwsSesEmailService : IEmailService
         {
             var sesSettings = _configuration.GetSection("AwsSesSettings");
             var fromEmail = sesSettings["FromEmail"];
-            var fromName = sesSettings["FromName"] ?? "Postr";
+            var fromName = sesSettings["FromName"] ?? "Yapplr";
 
             if (string.IsNullOrEmpty(fromEmail))
             {
@@ -116,7 +116,7 @@ public class AwsSesEmailService : IEmailService
 <head>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Reset Your Postr Password</title>
+    <title>Reset Your Yapplr Password</title>
     <style>
         body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
@@ -138,14 +138,14 @@ public class AwsSesEmailService : IEmailService
 <body>
     <div class='container'>
         <div class='header'>
-            <div class='logo'>Postr</div>
+            <div class='logo'>Yapplr</div>
             <p style='margin: 0; color: #666;'>Social Media Platform</p>
         </div>
         
         <div class='content'>
             <h2 style='color: #333; margin-top: 0;'>Reset Your Password</h2>
             <p>Hi <strong>{username}</strong>,</p>
-            <p>We received a request to reset your password for your Postr account. If you didn't make this request, you can safely ignore this email.</p>
+            <p>We received a request to reset your password for your Yapplr account. If you didn't make this request, you can safely ignore this email.</p>
             <p>To reset your password, click the button below:</p>
             <p style='text-align: center; margin: 30px 0;'>
                 <a href='{resetUrl}' class='button'>Reset Password</a>
@@ -159,8 +159,8 @@ public class AwsSesEmailService : IEmailService
         </div>
         
         <div class='footer'>
-            <p>This email was sent by Postr. If you have any questions, please contact our support team.</p>
-            <p style='margin-top: 15px; font-size: 12px;'>© 2025 Postr. All rights reserved.</p>
+            <p>This email was sent by Yapplr. If you have any questions, please contact our support team.</p>
+            <p style='margin-top: 15px; font-size: 12px;'>© 2025 Yapplr. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -169,11 +169,11 @@ public class AwsSesEmailService : IEmailService
 
     private string GeneratePasswordResetText(string username, string resetUrl)
     {
-        return $@"Reset Your Postr Password
+        return $@"Reset Your Yapplr Password
 
 Hi {username},
 
-We received a request to reset your password for your Postr account. If you didn't make this request, you can safely ignore this email.
+We received a request to reset your password for your Yapplr account. If you didn't make this request, you can safely ignore this email.
 
 To reset your password, visit this link:
 {resetUrl}
@@ -183,8 +183,8 @@ SECURITY NOTICE: This link will expire in 1 hour for security reasons.
 If you have any questions, please contact our support team.
 
 Best regards,
-The Postr Team
+The Yapplr Team
 
-© 2025 Postr. All rights reserved.";
+© 2025 Yapplr. All rights reserved.";
     }
 }

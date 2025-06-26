@@ -1,7 +1,7 @@
-using Postr.Api.DTOs;
-using Postr.Api.Models;
+using Yapplr.Api.DTOs;
+using Yapplr.Api.Models;
 
-namespace Postr.Api.Services;
+namespace Yapplr.Api.Services;
 
 public interface IAuthService
 {

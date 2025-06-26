@@ -4,14 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Postr.Api.Data;
+using Yapplr.Api.Data;
 
 #nullable disable
 
-namespace Postr.Api.Migrations
+namespace Yapplr.Api.Migrations
 {
-    [DbContext(typeof(PostrDbContext))]
-    partial class PostrDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(YapplrDbContext))]
+    partial class YapplrDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -22,7 +22,7 @@ namespace Postr.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Postr.Api.Models.Comment", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Comment", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -56,7 +56,7 @@ namespace Postr.Api.Migrations
                     b.ToTable("Comments");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.Follow", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Follow", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -83,7 +83,7 @@ namespace Postr.Api.Migrations
                     b.ToTable("Follows");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.Like", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Like", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -110,7 +110,7 @@ namespace Postr.Api.Migrations
                     b.ToTable("Likes");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.PasswordReset", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.PasswordReset", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -153,7 +153,7 @@ namespace Postr.Api.Migrations
                     b.ToTable("PasswordResets");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.Post", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Post", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -190,7 +190,7 @@ namespace Postr.Api.Migrations
                     b.ToTable("Posts");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.Repost", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Repost", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -217,7 +217,7 @@ namespace Postr.Api.Migrations
                     b.ToTable("Reposts");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.User", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -278,15 +278,15 @@ namespace Postr.Api.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.Comment", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Comment", b =>
                 {
-                    b.HasOne("Postr.Api.Models.Post", "Post")
+                    b.HasOne("Yapplr.Api.Models.Post", "Post")
                         .WithMany("Comments")
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Postr.Api.Models.User", "User")
+                    b.HasOne("Yapplr.Api.Models.User", "User")
                         .WithMany("Comments")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -297,15 +297,15 @@ namespace Postr.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.Follow", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Follow", b =>
                 {
-                    b.HasOne("Postr.Api.Models.User", "Follower")
+                    b.HasOne("Yapplr.Api.Models.User", "Follower")
                         .WithMany("Following")
                         .HasForeignKey("FollowerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Postr.Api.Models.User", "Following")
+                    b.HasOne("Yapplr.Api.Models.User", "Following")
                         .WithMany("Followers")
                         .HasForeignKey("FollowingId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -316,15 +316,15 @@ namespace Postr.Api.Migrations
                     b.Navigation("Following");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.Like", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Like", b =>
                 {
-                    b.HasOne("Postr.Api.Models.Post", "Post")
+                    b.HasOne("Yapplr.Api.Models.Post", "Post")
                         .WithMany("Likes")
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Postr.Api.Models.User", "User")
+                    b.HasOne("Yapplr.Api.Models.User", "User")
                         .WithMany("Likes")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -335,9 +335,9 @@ namespace Postr.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.PasswordReset", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.PasswordReset", b =>
                 {
-                    b.HasOne("Postr.Api.Models.User", "User")
+                    b.HasOne("Yapplr.Api.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -346,9 +346,9 @@ namespace Postr.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.Post", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Post", b =>
                 {
-                    b.HasOne("Postr.Api.Models.User", "User")
+                    b.HasOne("Yapplr.Api.Models.User", "User")
                         .WithMany("Posts")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -357,15 +357,15 @@ namespace Postr.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.Repost", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Repost", b =>
                 {
-                    b.HasOne("Postr.Api.Models.Post", "Post")
+                    b.HasOne("Yapplr.Api.Models.Post", "Post")
                         .WithMany("Reposts")
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Postr.Api.Models.User", "User")
+                    b.HasOne("Yapplr.Api.Models.User", "User")
                         .WithMany("Reposts")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -376,7 +376,7 @@ namespace Postr.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.Post", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Post", b =>
                 {
                     b.Navigation("Comments");
 
@@ -385,7 +385,7 @@ namespace Postr.Api.Migrations
                     b.Navigation("Reposts");
                 });
 
-            modelBuilder.Entity("Postr.Api.Models.User", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.User", b =>
                 {
                     b.Navigation("Comments");
 

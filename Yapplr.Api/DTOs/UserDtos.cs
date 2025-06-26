@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Postr.Api.DTOs;
+namespace Yapplr.Api.DTOs;
 
 public record RegisterUserDto(
     [Required][EmailAddress] string Email,

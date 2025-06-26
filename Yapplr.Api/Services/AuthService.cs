@@ -5,19 +5,19 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using BCrypt.Net;
-using Postr.Api.Data;
-using Postr.Api.DTOs;
-using Postr.Api.Models;
+using Yapplr.Api.Data;
+using Yapplr.Api.DTOs;
+using Yapplr.Api.Models;
 
-namespace Postr.Api.Services;
+namespace Yapplr.Api.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly PostrDbContext _context;
+    private readonly YapplrDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
 
-    public AuthService(PostrDbContext context, IConfiguration configuration, IEmailService emailService)
+    public AuthService(YapplrDbContext context, IConfiguration configuration, IEmailService emailService)
     {
         _context = context;
         _configuration = configuration;

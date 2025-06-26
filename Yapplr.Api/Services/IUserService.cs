@@ -1,6 +1,6 @@
-using Postr.Api.DTOs;
+using Yapplr.Api.DTOs;
 
-namespace Postr.Api.Services;
+namespace Yapplr.Api.Services;
 
 public interface IUserService
 {

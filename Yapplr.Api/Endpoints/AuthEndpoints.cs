@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using Postr.Api.DTOs;
-using Postr.Api.Services;
+using Yapplr.Api.DTOs;
+using Yapplr.Api.Services;
 
-namespace Postr.Api.Endpoints;
+namespace Yapplr.Api.Endpoints;
 
 public static class AuthEndpoints
 {

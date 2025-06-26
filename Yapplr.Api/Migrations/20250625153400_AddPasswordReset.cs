@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Postr.Api.Migrations
+namespace Yapplr.Api.Migrations
 {
     /// <inheritdoc />
     public partial class AddPasswordReset : Migration

@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Postr.Api.Migrations
+namespace Yapplr.Api.Migrations
 {
     /// <inheritdoc />
     public partial class UpdatePostImageField : Migration

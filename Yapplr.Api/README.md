@@ -57,7 +57,7 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
    ./setup-db.sh
    ```
 
-   **For existing users migrating from postr_db:**
+   **For existing users migrating from yapplr_db:**
    ```bash
    ./migrate-database.sh
    ```
@@ -165,16 +165,16 @@ Authorization: Bearer <your-jwt-token>
 - **Followers**: Only visible to followers and the author
 - **Private**: Only visible to the author
 
-## Database Migration from Postr
+## Database Migration from Yapplr
 
-If you're upgrading from a previous version that used `postr_db`, you can migrate your database:
+If you're upgrading from a previous version that used `yapplr_db`, you can migrate your database:
 
 ```bash
 ./migrate-database.sh
 ```
 
 This script will:
-- Detect your existing `postr_db` database
+- Detect your existing `yapplr_db` database
 - Offer to rename it to `yapplr_db` (preserving all data)
 - Or create a fresh `yapplr_db` database
 

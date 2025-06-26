@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>Postr - Social Media</title>
+        <title>Yapplr - Social Media</title>
         <meta name="description" content="A Twitter-like social media platform" />
       </head>
       <body className={`${inter.variable} font-sans antialiased bg-white`}>

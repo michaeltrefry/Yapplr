@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
-using Postr.Api.Data;
-using Postr.Api.DTOs;
+using Yapplr.Api.Data;
+using Yapplr.Api.DTOs;
 
-namespace Postr.Api.Services;
+namespace Yapplr.Api.Services;
 
 public class UserService : IUserService
 {
-    private readonly PostrDbContext _context;
+    private readonly YapplrDbContext _context;
 
-    public UserService(PostrDbContext context)
+    public UserService(YapplrDbContext context)
     {
         _context = context;
     }

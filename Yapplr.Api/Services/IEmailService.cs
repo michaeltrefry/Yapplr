@@ -1,4 +1,4 @@
-namespace Postr.Api.Services;
+namespace Yapplr.Api.Services;
 
 public interface IEmailService
 {

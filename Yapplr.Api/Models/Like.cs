@@ -1,4 +1,4 @@
-namespace Postr.Api.Models;
+namespace Yapplr.Api.Models;
 
 public class Like
 {

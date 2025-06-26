@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 
-namespace Postr.Api.Services;
+namespace Yapplr.Api.Services;
 
 public class EmailService : IEmailService
 {
@@ -17,7 +17,7 @@ public class EmailService : IEmailService
 
     public async Task<bool> SendPasswordResetEmailAsync(string toEmail, string username, string resetToken, string resetUrl)
     {
-        var subject = "Reset Your Postr Password";
+        var subject = "Reset Your Yapplr Password";
         var htmlBody = GeneratePasswordResetHtml(username, resetUrl);
         var textBody = GeneratePasswordResetText(username, resetUrl);
 
@@ -34,7 +34,7 @@ public class EmailService : IEmailService
             var username = smtpSettings["Username"];
             var password = smtpSettings["Password"];
             var fromEmail = smtpSettings["FromEmail"];
-            var fromName = smtpSettings["FromName"] ?? "Postr";
+            var fromName = smtpSettings["FromName"] ?? "Yapplr";
 
             if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
@@ -83,7 +83,7 @@ public class EmailService : IEmailService
 <head>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Reset Your Postr Password</title>
+    <title>Reset Your Yapplr Password</title>
     <style>
         body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
@@ -97,13 +97,13 @@ public class EmailService : IEmailService
 <body>
     <div class='container'>
         <div class='header'>
-            <div class='logo'>Postr</div>
+            <div class='logo'>Yapplr</div>
         </div>
         
         <div class='content'>
             <h2>Reset Your Password</h2>
             <p>Hi {username},</p>
-            <p>We received a request to reset your password for your Postr account. If you didn't make this request, you can safely ignore this email.</p>
+            <p>We received a request to reset your password for your Yapplr account. If you didn't make this request, you can safely ignore this email.</p>
             <p>To reset your password, click the button below:</p>
             <p style='text-align: center; margin: 30px 0;'>
                 <a href='{resetUrl}' class='button'>Reset Password</a>
@@ -114,7 +114,7 @@ public class EmailService : IEmailService
         </div>
         
         <div class='footer'>
-            <p>This email was sent by Postr. If you have any questions, please contact our support team.</p>
+            <p>This email was sent by Yapplr. If you have any questions, please contact our support team.</p>
         </div>
     </div>
 </body>
@@ -123,11 +123,11 @@ public class EmailService : IEmailService
 
     private string GeneratePasswordResetText(string username, string resetUrl)
     {
-        return $@"Reset Your Postr Password
+        return $@"Reset Your Yapplr Password
 
 Hi {username},
 
-We received a request to reset your password for your Postr account. If you didn't make this request, you can safely ignore this email.
+We received a request to reset your password for your Yapplr account. If you didn't make this request, you can safely ignore this email.
 
 To reset your password, visit this link:
 {resetUrl}
@@ -137,6 +137,6 @@ This link will expire in 1 hour for security reasons.
 If you have any questions, please contact our support team.
 
 Best regards,
-The Postr Team";
+The Yapplr Team";
     }
 }

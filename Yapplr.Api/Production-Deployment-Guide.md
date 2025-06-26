@@ -209,7 +209,7 @@ builder.Services.AddAWSService<IAmazonCloudWatchLogs>();
 ### 6.3 Health Checks
 ```csharp
 builder.Services.AddHealthChecks()
-    .AddDbContext<PostrDbContext>()
+    .AddDbContext<YapplrDbContext>()
     .AddCheck<EmailHealthCheck>("email");
 ```
 

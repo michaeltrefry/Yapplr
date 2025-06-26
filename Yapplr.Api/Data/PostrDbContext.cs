@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using Postr.Api.Models;
+using Yapplr.Api.Models;
 
-namespace Postr.Api.Data;
+namespace Yapplr.Api.Data;
 
-public class PostrDbContext : DbContext
+public class YapplrDbContext : DbContext
 {
-    public PostrDbContext(DbContextOptions<PostrDbContext> options) : base(options)
+    public YapplrDbContext(DbContextOptions<YapplrDbContext> options) : base(options)
     {
     }
     

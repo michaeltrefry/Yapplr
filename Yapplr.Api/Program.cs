@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Amazon.SimpleEmail;
-using Postr.Api.Data;
-using Postr.Api.Services;
-using Postr.Api.Endpoints;
+using Yapplr.Api.Data;
+using Yapplr.Api.Services;
+using Yapplr.Api.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 
 // Add Entity Framework
-builder.Services.AddDbContext<PostrDbContext>(options =>
+builder.Services.AddDbContext<YapplrDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add JWT Authentication

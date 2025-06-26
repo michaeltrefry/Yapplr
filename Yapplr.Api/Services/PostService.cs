@@ -1,16 +1,16 @@
 using Microsoft.EntityFrameworkCore;
-using Postr.Api.Data;
-using Postr.Api.DTOs;
-using Postr.Api.Models;
+using Yapplr.Api.Data;
+using Yapplr.Api.DTOs;
+using Yapplr.Api.Models;
 
-namespace Postr.Api.Services;
+namespace Yapplr.Api.Services;
 
 public class PostService : IPostService
 {
-    private readonly PostrDbContext _context;
+    private readonly YapplrDbContext _context;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public PostService(PostrDbContext context, IHttpContextAccessor httpContextAccessor)
+    public PostService(YapplrDbContext context, IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
         _httpContextAccessor = httpContextAccessor;

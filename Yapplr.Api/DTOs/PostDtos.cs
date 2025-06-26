@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using Postr.Api.Models;
+using Yapplr.Api.Models;
 
-namespace Postr.Api.DTOs;
+namespace Yapplr.Api.DTOs;
 
 public record CreatePostDto(
     [Required][StringLength(256, MinimumLength = 1)] string Content,
