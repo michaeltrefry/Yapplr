@@ -169,6 +169,10 @@ export interface CanMessageResponse {
   canMessage: boolean;
 }
 
+export interface UnreadCountResponse {
+  unreadCount: number;
+}
+
 export interface UpdateUserData {
   bio?: string;
   birthday?: string;

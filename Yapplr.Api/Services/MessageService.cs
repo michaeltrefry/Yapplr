@@ -386,4 +386,23 @@ public class MessageService : IMessageService
             user.CreatedAt
         );
     }
+
+    public async Task<int> GetTotalUnreadMessageCountAsync(int userId)
+    {
+        // Get all conversations where the user is a participant
+        var conversationIds = await _context.ConversationParticipants
+            .Where(cp => cp.UserId == userId)
+            .Select(cp => cp.ConversationId)
+            .ToListAsync();
+
+        var totalUnreadCount = 0;
+
+        // Calculate unread count for each conversation
+        foreach (var conversationId in conversationIds)
+        {
+            totalUnreadCount += await GetUnreadMessageCountAsync(conversationId, userId);
+        }
+
+        return totalUnreadCount;
+    }
 }

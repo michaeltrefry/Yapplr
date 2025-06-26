@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { messageApi, imageApi } from '@/lib/api';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { Send, Image as ImageIcon, X } from 'lucide-react';
 import Image from 'next/image';
 
@@ -18,6 +19,7 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
+  const { refreshUnreadCount } = useNotifications();
 
   const uploadImageMutation = useMutation({
     mutationFn: imageApi.uploadImage,
@@ -44,6 +46,9 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
       queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
+
+      // Refresh unread count for the recipient
+      refreshUnreadCount();
     },
   });
 

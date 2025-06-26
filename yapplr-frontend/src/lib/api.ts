@@ -22,6 +22,7 @@ import type {
   CreateMessageData,
   SendMessageData,
   CanMessageResponse,
+  UnreadCountResponse,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -253,6 +254,11 @@ export const messageApi = {
 
   getOrCreateConversation: async (userId: number): Promise<Conversation> => {
     const response = await api.post(`/messages/conversations/with/${userId}`);
+    return response.data;
+  },
+
+  getUnreadCount: async (): Promise<UnreadCountResponse> => {
+    const response = await api.get('/messages/unread-count');
     return response.data;
   },
 };

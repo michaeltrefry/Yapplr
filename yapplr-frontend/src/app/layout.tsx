@@ -4,6 +4,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -28,7 +29,9 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased bg-white`}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            {children}
+            <NotificationProvider>
+              {children}
+            </NotificationProvider>
           </AuthProvider>
         </QueryClientProvider>
       </body>

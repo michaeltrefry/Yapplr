@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { Home, User, Search, LogOut, Settings, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -8,6 +9,7 @@ import FollowingList from './FollowingList';
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
+  const { unreadMessageCount } = useNotifications();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -44,9 +46,16 @@ export default function Sidebar() {
 
           <Link
             href="/messages"
-            className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors relative"
           >
-            <MessageCircle className="w-6 h-6" />
+            <div className="relative">
+              <MessageCircle className="w-6 h-6" />
+              {unreadMessageCount > 0 && (
+                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                </div>
+              )}
+            </div>
             <span className="text-lg hidden lg:block">Messages</span>
           </Link>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, use } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -19,6 +20,7 @@ interface ConversationPageProps {
 export default function ConversationPage({ params }: ConversationPageProps) {
   const { conversationId } = use(params);
   const { user, isLoading } = useAuth();
+  const { refreshUnreadCount } = useNotifications();
   const router = useRouter();
 
   useEffect(() => {
@@ -36,9 +38,12 @@ export default function ConversationPage({ params }: ConversationPageProps) {
   // Mark conversation as read when user opens it
   useEffect(() => {
     if (conversation && user) {
-      messageApi.markConversationAsRead(conversation.id);
+      messageApi.markConversationAsRead(conversation.id).then(() => {
+        // Refresh unread count after marking as read
+        refreshUnreadCount();
+      });
     }
-  }, [conversation, user]);
+  }, [conversation, user, refreshUnreadCount]);
 
   if (isLoading || conversationLoading) {
     return (

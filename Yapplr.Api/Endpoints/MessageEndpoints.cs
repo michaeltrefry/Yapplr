@@ -111,21 +111,34 @@ public static class MessageEndpoints
         messages.MapPost("/conversations/with/{userId:int}", [Authorize] async (int userId, ClaimsPrincipal user, IMessageService messageService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            
+
             // Check if user can message the other user
             if (!await messageService.CanUserMessageAsync(currentUserId, userId))
             {
                 return Results.BadRequest(new { message = "Cannot message this user" });
             }
-            
+
             var conversation = await messageService.GetOrCreateConversationAsync(currentUserId, userId);
-            
+
             return conversation == null ? Results.BadRequest() : Results.Ok(conversation);
         })
         .WithName("GetOrCreateConversation")
         .WithSummary("Get or create conversation with another user")
         .Produces<ConversationDto>(200)
         .Produces(400)
+        .Produces(401);
+
+        // Get total unread message count
+        messages.MapGet("/unread-count", [Authorize] async (ClaimsPrincipal user, IMessageService messageService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var unreadCount = await messageService.GetTotalUnreadMessageCountAsync(userId);
+
+            return Results.Ok(new { unreadCount });
+        })
+        .WithName("GetUnreadMessageCount")
+        .WithSummary("Get total unread message count for user")
+        .Produces(200)
         .Produces(401);
     }
 }

@@ -148,6 +148,7 @@ The frontend will be available at `http://localhost:3000`
 - **Blocking Integration**: Blocked users cannot send messages to each other
 - **Message Composer**: Rich message input with photo upload and character limits
 - **Unread Indicators**: Visual unread message counts on conversation list
+- **Sidebar Notifications**: Red badge on Messages link showing total count of conversations with unread messages
 
 ## 🔧 Development
 
@@ -222,6 +223,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `POST /api/messages/conversations/{id}/read` - Mark conversation as read
 - `GET /api/messages/can-message/{userId}` - Check if current user can message another user
 - `POST /api/messages/conversations/with/{userId}` - Get or create conversation with user
+- `GET /api/messages/unread-count` - Get total count of unread messages across all conversations
 
 ## 🔒 Security Features
 

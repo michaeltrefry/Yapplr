@@ -12,4 +12,5 @@ public interface IMessageService
     Task<bool> MarkConversationAsReadAsync(int conversationId, int userId);
     Task<bool> CanUserMessageAsync(int senderId, int recipientId);
     Task<ConversationDto?> GetOrCreateConversationAsync(int userId1, int userId2);
+    Task<int> GetTotalUnreadMessageCountAsync(int userId);
 }
