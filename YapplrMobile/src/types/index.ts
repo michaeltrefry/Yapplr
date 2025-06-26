@@ -100,6 +100,26 @@ export interface ConversationListItem {
   unreadCount: number;
 }
 
+export interface Conversation {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  participants: User[];
+  lastMessage?: Message;
+  unreadCount: number;
+}
+
+export interface CanMessageResponse {
+  canMessage: boolean;
+  reason?: string;
+}
+
+export interface SendMessageData {
+  conversationId: number;
+  content: string;
+  imageFileName?: string;
+}
+
 export interface ImageUploadResponse {
   fileName: string;
   imageUrl: string;
@@ -125,6 +145,10 @@ export interface YapplrApi {
   };
   messages: {
     getConversations: () => Promise<ConversationListItem[]>;
+    canMessage: (userId: number) => Promise<CanMessageResponse>;
+    getOrCreateConversation: (userId: number) => Promise<Conversation>;
+    getMessages: (conversationId: number, page: number, limit: number) => Promise<Message[]>;
+    sendMessageToConversation: (data: SendMessageData) => Promise<Message>;
   };
   images: {
     uploadImage: (uri: string, fileName: string, type: string) => Promise<ImageUploadResponse>;

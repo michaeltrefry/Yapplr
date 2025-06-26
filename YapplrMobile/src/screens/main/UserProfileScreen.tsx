@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,9 @@ import {
   FlatList,
   RefreshControl,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,6 +23,9 @@ type UserProfileScreenProps = StackScreenProps<RootStackParamList, 'UserProfile'
 export default function UserProfileScreen({ route, navigation }: UserProfileScreenProps) {
   const { username } = route.params;
   const { api, user: currentUser } = useAuth();
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+
+  const isOwnProfile = currentUser?.username === username;
 
   const {
     data: profile,
@@ -46,6 +50,14 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     retry: 2,
   });
 
+  // Check if current user can message this user
+  const { data: canMessageData } = useQuery({
+    queryKey: ['canMessage', profile?.id],
+    queryFn: () => api.messages.canMessage(profile!.id),
+    enabled: !!profile?.id && !isOwnProfile,
+    retry: 1,
+  });
+
   const handleLikePost = async (postId: number) => {
     try {
       await api.posts.likePost(postId);
@@ -66,6 +78,31 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
 
   const onRefresh = async () => {
     await Promise.all([refetchProfile(), refetchTimeline()]);
+  };
+
+  const handleStartConversation = async () => {
+    if (!profile) return;
+
+    setIsCreatingConversation(true);
+    try {
+      const conversation = await api.messages.getOrCreateConversation(profile.id);
+      navigation.navigate('Conversation', {
+        conversationId: conversation.id,
+        otherUser: {
+          id: profile.id,
+          username: profile.username,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+      Alert.alert(
+        'Error',
+        'Failed to start conversation. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsCreatingConversation(false);
+    }
   };
 
   const handleUserPress = (username: string) => {
@@ -118,8 +155,6 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     );
   }
 
-  const isOwnProfile = currentUser?.username === username;
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -167,19 +202,42 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
             </View>
 
             {!isOwnProfile && (
-              <TouchableOpacity 
-                style={[
-                  styles.followButton,
-                  profile.isFollowedByCurrentUser && styles.followingButton
-                ]}
-              >
-                <Text style={[
-                  styles.followButtonText,
-                  profile.isFollowedByCurrentUser && styles.followingButtonText
-                ]}>
-                  {profile.isFollowedByCurrentUser ? 'Following' : 'Follow'}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    styles.followButton,
+                    profile.isFollowedByCurrentUser && styles.followingButton
+                  ]}
+                >
+                  <Text style={[
+                    styles.actionButtonText,
+                    styles.followButtonText,
+                    profile.isFollowedByCurrentUser && styles.followingButtonText
+                  ]}>
+                    {profile.isFollowedByCurrentUser ? 'Following' : 'Follow'}
+                  </Text>
+                </TouchableOpacity>
+
+                {canMessageData?.canMessage && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.messageButton]}
+                    onPress={handleStartConversation}
+                    disabled={isCreatingConversation}
+                  >
+                    {isCreatingConversation ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="chatbubble-outline" size={16} color="#fff" style={styles.messageIcon} />
+                        <Text style={[styles.actionButtonText, styles.messageButtonText]}>
+                          Message
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
 
             <View style={styles.divider} />
@@ -278,10 +336,6 @@ const styles = StyleSheet.create({
   },
   followButton: {
     backgroundColor: '#3B82F6',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 24,
-    marginBottom: 16,
   },
   followingButton: {
     backgroundColor: '#E5E7EB',
@@ -337,5 +391,35 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flexGrow: 1,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  actionButtonText: {
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  messageButton: {
+    backgroundColor: '#10B981',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  messageButtonText: {
+    color: '#fff',
+  },
+  messageIcon: {
+    marginRight: 6,
   },
 });

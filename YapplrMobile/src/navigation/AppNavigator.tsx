@@ -11,12 +11,17 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import HomeScreen from '../screens/main/HomeScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import UserProfileScreen from '../screens/main/UserProfileScreen';
+import ConversationScreen from '../screens/main/ConversationScreen';
 import MessagesScreen from '../screens/main/MessagesScreen';
 import SearchScreen from '../screens/main/SearchScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
   UserProfile: { username: string };
+  Conversation: {
+    conversationId: number;
+    otherUser: { id: number; username: string }
+  };
 };
 
 export type AuthStackParamList = {
@@ -82,6 +87,11 @@ function MainStack() {
       <Stack.Screen
         name="UserProfile"
         component={UserProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Conversation"
+        component={ConversationScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

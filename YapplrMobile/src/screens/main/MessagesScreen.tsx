@@ -8,10 +8,14 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { ConversationListItem } from '../../types';
+import { RootStackParamList } from '../../navigation/AppNavigator';
 
-export default function MessagesScreen() {
+type MessagesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MainTabs'>;
+
+export default function MessagesScreen({ navigation }: { navigation: MessagesScreenNavigationProp }) {
   const { api, user } = useAuth();
 
   const { data: conversations, isLoading } = useQuery({
@@ -21,8 +25,22 @@ export default function MessagesScreen() {
     retry: 2,
   });
 
+  const handleConversationPress = (item: ConversationListItem) => {
+    navigation.navigate('Conversation', {
+      conversationId: item.id,
+      otherUser: {
+        id: item.otherParticipant.id,
+        username: item.otherParticipant.username,
+      },
+    });
+  };
+
   const renderConversationItem = ({ item }: { item: ConversationListItem }) => (
-    <TouchableOpacity style={styles.conversationItem}>
+    <TouchableOpacity
+      style={styles.conversationItem}
+      onPress={() => handleConversationPress(item)}
+      activeOpacity={0.7}
+    >
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>
           {item.otherParticipant.username.charAt(0).toUpperCase()}
@@ -43,7 +61,7 @@ export default function MessagesScreen() {
           </Text>
         )}
         <Text style={styles.timestamp}>
-          {item.lastMessage 
+          {item.lastMessage
             ? new Date(item.lastMessage.createdAt).toLocaleDateString()
             : new Date(item.createdAt).toLocaleDateString()
           }

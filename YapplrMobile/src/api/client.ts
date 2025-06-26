@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, CreatePostData, Post, ImageUploadResponse } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, CreatePostData, Post, ImageUploadResponse } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -128,6 +128,26 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
     messages: {
       getConversations: async (): Promise<ConversationListItem[]> => {
         const response = await client.get('/api/messages/conversations');
+        return response.data;
+      },
+
+      canMessage: async (userId: number): Promise<CanMessageResponse> => {
+        const response = await client.get(`/api/messages/can-message/${userId}`);
+        return response.data;
+      },
+
+      getOrCreateConversation: async (userId: number): Promise<Conversation> => {
+        const response = await client.post(`/api/messages/conversations/with/${userId}`);
+        return response.data;
+      },
+
+      getMessages: async (conversationId: number, page: number, limit: number): Promise<Message[]> => {
+        const response = await client.get(`/api/messages/conversations/${conversationId}/messages?page=${page}&pageSize=${limit}`);
+        return response.data;
+      },
+
+      sendMessageToConversation: async (data: SendMessageData): Promise<Message> => {
+        const response = await client.post('/api/messages/conversation', data);
         return response.data;
       },
     },
