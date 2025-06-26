@@ -276,6 +276,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 <p className="text-gray-600 italic mb-3">&ldquo;{profile.tagline}&rdquo;</p>
               )}
 
+              {/* Birthday */}
+              {profile.birthday && (
+                <p className="text-gray-600 text-sm mb-3">
+                  🎂 Born {formatDate(profile.birthday)}
+                </p>
+              )}
+
               {/* Follow counts */}
               <div className="flex items-center gap-4 text-sm mb-3">
                 <span className="text-gray-600">

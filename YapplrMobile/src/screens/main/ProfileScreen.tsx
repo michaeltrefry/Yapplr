@@ -10,10 +10,16 @@ import {
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
+import { RootStackParamList } from '../../navigation/AppNavigator';
+
+type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 export default function ProfileScreen() {
   const { user, logout, api } = useAuth();
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
 
   // Fetch full profile data for current user
   const { data: profile, isLoading, error } = useQuery({
@@ -87,11 +93,24 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        <Text style={styles.username}>@{profile.username}</Text>
+        <View style={styles.usernameContainer}>
+          <Text style={styles.username}>@{profile.username}</Text>
+          {profile.pronouns && (
+            <Text style={styles.pronouns}> ({profile.pronouns})</Text>
+          )}
+        </View>
         <Text style={styles.email}>{user.email}</Text>
 
         {profile.bio && (
           <Text style={styles.bio}>{profile.bio}</Text>
+        )}
+
+        {profile.tagline && (
+          <Text style={styles.tagline}>"{profile.tagline}"</Text>
+        )}
+
+        {profile.birthday && (
+          <Text style={styles.birthday}>🎂 Born {new Date(profile.birthday).toLocaleDateString()}</Text>
         )}
 
         <View style={styles.statsContainer}>
@@ -111,7 +130,10 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.menuSection}>
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('EditProfile')}
+        >
           <Ionicons name="person-outline" size={20} color="#6B7280" />
           <Text style={styles.menuText}>Edit Profile</Text>
           <Ionicons name="chevron-forward" size={20} color="#6B7280" />
@@ -171,11 +193,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 32,
   },
+  usernameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
   username: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1F2937',
-    marginBottom: 4,
   },
   email: {
     fontSize: 16,
@@ -187,7 +214,25 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 24,
+    marginBottom: 12,
+  },
+  pronouns: {
+    fontSize: 18,
+    color: '#6B7280',
+    fontWeight: 'normal',
+  },
+  tagline: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  birthday: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   statsContainer: {
     flexDirection: 'row',

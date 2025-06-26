@@ -235,10 +235,23 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
               </Text>
             </View>
             
-            <Text style={styles.username}>@{profile.username}</Text>
-            
+            <View style={styles.usernameContainer}>
+              <Text style={styles.username}>@{profile.username}</Text>
+              {profile.pronouns && (
+                <Text style={styles.pronouns}> ({profile.pronouns})</Text>
+              )}
+            </View>
+
             {profile.bio && (
               <Text style={styles.bio}>{profile.bio}</Text>
+            )}
+
+            {profile.tagline && (
+              <Text style={styles.tagline}>"{profile.tagline}"</Text>
+            )}
+
+            {profile.birthday && (
+              <Text style={styles.birthday}>🎂 Born {new Date(profile.birthday).toLocaleDateString()}</Text>
             )}
 
             <View style={styles.statsContainer}>
@@ -362,17 +375,40 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 32,
   },
+  usernameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
   username: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1F2937',
-    marginBottom: 8,
   },
   bio: {
     fontSize: 16,
     color: '#1F2937',
     textAlign: 'center',
     lineHeight: 24,
+    marginBottom: 12,
+  },
+  pronouns: {
+    fontSize: 18,
+    color: '#6B7280',
+    fontWeight: 'normal',
+  },
+  tagline: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  birthday: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
     marginBottom: 16,
   },
   statsContainer: {

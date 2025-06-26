@@ -11,6 +11,7 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import HomeScreen from '../screens/main/HomeScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import UserProfileScreen from '../screens/main/UserProfileScreen';
+import EditProfileScreen from '../screens/main/EditProfileScreen';
 import ConversationScreen from '../screens/main/ConversationScreen';
 import MessagesScreen from '../screens/main/MessagesScreen';
 import SearchScreen from '../screens/main/SearchScreen';
@@ -18,6 +19,7 @@ import SearchScreen from '../screens/main/SearchScreen';
 export type RootStackParamList = {
   MainTabs: undefined;
   UserProfile: { username: string };
+  EditProfile: undefined;
   Conversation: {
     conversationId: number;
     otherUser: { id: number; username: string }
@@ -87,6 +89,11 @@ function MainStack() {
       <Stack.Screen
         name="UserProfile"
         component={UserProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

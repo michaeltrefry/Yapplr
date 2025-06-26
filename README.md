@@ -10,7 +10,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Comments**: Comment on yaps with expandable comment sections
 - **Likes**: Like and unlike yaps with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates
-- **User Profiles**: Complete profile management with bio, pronouns, tagline, and profile images
+- **User Profiles**: Complete profile management with bio, pronouns, tagline, birthday, and profile images
+- **Profile Editing**: Edit profile information including bio, pronouns, tagline, and birthday with real-time updates
 - **Yap Sharing**: Share yaps with social media integration and direct link copying
 - **Content Management**: Delete your own yaps, comments, and reyaps with confirmation dialogs
 - **User Blocking**: Block/unblock users with automatic unfollowing and content filtering
@@ -64,9 +65,10 @@ A complete Twitter-like social media platform built with modern web technologies
 - **React Native** - Cross-platform mobile development
 - **Expo** - Development platform and tooling
 - **TypeScript** - Full type safety
-- **React Navigation** - Navigation library
+- **React Navigation** - Navigation library with stack navigation
 - **TanStack Query** - Data fetching (shared with web)
 - **AsyncStorage** - Local data persistence
+- **Profile Management** - Complete profile editing functionality
 - **Shared Package** - 70-80% code reuse with web app
 
 ## 🏃‍♂️ Quick Start
@@ -132,6 +134,12 @@ npx expo start
 
 Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulator / `a` for Android emulator.
 
+#### Mobile App Features
+- **Complete Profile Management**: Edit bio, pronouns, tagline, and birthday
+- **Profile Information Display**: View all profile information including pronouns next to username
+- **Navigation**: Stack-based navigation with proper screen transitions
+- **API Integration**: Full integration with backend API for profile updates
+
 ## 📱 Key Features in Detail
 
 ### Timeline & Reyaps
@@ -161,6 +169,8 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Settings Page**: Dedicated settings interface with organized sections
 - **Blocklist Management**: View and unblock previously blocked users
 - **Privacy Controls**: Comprehensive privacy system with relationship-based filtering
+- **Profile Editing**: Complete profile management with bio, pronouns, tagline, and birthday
+- **Profile Display**: Enhanced profile information display with pronouns shown inline with username
 
 ### Image Management
 - **Yap Images**: Upload images with yaps (server-side storage)
@@ -234,6 +244,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 
 ### User Management
 - `GET /api/users/{username}` - Get user profile
+- `PUT /api/users/me` - Update current user's profile (bio, pronouns, tagline, birthday)
 - `POST /api/users/{userId}/follow` - Follow user
 - `DELETE /api/users/{userId}/follow` - Unfollow user
 - `GET /api/users/me/following/online-status` - Get following users with their online status
