@@ -1,8 +1,8 @@
-# Postr Production Deployment Guide
+# Yapplr Production Deployment Guide
 
 ## Overview
 
-This guide covers deploying your Postr application with AWS SES email functionality to production.
+This guide covers deploying your Yapplr application with AWS SES email functionality to production.
 
 ## Prerequisites
 
@@ -41,18 +41,18 @@ _dmarc.yourdomain.com. TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain.
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=your-prod-db;Database=Postr;Username=postr_user;Password=secure_password"
+    "DefaultConnection": "Host=your-prod-db;Database=yapplr;Username=yapplr_user;Password=secure_password"
   },
   "JwtSettings": {
     "SecretKey": "your-production-jwt-secret-key-minimum-32-characters",
-    "Issuer": "Postr.Api",
-    "Audience": "Postr.Client",
+    "Issuer": "Yapplr.Api",
+    "Audience": "Yapplr.Client",
     "ExpirationInMinutes": 60
   },
   "AwsSesSettings": {
     "Region": "us-east-1",
     "FromEmail": "noreply@yourdomain.com",
-    "FromName": "Postr"
+    "FromName": "Yapplr"
   },
   "EmailProvider": "AwsSes",
   "Logging": {
@@ -72,7 +72,7 @@ export AWS_SECRET_ACCESS_KEY=your_secret_key
 export AWS_DEFAULT_REGION=us-east-1
 
 # Database
-export ConnectionStrings__DefaultConnection="Host=prod-db;Database=Postr;Username=user;Password=pass"
+export ConnectionStrings__DefaultConnection="Host=prod-db;Database=yapplr;Username=user;Password=pass"
 
 # JWT
 export JwtSettings__SecretKey="your-production-secret-key"
@@ -86,10 +86,10 @@ export AwsSesSettings__FromEmail="noreply@yourdomain.com"
 ### 3.1 Production Database Setup
 ```bash
 # Create production database
-createdb -h your-db-host -U postgres Postr
+createdb -h your-db-host -U postgres yapplr
 
 # Run migrations
-dotnet ef database update --connection "Host=your-db;Database=Postr;Username=user;Password=pass"
+dotnet ef database update --connection "Host=your-db;Database=yapplr;Username=user;Password=pass"
 ```
 
 ### 3.2 Database Security
@@ -109,43 +109,43 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
-COPY ["Postr.Api/Postr.Api.csproj", "Postr.Api/"]
-RUN dotnet restore "Postr.Api/Postr.Api.csproj"
+COPY ["Yapplr.Api/Yapplr.Api.csproj", "Yapplr.Api/"]
+RUN dotnet restore "Yapplr.Api/Yapplr.Api.csproj"
 COPY . .
-WORKDIR "/src/Postr.Api"
-RUN dotnet build "Postr.Api.csproj" -c Release -o /app/build
+WORKDIR "/src/Yapplr.Api"
+RUN dotnet build "Yapplr.Api.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "Postr.Api.csproj" -c Release -o /app/publish
+RUN dotnet publish "Yapplr.Api.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Postr.Api.dll"]
+ENTRYPOINT ["dotnet", "Yapplr.Api.dll"]
 ```
 
 ### 4.2 Docker Compose
 ```yaml
 version: '3.8'
 services:
-  postr-api:
+  yapplr-api:
     build: .
     ports:
       - "80:80"
       - "443:443"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Host=db;Database=Postr;Username=postr;Password=password
+      - ConnectionStrings__DefaultConnection=Host=db;Database=yapplr;Username=yapplr;Password=password
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     depends_on:
       - db
-    
+
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: Postr
-      POSTGRES_USER: postr
+      POSTGRES_DB: yapplr
+      POSTGRES_USER: yapplr
       POSTGRES_PASSWORD: password
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -292,4 +292,4 @@ dotnet-counters monitor --process-id <pid>
 - Horizontal scaling
 - Caching strategies
 
-This guide ensures your Postr application is production-ready with reliable email functionality!
+This guide ensures your Yapplr application is production-ready with reliable email functionality!

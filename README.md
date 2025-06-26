@@ -62,7 +62,7 @@ cd Yapplr.Api
 # Install dependencies
 dotnet restore
 
-# Setup database (creates postr_db and runs migrations)
+# Setup database (creates yapplr_db and runs migrations)
 ./setup-db.sh
 
 # Start the API
@@ -132,7 +132,7 @@ dotnet ef database update
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Database=postr_db;Username=postgres;Password=postgres"
+    "DefaultConnection": "Host=localhost;Database=yapplr_db;Username=postgres;Password=postgres"
   },
   "JwtSettings": {
     "SecretKey": "your-secret-key",

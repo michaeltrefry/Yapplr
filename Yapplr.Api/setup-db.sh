@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Setup script for Postr API database
+# Setup script for Yapplr API database
 
-echo "Setting up Postr database..."
+echo "Setting up Yapplr database..."
 
 # Check if PostgreSQL is running
 if ! pg_isready -h localhost -p 5432 > /dev/null 2>&1; then
@@ -13,8 +13,8 @@ if ! pg_isready -h localhost -p 5432 > /dev/null 2>&1; then
 fi
 
 # Create database if it doesn't exist
-echo "Creating database 'postr_db' if it doesn't exist..."
-createdb postr_db 2>/dev/null || echo "Database 'postr_db' already exists or could not be created."
+echo "Creating database 'yapplr_db' if it doesn't exist..."
+createdb yapplr_db 2>/dev/null || echo "Database 'yapplr_db' already exists or could not be created."
 
 # Run migrations
 echo "Running Entity Framework migrations..."

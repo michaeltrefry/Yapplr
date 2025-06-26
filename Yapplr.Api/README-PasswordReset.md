@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Postr API includes a comprehensive password reset feature that allows users to securely reset their passwords via email.
+The Yapplr API includes a comprehensive password reset feature that allows users to securely reset their passwords via email.
 
 ## Features
 
@@ -80,7 +80,7 @@ Configure SMTP settings in `appsettings.json`:
     "Username": "your-email@gmail.com",
     "Password": "your-app-password",
     "FromEmail": "your-email@gmail.com",
-    "FromName": "Postr"
+    "FromName": "Yapplr"
   }
 }
 ```

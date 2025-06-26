@@ -1,6 +1,6 @@
-# AWS SES Setup Guide for Postr
+# AWS SES Setup Guide for Yapplr
 
-This guide will help you set up Amazon Simple Email Service (SES) for sending password reset emails in your Postr application.
+This guide will help you set up Amazon Simple Email Service (SES) for sending password reset emails in your Yapplr application.
 
 ## Prerequisites
 
@@ -69,18 +69,18 @@ By default, SES is in **sandbox mode** and can only send to verified addresses.
 }
 ```
 
-4. Name it `PostrSESPolicy`
+4. Name it `YapplrSESPolicy`
 5. Click **Create policy**
 
 ### 2.2 Create IAM User
 1. Go to **Users** → **Create user**
-2. Username: `postr-ses-user`
+2. Username: `yapplr-ses-user`
 3. Select **Programmatic access**
-4. Attach the `PostrSESPolicy`
+4. Attach the `YapplrSESPolicy`
 5. Click **Create user**
 6. **Save the Access Key ID and Secret Access Key**
 
-## Step 3: Configure Postr Application
+## Step 3: Configure Yapplr Application
 
 ### 3.1 Update appsettings.json
 
@@ -89,7 +89,7 @@ By default, SES is in **sandbox mode** and can only send to verified addresses.
   "AwsSesSettings": {
     "Region": "us-east-1",
     "FromEmail": "noreply@yourdomain.com",
-    "FromName": "Postr",
+    "FromName": "Yapplr",
     "AccessKey": "YOUR_ACCESS_KEY_ID",
     "SecretKey": "YOUR_SECRET_ACCESS_KEY"
   },
@@ -114,7 +114,7 @@ Or use appsettings.Production.json:
   "AwsSesSettings": {
     "Region": "us-east-1",
     "FromEmail": "noreply@yourdomain.com",
-    "FromName": "Postr"
+    "FromName": "Yapplr"
   }
 }
 ```
@@ -192,4 +192,4 @@ For a typical social media app:
 
 - AWS SES Documentation: https://docs.aws.amazon.com/ses/
 - AWS Support: Available through AWS Console
-- Postr Support: Check application logs and error messages
+- Yapplr Support: Check application logs and error messages

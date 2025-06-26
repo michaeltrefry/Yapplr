@@ -48,7 +48,7 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
    Update the connection string in `appsettings.json` if needed:
    ```json
    "ConnectionStrings": {
-     "DefaultConnection": "Host=localhost;Database=postr_db;Username=postgres;Password=postgres"
+     "DefaultConnection": "Host=localhost;Database=yapplr_db;Username=postgres;Password=postgres"
    }
    ```
 
@@ -56,10 +56,15 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
    ```bash
    ./setup-db.sh
    ```
-   
+
+   **For existing users migrating from postr_db:**
+   ```bash
+   ./migrate-database.sh
+   ```
+
    Or manually:
    ```bash
-   createdb postr_db
+   createdb yapplr_db
    dotnet ef database update
    ```
 
@@ -159,6 +164,19 @@ Authorization: Bearer <your-jwt-token>
 - **Public**: Visible to everyone
 - **Followers**: Only visible to followers and the author
 - **Private**: Only visible to the author
+
+## Database Migration from Postr
+
+If you're upgrading from a previous version that used `postr_db`, you can migrate your database:
+
+```bash
+./migrate-database.sh
+```
+
+This script will:
+- Detect your existing `postr_db` database
+- Offer to rename it to `yapplr_db` (preserving all data)
+- Or create a fresh `yapplr_db` database
 
 ## Development
 
