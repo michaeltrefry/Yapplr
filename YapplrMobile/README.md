@@ -13,9 +13,10 @@ React Native mobile application for the Yapplr social media platform.
 - **React Native**: Cross-platform mobile development
 - **Expo**: Development platform and tooling
 - **React Navigation**: Navigation library
-- **TanStack Query**: Data fetching and caching
+- **Axios**: HTTP client for API communication
 - **AsyncStorage**: Local data persistence
 - **TypeScript**: Type safety and better development experience
+- **Expo Image Picker**: Camera and gallery integration
 
 ## 🚀 **Getting Started**
 
@@ -60,26 +61,40 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ Auto-logout on token expiry
 
 ### **Core Screens**
-- ✅ **Home**: Timeline with posts and reposts
+- ✅ **Home**: Timeline with posts, reposts, and images
 - ✅ **Search**: User search functionality
 - ✅ **Messages**: Conversation list with unread counts
 - ✅ **Profile**: User profile with logout
 
+### **Post Management**
+- ✅ **Create Posts**: Text and image post creation
+- ✅ **Image Upload**: Gallery picker integration
+- ✅ **Timeline Display**: Posts with images and interactions
+- ✅ **Like/Repost**: Social interaction features
+
+### **Image Functionality**
+- ✅ **Image Upload**: Select from device gallery
+- ✅ **Image Display**: Optimized loading in timeline
+- ✅ **Full-Screen Viewer**: Tap to expand with zoom
+- ✅ **Pinch to Zoom**: Native zoom gestures
+- ✅ **Loading States**: Smooth image loading experience
+
 ### **API Integration**
-- ✅ Shared API client with web app
+- ✅ Custom API client with error handling
 - ✅ Automatic token injection
-- ✅ Error handling and retry logic
+- ✅ Network error recovery
 - ✅ Real-time data updates
+- ✅ Image upload with progress tracking
 
 ## 🔧 **Configuration**
 
 ### **API Base URL**
-Update the API URL in `src/contexts/AuthContext.tsx`:
+Update the API URL in `src/api/client.ts`:
 ```typescript
-const API_BASE_URL = 'http://localhost:5161'; // Change to your API URL
+const API_BASE_URL = 'http://192.168.254.181:5161'; // Change to your API URL
 ```
 
-For production, use your deployed API URL.
+For production, use your deployed API URL. For development, use your local network IP address to allow mobile device access.
 
 ### **Development vs Production**
 - **Development**: Uses localhost API
@@ -90,6 +105,12 @@ For production, use your deployed API URL.
 ```
 YapplrMobile/
 ├── src/
+│   ├── api/
+│   │   └── client.ts                # API client configuration
+│   ├── components/
+│   │   ├── CreatePostModal.tsx      # Post creation with image upload
+│   │   ├── ImageViewer.tsx          # Full-screen image viewer
+│   │   └── PostCard.tsx             # Timeline post display
 │   ├── contexts/
 │   │   └── AuthContext.tsx          # Authentication state management
 │   ├── navigation/
@@ -99,48 +120,51 @@ YapplrMobile/
 │   │   │   ├── LoginScreen.tsx      # Login interface
 │   │   │   └── RegisterScreen.tsx   # Registration interface
 │   │   └── main/
-│   │       ├── HomeScreen.tsx       # Timeline/feed
+│   │       ├── HomeScreen.tsx       # Timeline/feed with posts
 │   │       ├── SearchScreen.tsx     # User search
 │   │       ├── MessagesScreen.tsx   # Conversations
 │   │       └── ProfileScreen.tsx    # User profile
+│   ├── types/
+│   │   └── index.ts                 # TypeScript type definitions
+│   ├── utils/
+│   │   └── networkTest.ts           # Network connectivity utilities
 │   └── LoadingScreen.tsx            # Loading state
 ├── App.tsx                          # Root component
 └── package.json
 ```
 
-## 🔄 **Shared Package Integration**
+## 🔄 **API Integration**
 
-The mobile app uses the `yapplr-shared` package for:
-- **API Clients**: Consistent API calls across platforms
-- **TypeScript Types**: Shared interfaces and enums
-- **Business Logic**: Common utilities and helpers
+The mobile app uses a custom API client for:
+- **HTTP Requests**: Axios-based client with interceptors
+- **Authentication**: Automatic token injection
+- **Error Handling**: Network error recovery and retry logic
+- **Image Upload**: Multipart form data support
 
-### **Updating Shared Code**
-When making changes to shared code:
-```bash
-cd yapplr-shared
-npm run build
-cd ../YapplrMobile
-# Restart the development server
-```
+### **Network Configuration**
+For development with physical devices:
+1. **Find your local IP**: Use `ipconfig` (Windows) or `ifconfig` (Mac/Linux)
+2. **Update API URL**: Change `localhost` to your network IP
+3. **Use tunnel mode**: Run `npx expo start --tunnel` for external access
 
 ## 🎯 **Next Steps**
 
 ### **Immediate Enhancements**
-1. **Post Creation**: Add camera integration and post composer
+1. **Camera Integration**: Add camera capture for posts
 2. **Push Notifications**: Real-time message and interaction alerts
-3. **Image Handling**: Photo upload and display optimization
-4. **Offline Support**: Cache posts for offline viewing
+3. **Comments System**: Add comment creation and display
+4. **User Profiles**: Enhanced profile viewing and editing
 
 ### **Advanced Features**
 1. **Real-time Updates**: WebSocket integration for live features
 2. **Deep Linking**: Direct links to posts and profiles
 3. **Share Extension**: Share to Yapplr from other apps
 4. **Haptic Feedback**: Enhanced user interactions
+5. **Offline Support**: Cache posts for offline viewing
 
 ### **Performance Optimizations**
-1. **Infinite Scroll**: Optimized FlatList implementation
-2. **Image Caching**: Fast image loading and caching
+1. **Infinite Scroll**: Optimized FlatList implementation (✅ Implemented)
+2. **Image Caching**: Enhanced image loading and caching
 3. **Memory Management**: Proper cleanup and optimization
 4. **Bundle Size**: Code splitting and optimization
 
@@ -173,15 +197,29 @@ Follow Expo's documentation for app store submission.
 
 ## 🤝 **Contributing**
 
-1. Make changes to shared code in `yapplr-shared/`
-2. Build shared package: `npm run build`
-3. Test changes in mobile app
-4. Ensure web app compatibility
-5. Submit pull request
+1. Make changes to mobile app code
+2. Test on both iOS and Android platforms
+3. Ensure API compatibility with backend
+4. Test image functionality thoroughly
+5. Submit pull request with detailed description
 
 ## 📞 **Support**
 
 For issues or questions:
 - Check Expo documentation
 - Review React Native guides
-- Check shared package integration
+- Test API connectivity with network tools
+- Verify image upload permissions and formats
+
+## 🎉 **Current Status**
+
+The Yapplr mobile app now has **full feature parity** with the web frontend for core functionality:
+
+- ✅ **Authentication**: Complete login/register flow
+- ✅ **Timeline**: Posts with images, likes, and reposts
+- ✅ **Post Creation**: Text and image posts with gallery picker
+- ✅ **Image Viewing**: Full-screen viewer with pinch-to-zoom
+- ✅ **Social Features**: Like, repost, and user interactions
+- ✅ **Real-time Updates**: Live timeline refresh
+
+The app is ready for production use and further feature development!
