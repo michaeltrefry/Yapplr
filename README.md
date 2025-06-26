@@ -10,6 +10,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Comments**: Comment on yaps with expandable comment sections
 - **Likes**: Like and unlike yaps with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates
+- **Following/Followers Lists**: View and navigate to profiles of users you follow and users who follow you
 - **User Profiles**: Complete profile management with bio, pronouns, tagline, birthday, and profile images
 - **Profile Editing**: Edit profile information including bio, pronouns, tagline, and birthday with real-time updates
 - **Yap Sharing**: Share yaps with social media integration and direct link copying
@@ -137,6 +138,7 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 #### Mobile App Features
 - **Complete Profile Management**: Edit bio, pronouns, tagline, and birthday
 - **Profile Information Display**: View all profile information including pronouns next to username
+- **Following/Followers Lists**: Tap Following or Followers count to view and navigate to user profiles
 - **Navigation**: Stack-based navigation with proper screen transitions
 - **API Integration**: Full integration with backend API for profile updates
 
@@ -158,10 +160,13 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 
 ### Follow System
 - **Real-time Counts**: Instant follower/following count updates
+- **Following/Followers Lists**: Clickable counts that show lists of users you follow and users who follow you
+- **Profile Navigation**: Tap any user in Following/Followers lists to navigate to their profile
 - **Privacy Integration**: Following relationships affect content visibility
 - **Profile Integration**: Follow/unfollow buttons on user profiles
 - **Timeline Impact**: Following users affects your timeline content
 - **Online Status**: Green circle indicators showing when followed users are currently online (active within 5 minutes)
+- **Mobile Support**: Full Following/Followers list functionality available in mobile app
 
 ### User Management & Privacy
 - **User Blocking**: Block users to prevent interactions and hide content
@@ -247,6 +252,8 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `PUT /api/users/me` - Update current user's profile (bio, pronouns, tagline, birthday)
 - `POST /api/users/{userId}/follow` - Follow user
 - `DELETE /api/users/{userId}/follow` - Unfollow user
+- `GET /api/users/me/following` - Get users that current user is following
+- `GET /api/users/me/followers` - Get users that are following the current user
 - `GET /api/users/me/following/online-status` - Get following users with their online status
 - `POST /api/users/me/profile-image` - Upload profile image
 

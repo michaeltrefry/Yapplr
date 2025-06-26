@@ -118,14 +118,22 @@ export default function ProfileScreen() {
             <Text style={styles.statNumber}>{profile.postCount}</Text>
             <Text style={styles.statLabel}>Posts</Text>
           </View>
-          <View style={styles.statItem}>
+          <TouchableOpacity
+            style={styles.statItem}
+            onPress={() => navigation.navigate('FollowingList')}
+            activeOpacity={0.7}
+          >
             <Text style={styles.statNumber}>{profile.followingCount}</Text>
             <Text style={styles.statLabel}>Following</Text>
-          </View>
-          <View style={styles.statItem}>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.statItem}
+            onPress={() => navigation.navigate('FollowersList')}
+            activeOpacity={0.7}
+          >
             <Text style={styles.statNumber}>{profile.followerCount}</Text>
             <Text style={styles.statLabel}>Followers</Text>
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
 

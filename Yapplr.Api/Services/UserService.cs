@@ -237,6 +237,28 @@ public class UserService : IUserService
         return following;
     }
 
+    public async Task<IEnumerable<UserDto>> GetFollowersAsync(int userId)
+    {
+        var followers = await _context.Follows
+            .Include(f => f.Follower)
+            .Where(f => f.FollowingId == userId)
+            .OrderBy(f => f.Follower.Username)
+            .Select(f => new UserDto(
+                f.Follower.Id,
+                f.Follower.Email,
+                f.Follower.Username,
+                f.Follower.Bio,
+                f.Follower.Birthday,
+                f.Follower.Pronouns,
+                f.Follower.Tagline,
+                f.Follower.ProfileImageFileName,
+                f.Follower.CreatedAt
+            ))
+            .ToListAsync();
+
+        return followers;
+    }
+
     public async Task<IEnumerable<UserWithOnlineStatusDto>> GetFollowingWithOnlineStatusAsync(int userId)
     {
         var onlineThreshold = DateTime.UtcNow.AddMinutes(-5); // Consider user online if seen within last 5 minutes

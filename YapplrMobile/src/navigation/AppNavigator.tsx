@@ -12,6 +12,8 @@ import HomeScreen from '../screens/main/HomeScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import UserProfileScreen from '../screens/main/UserProfileScreen';
 import EditProfileScreen from '../screens/main/EditProfileScreen';
+import FollowingListScreen from '../screens/main/FollowingListScreen';
+import FollowersListScreen from '../screens/main/FollowersListScreen';
 import ConversationScreen from '../screens/main/ConversationScreen';
 import MessagesScreen from '../screens/main/MessagesScreen';
 import SearchScreen from '../screens/main/SearchScreen';
@@ -20,6 +22,8 @@ export type RootStackParamList = {
   MainTabs: undefined;
   UserProfile: { username: string };
   EditProfile: undefined;
+  FollowingList: undefined;
+  FollowersList: undefined;
   Conversation: {
     conversationId: number;
     otherUser: { id: number; username: string }
@@ -94,6 +98,16 @@ function MainStack() {
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="FollowingList"
+        component={FollowingListScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="FollowersList"
+        component={FollowersListScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

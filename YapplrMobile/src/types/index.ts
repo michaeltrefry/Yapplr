@@ -148,6 +148,8 @@ export interface YapplrApi {
     searchUsers: (query: string) => Promise<User[]>;
     getUserProfile: (username: string) => Promise<UserProfile>;
     updateProfile: (data: { bio?: string; pronouns?: string; tagline?: string; birthday?: string }) => Promise<User>;
+    getFollowing: () => Promise<User[]>;
+    getFollowers: () => Promise<User[]>;
     follow: (userId: number) => Promise<FollowResponse>;
     unfollow: (userId: number) => Promise<FollowResponse>;
   };
