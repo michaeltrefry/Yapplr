@@ -7,7 +7,7 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
 - **User Management**: Registration, login, profile management with profile images
 - **Yaps**: Create text yaps (up to 256 characters) with optional images
 - **Yap Privacy**: Three privacy levels - Public, Followers-only, and Private yaps
-- **Social Features**: Like, comment, and reyap functionality
+- **Social Features**: Like, comment, and reyap functionality with full delete capabilities
 - **Follow System**: Users can follow/unfollow each other with follower/following counts
 - **User Profiles**: Username, bio, birthday, pronouns, tagline, and profile images
 - **Timeline**: Smart timeline with yaps and reyaps, privacy-aware filtering

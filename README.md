@@ -12,6 +12,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Follow System**: Follow/unfollow users with instant UI updates
 - **User Profiles**: Complete profile management with bio, pronouns, tagline, and profile images
 - **Yap Sharing**: Share yaps with social media integration and direct link copying
+- **Content Management**: Delete your own yaps, comments, and reyaps with confirmation dialogs
 
 ### Privacy & Security
 - **Yap Privacy**: Three levels - Public (everyone), Followers (followers only), Private (author only)
@@ -27,6 +28,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Clean UI**: 2015 Twitter-inspired design with modern touches
 - **Individual Yap Pages**: Dedicated URLs for each yap with shareable links
 - **Share Modal**: Popup sharing interface with social media integration (Twitter, Facebook, LinkedIn, Reddit)
+- **Content Control**: Delete buttons with confirmation dialogs for your own content
+- **Optimized Images**: Next.js Image component for better performance and loading
 
 ## 🛠 Tech Stack
 
@@ -163,6 +166,8 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `DELETE /api/posts/{id}/repost` - Remove reyap
 - `POST /api/posts/{id}/like` - Like a yap
 - `POST /api/posts/{id}/comments` - Add comment
+- `DELETE /api/posts/{id}` - Delete your own yap
+- `DELETE /api/posts/comments/{commentId}` - Delete your own comment
 
 ### User Management
 - `GET /api/users/{username}` - Get user profile

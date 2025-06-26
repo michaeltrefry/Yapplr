@@ -24,13 +24,13 @@ export default function UserAvatar({
   const sizeClass = sizeClasses[size];
   
   const getImageUrl = (fileName: string) => {
-    if (!fileName) return null;
+    if (!fileName) return '';
     return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161'}/api/images/${fileName}`;
   };
 
   const avatarContent = user.profileImageFileName ? (
     <img
-      src={getImageUrl(user.profileImageFileName)}
+      src={getImageUrl(user.profileImageFileName) || ''}
       alt={`${user.username}'s profile`}
       className={`${sizeClass} rounded-full object-cover ${className}`}
       onError={(e) => {

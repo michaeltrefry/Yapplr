@@ -12,7 +12,8 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Follow System**: Follow/unfollow users with real-time counts
 - **Yap Privacy**: Create yaps with Public, Followers, or Private visibility
 - **Social Features**: Yaps, likes, comments, reyaps with timeline integration
-- **Image Upload**: Upload and display images in yaps and profiles
+- **Content Management**: Delete your own yaps, comments, and reyaps with confirmation dialogs
+- **Image Upload**: Upload and display images in yaps and profiles with Next.js optimization
 - **Search**: Find users by username or bio
 
 ## Tech Stack
@@ -85,7 +86,7 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 
 ### Social Features
 - Create yaps (256 character limit) with privacy settings
-- Upload images to yaps and profiles
+- Upload images to yaps and profiles with Next.js Image optimization
 - Like and unlike yaps with real-time counts
 - Comment on yaps with expandable comment sections
 - Reyap functionality with timeline integration and attribution
@@ -93,6 +94,11 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - Privacy-aware timeline filtering
 - Mixed timeline showing both yaps and reyaps chronologically
 - Real-time interaction counts and follower statistics
+- **Content Management**: Delete your own content with confirmation dialogs:
+  - Delete yaps with trash icon (only visible on your posts)
+  - Delete comments with confirmation modal
+  - Delete reyaps (unrepost) with confirmation dialog
+  - All deletions include loading states and cache invalidation
 - Share yaps with popup modal featuring:
   - Copy direct link to yap functionality
   - Social media sharing to Twitter, Facebook, LinkedIn, and Reddit
@@ -110,13 +116,27 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 
 ### Key Components
 - **CreatePost** - Yap creation with privacy selector and image upload
-- **PostCard** - Yap display with privacy indicators and social actions
-- **TimelineItemCard** - Unified display for yaps and reyaps with attribution
+- **PostCard** - Yap display with privacy indicators, social actions, and delete functionality
+- **TimelineItemCard** - Unified display for yaps and reyaps with attribution and delete options
 - **UserAvatar** - Consistent user avatar display throughout the app
 - **Timeline** - Mixed timeline with yaps and reyaps, privacy-filtered
-- **CommentList** - Expandable comment sections
+- **CommentList** - Expandable comment sections with delete functionality for own comments
 - **ShareModal** - Yap sharing modal with social media integration and link copying
 - **Sidebar** - Navigation with responsive design
+
+## Code Quality
+
+### Linting & Standards
+- **ESLint**: Configured with Next.js and TypeScript rules
+- **Zero Errors**: All linting errors resolved
+- **Clean Code**: Unused imports and variables removed
+- **Type Safety**: Full TypeScript coverage
+
+### Performance Optimizations
+- **Next.js Image**: Optimized image loading with proper configuration
+- **React Query**: Efficient data fetching and caching
+- **Code Splitting**: Automatic route-based code splitting
+- **Optimistic Updates**: Immediate UI feedback for user actions
 
 ## API Integration
 
