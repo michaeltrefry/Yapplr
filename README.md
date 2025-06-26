@@ -15,6 +15,9 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Content Management**: Delete your own yaps, comments, and reyaps with confirmation dialogs
 - **User Blocking**: Block/unblock users with automatic unfollowing and content filtering
 - **Settings Management**: Dedicated settings page with blocklist management
+- **Private Messaging**: Send direct messages with text and photo attachments
+- **Message Conversations**: Organized conversation threads with read status tracking
+- **Messaging Privacy**: Blocked users cannot send messages to each other
 
 ### Privacy & Security
 - **Yap Privacy**: Three levels - Public (everyone), Followers (followers only), Private (author only)
@@ -34,6 +37,9 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Share Modal**: Popup sharing interface with social media integration (Twitter, Facebook, LinkedIn, Reddit)
 - **Content Control**: Delete buttons with confirmation dialogs for your own content
 - **Optimized Images**: Next.js Image component for better performance and loading
+- **Real-time Messaging**: Live message updates with automatic conversation refresh
+- **Message Attachments**: Send photos in messages with preview and validation
+- **Conversation Management**: Infinite scroll message history with unread count indicators
 
 ## 🛠 Tech Stack
 
@@ -52,6 +58,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **TanStack Query** - Data fetching and caching
 - **Axios** - HTTP client
 - **Lucide React** - Beautiful icons
+- **date-fns** - Date formatting and manipulation
 
 ## 🏃‍♂️ Quick Start
 
@@ -128,8 +135,19 @@ The frontend will be available at `http://localhost:3000`
 ### Image Management
 - **Yap Images**: Upload images with yaps (server-side storage)
 - **Profile Images**: Upload and manage profile pictures
+- **Message Images**: Send photo attachments in private messages
 - **Image Serving**: Optimized image serving with proper content types
 - **File Management**: Secure image upload with validation
+
+### Private Messaging System
+- **Direct Messages**: Send private messages between users with text and photo attachments
+- **Conversation Threads**: Organized message conversations with participant management
+- **Real-time Updates**: Live message updates with automatic refresh (5-second intervals)
+- **Read Status Tracking**: Mark conversations as read with timestamp tracking
+- **Infinite Scroll**: Load message history with pagination (25 messages per page)
+- **Blocking Integration**: Blocked users cannot send messages to each other
+- **Message Composer**: Rich message input with photo upload and character limits
+- **Unread Indicators**: Visual unread message counts on conversation list
 
 ## 🔧 Development
 
@@ -194,6 +212,16 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `DELETE /api/blocks/users/{userId}` - Unblock a user
 - `GET /api/blocks/users/{userId}/status` - Check if user is blocked
 - `GET /api/blocks` - Get list of blocked users
+
+### Private Messaging
+- `POST /api/messages` - Send new message (creates conversation if needed)
+- `POST /api/messages/conversation` - Send message to existing conversation
+- `GET /api/messages/conversations` - Get user's conversations (paginated, 25 per page)
+- `GET /api/messages/conversations/{id}` - Get specific conversation details
+- `GET /api/messages/conversations/{id}/messages` - Get messages in conversation (paginated, 25 per page)
+- `POST /api/messages/conversations/{id}/read` - Mark conversation as read
+- `GET /api/messages/can-message/{userId}` - Check if current user can message another user
+- `POST /api/messages/conversations/with/{userId}` - Get or create conversation with user
 
 ## 🔒 Security Features
 

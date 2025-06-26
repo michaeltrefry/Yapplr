@@ -115,6 +115,60 @@ export interface BlockStatusResponse {
   isBlocked: boolean;
 }
 
+// Messaging types
+export enum MessageStatusType {
+  Sent = 0,
+  Delivered = 1,
+  Read = 2
+}
+
+export interface Message {
+  id: number;
+  content: string;
+  imageUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  isEdited: boolean;
+  isDeleted: boolean;
+  conversationId: number;
+  sender: User;
+  status?: MessageStatusType;
+}
+
+export interface Conversation {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  participants: User[];
+  lastMessage?: Message;
+  unreadCount: number;
+}
+
+export interface ConversationListItem {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  otherParticipant: User;
+  lastMessage?: Message;
+  unreadCount: number;
+}
+
+export interface CreateMessageData {
+  recipientId: number;
+  content?: string;
+  imageFileName?: string;
+}
+
+export interface SendMessageData {
+  conversationId: number;
+  content?: string;
+  imageFileName?: string;
+}
+
+export interface CanMessageResponse {
+  canMessage: boolean;
+}
+
 export interface UpdateUserData {
   bio?: string;
   birthday?: string;

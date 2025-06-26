@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { Home, User, Search, LogOut, Settings } from 'lucide-react';
+import { Home, User, Search, LogOut, Settings, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import FollowingList from './FollowingList';
@@ -40,6 +40,14 @@ export default function Sidebar() {
           >
             <Search className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Search</span>
+          </Link>
+
+          <Link
+            href="/messages"
+            className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <MessageCircle className="w-6 h-6" />
+            <span className="text-lg hidden lg:block">Messages</span>
           </Link>
 
           <Link

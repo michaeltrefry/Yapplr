@@ -3,10 +3,10 @@
 import { use, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { userApi, postApi, blockApi } from '@/lib/api';
+import { userApi, postApi, blockApi, messageApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/utils';
-import { Calendar, Shield, ShieldOff } from 'lucide-react';
+import { Calendar, Shield, ShieldOff, MessageCircle } from 'lucide-react';
 
 import UserTimeline from '@/components/UserTimeline';
 import Sidebar from '@/components/Sidebar';
@@ -96,6 +96,21 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const handleConfirmBlock = () => {
     if (!profile) return;
     blockMutation.mutate(profile.id);
+  };
+
+  const messageMutation = useMutation({
+    mutationFn: (userId: number) => messageApi.getOrCreateConversation(userId),
+    onSuccess: (conversation) => {
+      router.push(`/messages/${conversation.id}`);
+    },
+    onError: () => {
+      alert('Unable to start conversation. User may have blocked you.');
+    },
+  });
+
+  const handleMessage = () => {
+    if (!profile) return;
+    messageMutation.mutate(profile.id);
   };
 
   if (profileLoading) {
@@ -200,6 +215,20 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                         : 'Follow'
                       }
                     </button>
+                    {!blockStatus?.isBlocked && (
+                      <button
+                        onClick={handleMessage}
+                        disabled={messageMutation.isPending}
+                        className="px-3 py-2 rounded-full font-semibold transition-colors disabled:opacity-50 bg-green-100 text-green-800 hover:bg-green-200 border border-green-300"
+                        title="Send message"
+                      >
+                        {messageMutation.isPending ? (
+                          '...'
+                        ) : (
+                          <MessageCircle className="w-4 h-4" />
+                        )}
+                      </button>
+                    )}
                     <button
                       onClick={handleBlockToggle}
                       disabled={blockMutation.isPending || unblockMutation.isPending}

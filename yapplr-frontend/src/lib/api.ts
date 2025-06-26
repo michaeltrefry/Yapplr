@@ -16,6 +16,12 @@ import type {
   TimelineItem,
   BlockResponse,
   BlockStatusResponse,
+  Message,
+  Conversation,
+  ConversationListItem,
+  CreateMessageData,
+  SendMessageData,
+  CanMessageResponse,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -206,6 +212,48 @@ export const imageApi = {
 
   deleteImage: async (fileName: string): Promise<void> => {
     await api.delete(`/images/${fileName}`);
+  },
+};
+
+// Messaging API
+export const messageApi = {
+  sendMessage: async (data: CreateMessageData): Promise<Message> => {
+    const response = await api.post('/messages', data);
+    return response.data;
+  },
+
+  sendMessageToConversation: async (data: SendMessageData): Promise<Message> => {
+    const response = await api.post('/messages/conversation', data);
+    return response.data;
+  },
+
+  getConversations: async (page = 1, pageSize = 25): Promise<ConversationListItem[]> => {
+    const response = await api.get(`/messages/conversations?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  getConversation: async (conversationId: number): Promise<Conversation> => {
+    const response = await api.get(`/messages/conversations/${conversationId}`);
+    return response.data;
+  },
+
+  getMessages: async (conversationId: number, page = 1, pageSize = 25): Promise<Message[]> => {
+    const response = await api.get(`/messages/conversations/${conversationId}/messages?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  markConversationAsRead: async (conversationId: number): Promise<void> => {
+    await api.post(`/messages/conversations/${conversationId}/read`);
+  },
+
+  canMessage: async (userId: number): Promise<CanMessageResponse> => {
+    const response = await api.get(`/messages/can-message/${userId}`);
+    return response.data;
+  },
+
+  getOrCreateConversation: async (userId: number): Promise<Conversation> => {
+    const response = await api.post(`/messages/conversations/with/${userId}`);
+    return response.data;
   },
 };
 

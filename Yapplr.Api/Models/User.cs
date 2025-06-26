@@ -48,4 +48,9 @@ public class User
     // Block relationships
     public ICollection<Block> BlockedUsers { get; set; } = new List<Block>(); // Users this user has blocked
     public ICollection<Block> BlockedByUsers { get; set; } = new List<Block>(); // Users who have blocked this user
+
+    // Messaging relationships
+    public ICollection<ConversationParticipant> ConversationParticipants { get; set; } = new List<ConversationParticipant>();
+    public ICollection<Message> SentMessages { get; set; } = new List<Message>();
+    public ICollection<MessageStatus> MessageStatuses { get; set; } = new List<MessageStatus>();
 }

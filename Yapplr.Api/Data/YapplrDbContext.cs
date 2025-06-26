@@ -17,6 +17,10 @@ public class YapplrDbContext : DbContext
     public DbSet<Follow> Follows { get; set; }
     public DbSet<Block> Blocks { get; set; }
     public DbSet<PasswordReset> PasswordResets { get; set; }
+    public DbSet<Conversation> Conversations { get; set; }
+    public DbSet<ConversationParticipant> ConversationParticipants { get; set; }
+    public DbSet<Message> Messages { get; set; }
+    public DbSet<MessageStatus> MessageStatuses { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -132,6 +136,60 @@ public class YapplrDbContext : DbContext
             entity.Property(e => e.Email).IsRequired();
             entity.HasOne(e => e.User)
                   .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Conversation configuration
+        modelBuilder.Entity<Conversation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+        });
+
+        // ConversationParticipant configuration
+        modelBuilder.Entity<ConversationParticipant>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ConversationId, e.UserId }).IsUnique(); // Prevent duplicate participants
+            entity.HasOne(e => e.Conversation)
+                  .WithMany(e => e.Participants)
+                  .HasForeignKey(e => e.ConversationId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                  .WithMany(e => e.ConversationParticipants)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Message configuration
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Content).HasMaxLength(1000);
+            entity.HasOne(e => e.Conversation)
+                  .WithMany(e => e.Messages)
+                  .HasForeignKey(e => e.ConversationId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Sender)
+                  .WithMany(e => e.SentMessages)
+                  .HasForeignKey(e => e.SenderId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // MessageStatus configuration
+        modelBuilder.Entity<MessageStatus>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.MessageId, e.UserId }).IsUnique(); // Prevent duplicate status per user per message
+            entity.Property(e => e.Status)
+                  .HasConversion<int>()
+                  .HasDefaultValue(MessageStatusType.Sent);
+            entity.HasOne(e => e.Message)
+                  .WithMany(e => e.MessageStatuses)
+                  .HasForeignKey(e => e.MessageId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                  .WithMany(e => e.MessageStatuses)
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
