@@ -60,6 +60,15 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Lucide React** - Beautiful icons
 - **date-fns** - Date formatting and manipulation
 
+### Mobile App (React Native + Expo)
+- **React Native** - Cross-platform mobile development
+- **Expo** - Development platform and tooling
+- **TypeScript** - Full type safety
+- **React Navigation** - Navigation library
+- **TanStack Query** - Data fetching (shared with web)
+- **AsyncStorage** - Local data persistence
+- **Shared Package** - 70-80% code reuse with web app
+
 ## 🏃‍♂️ Quick Start
 
 ### Prerequisites
@@ -102,6 +111,26 @@ npm run dev
 ```
 
 The frontend will be available at `http://localhost:3000`
+
+### 3. Mobile App Setup (Optional)
+
+```bash
+# Navigate to mobile app directory
+cd YapplrMobile
+
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Build shared package
+cd ../yapplr-shared
+npm install && npm run build
+
+# Start mobile development server
+cd ../YapplrMobile
+npx expo start
+```
+
+Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulator / `a` for Android emulator.
 
 ## 📱 Key Features in Detail
 
