@@ -1,7 +1,6 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Timeline from '@/components/Timeline';
 import PublicTimeline from '@/components/PublicTimeline';

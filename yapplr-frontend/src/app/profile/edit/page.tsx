@@ -5,7 +5,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { userApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Camera, X } from 'lucide-react';
+import { ArrowLeft, Camera } from 'lucide-react';
+import Image from 'next/image';
 import Sidebar from '@/components/Sidebar';
 import UserAvatar from '@/components/UserAvatar';
 import type { UpdateUserData } from '@/types';
@@ -196,9 +197,11 @@ export default function EditProfilePage() {
               <div className="flex items-center space-x-4 pb-6 border-b border-gray-200">
                 <div className="relative">
                   {profileImagePreview ? (
-                    <img
+                    <Image
                       src={profileImagePreview}
                       alt="Profile preview"
+                      width={80}
+                      height={80}
                       className="w-20 h-20 rounded-full object-cover"
                     />
                   ) : (

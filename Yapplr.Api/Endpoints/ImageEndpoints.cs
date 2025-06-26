@@ -70,7 +70,7 @@ public static class ImageEndpoints
         .Produces(200)
         .Produces(404);
 
-        images.MapDelete("/{fileName}", [Authorize] async (string fileName, IImageService imageService) =>
+        images.MapDelete("/{fileName}", [Authorize] (string fileName, IImageService imageService) =>
         {
             var success = imageService.DeleteImage(fileName);
             return success ? Results.NoContent() : Results.NotFound();

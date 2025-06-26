@@ -7,6 +7,7 @@ import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Users, Lock } fro
 import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import Image from 'next/image';
 import CommentList from './CommentList';
 import UserAvatar from './UserAvatar';
 import ShareModal from './ShareModal';
@@ -119,9 +120,11 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
             {/* Image */}
             {post.imageUrl && (
               <div className="mt-3">
-                <img
+                <Image
                   src={post.imageUrl}
                   alt="Post image"
+                  width={500}
+                  height={300}
                   className="max-w-full h-auto rounded-lg border border-gray-200"
                 />
               </div>

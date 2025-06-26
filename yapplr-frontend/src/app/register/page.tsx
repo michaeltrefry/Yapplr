@@ -37,7 +37,7 @@ export default function RegisterPage() {
     try {
       await register(formData);
       router.push(redirectUrl);
-    } catch (err) {
+    } catch {
       setError('Registration failed');
     } finally {
       setIsLoading(false);

@@ -4,7 +4,8 @@ import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { postApi, imageApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Image, X } from 'lucide-react';
+import { Image as ImageIcon, X } from 'lucide-react';
+import Image from 'next/image';
 import { PostPrivacy } from '@/types';
 
 export default function CreatePost() {
@@ -125,9 +126,11 @@ export default function CreatePost() {
             {/* Image Preview */}
             {imagePreview && (
               <div className="mt-3 relative">
-                <img
+                <Image
                   src={imagePreview}
                   alt="Preview"
+                  width={500}
+                  height={300}
                   className="max-w-full h-auto rounded-lg border border-gray-200"
                 />
                 <button
@@ -155,7 +158,7 @@ export default function CreatePost() {
                   title="Add image"
                   disabled={uploadImageMutation.isPending}
                 >
-                  <Image className="w-5 h-5" />
+                  <ImageIcon className="w-5 h-5" />
                 </button>
 
                 {/* Privacy Selector */}

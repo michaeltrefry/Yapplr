@@ -58,7 +58,7 @@ function ResetPasswordForm() {
       setTimeout(() => {
         router.push('/login');
       }, 2000);
-    } catch (err) {
+    } catch {
       setError('Invalid or expired reset token. Please request a new password reset.');
     } finally {
       setIsLoading(false);

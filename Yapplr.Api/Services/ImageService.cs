@@ -96,7 +96,7 @@ public class ImageService : IImageService
         {
             using var stream = file.OpenReadStream();
             var buffer = new byte[8];
-            stream.Read(buffer, 0, 8);
+            stream.ReadExactly(buffer, 0, 8);
             stream.Position = 0;
 
             // Check for common image file signatures
@@ -118,7 +118,7 @@ public class ImageService : IImageService
                 // Need to check for WEBP signature at offset 8
                 stream.Position = 8;
                 var webpBuffer = new byte[4];
-                stream.Read(webpBuffer, 0, 4);
+                stream.ReadExactly(webpBuffer, 0, 4);
                 return webpBuffer[0] == 0x57 && webpBuffer[1] == 0x45 && webpBuffer[2] == 0x42 && webpBuffer[3] == 0x50;
             }
 
