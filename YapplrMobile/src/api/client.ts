@@ -115,7 +115,7 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
     users: {
       searchUsers: async (query: string): Promise<User[]> => {
-        const response = await client.get(`/api/users/search?q=${encodeURIComponent(query)}`);
+        const response = await client.get(`/api/users/search/${encodeURIComponent(query)}`);
         return response.data;
       },
 
