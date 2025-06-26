@@ -37,6 +37,7 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .AsSplitQuery()
             .FirstAsync(p => p.Id == post.Id);
 
         return MapToPostDto(createdPost, userId);
@@ -49,6 +50,7 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == postId);
 
         return post == null ? null : MapToPostDto(post, currentUserId);
@@ -96,6 +98,7 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .AsSplitQuery()
             .Where(p =>
                 p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                 p.UserId == userId || // User's own posts are always visible
@@ -115,6 +118,7 @@ public class PostService : IPostService
             .ThenInclude(p => p.Comments)
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
+            .AsSplitQuery()
             .Where(r => r.UserId == userId || followingIds.Contains(r.UserId)) // Reposts from self or followed users
             .Where(r =>
                 r.Post.Privacy == PostPrivacy.Public || // Public posts can be reposted
@@ -165,6 +169,7 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .AsSplitQuery()
             .Where(p => p.Privacy == PostPrivacy.Public) // Only public posts
             .OrderByDescending(p => p.CreatedAt)
             .Take(fetchSize)
@@ -181,6 +186,7 @@ public class PostService : IPostService
             .ThenInclude(p => p.Comments)
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
+            .AsSplitQuery()
             .Where(r => r.Post.Privacy == PostPrivacy.Public) // Only reposts of public posts
             .OrderByDescending(r => r.CreatedAt)
             .Take(fetchSize)
@@ -237,6 +243,7 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .AsSplitQuery()
             .Where(p => p.UserId == userId &&
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                  currentUserId == userId || // User's own posts are always visible
@@ -267,6 +274,7 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .AsSplitQuery()
             .Where(p => p.UserId == userId &&
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                  currentUserId == userId || // User's own posts are always visible
@@ -286,6 +294,7 @@ public class PostService : IPostService
             .ThenInclude(p => p.Comments)
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
+            .AsSplitQuery()
             .Where(r => r.UserId == userId) // Reposts by this user
             .Where(r =>
                 r.Post.Privacy == PostPrivacy.Public || // Public posts can be seen
