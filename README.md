@@ -1,31 +1,31 @@
-# Postr - Twitter-like Social Media Platform
+# Yapplr - Twitter-like Social Media Platform
 
-A complete Twitter-like social media platform built with modern web technologies. Features a clean, responsive design inspired by 2015 Twitter with comprehensive social features including posts, reposts, comments, likes, follow system, and privacy controls.
+A complete Twitter-like social media platform built with modern web technologies. Features a clean, responsive design inspired by 2015 Twitter with comprehensive social features including yaps, reyaps, comments, likes, follow system, and privacy controls.
 
 ## 🚀 Features
 
 ### Core Social Features
-- **Posts**: Create text posts (up to 256 characters) with optional images
-- **Reposts**: Repost content with proper attribution in timeline feeds
-- **Comments**: Comment on posts with expandable comment sections
-- **Likes**: Like and unlike posts with real-time counts
+- **Yaps**: Create text yaps (up to 256 characters) with optional images
+- **Reyaps**: Reyap content with proper attribution in timeline feeds
+- **Comments**: Comment on yaps with expandable comment sections
+- **Likes**: Like and unlike yaps with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates
 - **User Profiles**: Complete profile management with bio, pronouns, tagline, and profile images
-- **Post Sharing**: Share posts with social media integration and direct link copying
+- **Yap Sharing**: Share yaps with social media integration and direct link copying
 
 ### Privacy & Security
-- **Post Privacy**: Three levels - Public (everyone), Followers (followers only), Private (author only)
-- **Privacy-Aware Timeline**: Smart filtering based on user relationships and post privacy
+- **Yap Privacy**: Three levels - Public (everyone), Followers (followers only), Private (author only)
+- **Privacy-Aware Timeline**: Smart filtering based on user relationships and yap privacy
 - **JWT Authentication**: Secure token-based authentication
 - **Password Reset**: Email-based password recovery with AWS SES
 
 ### User Experience
 - **Responsive Design**: Mobile-first approach with collapsible sidebar
 - **Real-time Updates**: Live timeline with instant social interaction feedback
-- **Image Upload**: Server-side image storage for posts and profile pictures
+- **Image Upload**: Server-side image storage for yaps and profile pictures
 - **User Search**: Find users by username or bio content
 - **Clean UI**: 2015 Twitter-inspired design with modern touches
-- **Individual Post Pages**: Dedicated URLs for each post with shareable links
+- **Individual Yap Pages**: Dedicated URLs for each yap with shareable links
 - **Share Modal**: Popup sharing interface with social media integration (Twitter, Facebook, LinkedIn, Reddit)
 
 ## 🛠 Tech Stack
@@ -57,7 +57,7 @@ A complete Twitter-like social media platform built with modern web technologies
 
 ```bash
 # Navigate to API directory
-cd Postr.Api
+cd Yapplr.Api
 
 # Install dependencies
 dotnet restore
@@ -75,7 +75,7 @@ The API will be available at `http://localhost:5161`
 
 ```bash
 # Navigate to frontend directory
-cd postr-frontend
+cd yapplr-frontend
 
 # Install dependencies
 npm install
@@ -91,16 +91,16 @@ The frontend will be available at `http://localhost:3000`
 
 ## 📱 Key Features in Detail
 
-### Timeline & Reposts
-- **Mixed Timeline**: Shows both original posts and reposts chronologically
-- **Repost Attribution**: Clear "User reposted" headers with original content
-- **Privacy Respect**: Only shows reposts of content you're allowed to see
-- **User Profiles**: Both original posts and reposts appear on user profiles
+### Timeline & Reyaps
+- **Mixed Timeline**: Shows both original yaps and reyaps chronologically
+- **Reyap Attribution**: Clear "User reyapped" headers with original content
+- **Privacy Respect**: Only shows reyaps of content you're allowed to see
+- **User Profiles**: Both original yaps and reyaps appear on user profiles
 
-### Post Privacy System
-- **Public Posts**: Visible to everyone, can be reposted by anyone
-- **Followers Posts**: Only visible to followers and author
-- **Private Posts**: Only visible to the author
+### Yap Privacy System
+- **Public Yaps**: Visible to everyone, can be reyapped by anyone
+- **Followers Yaps**: Only visible to followers and author
+- **Private Yaps**: Only visible to the author
 - **Smart Filtering**: Timeline automatically filters based on relationships
 
 ### Follow System
@@ -110,7 +110,7 @@ The frontend will be available at `http://localhost:3000`
 - **Timeline Impact**: Following users affects your timeline content
 
 ### Image Management
-- **Post Images**: Upload images with posts (server-side storage)
+- **Yap Images**: Upload images with yaps (server-side storage)
 - **Profile Images**: Upload and manage profile pictures
 - **Image Serving**: Optimized image serving with proper content types
 - **File Management**: Secure image upload with validation
@@ -136,8 +136,8 @@ dotnet ef database update
   },
   "JwtSettings": {
     "SecretKey": "your-secret-key",
-    "Issuer": "Postr.Api",
-    "Audience": "Postr.Frontend"
+    "Issuer": "Yapplr.Api",
+    "Audience": "Yapplr.Frontend"
   }
 }
 ```
@@ -156,12 +156,12 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `POST /api/auth/reset-password` - Reset password with token
 
 ### Social Features
-- `GET /api/posts/{id}` - Get individual post by ID (for sharing)
-- `GET /api/posts/timeline` - Get timeline with posts and reposts
-- `GET /api/posts/user/{userId}/timeline` - Get user timeline (posts + reposts)
-- `POST /api/posts/{id}/repost` - Repost a post
-- `DELETE /api/posts/{id}/repost` - Remove repost
-- `POST /api/posts/{id}/like` - Like a post
+- `GET /api/posts/{id}` - Get individual yap by ID (for sharing)
+- `GET /api/posts/timeline` - Get timeline with yaps and reyaps
+- `GET /api/posts/user/{userId}/timeline` - Get user timeline (yaps + reyaps)
+- `POST /api/posts/{id}/repost` - Reyap a yap
+- `DELETE /api/posts/{id}/repost` - Remove reyap
+- `POST /api/posts/{id}/like` - Like a yap
 - `POST /api/posts/{id}/comments` - Add comment
 
 ### User Management
@@ -181,8 +181,8 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 ## 🚀 Deployment
 
 See individual README files for detailed deployment instructions:
-- [Backend Deployment Guide](Postr.Api/Production-Deployment-Guide.md)
-- [AWS SES Setup](Postr.Api/AWS-SES-Setup.md)
+- [Backend Deployment Guide](Yapplr.Api/Production-Deployment-Guide.md)
+- [AWS SES Setup](Yapplr.Api/AWS-SES-Setup.md)
 
 ## 📄 License
 

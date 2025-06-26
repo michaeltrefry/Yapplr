@@ -1,4 +1,4 @@
-# Postr Frontend
+# Yapplr Frontend
 
 A clean, responsive Twitter-like social media frontend built with Next.js 15, TypeScript, and Tailwind CSS.
 
@@ -10,9 +10,9 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Authentication**: Secure login, registration, and password reset
 - **User Profiles**: Complete profile management with profile images
 - **Follow System**: Follow/unfollow users with real-time counts
-- **Post Privacy**: Create posts with Public, Followers, or Private visibility
-- **Social Features**: Posts, likes, comments, reposts with timeline integration
-- **Image Upload**: Upload and display images in posts and profiles
+- **Yap Privacy**: Create yaps with Public, Followers, or Private visibility
+- **Social Features**: Yaps, likes, comments, reyaps with timeline integration
+- **Image Upload**: Upload and display images in yaps and profiles
 - **Search**: Find users by username or bio
 
 ## Tech Stack
@@ -30,7 +30,7 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 
 - Node.js 18+
 - npm or yarn
-- Postr API running on `http://localhost:5161`
+- Yapplr API running on `http://localhost:5161`
 
 ### Installation
 
@@ -71,56 +71,56 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - Follow status indicators
 - Privacy-aware content filtering based on relationships
 
-### Post Privacy
+### Yap Privacy
 - Three privacy levels: Public, Followers, Private
-- Visual privacy indicators on posts
+- Visual privacy indicators on yaps
 - Smart timeline filtering based on user relationships
-- Privacy selector in post creation form
+- Privacy selector in yap creation form
 
 ### Profile Management
 - Upload and manage profile images
 - Edit profile information (bio, pronouns, tagline, birthday)
 - View follower/following statistics
-- Dedicated profile pages with user posts
+- Dedicated profile pages with user yaps
 
 ### Social Features
-- Create posts (256 character limit) with privacy settings
-- Upload images to posts and profiles
-- Like and unlike posts with real-time counts
-- Comment on posts with expandable comment sections
-- Repost functionality with timeline integration and attribution
+- Create yaps (256 character limit) with privacy settings
+- Upload images to yaps and profiles
+- Like and unlike yaps with real-time counts
+- Comment on yaps with expandable comment sections
+- Reyap functionality with timeline integration and attribution
 - Follow/unfollow users with instant UI updates
 - Privacy-aware timeline filtering
-- Mixed timeline showing both posts and reposts chronologically
+- Mixed timeline showing both yaps and reyaps chronologically
 - Real-time interaction counts and follower statistics
-- Share posts with popup modal featuring:
-  - Copy direct link to post functionality
+- Share yaps with popup modal featuring:
+  - Copy direct link to yap functionality
   - Social media sharing to Twitter, Facebook, LinkedIn, and Reddit
-  - Post preview with user attribution
+  - Yap preview with user attribution
 
 ## Pages & Components
 
 ### Main Pages
-- **Home** (`/`) - Timeline with post creation and privacy selector
-- **Profile** (`/profile/[username]`) - User profiles with follow buttons and post filtering
+- **Home** (`/`) - Timeline with yap creation and privacy selector
+- **Profile** (`/profile/[username]`) - User profiles with follow buttons and yap filtering
 - **Profile Edit** (`/profile/edit`) - Profile management with image upload
-- **Post Detail** (`/post/[id]`) - Individual post pages with comments and sharing
+- **Yap Detail** (`/yap/[id]`) - Individual yap pages with comments and sharing
 - **Login/Register** - Authentication with password reset functionality
 - **Forgot/Reset Password** - Email-based password recovery
 
 ### Key Components
-- **CreatePost** - Post creation with privacy selector and image upload
-- **PostCard** - Post display with privacy indicators and social actions
-- **TimelineItemCard** - Unified display for posts and reposts with attribution
+- **CreatePost** - Yap creation with privacy selector and image upload
+- **PostCard** - Yap display with privacy indicators and social actions
+- **TimelineItemCard** - Unified display for yaps and reyaps with attribution
 - **UserAvatar** - Consistent user avatar display throughout the app
-- **Timeline** - Mixed timeline with posts and reposts, privacy-filtered
+- **Timeline** - Mixed timeline with yaps and reyaps, privacy-filtered
 - **CommentList** - Expandable comment sections
-- **ShareModal** - Post sharing modal with social media integration and link copying
+- **ShareModal** - Yap sharing modal with social media integration and link copying
 - **Sidebar** - Navigation with responsive design
 
 ## API Integration
 
-The frontend communicates with the Postr API for all data operations including authentication, posts, users, social interactions, follow relationships, and image management.
+The frontend communicates with the Yapplr API for all data operations including authentication, yaps, users, social interactions, follow relationships, and image management.
 
 ## Development
 

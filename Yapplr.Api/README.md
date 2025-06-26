@@ -1,16 +1,16 @@
-# Postr API
+# Yapplr API
 
 A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentication.
 
 ## Features
 
 - **User Management**: Registration, login, profile management with profile images
-- **Posts**: Create text posts (up to 256 characters) with optional images
-- **Post Privacy**: Three privacy levels - Public, Followers-only, and Private posts
-- **Social Features**: Like, comment, and repost functionality
+- **Yaps**: Create text yaps (up to 256 characters) with optional images
+- **Yap Privacy**: Three privacy levels - Public, Followers-only, and Private yaps
+- **Social Features**: Like, comment, and reyap functionality
 - **Follow System**: Users can follow/unfollow each other with follower/following counts
 - **User Profiles**: Username, bio, birthday, pronouns, tagline, and profile images
-- **Timeline**: Smart timeline with posts and reposts, privacy-aware filtering
+- **Timeline**: Smart timeline with yaps and reyaps, privacy-aware filtering
 - **Image Upload**: Server-side image storage and serving
 - **Password Reset**: Email-based password reset with AWS SES integration
 - **Authentication**: JWT-based authentication with secure password hashing
@@ -36,7 +36,7 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
 
 1. **Clone and navigate to the project:**
    ```bash
-   cd Postr.Api
+   cd Yapplr.Api
    ```
 
 2. **Install dependencies:**
@@ -94,23 +94,23 @@ The API will be available at:
 - `POST /api/users/{userId}/follow` - Follow a user (authenticated)
 - `DELETE /api/users/{userId}/follow` - Unfollow a user (authenticated)
 
-### Posts
-- `POST /api/posts` - Create new post with privacy settings (authenticated)
-- `GET /api/posts/{id}` - Get post by ID
-- `GET /api/posts/timeline` - Get timeline with posts and reposts (authenticated)
-- `GET /api/posts/user/{userId}` - Get user's posts (privacy-filtered)
-- `GET /api/posts/user/{userId}/timeline` - Get user timeline with posts and reposts
-- `DELETE /api/posts/{id}` - Delete post (authenticated, own posts only)
+### Yaps
+- `POST /api/posts` - Create new yap with privacy settings (authenticated)
+- `GET /api/posts/{id}` - Get yap by ID
+- `GET /api/posts/timeline` - Get timeline with yaps and reyaps (authenticated)
+- `GET /api/posts/user/{userId}` - Get user's yaps (privacy-filtered)
+- `GET /api/posts/user/{userId}/timeline` - Get user timeline with yaps and reyaps
+- `DELETE /api/posts/{id}` - Delete yap (authenticated, own yaps only)
 
 ### Social Features
-- `POST /api/posts/{id}/like` - Like a post (authenticated)
-- `DELETE /api/posts/{id}/like` - Unlike a post (authenticated)
-- `POST /api/posts/{id}/repost` - Repost a post (authenticated)
-- `DELETE /api/posts/{id}/repost` - Remove repost (authenticated)
+- `POST /api/posts/{id}/like` - Like a yap (authenticated)
+- `DELETE /api/posts/{id}/like` - Unlike a yap (authenticated)
+- `POST /api/posts/{id}/repost` - Reyap a yap (authenticated)
+- `DELETE /api/posts/{id}/repost` - Remove reyap (authenticated)
 
 ### Comments
-- `POST /api/posts/{id}/comments` - Add comment to post (authenticated)
-- `GET /api/posts/{id}/comments` - Get post comments
+- `POST /api/posts/{id}/comments` - Add comment to yap (authenticated)
+- `GET /api/posts/{id}/comments` - Get yap comments
 - `DELETE /api/posts/comments/{commentId}` - Delete comment (authenticated, own comments only)
 
 ### Images
@@ -138,24 +138,24 @@ Authorization: Bearer <your-jwt-token>
 - Profile image (optional)
 - Follower/Following counts
 
-### Post
+### Yap
 - Content (1-256 characters)
 - Image file (optional)
 - Privacy level (Public, Followers, Private)
 - User (author)
-- Like/Comment/Repost counts
+- Like/Comment/Reyap counts
 
 ### Comment
 - Content (1-256 characters)
 - User (author)
-- Post (parent post)
+- Yap (parent yap)
 
 ### Follow
 - Follower (user who follows)
 - Following (user being followed)
 - Created timestamp
 
-### Post Privacy Levels
+### Yap Privacy Levels
 - **Public**: Visible to everyone
 - **Followers**: Only visible to followers and the author
 - **Private**: Only visible to the author
