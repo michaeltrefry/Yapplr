@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createYapplrApi, YapplrApi, User, LoginData, RegisterData } from 'yapplr-shared';
+import { createYapplrApi } from '../api/client';
+import { YapplrApi, User, LoginData, RegisterData } from '../types';
 
 interface AuthContextType {
   user: User | null;
@@ -15,7 +16,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_KEY = 'yapplr_token';
-const API_BASE_URL = 'http://localhost:5161'; // Change this to your API URL
+// Use your computer's IP address instead of localhost for mobile devices
+const API_BASE_URL = 'http://192.168.254.181:5161'; // Replace with your computer's IP
+
+// Alternative URLs to try if the main one fails
+const FALLBACK_URLS = [
+  'http://192.168.254.181:5161',
+  'http://localhost:5161',
+  'http://127.0.0.1:5161'
+];
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -82,12 +91,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (data: LoginData) => {
     try {
+      console.log('Attempting login to:', API_BASE_URL);
       const response = await api.auth.login(data);
+      console.log('Login successful');
       await AsyncStorage.setItem(TOKEN_KEY, response.token);
       setToken(response.token);
       setUser(response.user);
     } catch (error) {
       console.error('Login error:', error);
+      if (error.message?.includes('Network')) {
+        console.error('Network error during login - check API server and network connection');
+      }
       throw error;
     }
   };

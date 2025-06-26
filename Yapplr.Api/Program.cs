@@ -51,6 +51,14 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials();
     });
+
+    // Allow all origins for mobile development
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
 
 // Configure AWS SES
@@ -101,7 +109,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowFrontend");
+// Use AllowAll CORS policy for development (includes mobile)
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseMiddleware<UserActivityMiddleware>();
 app.UseAuthorization();

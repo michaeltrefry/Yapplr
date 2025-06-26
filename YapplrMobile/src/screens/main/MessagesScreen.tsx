@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
-import { ConversationListItem } from 'yapplr-shared';
+import { ConversationListItem } from '../../types';
 
 export default function MessagesScreen() {
   const { api, user } = useAuth();
@@ -18,6 +18,7 @@ export default function MessagesScreen() {
     queryKey: ['conversations'],
     queryFn: () => api.messages.getConversations(),
     enabled: !!user,
+    retry: 2,
   });
 
   const renderConversationItem = ({ item }: { item: ConversationListItem }) => (

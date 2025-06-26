@@ -9,18 +9,19 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-navigation/bottom-tabs": "^7.4.2",
     "@react-navigation/native": "^7.1.14",
     "@react-navigation/stack": "^7.4.2",
     "@tanstack/react-query": "^5.81.2",
+    "axios": "^1.10.0",
     "expo": "~53.0.13",
+    "expo-image-picker": "^16.1.4",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
     "react-native": "0.79.4",
-    "react-native-fast-image": "^8.6.3",
-    "react-native-image-picker": "^8.2.1",
-    "react-native-safe-area-context": "^5.5.0",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "^4.11.1",
     "yapplr-shared": "file:../yapplr-shared"
   },

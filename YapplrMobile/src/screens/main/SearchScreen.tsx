@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
-import { User } from 'yapplr-shared';
+import { User } from '../../types';
 
 export default function SearchScreen() {
   const { api } = useAuth();
@@ -20,6 +20,7 @@ export default function SearchScreen() {
     queryKey: ['userSearch', searchQuery],
     queryFn: () => api.users.searchUsers(searchQuery),
     enabled: searchQuery.length > 2,
+    retry: 1,
   });
 
   const renderUserItem = ({ item }: { item: User }) => (

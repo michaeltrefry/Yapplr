@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,27 +7,43 @@ import {
   RefreshControl,
   TouchableOpacity,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { TimelineItem } from 'yapplr-shared';
+import { TimelineItem } from '../../types';
+import CreatePostModal from '../../components/CreatePostModal';
+import PostCard from '../../components/PostCard';
 
 export default function HomeScreen() {
   const { api, user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
+  const [showCreatePost, setShowCreatePost] = useState(false);
 
   const {
     data: timeline,
     isLoading,
     refetch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
+    error,
   } = useQuery({
     queryKey: ['timeline'],
-    queryFn: () => api.posts.getTimeline(1, 25),
+    queryFn: async () => {
+      const result = await api.posts.getTimeline(1, 25);
+      console.log('Timeline loaded:', result.length, 'items');
+      const postsWithImages = result.filter(item => item.post.imageUrl);
+      console.log('Posts with images:', postsWithImages.length);
+      postsWithImages.forEach(item => {
+        console.log('Post with image:', {
+          id: item.post.id,
+          content: item.post.content.substring(0, 50) + '...',
+          imageUrl: item.post.imageUrl
+        });
+      });
+      return result;
+    },
     enabled: !!user,
+    retry: 2,
   });
 
   const onRefresh = async () => {
@@ -36,66 +52,60 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const renderTimelineItem = ({ item }: { item: TimelineItem }) => (
-    <View style={styles.postCard}>
-      <View style={styles.postHeader}>
-        <View style={styles.userInfo}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {item.post.user.username.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <View>
-            <Text style={styles.username}>@{item.post.user.username}</Text>
-            <Text style={styles.timestamp}>
-              {new Date(item.post.createdAt).toLocaleDateString()}
-            </Text>
-          </View>
-        </View>
-        {item.type === 'repost' && item.repostedBy && (
-          <View style={styles.repostBadge}>
-            <Ionicons name="repeat" size={14} color="#10B981" />
-            <Text style={styles.repostText}>
-              Reposted by @{item.repostedBy.username}
-            </Text>
-          </View>
-        )}
-      </View>
+  const handleLikePost = async (postId: number) => {
+    try {
+      await api.posts.likePost(postId);
+      refetch(); // Refresh timeline to show updated like count
+    } catch (error) {
+      Alert.alert('Error', 'Failed to like post');
+    }
+  };
 
-      <Text style={styles.postContent}>{item.post.content}</Text>
+  const handleRepost = async (postId: number) => {
+    try {
+      await api.posts.repostPost(postId);
+      refetch(); // Refresh timeline to show updated repost count
+    } catch (error) {
+      Alert.alert('Error', 'Failed to repost');
+    }
+  };
 
-      <View style={styles.postActions}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons 
-            name={item.post.isLikedByCurrentUser ? "heart" : "heart-outline"} 
-            size={20} 
-            color={item.post.isLikedByCurrentUser ? "#EF4444" : "#6B7280"} 
-          />
-          <Text style={styles.actionText}>{item.post.likeCount}</Text>
-        </TouchableOpacity>
+  const renderTimelineItem = ({ item }: { item: TimelineItem }) => {
+    // Debug: Log posts with images
+    if (item.post.imageUrl) {
+      console.log('Rendering post with image:', {
+        postId: item.post.id,
+        imageUrl: item.post.imageUrl
+      });
+    }
 
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
-          <Text style={styles.actionText}>{item.post.commentCount}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons 
-            name={item.post.isRepostedByCurrentUser ? "repeat" : "repeat-outline"} 
-            size={20} 
-            color={item.post.isRepostedByCurrentUser ? "#10B981" : "#6B7280"} 
-          />
-          <Text style={styles.actionText}>{item.post.repostCount}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    return (
+      <PostCard
+        item={item}
+        onLike={handleLikePost}
+        onRepost={handleRepost}
+      />
+    );
+  };
 
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <Text>Loading timeline...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>Failed to load timeline</Text>
+          <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -119,6 +129,21 @@ export default function HomeScreen() {
         }
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+      />
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setShowCreatePost(true)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={24} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Create Post Modal */}
+      <CreatePostModal
+        visible={showCreatePost}
+        onClose={() => setShowCreatePost(false)}
       />
     </SafeAreaView>
   );
@@ -151,71 +176,39 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingBottom: 20,
   },
-  postCard: {
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    marginBottom: 16,
   },
-  postHeader: {
-    marginBottom: 8,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  retryButton: {
     backgroundColor: '#3B82F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
-  avatarText: {
+  retryText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  username: {
     fontWeight: '600',
-    fontSize: 16,
-    color: '#1F2937',
   },
-  timestamp: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  repostBadge: {
-    flexDirection: 'row',
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#3B82F6',
     alignItems: 'center',
-    marginTop: 4,
-  },
-  repostText: {
-    fontSize: 12,
-    color: '#10B981',
-    marginLeft: 4,
-  },
-  postContent: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#1F2937',
-    marginBottom: 12,
-  },
-  postActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 8,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  actionText: {
-    fontSize: 14,
-    color: '#6B7280',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
   },
 });
