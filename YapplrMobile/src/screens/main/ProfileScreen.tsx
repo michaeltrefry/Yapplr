@@ -95,7 +95,11 @@ export default function ProfileScreen() {
 
       <View style={styles.profileSection}>
         <View style={styles.userHeader}>
-          <View style={styles.avatar}>
+          <TouchableOpacity
+            style={styles.avatar}
+            onPress={() => navigation.navigate('UserProfile', { username: profile.username })}
+            activeOpacity={0.7}
+          >
             {profile.profileImageFileName ? (
               <Image
                 source={{ uri: getImageUrl(profile.profileImageFileName) }}
@@ -110,14 +114,18 @@ export default function ProfileScreen() {
                 {profile.username.charAt(0).toUpperCase()}
               </Text>
             )}
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.usernameContainer}>
+          <TouchableOpacity
+            style={styles.usernameContainer}
+            onPress={() => navigation.navigate('UserProfile', { username: profile.username })}
+            activeOpacity={0.7}
+          >
             <Text style={styles.username}>@{profile.username}</Text>
             {profile.pronouns && (
               <Text style={styles.pronouns}> ({profile.pronouns})</Text>
             )}
-          </View>
+          </TouchableOpacity>
         </View>
         <Text style={styles.email}>{user.email}</Text>
 
@@ -134,10 +142,14 @@ export default function ProfileScreen() {
         )}
 
         <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
+          <TouchableOpacity
+            style={styles.statItem}
+            onPress={() => navigation.navigate('UserProfile', { username: profile.username })}
+            activeOpacity={0.7}
+          >
             <Text style={styles.statNumber}>{profile.postCount}</Text>
             <Text style={styles.statLabel}>Posts</Text>
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.statItem}
             onPress={() => navigation.navigate('FollowingList')}
@@ -167,7 +179,10 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={20} color="#6B7280" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('Settings')}
+        >
           <Ionicons name="settings-outline" size={20} color="#6B7280" />
           <Text style={styles.menuText}>Settings</Text>
           <Ionicons name="chevron-forward" size={20} color="#6B7280" />

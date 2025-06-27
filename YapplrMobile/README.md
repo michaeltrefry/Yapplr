@@ -69,6 +69,8 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Edit Profile**: Profile editing with image upload functionality
 - ✅ **User Profiles**: View other users' profiles and posts with profile images
 - ✅ **Following/Followers**: User lists with profile image display
+- ✅ **Settings**: Privacy and safety settings management
+- ✅ **Blocked Users**: View and manage blocked users list
 
 ### **Post Management**
 - ✅ **Create Posts**: Text and image post creation
@@ -84,6 +86,8 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Message Users**: Start private conversations from user profiles
 - ✅ **Conversation Navigation**: Access conversations from Messages tab
 - ✅ **Back Navigation**: Proper navigation stack management
+- ✅ **Public Profile View**: Tap username/avatar/post count to see public profile view
+- ✅ **Settings Navigation**: Access settings from profile menu
 
 ### **Messaging System**
 - ✅ **Private Conversations**: One-on-one messaging between users
@@ -93,6 +97,14 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Keyboard Handling**: Proper keyboard avoidance and input positioning
 - ✅ **Auto-scroll**: Automatic scrolling to latest messages
 - ✅ **Permission Checking**: Verify messaging permissions before allowing contact
+
+### **User Safety & Privacy**
+- ✅ **User Blocking**: Block/unblock users from their profiles
+- ✅ **Block Confirmation**: Confirmation modal explaining blocking consequences
+- ✅ **Blocked Users Management**: View and manage list of blocked users
+- ✅ **Settings Screen**: Centralized privacy and safety settings
+- ✅ **Block Status Checking**: Real-time block status updates
+- ✅ **Automatic Unfollowing**: Blocked users are automatically unfollowed
 
 ### **Image Functionality**
 - ✅ **Image Upload**: Select from device gallery
@@ -112,6 +124,9 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ Image upload with progress tracking
 - ✅ Profile image upload endpoint integration
 - ✅ Multipart form data handling for image uploads
+- ✅ Block/unblock user endpoints
+- ✅ Block status checking endpoints
+- ✅ Blocked users list retrieval
 
 ## 🔧 **Configuration**
 
@@ -153,9 +168,11 @@ YapplrMobile/
 │   │       ├── ConversationScreen.tsx # Individual conversation interface
 │   │       ├── ProfileScreen.tsx    # Current user profile with image display
 │   │       ├── EditProfileScreen.tsx # Profile editing with image upload
-│   │       ├── UserProfileScreen.tsx # Other users' profiles with images
+│   │       ├── UserProfileScreen.tsx # Other users' profiles with images and blocking
 │   │       ├── FollowingListScreen.tsx # Following list with profile images
-│   │       └── FollowersListScreen.tsx # Followers list with profile images
+│   │       ├── FollowersListScreen.tsx # Followers list with profile images
+│   │       ├── SettingsScreen.tsx   # Privacy and safety settings
+│   │       └── BlockedUsersScreen.tsx # Blocked users management
 │   ├── types/
 │   │   └── index.ts                 # TypeScript type definitions
 │   ├── utils/

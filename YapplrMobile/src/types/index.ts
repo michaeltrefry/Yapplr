@@ -142,6 +142,14 @@ export interface FollowResponse {
   followerCount: number;
 }
 
+export interface BlockResponse {
+  message: string;
+}
+
+export interface BlockStatusResponse {
+  isBlocked: boolean;
+}
+
 export interface ImageUploadResponse {
   fileName: string;
   imageUrl: string;
@@ -174,6 +182,10 @@ export interface YapplrApi {
     follow: (userId: number) => Promise<FollowResponse>;
     unfollow: (userId: number) => Promise<FollowResponse>;
     uploadProfileImage: (uri: string, fileName: string, type: string) => Promise<User>;
+    blockUser: (userId: number) => Promise<BlockResponse>;
+    unblockUser: (userId: number) => Promise<BlockResponse>;
+    getBlockStatus: (userId: number) => Promise<BlockStatusResponse>;
+    getBlockedUsers: () => Promise<User[]>;
   };
   messages: {
     getConversations: () => Promise<ConversationListItem[]>;

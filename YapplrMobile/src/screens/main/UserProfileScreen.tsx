@@ -26,6 +26,7 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
   const { api, user: currentUser } = useAuth();
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [commentCountUpdates, setCommentCountUpdates] = useState<Record<number, number>>({});
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const queryClient = useQueryClient();
 
   const isOwnProfile = currentUser?.username === username;
@@ -63,6 +64,14 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
   const { data: canMessageData } = useQuery({
     queryKey: ['canMessage', profile?.id],
     queryFn: () => api.messages.canMessage(profile!.id),
+    enabled: !!profile?.id && !isOwnProfile,
+    retry: 1,
+  });
+
+  // Check block status
+  const { data: blockStatus } = useQuery({
+    queryKey: ['blockStatus', profile?.id],
+    queryFn: () => api.users.getBlockStatus(profile!.id),
     enabled: !!profile?.id && !isOwnProfile,
     retry: 1,
   });
@@ -111,6 +120,39 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     },
   });
 
+  // Block mutation
+  const blockMutation = useMutation({
+    mutationFn: (userId: number) => api.users.blockUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blockStatus', profile?.id] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile', username] });
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline', profile?.id] });
+      queryClient.invalidateQueries({ queryKey: ['following'] });
+      setShowBlockConfirm(false);
+      Alert.alert('User Blocked', 'You have successfully blocked this user.');
+    },
+    onError: (error) => {
+      console.error('Failed to block user:', error);
+      Alert.alert('Error', 'Failed to block user. Please try again.');
+    },
+  });
+
+  // Unblock mutation
+  const unblockMutation = useMutation({
+    mutationFn: (userId: number) => api.users.unblockUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blockStatus', profile?.id] });
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline', profile?.id] });
+      Alert.alert('User Unblocked', 'You have successfully unblocked this user.');
+    },
+    onError: (error) => {
+      console.error('Failed to unblock user:', error);
+      Alert.alert('Error', 'Failed to unblock user. Please try again.');
+    },
+  });
+
   const handleLikePost = async (postId: number) => {
     try {
       await api.posts.likePost(postId);
@@ -141,6 +183,21 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     } else {
       followMutation.mutate(profile.id);
     }
+  };
+
+  const handleBlockToggle = () => {
+    if (!profile) return;
+
+    if (blockStatus?.isBlocked) {
+      unblockMutation.mutate(profile.id);
+    } else {
+      setShowBlockConfirm(true);
+    }
+  };
+
+  const confirmBlock = () => {
+    if (!profile) return;
+    blockMutation.mutate(profile.id);
   };
 
   const handleStartConversation = async () => {
@@ -369,6 +426,28 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
                     )}
                   </TouchableOpacity>
                 )}
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.blockButton]}
+                  onPress={handleBlockToggle}
+                  disabled={blockMutation.isPending || unblockMutation.isPending}
+                >
+                  {(blockMutation.isPending || unblockMutation.isPending) ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons
+                        name={blockStatus?.isBlocked ? "person-add-outline" : "person-remove-outline"}
+                        size={16}
+                        color="#fff"
+                        style={styles.blockIcon}
+                      />
+                      <Text style={[styles.actionButtonText, styles.blockButtonText]}>
+                        {blockStatus?.isBlocked ? 'Unblock' : 'Block'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             )}
 
@@ -391,6 +470,37 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
+
+      {/* Block Confirmation Modal */}
+      {showBlockConfirm && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Block User</Text>
+            <Text style={styles.modalText}>
+              Are you sure you want to block @{profile?.username}? They will no longer be able to see your posts or send you messages, and you will automatically unfollow them.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowBlockConfirm(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={confirmBlock}
+                disabled={blockMutation.isPending}
+              >
+                {blockMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Block</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -586,5 +696,77 @@ const styles = StyleSheet.create({
   },
   messageIcon: {
     marginRight: 6,
+  },
+  blockButton: {
+    backgroundColor: '#EF4444',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  blockButtonText: {
+    color: '#fff',
+  },
+  blockIcon: {
+    marginRight: 6,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    margin: 20,
+    padding: 20,
+    borderRadius: 12,
+    maxWidth: 400,
+    width: '90%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#6B7280',
+    lineHeight: 24,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  cancelButtonText: {
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  confirmButton: {
+    backgroundColor: '#EF4444',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });

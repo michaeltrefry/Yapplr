@@ -20,6 +20,8 @@ import ConversationScreen from '../screens/main/ConversationScreen';
 import MessagesScreen from '../screens/main/MessagesScreen';
 import SearchScreen from '../screens/main/SearchScreen';
 import CommentsScreen from '../screens/main/CommentsScreen';
+import SettingsScreen from '../screens/main/SettingsScreen';
+import BlockedUsersScreen from '../screens/main/BlockedUsersScreen';
 import { Post } from '../types';
 
 export type RootStackParamList = {
@@ -28,6 +30,8 @@ export type RootStackParamList = {
   EditProfile: undefined;
   FollowingList: undefined;
   FollowersList: undefined;
+  Settings: undefined;
+  BlockedUsers: undefined;
   Conversation: {
     conversationId: number;
     otherUser: { id: number; username: string }
@@ -146,6 +150,16 @@ function MainStack() {
       <Stack.Screen
         name="FollowersList"
         component={FollowersListScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BlockedUsers"
+        component={BlockedUsersScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

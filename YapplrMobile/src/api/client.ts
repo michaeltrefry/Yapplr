@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -181,6 +181,26 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
             'Content-Type': 'multipart/form-data',
           },
         });
+        return response.data;
+      },
+
+      blockUser: async (userId: number): Promise<BlockResponse> => {
+        const response = await client.post(`/api/blocks/users/${userId}`);
+        return response.data;
+      },
+
+      unblockUser: async (userId: number): Promise<BlockResponse> => {
+        const response = await client.delete(`/api/blocks/users/${userId}`);
+        return response.data;
+      },
+
+      getBlockStatus: async (userId: number): Promise<BlockStatusResponse> => {
+        const response = await client.get(`/api/blocks/users/${userId}/status`);
+        return response.data;
+      },
+
+      getBlockedUsers: async (): Promise<User[]> => {
+        const response = await client.get('/api/blocks/');
         return response.data;
       },
     },
