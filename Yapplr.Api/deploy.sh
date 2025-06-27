@@ -52,7 +52,11 @@ fi
 
 # Stop existing containers
 echo -e "${GREEN}🛑 Stopping existing containers...${NC}"
-docker-compose -f docker-compose.prod.yml down || true
+docker-compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
+
+# Additional cleanup to ensure ports are free
+echo -e "${GREEN}🧹 Cleaning up any remaining containers...${NC}"
+docker container prune -f || true
 
 # Start new containers
 echo -e "${GREEN}🚀 Starting new containers...${NC}"

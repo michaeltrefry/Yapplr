@@ -52,7 +52,7 @@ services:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
       - /var/www/certbot:/var/www/certbot
-    command: certonly --webroot --webroot-path=/var/www/certbot --email ${CERTBOT_EMAIL} --agree-tos --no-eff-email -d ${DOMAIN_NAME}
+    command: certbot certonly --manual --preferred-challenges=dns --email ${CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d *.yapplr.com -d yapplr.com
 
 volumes:
   yapplr_uploads:
