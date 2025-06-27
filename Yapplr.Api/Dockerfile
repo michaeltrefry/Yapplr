@@ -24,7 +24,7 @@ ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./Yapplr.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Final stage/image
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS final
+FROM base AS final
 WORKDIR /app
 
 # Create uploads directory
@@ -32,13 +32,6 @@ RUN mkdir -p /app/uploads/images
 
 # Copy published application
 COPY --from=publish /app/publish .
-
-# Copy project file for EF migrations
-COPY --from=build /src/Yapplr.Api.csproj .
-
-# Install EF Core tools globally
-RUN dotnet tool install --global dotnet-ef
-ENV PATH="$PATH:/root/.dotnet/tools"
 
 # Set environment variables
 ENV ASPNETCORE_ENVIRONMENT=Production

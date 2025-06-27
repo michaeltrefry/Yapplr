@@ -77,9 +77,15 @@ else
     exit 1
 fi
 
-# Run database migrations
+# Run database migrations using SDK container
 echo -e "${GREEN}🗄️ Running database migrations...${NC}"
-docker-compose -f docker-compose.prod.yml exec yapplr-api dotnet ef database update || true
+docker run --rm \
+  --network yapplrapi_yapplr-network \
+  -v $(pwd):/app \
+  -w /app \
+  -e ConnectionStrings__DefaultConnection="$DATABASE_CONNECTION_STRING" \
+  mcr.microsoft.com/dotnet/sdk:9.0 \
+  sh -c "dotnet tool install --global dotnet-ef && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update" || true
 
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
 echo -e "${GREEN}Your API is now running at: https://$DOMAIN_NAME${NC}"
