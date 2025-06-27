@@ -56,7 +56,8 @@ export interface CreatePostData {
 
 export enum PostPrivacy {
   Public = 0,
-  Private = 1,
+  Followers = 1,
+  Private = 2,
 }
 
 export interface Post {

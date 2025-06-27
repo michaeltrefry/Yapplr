@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { TimelineItem, Post } from '../../types';
-import CreatePostModal from '../../components/CreatePostModal';
+
 import PostCard from '../../components/PostCard';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
@@ -23,7 +23,7 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MainTab
 export default function HomeScreen({ navigation }: { navigation: HomeScreenNavigationProp }) {
   const { api, user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
-  const [showCreatePost, setShowCreatePost] = useState(false);
+
   const [commentCountUpdates, setCommentCountUpdates] = useState<Record<number, number>>({});
 
   const {
@@ -166,9 +166,6 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Yapplr</Text>
-        <TouchableOpacity>
-          <Ionicons name="add-circle-outline" size={24} color="#3B82F6" />
-        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -181,21 +178,6 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
-
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setShowCreatePost(true)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={24} color="#fff" />
-      </TouchableOpacity>
-
-      {/* Create Post Modal */}
-      <CreatePostModal
-        visible={showCreatePost}
-        onClose={() => setShowCreatePost(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -207,7 +189,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -217,7 +199,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#3B82F6',
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
@@ -243,23 +226,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-  fab: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#3B82F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-  },
+
 });

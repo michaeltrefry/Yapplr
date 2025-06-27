@@ -22,6 +22,7 @@ import SearchScreen from '../screens/main/SearchScreen';
 import CommentsScreen from '../screens/main/CommentsScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
 import BlockedUsersScreen from '../screens/main/BlockedUsersScreen';
+import CreatePostScreen from '../screens/main/CreatePostScreen';
 import { Post } from '../types';
 
 export type RootStackParamList = {
@@ -87,6 +88,25 @@ function MainTabs() {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Search') {
             iconName = focused ? 'search' : 'search-outline';
+          } else if (route.name === 'CreatePost') {
+            return (
+              <View style={{
+                width: 50,
+                height: 50,
+                borderRadius: 25,
+                backgroundColor: '#3B82F6',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 2,
+                shadowColor: '#3B82F6',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 5,
+              }}>
+                <Ionicons name="add" size={28} color="#fff" />
+              </View>
+            );
           } else if (route.name === 'Messages') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           } else if (route.name === 'Profile') {
@@ -114,10 +134,20 @@ function MainTabs() {
         tabBarActiveTintColor: '#3B82F6',
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
+        tabBarStyle: {
+          height: 90,
+          paddingBottom: 20,
+          paddingTop: 10,
+        },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
+      <Tab.Screen
+        name="CreatePost"
+        component={CreatePostScreen}
+        options={{ tabBarLabel: '' }}
+      />
       <Tab.Screen name="Messages" component={MessagesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

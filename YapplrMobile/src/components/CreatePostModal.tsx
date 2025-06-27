@@ -169,6 +169,48 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
     }
   };
 
+  const cyclePrivacy = () => {
+    switch (privacy) {
+      case PostPrivacy.Public:
+        setPrivacy(PostPrivacy.Followers);
+        break;
+      case PostPrivacy.Followers:
+        setPrivacy(PostPrivacy.Private);
+        break;
+      case PostPrivacy.Private:
+        setPrivacy(PostPrivacy.Public);
+        break;
+      default:
+        setPrivacy(PostPrivacy.Public);
+    }
+  };
+
+  const getPrivacyIcon = () => {
+    switch (privacy) {
+      case PostPrivacy.Public:
+        return "globe-outline";
+      case PostPrivacy.Followers:
+        return "people-outline";
+      case PostPrivacy.Private:
+        return "lock-closed-outline";
+      default:
+        return "globe-outline";
+    }
+  };
+
+  const getPrivacyText = () => {
+    switch (privacy) {
+      case PostPrivacy.Public:
+        return "Public";
+      case PostPrivacy.Followers:
+        return "Followers";
+      case PostPrivacy.Private:
+        return "Private";
+      default:
+        return "Public";
+    }
+  };
+
   const remainingChars = 256 - content.length;
   const isOverLimit = remainingChars < 0;
   const canSubmit = content.trim().length > 0 && !isOverLimit && !createPostMutation.isPending && !isUploadingImage;
@@ -215,6 +257,41 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
             <Text style={styles.username}>@{user?.username}</Text>
           </View>
 
+          {/* Controls - moved to top */}
+          <View style={styles.topControls}>
+            <View style={styles.controlsLeft}>
+              <TouchableOpacity
+                style={styles.privacyButton}
+                onPress={cyclePrivacy}
+              >
+                <Ionicons
+                  name={getPrivacyIcon()}
+                  size={16}
+                  color="#6B7280"
+                />
+                <Text style={styles.privacyText}>
+                  {getPrivacyText()}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.imageButton}
+                onPress={pickImage}
+                disabled={isUploadingImage}
+              >
+                <Ionicons
+                  name="image-outline"
+                  size={20}
+                  color={isUploadingImage ? "#9CA3AF" : "#6B7280"}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.charCount, isOverLimit && styles.charCountOver]}>
+              {remainingChars}
+            </Text>
+          </View>
+
           {/* Scrollable Content */}
           <ScrollView
             style={styles.scrollContainer}
@@ -250,41 +327,6 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
               </View>
             )}
           </ScrollView>
-
-          {/* Footer with controls - outside scroll view */}
-          <View style={[styles.footer, { marginBottom: keyboardHeight > 0 ? 10 : 0 }]}>
-            <View style={styles.footerLeft}>
-              <TouchableOpacity
-                style={styles.privacyButton}
-                onPress={() => setPrivacy(privacy === PostPrivacy.Public ? PostPrivacy.Private : PostPrivacy.Public)}
-              >
-                <Ionicons
-                  name={privacy === PostPrivacy.Public ? "globe-outline" : "lock-closed-outline"}
-                  size={16}
-                  color="#6B7280"
-                />
-                <Text style={styles.privacyText}>
-                  {privacy === PostPrivacy.Public ? "Public" : "Private"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.imageButton}
-                onPress={pickImage}
-                disabled={isUploadingImage}
-              >
-                <Ionicons
-                  name="image-outline"
-                  size={20}
-                  color={isUploadingImage ? "#9CA3AF" : "#6B7280"}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.charCount, isOverLimit && styles.charCountOver]}>
-              {remainingChars}
-            </Text>
-          </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
@@ -363,6 +405,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#374151',
   },
+  topControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  controlsLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   scrollContainer: {
     flex: 1,
   },
@@ -379,22 +434,7 @@ const styles = StyleSheet.create({
     maxHeight: 200, // Prevent input from taking too much space
     textAlignVertical: 'top',
   },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#fff', // Ensure footer has background
-    // Remove marginTop since it's now outside scroll view
-  },
-  footerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
+
   privacyButton: {
     flexDirection: 'row',
     alignItems: 'center',
