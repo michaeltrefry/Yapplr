@@ -191,6 +191,15 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         const response = await client.post('/api/messages/conversation', data);
         return response.data;
       },
+
+      getUnreadCount: async (): Promise<{ unreadCount: number }> => {
+        const response = await client.get('/api/messages/unread-count');
+        return response.data;
+      },
+
+      markConversationAsRead: async (conversationId: number): Promise<void> => {
+        await client.post(`/api/messages/conversations/${conversationId}/read`);
+      },
     },
 
     images: {

@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Image,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { ConversationListItem } from '../../types';
 import { RootStackParamList } from '../../navigation/AppNavigator';
@@ -17,6 +19,13 @@ type MessagesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Mai
 
 export default function MessagesScreen({ navigation }: { navigation: MessagesScreenNavigationProp }) {
   const { api, user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Helper function to generate image URL
+  const getImageUrl = (fileName: string) => {
+    if (!fileName) return '';
+    return `http://192.168.254.181:5161/api/images/${fileName}`;
+  };
 
   const { data: conversations, isLoading } = useQuery({
     queryKey: ['conversations'],
@@ -24,6 +33,13 @@ export default function MessagesScreen({ navigation }: { navigation: MessagesScr
     enabled: !!user,
     retry: 2,
   });
+
+  // Refresh unread count when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ['unreadMessageCount'] });
+    }, [queryClient])
+  );
 
   const handleConversationPress = (item: ConversationListItem) => {
     navigation.navigate('Conversation', {
@@ -35,40 +51,73 @@ export default function MessagesScreen({ navigation }: { navigation: MessagesScr
     });
   };
 
-  const renderConversationItem = ({ item }: { item: ConversationListItem }) => (
-    <TouchableOpacity
-      style={styles.conversationItem}
-      onPress={() => handleConversationPress(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>
-          {item.otherParticipant.username.charAt(0).toUpperCase()}
-        </Text>
-      </View>
-      <View style={styles.conversationInfo}>
-        <View style={styles.conversationHeader}>
-          <Text style={styles.username}>@{item.otherParticipant.username}</Text>
-          {item.unreadCount > 0 && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadText}>{item.unreadCount}</Text>
-            </View>
+  const renderConversationItem = ({ item }: { item: ConversationListItem }) => {
+    const hasUnreadMessages = item.unreadCount > 0;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.conversationItem,
+          hasUnreadMessages && styles.conversationItemUnread
+        ]}
+        onPress={() => handleConversationPress(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.avatar}>
+          {item.otherParticipant.profileImageFileName ? (
+            <Image
+              source={{ uri: getImageUrl(item.otherParticipant.profileImageFileName) }}
+              style={styles.profileImage}
+              onError={() => {
+                console.log('Failed to load profile image in conversation list');
+              }}
+            />
+          ) : (
+            <Text style={styles.avatarText}>
+              {item.otherParticipant.username.charAt(0).toUpperCase()}
+            </Text>
           )}
         </View>
-        {item.lastMessage && (
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {item.lastMessage.content}
+
+        <View style={styles.conversationInfo}>
+          <View style={styles.conversationHeader}>
+            <Text style={[
+              styles.username,
+              hasUnreadMessages && styles.usernameUnread
+            ]}>
+              @{item.otherParticipant.username}
+            </Text>
+            {hasUnreadMessages && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadText}>
+                  {item.unreadCount > 99 ? '99+' : item.unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {item.lastMessage && (
+            <Text
+              style={[
+                styles.lastMessage,
+                hasUnreadMessages && styles.lastMessageUnread
+              ]}
+              numberOfLines={1}
+            >
+              {item.lastMessage.content || (item.lastMessage.imageUrl ? '📷 Image' : 'Message')}
+            </Text>
+          )}
+
+          <Text style={styles.timestamp}>
+            {item.lastMessage
+              ? new Date(item.lastMessage.createdAt).toLocaleDateString()
+              : new Date(item.createdAt).toLocaleDateString()
+            }
           </Text>
-        )}
-        <Text style={styles.timestamp}>
-          {item.lastMessage
-            ? new Date(item.lastMessage.createdAt).toLocaleDateString()
-            : new Date(item.createdAt).toLocaleDateString()
-          }
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -133,6 +182,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
+  conversationItemUnread: {
+    backgroundColor: '#F8FAFC',
+  },
   avatar: {
     width: 50,
     height: 50,
@@ -141,6 +193,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
   avatarText: {
     color: '#fff',
@@ -161,6 +219,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1F2937',
   },
+  usernameUnread: {
+    fontWeight: 'bold',
+    color: '#111827',
+  },
   unreadBadge: {
     backgroundColor: '#EF4444',
     borderRadius: 10,
@@ -178,6 +240,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     marginBottom: 2,
+  },
+  lastMessageUnread: {
+    fontWeight: '600',
+    color: '#374151',
   },
   timestamp: {
     fontSize: 12,

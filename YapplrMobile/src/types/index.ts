@@ -84,10 +84,10 @@ export interface TimelineItem {
 export interface Message {
   id: number;
   content: string;
+  imageUrl?: string;
   createdAt: string;
   updatedAt?: string;
   isEdited: boolean;
-  imageFileName?: string;
   sender: User;
   status?: 'sent' | 'delivered' | 'read';
 }
@@ -160,6 +160,8 @@ export interface YapplrApi {
     getOrCreateConversation: (userId: number) => Promise<Conversation>;
     getMessages: (conversationId: number, page: number, limit: number) => Promise<Message[]>;
     sendMessageToConversation: (data: SendMessageData) => Promise<Message>;
+    getUnreadCount: () => Promise<{ unreadCount: number }>;
+    markConversationAsRead: (conversationId: number) => Promise<void>;
   };
   images: {
     uploadImage: (uri: string, fileName: string, type: string) => Promise<ImageUploadResponse>;

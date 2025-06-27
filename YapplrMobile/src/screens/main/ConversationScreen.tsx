@@ -10,32 +10,34 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../contexts/AuthContext';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { Message } from '../../types';
 
 type ConversationScreenProps = StackScreenProps<RootStackParamList, 'Conversation'>;
-
-interface Message {
-  id: number;
-  content: string;
-  createdAt: string;
-  sender: {
-    id: number;
-    username: string;
-  };
-}
 
 export default function ConversationScreen({ route, navigation }: ConversationScreenProps) {
   const { conversationId, otherUser } = route.params;
   const { api, user: currentUser } = useAuth();
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const queryClient = useQueryClient();
+
+  // Helper function to generate image URL
+  const getImageUrl = (fileName: string) => {
+    if (!fileName) return '';
+    return `http://192.168.254.181:5161/api/images/${fileName}`;
+  };
 
   // Fetch conversation messages
   const { data: messages, isLoading, error, refetch } = useQuery({
@@ -48,19 +50,49 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
     retry: 2,
   });
 
+  // Mark conversation as read when entering
+  useEffect(() => {
+    if (conversationId) {
+      const markAsRead = async () => {
+        try {
+          await api.messages.markConversationAsRead(conversationId);
+          console.log('Conversation marked as read:', conversationId);
+
+          // Invalidate caches to update UI
+          queryClient.invalidateQueries({ queryKey: ['unreadMessageCount'] });
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        } catch (error) {
+          console.error('Failed to mark conversation as read:', error);
+        }
+      };
+
+      markAsRead();
+    }
+  }, [conversationId, queryClient, api]);
+
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, imageFileName }: { content: string; imageFileName?: string }) => {
       return await api.messages.sendMessageToConversation({
         conversationId,
         content,
+        imageFileName,
       });
     },
-    onSuccess: () => {
-      // Refresh messages
+    onSuccess: async () => {
+      // Mark conversation as read when sending a message
+      try {
+        await api.messages.markConversationAsRead(conversationId);
+      } catch (error) {
+        console.error('Failed to mark conversation as read after sending:', error);
+      }
+
+      // Refresh messages and unread count
       queryClient.invalidateQueries({ queryKey: ['conversationMessages', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['unreadMessageCount'] });
       setMessageText('');
+      setSelectedImageUri(null);
       // Scroll to bottom
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
@@ -72,21 +104,82 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
     },
   });
 
+  const pickImage = async () => {
+    try {
+      // Request permission
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Permission to access camera roll is required!');
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        setSelectedImageUri(asset.uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
+  };
+
+  const uploadImageAndSend = async (imageUri: string, fileName: string) => {
+    try {
+      setIsUploadingImage(true);
+
+      // Upload the image first
+      const uploadResult = await api.images.uploadImage(imageUri, fileName, 'image/jpeg');
+
+      // Send message with image
+      await sendMessageMutation.mutateAsync({
+        content: messageText.trim(),
+        imageFileName: uploadResult.fileName,
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Alert.alert('Error', 'Failed to upload image. Please try again.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     const trimmedMessage = messageText.trim();
-    if (!trimmedMessage || isSending) return;
+
+    // Check if we have content or an image
+    if (!trimmedMessage && !selectedImageUri) return;
+    if (isSending || isUploadingImage) return;
 
     setIsSending(true);
     try {
-      await sendMessageMutation.mutateAsync(trimmedMessage);
+      if (selectedImageUri) {
+        // Upload image and send message
+        await uploadImageAndSend(selectedImageUri, 'message-image.jpg');
+      } else {
+        // Send text-only message
+        await sendMessageMutation.mutateAsync({ content: trimmedMessage });
+      }
     } finally {
       setIsSending(false);
     }
   };
 
+  const removeSelectedImage = () => {
+    setSelectedImageUri(null);
+  };
+
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwnMessage = item.sender.id === currentUser?.id;
-    
+
     return (
       <View style={[
         styles.messageContainer,
@@ -96,19 +189,33 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
           styles.messageBubble,
           isOwnMessage ? styles.ownBubble : styles.otherBubble
         ]}>
-          <Text style={[
-            styles.messageText,
-            isOwnMessage ? styles.ownMessageText : styles.otherMessageText
-          ]}>
-            {item.content}
-          </Text>
+          {/* Image display */}
+          {item.imageUrl && (
+            <Image
+              source={{ uri: `http://192.168.254.181:5161${item.imageUrl}` }}
+              style={styles.messageImage}
+              resizeMode="cover"
+            />
+          )}
+
+          {/* Text content */}
+          {item.content && (
+            <Text style={[
+              styles.messageText,
+              isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
+              item.imageUrl && styles.messageTextWithImage
+            ]}>
+              {item.content}
+            </Text>
+          )}
+
           <Text style={[
             styles.messageTime,
             isOwnMessage ? styles.ownMessageTime : styles.otherMessageTime
           ]}>
-            {new Date(item.createdAt).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
+            {new Date(item.createdAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
             })}
           </Text>
         </View>
@@ -192,7 +299,25 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
           }
         />
 
+        {/* Image preview */}
+        {selectedImageUri && (
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: selectedImageUri }} style={styles.imagePreview} />
+            <TouchableOpacity style={styles.removeImageButton} onPress={removeSelectedImage}>
+              <Ionicons name="close-circle" size={24} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.inputContainer}>
+          <TouchableOpacity
+            style={styles.imageButton}
+            onPress={pickImage}
+            disabled={isUploadingImage}
+          >
+            <Ionicons name="image" size={24} color="#6B7280" />
+          </TouchableOpacity>
+
           <TextInput
             style={styles.messageInput}
             placeholder="Type a message..."
@@ -204,19 +329,24 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
             onSubmitEditing={handleSendMessage}
             blurOnSubmit={false}
           />
+
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!messageText.trim() || isSending) && styles.sendButtonDisabled
+              (!messageText.trim() && !selectedImageUri || isSending || isUploadingImage) && styles.sendButtonDisabled
             ]}
             onPress={handleSendMessage}
-            disabled={!messageText.trim() || isSending}
+            disabled={(!messageText.trim() && !selectedImageUri) || isSending || isUploadingImage}
           >
-            <Ionicons 
-              name="send" 
-              size={20} 
-              color={(!messageText.trim() || isSending) ? '#9CA3AF' : '#fff'} 
-            />
+            {(isSending || isUploadingImage) ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons
+                name="send"
+                size={20}
+                color={(!messageText.trim() && !selectedImageUri || isSending || isUploadingImage) ? '#9CA3AF' : '#fff'}
+              />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -294,6 +424,31 @@ const styles = StyleSheet.create({
   otherMessageTime: {
     color: '#6B7280',
   },
+  messageImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  messageTextWithImage: {
+    marginTop: 0,
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+  },
+  imagePreview: {
+    width: 100,
+    height: 75,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 4,
+    right: 12,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -302,6 +457,14 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     backgroundColor: '#fff',
+  },
+  imageButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   messageInput: {
     flex: 1,

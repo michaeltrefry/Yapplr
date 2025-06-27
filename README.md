@@ -18,8 +18,10 @@ A complete Twitter-like social media platform built with modern web technologies
 - **User Blocking**: Block/unblock users with automatic unfollowing and content filtering
 - **Settings Management**: Dedicated settings page with blocklist management
 - **Private Messaging**: Send direct messages with text and photo attachments
-- **Message Conversations**: Organized conversation threads with read status tracking
+- **Message Conversations**: Organized conversation threads with read status tracking and visual unread indicators
 - **Messaging Privacy**: Blocked users cannot send messages to each other
+- **Message Notifications**: Real-time unread message badges on Messages tab and conversation list
+- **Enhanced Conversation UI**: Bold text and background highlights for unread conversations
 
 ### Privacy & Security
 - **Yap Privacy**: Three levels - Public (everyone), Followers (followers only), Private (author only)
@@ -42,6 +44,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Real-time Messaging**: Live message updates with automatic conversation refresh
 - **Message Attachments**: Send photos in messages with preview and validation
 - **Conversation Management**: Infinite scroll message history with unread count indicators
+- **Message Notifications**: Red badge indicators showing unread message counts on tabs and conversation lists
+- **Visual Read Status**: Bold text and background highlights for conversations with unread messages
 
 ## 🛠 Tech Stack
 
@@ -69,9 +73,11 @@ A complete Twitter-like social media platform built with modern web technologies
 - **React Navigation** - Navigation library with stack navigation
 - **TanStack Query** - Data fetching (shared with web)
 - **AsyncStorage** - Local data persistence
-- **Expo Image Picker** - Camera and gallery integration for profile images
+- **Expo Image Picker** - Camera and gallery integration for profile images and message attachments
 - **Profile Management** - Complete profile editing with image upload functionality
 - **Profile Images** - Display and upload user profile pictures across all screens
+- **Message Notifications** - Real-time unread message badges and visual indicators
+- **Enhanced Messaging UI** - Image attachments, read status, and conversation management
 - **Shared Package** - 70-80% code reuse with web app
 
 ## 🏃‍♂️ Quick Start
@@ -143,6 +149,11 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Profile Information Display**: View all profile information including pronouns next to username
 - **Profile Images Everywhere**: User avatars displayed in timeline posts, user lists, and profiles
 - **Following/Followers Lists**: Tap Following or Followers count to view and navigate to user profiles with images
+- **Enhanced Messaging**: Send text and photo messages with real-time delivery and read status
+- **Message Notifications**: Red badge on Messages tab showing total unread message count
+- **Visual Conversation Indicators**: Bold text and background highlights for conversations with unread messages
+- **Image Message Support**: Send photos in messages with gallery picker and preview functionality
+- **Automatic Read Marking**: Conversations automatically marked as read when opened
 - **Navigation**: Stack-based navigation with proper screen transitions
 - **API Integration**: Full integration with backend API for profile updates and image uploads
 - **Image Fallbacks**: Graceful fallback to user initials when no profile image is available
@@ -193,12 +204,15 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Direct Messages**: Send private messages between users with text and photo attachments
 - **Conversation Threads**: Organized message conversations with participant management
 - **Real-time Updates**: Live message updates with automatic refresh (5-second intervals)
-- **Read Status Tracking**: Mark conversations as read with timestamp tracking
+- **Read Status Tracking**: Mark conversations as read with timestamp tracking and automatic read marking
 - **Infinite Scroll**: Load message history with pagination (25 messages per page)
 - **Blocking Integration**: Blocked users cannot send messages to each other
 - **Message Composer**: Rich message input with photo upload and character limits
-- **Unread Indicators**: Visual unread message counts on conversation list
-- **Sidebar Notifications**: Red badge on Messages link showing total count of conversations with unread messages
+- **Unread Indicators**: Visual unread message counts on conversation list with bold text and background highlights
+- **Notification Badges**: Red badge on Messages tab/link showing total count of conversations with unread messages
+- **Mobile Image Support**: Send photos in mobile messages with gallery picker, preview, and validation
+- **Enhanced Mobile UI**: Profile images in conversation list, automatic read marking, and visual unread indicators
+- **Cross-Platform Consistency**: Unified messaging experience across web and mobile platforms
 
 ## 🔧 Development
 
