@@ -19,6 +19,8 @@ import FollowersListScreen from '../screens/main/FollowersListScreen';
 import ConversationScreen from '../screens/main/ConversationScreen';
 import MessagesScreen from '../screens/main/MessagesScreen';
 import SearchScreen from '../screens/main/SearchScreen';
+import CommentsScreen from '../screens/main/CommentsScreen';
+import { Post } from '../types';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -29,6 +31,10 @@ export type RootStackParamList = {
   Conversation: {
     conversationId: number;
     otherUser: { id: number; username: string }
+  };
+  Comments: {
+    post: Post;
+    onCommentCountUpdate?: (postId: number, newCount: number) => void;
   };
 };
 
@@ -145,6 +151,11 @@ function MainStack() {
       <Stack.Screen
         name="Conversation"
         component={ConversationScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Comments"
+        component={CommentsScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

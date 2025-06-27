@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -110,6 +110,25 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
       getUserTimeline: async (userId: number, page: number, limit: number): Promise<TimelineItem[]> => {
         const response = await client.get(`/api/posts/user/${userId}/timeline?page=${page}&pageSize=${limit}`);
         return response.data;
+      },
+
+      getComments: async (postId: number): Promise<Comment[]> => {
+        const response = await client.get(`/api/posts/${postId}/comments`);
+        return response.data;
+      },
+
+      addComment: async (postId: number, data: CreateCommentData): Promise<Comment> => {
+        const response = await client.post(`/api/posts/${postId}/comments`, data);
+        return response.data;
+      },
+
+      updateComment: async (commentId: number, data: UpdateCommentData): Promise<Comment> => {
+        const response = await client.put(`/api/posts/comments/${commentId}`, data);
+        return response.data;
+      },
+
+      deleteComment: async (commentId: number): Promise<void> => {
+        await client.delete(`/api/posts/comments/${commentId}`);
       },
     },
 

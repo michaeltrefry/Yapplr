@@ -74,6 +74,23 @@ export interface Post {
   isRepostedByCurrentUser: boolean;
 }
 
+export interface Comment {
+  id: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  user: User;
+  isEdited: boolean;
+}
+
+export interface CreateCommentData {
+  content: string;
+}
+
+export interface UpdateCommentData {
+  content: string;
+}
+
 export interface TimelineItem {
   type: 'post' | 'repost';
   createdAt: string;
@@ -143,6 +160,10 @@ export interface YapplrApi {
     likePost: (postId: number) => Promise<void>;
     repostPost: (postId: number) => Promise<void>;
     getUserTimeline: (userId: number, page: number, limit: number) => Promise<TimelineItem[]>;
+    getComments: (postId: number) => Promise<Comment[]>;
+    addComment: (postId: number, data: CreateCommentData) => Promise<Comment>;
+    updateComment: (commentId: number, data: UpdateCommentData) => Promise<Comment>;
+    deleteComment: (commentId: number) => Promise<void>;
   };
   users: {
     searchUsers: (query: string) => Promise<User[]>;

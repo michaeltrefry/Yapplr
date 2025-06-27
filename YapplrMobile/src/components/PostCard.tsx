@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { TimelineItem } from '../types';
+import { TimelineItem, Post } from '../types';
 import ImageViewer from './ImageViewer';
 
 interface PostCardProps {
@@ -17,9 +17,11 @@ interface PostCardProps {
   onLike: (postId: number) => void;
   onRepost: (postId: number) => void;
   onUserPress?: (username: string) => void;
+  onCommentPress?: (post: Post) => void;
+  onCommentCountUpdate?: (postId: number, newCount: number) => void;
 }
 
-export default function PostCard({ item, onLike, onRepost, onUserPress }: PostCardProps) {
+export default function PostCard({ item, onLike, onRepost, onUserPress, onCommentPress, onCommentCountUpdate }: PostCardProps) {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
@@ -133,7 +135,10 @@ export default function PostCard({ item, onLike, onRepost, onUserPress }: PostCa
           <Text style={styles.actionText}>{item.post.likeCount}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => onCommentPress?.(item.post)}
+        >
           <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
           <Text style={styles.actionText}>{item.post.commentCount}</Text>
         </TouchableOpacity>

@@ -7,7 +7,7 @@ A complete Twitter-like social media platform built with modern web technologies
 ### Core Social Features
 - **Yaps**: Create text yaps (up to 256 characters) with optional images
 - **Reyaps**: Reyap content with proper attribution in timeline feeds
-- **Comments**: Comment on yaps with expandable comment sections
+- **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, and auto-scroll to new comments
 - **Likes**: Like and unlike yaps with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates
 - **Following/Followers Lists**: View and navigate to profiles of users you follow and users who follow you
@@ -78,6 +78,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Profile Images** - Display and upload user profile pictures across all screens
 - **Message Notifications** - Real-time unread message badges and visual indicators
 - **Enhanced Messaging UI** - Image attachments, read status, and conversation management
+- **Comments System** - Full commenting functionality with dedicated screens, real-time updates, and optimized performance
 - **Shared Package** - 70-80% code reuse with web app
 
 ## 🏃‍♂️ Quick Start
@@ -154,6 +155,8 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Visual Conversation Indicators**: Bold text and background highlights for conversations with unread messages
 - **Image Message Support**: Send photos in messages with gallery picker and preview functionality
 - **Automatic Read Marking**: Conversations automatically marked as read when opened
+- **Comments System**: Dedicated comment screens with post context, real-time comment count updates, and auto-scroll to new comments
+- **Optimized Performance**: Memoized components prevent image flashing and unnecessary re-renders during typing
 - **Navigation**: Stack-based navigation with proper screen transitions
 - **API Integration**: Full integration with backend API for profile updates and image uploads
 - **Image Fallbacks**: Graceful fallback to user initials when no profile image is available
@@ -173,6 +176,17 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Followers Yaps**: Only visible to followers and author
 - **Private Yaps**: Only visible to the author
 - **Smart Filtering**: Timeline automatically filters based on relationships
+
+### Comments System
+- **Dedicated Comment Screens**: Full-screen comment interface showing post context and all comments
+- **Real-time Updates**: Comment counts update immediately across all screens when comments are added
+- **Auto-scroll**: Automatically scroll to show newly added comments for better user experience
+- **Post Context**: Display original post content at the top of comment screens for context
+- **User Information**: Show commenter avatars, usernames, and timestamps for each comment
+- **Performance Optimized**: Memoized components prevent image flashing and unnecessary re-renders
+- **Cross-Platform**: Consistent commenting experience across web and mobile platforms
+- **Edit Indicators**: Visual indicators for edited comments with "(edited)" labels
+- **Mobile Optimized**: Touch-friendly interface with proper keyboard handling and scroll behavior
 
 ### Follow System
 - **Real-time Counts**: Instant follower/following count updates
@@ -262,8 +276,12 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `POST /api/posts/{id}/repost` - Reyap a yap
 - `DELETE /api/posts/{id}/repost` - Remove reyap
 - `POST /api/posts/{id}/like` - Like a yap
-- `POST /api/posts/{id}/comments` - Add comment
 - `DELETE /api/posts/{id}` - Delete your own yap
+
+### Comments System
+- `GET /api/posts/{id}/comments` - Get all comments for a specific yap
+- `POST /api/posts/{id}/comments` - Add a new comment to a yap
+- `PUT /api/posts/comments/{commentId}` - Update your own comment
 - `DELETE /api/posts/comments/{commentId}` - Delete your own comment
 
 ### User Management

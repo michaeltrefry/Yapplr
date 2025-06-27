@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
-import { TimelineItem } from '../../types';
+import { TimelineItem, Post } from '../../types';
 import CreatePostModal from '../../components/CreatePostModal';
 import PostCard from '../../components/PostCard';
 import { RootStackParamList } from '../../navigation/AppNavigator';
@@ -24,6 +24,7 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
   const { api, user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [commentCountUpdates, setCommentCountUpdates] = useState<Record<number, number>>({});
 
   const {
     data: timeline,
@@ -35,6 +36,10 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     queryFn: async () => {
       const result = await api.posts.getTimeline(1, 25);
       console.log('Timeline loaded:', result.length, 'items');
+      // Log comment counts for debugging
+      result.forEach(item => {
+        console.log(`Post ${item.post.id} has ${item.post.commentCount} comments`);
+      });
       const postsWithImages = result.filter(item => item.post.imageUrl);
       console.log('Posts with images:', postsWithImages.length);
       postsWithImages.forEach(item => {
@@ -78,6 +83,41 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     navigation.navigate('UserProfile', { username });
   };
 
+  const handleCommentCountUpdate = (postId: number, newCount: number) => {
+    console.log(`Updating comment count for post ${postId} to ${newCount}`);
+    setCommentCountUpdates(prev => ({
+      ...prev,
+      [postId]: newCount
+    }));
+    console.log(`Updated comment count for post ${postId} to ${newCount}`);
+  };
+
+  const handleCommentPress = (post: Post) => {
+    navigation.navigate('Comments', {
+      post,
+      onCommentCountUpdate: handleCommentCountUpdate
+    });
+  };
+
+  // Merge timeline data with local comment count updates
+  const timelineWithUpdates = useMemo(() => {
+    if (!timeline) return [];
+
+    return timeline.map(item => {
+      const updatedCount = commentCountUpdates[item.post.id];
+      if (updatedCount !== undefined) {
+        return {
+          ...item,
+          post: {
+            ...item.post,
+            commentCount: updatedCount
+          }
+        };
+      }
+      return item;
+    });
+  }, [timeline, commentCountUpdates]);
+
   const renderTimelineItem = ({ item }: { item: TimelineItem }) => {
     // Debug: Log posts with images
     if (item.post.imageUrl) {
@@ -93,6 +133,8 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
         onLike={handleLikePost}
         onRepost={handleRepost}
         onUserPress={handleUserPress}
+        onCommentPress={handleCommentPress}
+        onCommentCountUpdate={handleCommentCountUpdate}
       />
     );
   };
@@ -130,7 +172,7 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
       </View>
 
       <FlatList
-        data={timeline || []}
+        data={timelineWithUpdates}
         renderItem={renderTimelineItem}
         keyExtractor={(item) => `${item.type}-${item.post.id}-${item.createdAt}`}
         refreshControl={

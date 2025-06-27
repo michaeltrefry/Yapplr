@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
-import { TimelineItem } from '../../types';
+import { TimelineItem, Post } from '../../types';
 import PostCard from '../../components/PostCard';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
@@ -25,6 +25,7 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
   const { username } = route.params;
   const { api, user: currentUser } = useAuth();
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+  const [commentCountUpdates, setCommentCountUpdates] = useState<Record<number, number>>({});
   const queryClient = useQueryClient();
 
   const isOwnProfile = currentUser?.username === username;
@@ -171,12 +172,49 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     navigation.navigate('UserProfile', { username });
   };
 
+  const handleCommentCountUpdate = (postId: number, newCount: number) => {
+    console.log(`Updating comment count for post ${postId} to ${newCount}`);
+    setCommentCountUpdates(prev => ({
+      ...prev,
+      [postId]: newCount
+    }));
+    console.log(`Updated comment count for post ${postId} to ${newCount}`);
+  };
+
+  const handleCommentPress = (post: Post) => {
+    navigation.navigate('Comments', {
+      post,
+      onCommentCountUpdate: handleCommentCountUpdate
+    });
+  };
+
+  // Merge timeline data with local comment count updates
+  const timelineWithUpdates = useMemo(() => {
+    if (!userTimeline) return [];
+
+    return userTimeline.map(item => {
+      const updatedCount = commentCountUpdates[item.post.id];
+      if (updatedCount !== undefined) {
+        return {
+          ...item,
+          post: {
+            ...item.post,
+            commentCount: updatedCount
+          }
+        };
+      }
+      return item;
+    });
+  }, [userTimeline, commentCountUpdates]);
+
   const renderTimelineItem = ({ item }: { item: TimelineItem }) => (
     <PostCard
       item={item}
       onLike={handleLikePost}
       onRepost={handleRepost}
       onUserPress={handleUserPress}
+      onCommentPress={handleCommentPress}
+      onCommentCountUpdate={handleCommentCountUpdate}
     />
   );
 
@@ -228,7 +266,7 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
       </View>
 
       <FlatList
-        data={userTimeline || []}
+        data={timelineWithUpdates}
         renderItem={renderTimelineItem}
         keyExtractor={(item) => `${item.type}-${item.post.id}-${item.createdAt}`}
         refreshControl={
