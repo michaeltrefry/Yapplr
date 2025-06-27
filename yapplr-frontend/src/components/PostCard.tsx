@@ -117,7 +117,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
 
   return (
     <>
-      <article className={`p-4 hover:bg-gray-50/50 transition-colors ${showBorder ? 'border-b border-gray-200' : ''}`}>
+      <article className={`p-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors bg-white dark:bg-gray-800 ${showBorder ? 'border-b border-gray-200 dark:border-gray-700' : ''}`}>
       <div className="flex space-x-3">
         {/* Avatar */}
         <UserAvatar user={post.user} size="lg" />
@@ -126,23 +126,23 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
         <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="flex items-center space-x-2">
-            <Link 
+            <Link
               href={`/profile/${post.user.username}`}
-              className="font-semibold text-gray-900 hover:underline"
+              className="font-semibold text-gray-900 dark:text-white hover:underline"
             >
               {post.user.username}
             </Link>
-            <span className="text-gray-500">@{post.user.username}</span>
-            <span className="text-gray-500">·</span>
-            <span className="text-gray-500 text-sm">
+            <span className="text-gray-500 dark:text-gray-400">@{post.user.username}</span>
+            <span className="text-gray-500 dark:text-gray-400">·</span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
               {formatDate(post.createdAt)}
               {post.isEdited && <span className="ml-1">(edited)</span>}
             </span>
             {/* Privacy Indicator */}
             {post.privacy !== PostPrivacy.Public && (
               <>
-                <span className="text-gray-500">·</span>
-                <span className="text-gray-500 text-sm flex items-center">
+                <span className="text-gray-500 dark:text-gray-400">·</span>
+                <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center">
                   {post.privacy === PostPrivacy.Followers ? (
                     <Users className="w-3 h-3 mr-1" />
                   ) : (
@@ -156,7 +156,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               <div className="ml-auto flex space-x-1">
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                  className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                   title="Edit post"
                   disabled={editMutation.isPending || isEditing}
                 >
@@ -164,7 +164,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                  className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   title="Delete post"
                   disabled={deleteMutation.isPending}
                 >
@@ -181,7 +181,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full text-gray-900 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   rows={3}
                   maxLength={256}
                 />
@@ -189,7 +189,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                   <select
                     value={editPrivacy}
                     onChange={(e) => setEditPrivacy(Number(e.target.value) as PostPrivacy)}
-                    className="text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="text-sm border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value={PostPrivacy.Public}>Public</option>
                     <option value={PostPrivacy.Followers}>Followers</option>
@@ -199,7 +199,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                     <button
                       type="button"
                       onClick={handleCancelEdit}
-                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                      className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
                       disabled={editMutation.isPending}
                     >
                       Cancel
@@ -207,7 +207,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                     <button
                       type="submit"
                       disabled={!editContent.trim() || editMutation.isPending}
-                      className="px-4 py-1 text-sm bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="px-4 py-1 text-sm bg-blue-500 dark:bg-blue-600 text-white rounded-full hover:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {editMutation.isPending ? 'Saving...' : 'Save'}
                     </button>
@@ -215,7 +215,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 </div>
               </form>
             ) : (
-              <p className="text-gray-900 whitespace-pre-wrap">{post.content}</p>
+              <p className="text-gray-900 dark:text-white whitespace-pre-wrap">{post.content}</p>
             )}
             
             {/* Image */}
@@ -236,9 +236,9 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
           <div className="flex items-center justify-between mt-3 max-w-md">
             <button
               onClick={() => setShowComments(!showComments)}
-              className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors group"
+              className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors group"
             >
-              <div className="p-2 rounded-full group-hover:bg-blue-50">
+              <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20">
                 <MessageCircle className="w-5 h-5" />
               </div>
               <span className="text-sm">{formatNumber(post.commentCount)}</span>
@@ -250,10 +250,10 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               className={`flex items-center space-x-2 transition-colors group ${
                 post.isRepostedByCurrentUser
                   ? 'text-green-500'
-                  : 'text-gray-500 hover:text-green-500'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-green-500'
               }`}
             >
-              <div className="p-2 rounded-full group-hover:bg-green-50">
+              <div className="p-2 rounded-full group-hover:bg-green-50 dark:group-hover:bg-green-900/20">
                 <Repeat2 className="w-5 h-5" />
               </div>
               <span className="text-sm">{formatNumber(post.repostCount)}</span>
@@ -265,12 +265,12 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               className={`flex items-center space-x-2 transition-colors group ${
                 post.isLikedByCurrentUser
                   ? 'text-red-500'
-                  : 'text-gray-500 hover:text-red-500'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-red-500'
               }`}
             >
-              <div className="p-2 rounded-full group-hover:bg-red-50">
-                <Heart 
-                  className={`w-5 h-5 ${post.isLikedByCurrentUser ? 'fill-current' : ''}`} 
+              <div className="p-2 rounded-full group-hover:bg-red-50 dark:group-hover:bg-red-900/20">
+                <Heart
+                  className={`w-5 h-5 ${post.isLikedByCurrentUser ? 'fill-current' : ''}`}
                 />
               </div>
               <span className="text-sm">{formatNumber(post.likeCount)}</span>
@@ -278,9 +278,9 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
 
             <button
               onClick={() => setShowShareModal(true)}
-              className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors group"
+              className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors group"
             >
-              <div className="p-2 rounded-full group-hover:bg-blue-50">
+              <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20">
                 <Share className="w-5 h-5" />
               </div>
             </button>
@@ -293,13 +293,13 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
           {showComments && (
             <div className="mt-4 border-t border-gray-100 pt-4">
               <form onSubmit={handleComment} className="flex space-x-3">
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
+                <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex-shrink-0"></div>
                 <div className="flex-1">
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="Yap your reply"
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full text-sm border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     rows={2}
                     maxLength={256}
                   />
@@ -307,7 +307,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                     <button
                       type="submit"
                       disabled={!commentText.trim() || commentMutation.isPending}
-                      className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="bg-blue-500 dark:bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold hover:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {commentMutation.isPending ? 'Replying...' : 'Reply'}
                     </button>
@@ -330,15 +330,15 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Post</h3>
-            <p className="text-gray-600 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Post</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               Are you sure you want to delete this post? This action cannot be undone.
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 disabled={deleteMutation.isPending}
               >
                 Cancel

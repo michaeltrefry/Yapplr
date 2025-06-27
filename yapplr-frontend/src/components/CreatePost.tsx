@@ -93,11 +93,11 @@ export default function CreatePost() {
   const remainingChars = 256 - content.length;
 
   return (
-    <div className="border-b border-gray-200 p-4">
+    <div className="border-b border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
       <form onSubmit={handleSubmit}>
         <div className="flex space-x-3">
           {/* Avatar */}
-          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-white font-semibold text-lg">
               {user?.username.charAt(0).toUpperCase()}
             </span>
@@ -109,7 +109,7 @@ export default function CreatePost() {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="What's happening?"
-              className="w-full text-xl placeholder-gray-500 border-none resize-none focus:outline-none"
+              className="w-full text-xl placeholder-gray-500 dark:placeholder-gray-400 border-none resize-none focus:outline-none bg-transparent text-gray-900 dark:text-white"
               rows={3}
               maxLength={256}
             />
@@ -131,7 +131,7 @@ export default function CreatePost() {
                   alt="Preview"
                   width={500}
                   height={300}
-                  className="max-w-full h-auto rounded-lg border border-gray-200"
+                  className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-600"
                 />
                 <button
                   type="button"
@@ -154,7 +154,7 @@ export default function CreatePost() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                  className="text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition-colors"
                   title="Add image"
                   disabled={uploadImageMutation.isPending}
                 >
@@ -166,7 +166,7 @@ export default function CreatePost() {
                   <select
                     value={privacy}
                     onChange={(e) => setPrivacy(Number(e.target.value) as PostPrivacy)}
-                    className="appearance-none bg-transparent border border-gray-300 rounded-full px-3 py-1 pr-8 text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="appearance-none bg-transparent border border-gray-300 dark:border-gray-600 rounded-full px-3 py-1 pr-8 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value={PostPrivacy.Public}>🌍 Public</option>
                     <option value={PostPrivacy.Followers}>👥 Followers</option>
@@ -182,7 +182,7 @@ export default function CreatePost() {
                       ? remainingChars < 0
                         ? 'text-red-500'
                         : 'text-orange-500'
-                      : 'text-gray-500'
+                      : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
                   {remainingChars}
@@ -190,7 +190,7 @@ export default function CreatePost() {
                 <button
                   type="submit"
                   disabled={!content.trim() || remainingChars < 0 || createPostMutation.isPending || uploadImageMutation.isPending}
-                  className="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="bg-blue-500 dark:bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {createPostMutation.isPending ? 'Yapping...' : uploadImageMutation.isPending ? 'Uploading...' : 'Yap'}
                 </button>

@@ -1,0 +1,44 @@
+name: Deploy Yapplr API to Linode
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'Yapplr.Api/**' ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Docker image
+      run: |
+        cd Yapplr.Api
+        docker build -t yapplr-api:${{ github.sha }} .
+        docker tag yapplr-api:${{ github.sha }} yapplr-api:latest
+        
+    - name: Save Docker image
+      run: |
+        docker save yapplr-api:latest | gzip > yapplr-api.tar.gz
+        
+    - name: Deploy to Linode
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.LINODE_HOST }}
+        username: ${{ secrets.LINODE_USER }}
+        key: ${{ secrets.LINODE_SSH_KEY }}
+        script: |
+          cd /opt/yapplr/Yapplr.Api
+          git pull origin main
+          ./deploy.sh
+          
+    - name: Health Check
+      run: |
+        sleep 30
+        curl -f https://${{ secrets.DOMAIN_NAME }}/health || exit 1

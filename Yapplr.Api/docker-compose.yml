@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  yapplr-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=yapplr_db;Username=postgres;Password=postgres
+      - JwtSettings__SecretKey=your-super-secret-jwt-key-that-should-be-at-least-32-characters-long-for-production
+      - JwtSettings__Issuer=Yapplr.Api
+      - JwtSettings__Audience=Yapplr.Client
+      - JwtSettings__ExpirationInMinutes=60
+    volumes:
+      - yapplr_uploads:/app/uploads
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=yapplr_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+
+volumes:
+  postgres_data:
+  yapplr_uploads:
+
+networks:
+  yapplr-network:
+    driver: bridge

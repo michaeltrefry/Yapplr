@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  yapplr-api:
+    image: yapplr-api:latest
+    ports:
+      - "80:8080"
+      - "443:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY}
+      - JwtSettings__Issuer=Yapplr.Api
+      - JwtSettings__Audience=Yapplr.Client
+      - JwtSettings__ExpirationInMinutes=60
+      - AwsSesSettings__Region=${AWS_SES_REGION}
+      - AwsSesSettings__FromEmail=${AWS_SES_FROM_EMAIL}
+      - AwsSesSettings__FromName=Yapplr
+      - AwsSesSettings__AccessKey=${AWS_SES_ACCESS_KEY}
+      - AwsSesSettings__SecretKey=${AWS_SES_SECRET_KEY}
+      - EmailProvider=AwsSes
+    volumes:
+      - yapplr_uploads:/app/uploads
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot
+    depends_on:
+      - yapplr-api
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email ${CERTBOT_EMAIL} --agree-tos --no-eff-email -d ${DOMAIN_NAME}
+
+volumes:
+  yapplr_uploads:
+
+networks:
+  yapplr-network:
+    driver: bridge

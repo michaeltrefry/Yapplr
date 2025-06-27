@@ -46,8 +46,8 @@ export default function UserAvatar({
   ) : null;
 
   const fallbackContent = (
-    <div 
-      className={`${sizeClass} bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 ${className}`}
+    <div
+      className={`${sizeClass} bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 ${className}`}
       style={{ display: user.profileImageFileName ? 'none' : 'flex' }}
     >
       <span className="text-white font-semibold">

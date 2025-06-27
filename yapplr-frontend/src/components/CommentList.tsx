@@ -28,22 +28,22 @@ export default function CommentList({ postId, showComments }: CommentListProps) 
 
   if (isLoading) {
     return (
-      <div className="mt-4 border-t border-gray-100 pt-4">
-        <div className="text-center text-gray-500 text-sm">Loading comments...</div>
+      <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+        <div className="text-center text-gray-500 dark:text-gray-400 text-sm">Loading comments...</div>
       </div>
     );
   }
 
   if (!comments || comments.length === 0) {
     return (
-      <div className="mt-4 border-t border-gray-100 pt-4">
-        <div className="text-center text-gray-500 text-sm">No comments yet</div>
+      <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+        <div className="text-center text-gray-500 dark:text-gray-400 text-sm">No comments yet</div>
       </div>
     );
   }
 
   return (
-    <div className="mt-4 border-t border-gray-100 pt-4 space-y-4">
+    <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4 space-y-4">
       {comments.map((comment) => (
         <CommentItem key={comment.id} comment={comment} postId={postId} />
       ))}
@@ -110,13 +110,13 @@ function CommentItem({ comment, postId }: CommentItemProps) {
         <div className="flex items-center space-x-2">
           <Link
             href={`/profile/${comment.user.username}`}
-            className="font-semibold text-gray-900 hover:underline text-sm"
+            className="font-semibold text-gray-900 dark:text-white hover:underline text-sm"
           >
             {comment.user.username}
           </Link>
-          <span className="text-gray-500 text-sm">@{comment.user.username}</span>
-          <span className="text-gray-500 text-sm">·</span>
-          <span className="text-gray-500 text-xs">
+          <span className="text-gray-500 dark:text-gray-400 text-sm">@{comment.user.username}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-sm">·</span>
+          <span className="text-gray-500 dark:text-gray-400 text-xs">
             {formatDate(comment.createdAt)}
             {comment.isEdited && <span className="ml-1">(edited)</span>}
           </span>
@@ -124,7 +124,7 @@ function CommentItem({ comment, postId }: CommentItemProps) {
             <div className="ml-auto flex space-x-1">
               <button
                 onClick={() => setIsEditing(true)}
-                className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                className="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                 title="Edit comment"
                 disabled={editMutation.isPending || isEditing}
               >
@@ -132,7 +132,7 @@ function CommentItem({ comment, postId }: CommentItemProps) {
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 title="Delete comment"
                 disabled={deleteMutation.isPending}
               >
@@ -149,7 +149,7 @@ function CommentItem({ comment, postId }: CommentItemProps) {
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="w-full text-sm text-gray-900 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows={2}
                 maxLength={256}
               />
@@ -157,7 +157,7 @@ function CommentItem({ comment, postId }: CommentItemProps) {
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                  className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
                   disabled={editMutation.isPending}
                 >
                   Cancel
@@ -165,14 +165,14 @@ function CommentItem({ comment, postId }: CommentItemProps) {
                 <button
                   type="submit"
                   disabled={!editContent.trim() || editMutation.isPending}
-                  className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1 text-xs bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {editMutation.isPending ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </form>
           ) : (
-            <p className="text-gray-900 text-sm whitespace-pre-wrap">{comment.content}</p>
+            <p className="text-gray-900 dark:text-white text-sm whitespace-pre-wrap">{comment.content}</p>
           )}
         </div>
       </div>
@@ -180,15 +180,15 @@ function CommentItem({ comment, postId }: CommentItemProps) {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Comment</h3>
-            <p className="text-gray-600 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Comment</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               Are you sure you want to delete this comment? This action cannot be undone.
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 disabled={deleteMutation.isPending}
               >
                 Cancel
