@@ -25,8 +25,10 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-# Load environment variables
+# Load environment variables (with proper handling of quoted values)
+set -a  # automatically export all variables
 source .env
+set +a  # turn off automatic export
 
 # Validate required environment variables
 required_vars=("DATABASE_CONNECTION_STRING" "JWT_SECRET_KEY" "DOMAIN_NAME")
