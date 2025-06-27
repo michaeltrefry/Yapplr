@@ -79,11 +79,12 @@ fi
 
 # Run database migrations using SDK container
 echo -e "${GREEN}🗄️ Running database migrations...${NC}"
+echo -e "${YELLOW}Using connection string: ${DATABASE_CONNECTION_STRING}${NC}"
 docker run --rm \
   --network yapplrapi_yapplr-network \
   -v $(pwd):/app \
   -w /app \
-  -e ConnectionStrings__DefaultConnection="$DATABASE_CONNECTION_STRING" \
+  -e "ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}" \
   mcr.microsoft.com/dotnet/sdk:9.0 \
   sh -c "dotnet tool install --global dotnet-ef && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update" || true
 
