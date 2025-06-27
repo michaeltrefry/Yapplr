@@ -20,8 +20,8 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-lg text-gray-900 dark:text-white">Loading...</div>
       </div>
     );
   }
@@ -29,25 +29,25 @@ export default function Home() {
   // Show public feed for unauthenticated users
   if (!user && showPublicFeed) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-6xl mx-auto flex">
           {/* Main Content */}
           <div className="flex-1">
-            <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
+            <div className="max-w-2xl mx-auto lg:border-x border-gray-200 dark:border-gray-700 min-h-screen bg-white dark:bg-gray-800">
               {/* Header */}
-              <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
+              <div className="sticky top-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between">
-                  <h1 className="text-xl font-bold text-blue-600">Yapplr</h1>
+                  <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Yapplr</h1>
                   <div className="flex items-center space-x-4">
                     <Link
                       href="/login"
-                      className="text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                     >
                       Sign in
                     </Link>
                     <Link
                       href="/register"
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                     >
                       Sign up
                     </Link>
@@ -56,14 +56,14 @@ export default function Home() {
               </div>
 
               {/* Welcome Section */}
-              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Yapplr</h2>
-                <p className="text-gray-600 mb-4">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Welcome to Yapplr</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
                   Join the conversation! Share your thoughts, connect with others, and discover what&apos;s happening.
                 </p>
                 <Link
                   href="/register"
-                  className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                  className="inline-block bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-semibold"
                 >
                   Get Started
                 </Link>
@@ -83,7 +83,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto flex">
         {/* Sidebar */}
         <div className="w-16 lg:w-64 fixed h-full z-10">
@@ -92,10 +92,10 @@ export default function Home() {
 
         {/* Main Content */}
         <div className="flex-1 ml-16 lg:ml-64">
-          <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
+          <div className="max-w-2xl mx-auto lg:border-x border-gray-200 dark:border-gray-700 min-h-screen bg-white dark:bg-gray-800">
             {/* Header */}
-            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
-              <h1 className="text-xl font-bold">Home</h1>
+            <div className="sticky top-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-4">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Home</h1>
             </div>
 
             {/* Create Post */}

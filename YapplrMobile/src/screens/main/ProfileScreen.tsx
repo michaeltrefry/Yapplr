@@ -14,13 +14,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 export default function ProfileScreen() {
   const { user, logout, api } = useAuth();
+  const colors = useThemeColors();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+
+  const styles = createStyles(colors);
 
   // Helper function to generate image URL
   const getImageUrl = (fileName: string) => {
@@ -204,10 +208,10 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -216,12 +220,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: colors.text,
   },
   profileSection: {
     paddingVertical: 32,
@@ -236,7 +240,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -252,7 +256,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontWeight: 'bold',
     fontSize: 32,
   },
@@ -264,33 +268,33 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: colors.text,
   },
   email: {
     fontSize: 16,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   bio: {
     fontSize: 16,
-    color: '#1F2937',
+    color: colors.text,
     lineHeight: 24,
     marginBottom: 12,
   },
   pronouns: {
     fontSize: 16,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: 'normal',
   },
   tagline: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontStyle: 'italic',
     marginTop: 4,
     marginBottom: 8,
   },
   birthday: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 16,
   },
   statsContainer: {
@@ -299,7 +303,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.border,
   },
   statItem: {
     alignItems: 'center',
@@ -307,11 +311,11 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: colors.text,
   },
   statLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   menuSection: {
@@ -323,12 +327,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   menuText: {
     flex: 1,
     fontSize: 16,
-    color: '#1F2937',
+    color: colors.text,
     marginLeft: 12,
   },
   loadingContainer: {
@@ -340,7 +344,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
@@ -350,7 +354,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#EF4444',
+    color: colors.error,
     textAlign: 'center',
   },
 });

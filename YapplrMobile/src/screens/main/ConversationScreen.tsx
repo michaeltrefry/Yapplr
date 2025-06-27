@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../contexts/AuthContext';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Message } from '../../types';
 
@@ -26,12 +27,15 @@ type ConversationScreenProps = StackScreenProps<RootStackParamList, 'Conversatio
 export default function ConversationScreen({ route, navigation }: ConversationScreenProps) {
   const { conversationId, otherUser } = route.params;
   const { api, user: currentUser } = useAuth();
+  const colors = useThemeColors();
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const queryClient = useQueryClient();
+
+  const styles = createStyles(colors);
 
   // Helper function to generate image URL
   const getImageUrl = (fileName: string) => {
@@ -354,10 +358,10 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -366,12 +370,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: colors.text,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -397,11 +401,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   ownBubble: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     borderBottomRightRadius: 4,
   },
   otherBubble: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surface,
     borderBottomLeftRadius: 4,
   },
   messageText: {
@@ -409,20 +413,20 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   ownMessageText: {
-    color: '#fff',
+    color: colors.primaryText,
   },
   otherMessageText: {
-    color: '#1F2937',
+    color: colors.text,
   },
   messageTime: {
     fontSize: 12,
     marginTop: 4,
   },
   ownMessageTime: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: colors.background === '#FFFFFF' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.8)',
   },
   otherMessageTime: {
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   messageImage: {
     width: 200,
@@ -437,7 +441,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   imagePreview: {
     width: 100,
@@ -455,8 +459,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#fff',
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
   },
   imageButton: {
     width: 40,
@@ -469,16 +473,18 @@ const styles = StyleSheet.create({
   messageInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.inputBorder,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     marginRight: 8,
     maxHeight: 100,
     fontSize: 16,
+    backgroundColor: colors.input,
+    color: colors.text,
   },
   sendButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -486,7 +492,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
   },
   loadingContainer: {
     flex: 1,
@@ -501,17 +507,17 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontWeight: '600',
   },
   emptyContainer: {
@@ -523,11 +529,11 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.textMuted,
   },
 });

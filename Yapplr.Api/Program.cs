@@ -87,6 +87,7 @@ builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IBlockService, BlockService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
 
 // Register both email services
 builder.Services.AddScoped<EmailService>();
@@ -122,5 +123,6 @@ app.MapPostEndpoints();
 app.MapBlockEndpoints();
 app.MapImageEndpoints();
 app.MapMessageEndpoints();
+app.MapUserPreferencesEndpoints();
 
 app.Run();

@@ -19,6 +19,7 @@ public class YapplrDbContext : DbContext
     public DbSet<PasswordReset> PasswordResets { get; set; }
     public DbSet<Conversation> Conversations { get; set; }
     public DbSet<ConversationParticipant> ConversationParticipants { get; set; }
+    public DbSet<UserPreferences> UserPreferences { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<MessageStatus> MessageStatuses { get; set; }
     
@@ -191,6 +192,17 @@ public class YapplrDbContext : DbContext
             entity.HasOne(e => e.User)
                   .WithMany(e => e.MessageStatuses)
                   .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserPreferences configuration
+        modelBuilder.Entity<UserPreferences>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId).IsUnique(); // One preference record per user
+            entity.HasOne(e => e.User)
+                  .WithOne()
+                  .HasForeignKey<UserPreferences>(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

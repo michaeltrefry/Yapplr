@@ -62,7 +62,7 @@ export default function ConversationsList() {
   if (isLoading) {
     return (
       <div className="p-8 text-center">
-        <div className="text-gray-500">Loading conversations...</div>
+        <div className="text-gray-500 dark:text-gray-400">Loading conversations...</div>
       </div>
     );
   }
@@ -71,8 +71,8 @@ export default function ConversationsList() {
     console.error('Conversations error:', error);
     return (
       <div className="p-8 text-center">
-        <div className="text-red-500">Failed to load conversations</div>
-        <div className="text-sm text-gray-500 mt-2">
+        <div className="text-red-500 dark:text-red-400">Failed to load conversations</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
           {error instanceof Error ? error.message : 'Unknown error'}
         </div>
       </div>
@@ -84,9 +84,9 @@ export default function ConversationsList() {
   if (conversations.length === 0) {
     return (
       <div className="p-8 text-center">
-        <div className="text-gray-500">
-          <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-          <h3 className="text-lg font-semibold mb-2">No conversations yet</h3>
+        <div className="text-gray-500 dark:text-gray-400">
+          <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+          <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">No conversations yet</h3>
           <p className="text-sm">Start a conversation by visiting someone's profile and clicking "Message"</p>
         </div>
       </div>
@@ -109,7 +109,7 @@ export default function ConversationsList() {
     const message = conversation.lastMessage;
     if (message.imageUrl && !message.content) {
       return (
-        <span className="flex items-center text-gray-500">
+        <span className="flex items-center text-gray-500 dark:text-gray-400">
           <ImageIcon className="w-4 h-4 mr-1" />
           Photo
         </span>
@@ -119,7 +119,7 @@ export default function ConversationsList() {
     if (message.imageUrl && message.content) {
       return (
         <span className="flex items-center">
-          <ImageIcon className="w-4 h-4 mr-1 text-gray-500" />
+          <ImageIcon className="w-4 h-4 mr-1 text-gray-500 dark:text-gray-400" />
           {message.content}
         </span>
       );
@@ -134,13 +134,13 @@ export default function ConversationsList() {
         <Link
           key={conversation.id}
           href={`/messages/${conversation.id}`}
-          className="block border-b border-gray-200 hover:bg-gray-50 transition-colors"
+          className="block border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         >
           <div className="p-4 flex items-center space-x-3">
             <div className="relative">
               <UserAvatar user={conversation.otherParticipant} size="lg" clickable={false} />
               {conversation.unreadCount > 0 && (
-                <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 bg-blue-600 dark:bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
                 </div>
               )}
@@ -148,17 +148,17 @@ export default function ConversationsList() {
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <h3 className={`font-semibold truncate ${conversation.unreadCount > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                <h3 className={`font-semibold truncate ${conversation.unreadCount > 0 ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                   @{conversation.otherParticipant.username}
                 </h3>
                 {conversation.lastMessage && (
-                  <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
                     {formatLastMessageTime(conversation.lastMessage.createdAt)}
                   </span>
                 )}
               </div>
 
-              <div className={`text-sm truncate mt-1 ${conversation.unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+              <div className={`text-sm truncate mt-1 ${conversation.unreadCount > 0 ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
                 {getLastMessagePreview(conversation)}
               </div>
             </div>
@@ -169,11 +169,11 @@ export default function ConversationsList() {
       {/* Load more trigger */}
       <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
         {isFetchingNextPage ? (
-          <div className="text-gray-500">Loading more conversations...</div>
+          <div className="text-gray-500 dark:text-gray-400">Loading more conversations...</div>
         ) : hasNextPage ? (
-          <div className="text-gray-400 text-sm">Scroll for more</div>
+          <div className="text-gray-400 dark:text-gray-500 text-sm">Scroll for more</div>
         ) : conversations.length > 0 ? (
-          <div className="text-gray-400 text-sm">You've reached the end!</div>
+          <div className="text-gray-400 dark:text-gray-500 text-sm">You've reached the end!</div>
         ) : null}
       </div>
     </div>

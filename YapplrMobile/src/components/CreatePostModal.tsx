@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { CreatePostData, PostPrivacy } from '../types';
 
 interface CreatePostModalProps {
@@ -28,7 +29,10 @@ interface CreatePostModalProps {
 
 export default function CreatePostModal({ visible, onClose }: CreatePostModalProps) {
   const { api, user } = useAuth();
+  const colors = useThemeColors();
   const queryClient = useQueryClient();
+
+  const styles = createStyles(colors);
   const [content, setContent] = useState('');
   const [privacy, setPrivacy] = useState<PostPrivacy>(PostPrivacy.Public);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -302,7 +306,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
             <TextInput
               style={styles.contentInput}
               placeholder="What's happening?"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textMuted}
               value={content}
               onChangeText={setContent}
               multiline
@@ -333,10 +337,10 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   keyboardAvoid: {
     flex: 1,
@@ -348,7 +352,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   headerButton: {
     paddingHorizontal: 8,
@@ -357,28 +361,28 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
   },
   cancelText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   postButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   postButtonDisabled: {
-    backgroundColor: '#D1D5DB',
+    backgroundColor: colors.border,
   },
   postText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontWeight: '600',
     fontSize: 16,
   },
   postTextDisabled: {
-    color: '#9CA3AF',
+    color: colors.textMuted,
   },
   userInfo: {
     flexDirection: 'row',
@@ -390,20 +394,20 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontWeight: '600',
     fontSize: 16,
   },
   username: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#374151',
+    color: colors.text,
   },
   topControls: {
     flexDirection: 'row',
@@ -412,7 +416,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border,
   },
   controlsLeft: {
     flexDirection: 'row',
@@ -428,7 +432,7 @@ const styles = StyleSheet.create({
   },
   contentInput: {
     fontSize: 18,
-    color: '#111827',
+    color: colors.text,
     lineHeight: 24,
     minHeight: 120,
     maxHeight: 200, // Prevent input from taking too much space
@@ -447,22 +451,22 @@ const styles = StyleSheet.create({
   privacyText: {
     marginLeft: 4,
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   charCount: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   charCountOver: {
-    color: '#EF4444',
+    color: colors.error,
   },
   imageButton: {
     marginLeft: 12,
     padding: 8,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surface,
   },
   imageContainer: {
     marginTop: 16,

@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { TimelineItem, Post } from '../../types';
 
 import PostCard from '../../components/PostCard';
@@ -22,9 +23,12 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MainTab
 
 export default function HomeScreen({ navigation }: { navigation: HomeScreenNavigationProp }) {
   const { api, user } = useAuth();
+  const colors = useThemeColors();
   const [refreshing, setRefreshing] = useState(false);
 
   const [commentCountUpdates, setCommentCountUpdates] = useState<Record<number, number>>({});
+
+  const styles = createStyles(colors);
 
   const {
     data: timeline,
@@ -182,10 +186,10 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -194,12 +198,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#3B82F6',
+    color: colors.primary,
     textAlign: 'center',
   },
   loadingContainer: {
@@ -210,21 +214,19 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingBottom: 20,
   },
-
   errorText: {
     fontSize: 16,
-    color: '#EF4444',
+    color: colors.error,
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   retryText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontWeight: '600',
   },
-
 });

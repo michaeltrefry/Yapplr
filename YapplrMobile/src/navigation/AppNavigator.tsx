@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 
 import { useAuth } from '../contexts/AuthContext';
+import { useThemeColors } from '../hooks/useThemeColors';
 import LoadingScreen from '../screens/LoadingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -65,6 +66,7 @@ function AuthStackNavigator() {
 
 function MainTabs() {
   const { api, user } = useAuth();
+  const colors = useThemeColors();
 
   // Fetch unread message count
   const { data: unreadData } = useQuery({
@@ -94,17 +96,17 @@ function MainTabs() {
                 width: 50,
                 height: 50,
                 borderRadius: 25,
-                backgroundColor: '#3B82F6',
+                backgroundColor: colors.primary,
                 justifyContent: 'center',
                 alignItems: 'center',
                 marginBottom: 2,
-                shadowColor: '#3B82F6',
+                shadowColor: colors.primary,
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.3,
                 shadowRadius: 4,
                 elevation: 5,
               }}>
-                <Ionicons name="add" size={28} color="#fff" />
+                <Ionicons name="add" size={28} color={colors.primaryText} />
               </View>
             );
           } else if (route.name === 'Messages') {
@@ -131,13 +133,15 @@ function MainTabs() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#3B82F6',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
         headerShown: false,
         tabBarStyle: {
           height: 90,
           paddingBottom: 20,
           paddingTop: 10,
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
         },
       })}
     >

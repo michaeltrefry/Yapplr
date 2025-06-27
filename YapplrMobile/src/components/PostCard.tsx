@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { TimelineItem, Post } from '../types';
 import ImageViewer from './ImageViewer';
 
@@ -22,9 +23,12 @@ interface PostCardProps {
 }
 
 export default function PostCard({ item, onLike, onRepost, onUserPress, onCommentPress, onCommentCountUpdate }: PostCardProps) {
+  const colors = useThemeColors();
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
+
+  const styles = createStyles(colors);
 
   // Helper function to generate image URL
   const getImageUrl = (fileName: string) => {
@@ -168,12 +172,12 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   postCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   postHeader: {
     marginBottom: 8,
@@ -187,7 +191,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -199,19 +203,19 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontWeight: '600',
     fontSize: 16,
   },
   username: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 2,
   },
   timestamp: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   repostBadge: {
     flexDirection: 'row',
@@ -220,14 +224,14 @@ const styles = StyleSheet.create({
   },
   repostText: {
     fontSize: 12,
-    color: '#10B981',
+    color: colors.success,
     marginLeft: 4,
     fontWeight: '500',
   },
   postContent: {
     fontSize: 16,
     lineHeight: 22,
-    color: '#111827',
+    color: colors.text,
     marginBottom: 12,
   },
   imageContainer: {
@@ -238,14 +242,14 @@ const styles = StyleSheet.create({
   postImage: {
     width: '100%',
     height: 200,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surface,
   },
   postActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
   },
   actionButton: {
     flexDirection: 'row',
@@ -256,7 +260,7 @@ const styles = StyleSheet.create({
   actionText: {
     marginLeft: 6,
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   imageLoadingOverlay: {
@@ -265,19 +269,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: colors.background === '#FFFFFF' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 24, 39, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   imageErrorContainer: {
     height: 200,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
   },
   imageErrorText: {
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: '500',
   },

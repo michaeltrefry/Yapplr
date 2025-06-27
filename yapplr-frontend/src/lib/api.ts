@@ -292,4 +292,17 @@ export const blockApi = {
   },
 };
 
+// Preferences API
+export const preferencesApi = {
+  get: async (): Promise<{ darkMode: boolean }> => {
+    const response = await api.get('/preferences');
+    return response.data;
+  },
+
+  update: async (preferences: { darkMode?: boolean }): Promise<{ darkMode: boolean }> => {
+    const response = await api.put('/preferences', preferences);
+    return response.data;
+  },
+};
+
 export default api;

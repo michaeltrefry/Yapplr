@@ -167,6 +167,18 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         const response = await client.get(`/api/users/${userId}/followers`);
         return response.data;
       },
+    },
+
+    preferences: {
+      get: async (): Promise<{ darkMode: boolean }> => {
+        const response = await client.get('/api/preferences');
+        return response.data;
+      },
+
+      update: async (preferences: { darkMode?: boolean }): Promise<{ darkMode: boolean }> => {
+        const response = await client.put('/api/preferences', preferences);
+        return response.data;
+      },
 
       follow: async (userId: number): Promise<FollowResponse> => {
         const response = await client.post(`/api/users/${userId}/follow`);

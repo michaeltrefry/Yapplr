@@ -5,28 +5,57 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Settings'>;
 
 export default function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const { isDarkMode, toggleDarkMode } = useTheme();
+  const colors = useThemeColors();
+
+  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Appearance</Text>
+
+          <View style={styles.menuItem}>
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconContainer, styles.blueIconContainer]}>
+                <Ionicons name={isDarkMode ? "moon" : "sunny"} size={20} color={colors.primary} />
+              </View>
+              <View style={styles.menuItemText}>
+                <Text style={styles.menuItemTitle}>Dark Mode</Text>
+                <Text style={styles.menuItemSubtitle}>Switch between light and dark themes</Text>
+              </View>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={toggleDarkMode}
+              trackColor={{ false: colors.inputBorder, true: colors.primary }}
+              thumbColor={colors.background}
+            />
+          </View>
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Privacy & Safety</Text>
           
@@ -36,32 +65,25 @@ export default function SettingsScreen() {
           >
             <View style={styles.menuItemLeft}>
               <View style={[styles.iconContainer, styles.redIconContainer]}>
-                <Ionicons name="person-remove-outline" size={20} color="#EF4444" />
+                <Ionicons name="person-remove-outline" size={20} color={colors.error} />
               </View>
               <View style={styles.menuItemText}>
                 <Text style={styles.menuItemTitle}>Blocklist</Text>
                 <Text style={styles.menuItemSubtitle}>Manage users you've blocked</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Coming Soon</Text>
-          <View style={styles.placeholderItem}>
-            <Text style={styles.placeholderText}>More settings will be added here...</Text>
-          </View>
         </View>
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -70,12 +92,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -87,7 +109,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
     marginBottom: 12,
     paddingHorizontal: 4,
   },
@@ -97,10 +119,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     marginBottom: 8,
   },
   menuItemLeft: {
@@ -117,7 +139,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   redIconContainer: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.background === '#FFFFFF' ? '#FEF2F2' : '#7F1D1D',
+  },
+  blueIconContainer: {
+    backgroundColor: colors.background === '#FFFFFF' ? '#EFF6FF' : '#1E3A8A',
   },
   menuItemText: {
     flex: 1,
@@ -125,25 +150,11 @@ const styles = StyleSheet.create({
   menuItemTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
     marginBottom: 2,
   },
   menuItemSubtitle: {
     fontSize: 14,
-    color: '#6B7280',
-  },
-  placeholderItem: {
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
-  },
-  placeholderText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
+    color: colors.textSecondary,
   },
 });

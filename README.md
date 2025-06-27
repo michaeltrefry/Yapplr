@@ -22,6 +22,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Messaging Privacy**: Blocked users cannot send messages to each other
 - **Message Notifications**: Real-time unread message badges on Messages tab and conversation list
 - **Enhanced Conversation UI**: Bold text and background highlights for unread conversations
+- **Dark Mode**: Complete dark theme support with user preferences and persistent storage
 
 ### Privacy & Security
 - **Yap Privacy**: Three levels - Public (everyone), Followers (followers only), Private (author only)
@@ -46,6 +47,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Conversation Management**: Infinite scroll message history with unread count indicators
 - **Message Notifications**: Red badge indicators showing unread message counts on tabs and conversation lists
 - **Visual Read Status**: Bold text and background highlights for conversations with unread messages
+- **Dark Mode**: Complete dark theme with toggle in Settings, synchronized across all platforms
 
 ## 🛠 Tech Stack
 
@@ -79,6 +81,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Message Notifications** - Real-time unread message badges and visual indicators
 - **Enhanced Messaging UI** - Image attachments, read status, and conversation management
 - **Comments System** - Full commenting functionality with dedicated screens, real-time updates, and optimized performance
+- **Dark Mode**: Complete dark theme support with toggle in Settings and persistent user preferences
 - **Shared Package** - 70-80% code reuse with web app
 
 ## 🏃‍♂️ Quick Start
@@ -161,6 +164,7 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Navigation**: Stack-based navigation with proper screen transitions
 - **API Integration**: Full integration with backend API for profile updates and image uploads
 - **Image Fallbacks**: Graceful fallback to user initials when no profile image is available
+- **Dark Mode**: Complete dark theme with toggle in Settings, synchronized with web app preferences
 
 ## 📱 Key Features in Detail
 
@@ -209,6 +213,7 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Privacy Controls**: Comprehensive privacy system with relationship-based filtering
 - **Profile Editing**: Complete profile management with bio, pronouns, tagline, and birthday
 - **Profile Display**: Enhanced profile information display with pronouns shown inline with username
+- **Dark Mode**: System-wide dark theme with user preferences stored in database and synchronized across platforms
 
 ### Image Management
 - **Yap Images**: Upload images with yaps (server-side storage)
@@ -230,6 +235,16 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Mobile Image Support**: Send photos in mobile messages with gallery picker, preview, and validation
 - **Enhanced Mobile UI**: Profile images in conversation list, automatic read marking, and visual unread indicators
 - **Cross-Platform Consistency**: Unified messaging experience across web and mobile platforms
+
+### Dark Mode System
+- **Complete Theme Support**: Light and dark themes across all screens and components
+- **User Preferences**: Toggle dark mode in Settings with persistent storage in database
+- **Synchronized Experience**: Dark mode preference shared between web and mobile platforms
+- **Tailwind CSS Integration**: Class-based dark mode with proper color schemes
+- **Theme Context**: React context providers for consistent theme management
+- **Automatic Persistence**: User preferences automatically saved and restored on app launch
+- **Professional Design**: Carefully crafted dark color palette with proper contrast ratios
+- **Smooth Transitions**: Instant theme switching with optimistic updates
 
 ## 🔧 Development
 
@@ -315,6 +330,10 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `GET /api/messages/can-message/{userId}` - Check if current user can message another user
 - `POST /api/messages/conversations/with/{userId}` - Get or create conversation with user
 - `GET /api/messages/unread-count` - Get total count of unread messages across all conversations
+
+### User Preferences
+- `GET /api/preferences` - Get current user's preferences (dark mode, etc.)
+- `PUT /api/preferences` - Update user preferences with partial updates
 
 ## 🔒 Security Features
 

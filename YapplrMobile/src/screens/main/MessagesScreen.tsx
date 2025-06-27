@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { ConversationListItem } from '../../types';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
@@ -19,7 +20,10 @@ type MessagesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Mai
 
 export default function MessagesScreen({ navigation }: { navigation: MessagesScreenNavigationProp }) {
   const { api, user } = useAuth();
+  const colors = useThemeColors();
   const queryClient = useQueryClient();
+
+  const styles = createStyles(colors);
 
   // Helper function to generate image URL
   const getImageUrl = (fileName: string) => {
@@ -150,21 +154,21 @@ export default function MessagesScreen({ navigation }: { navigation: MessagesScr
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: colors.text,
   },
   loadingContainer: {
     flex: 1,
@@ -180,16 +184,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   conversationItemUnread: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surface,
   },
   avatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -201,7 +205,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontWeight: 'bold',
     fontSize: 18,
   },
@@ -217,14 +221,14 @@ const styles = StyleSheet.create({
   username: {
     fontWeight: '600',
     fontSize: 16,
-    color: '#1F2937',
+    color: colors.text,
   },
   usernameUnread: {
     fontWeight: 'bold',
-    color: '#111827',
+    color: colors.text,
   },
   unreadBadge: {
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.error,
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -232,22 +236,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unreadText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 12,
     fontWeight: 'bold',
   },
   lastMessage: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   lastMessageUnread: {
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
   timestamp: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: colors.textMuted,
   },
   emptyContainer: {
     flex: 1,
@@ -258,12 +262,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
 });

@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { User } from '../../types';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
@@ -20,7 +21,10 @@ type SearchScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MainT
 
 export default function SearchScreen({ navigation }: { navigation: SearchScreenNavigationProp }) {
   const { api } = useAuth();
+  const colors = useThemeColors();
   const [searchQuery, setSearchQuery] = useState('');
+
+  const styles = createStyles(colors);
 
   const { data: searchResults, isLoading, error } = useQuery({
     queryKey: ['userSearch', searchQuery],
@@ -134,21 +138,21 @@ export default function SearchScreen({ navigation }: { navigation: SearchScreenN
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: colors.text,
   },
   searchContainer: {
     paddingHorizontal: 16,
@@ -158,9 +162,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.inputBorder,
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.input,
     paddingHorizontal: 12,
   },
   searchIcon: {
@@ -170,7 +174,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#1F2937',
+    color: colors.text,
   },
   clearButton: {
     padding: 4,
@@ -185,20 +189,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    backgroundColor: '#fff',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   avatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontWeight: 'bold',
     fontSize: 18,
   },
@@ -208,17 +212,17 @@ const styles = StyleSheet.create({
   username: {
     fontWeight: '600',
     fontSize: 16,
-    color: '#1F2937',
+    color: colors.text,
     marginBottom: 4,
   },
   bio: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   noBio: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.textMuted,
     fontStyle: 'italic',
   },
   emptyContainer: {
@@ -234,13 +238,13 @@ const styles = StyleSheet.create({
   instructionsTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   instructionsText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -249,7 +253,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 12,
   },
   errorContainer: {
@@ -258,12 +262,12 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#EF4444',
+    color: colors.error,
     marginTop: 12,
   },
   errorSubtext: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   noResultsContainer: {
@@ -272,12 +276,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 12,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.textMuted,
     marginTop: 4,
   },
 });
