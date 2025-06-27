@@ -3,9 +3,7 @@ version: '3.8'
 services:
   yapplr-api:
     image: yapplr-api:latest
-    ports:
-      - "80:8080"
-      - "443:8080"
+    # No external ports - nginx will proxy to this service
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}
