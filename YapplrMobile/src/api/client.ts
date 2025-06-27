@@ -158,6 +158,16 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         return response.data;
       },
 
+      getUserFollowing: async (userId: number): Promise<User[]> => {
+        const response = await client.get(`/api/users/${userId}/following`);
+        return response.data;
+      },
+
+      getUserFollowers: async (userId: number): Promise<User[]> => {
+        const response = await client.get(`/api/users/${userId}/followers`);
+        return response.data;
+      },
+
       follow: async (userId: number): Promise<FollowResponse> => {
         const response = await client.post(`/api/users/${userId}/follow`);
         return response.data;

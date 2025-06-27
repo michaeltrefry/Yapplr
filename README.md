@@ -10,7 +10,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, and auto-scroll to new comments
 - **Likes**: Like and unlike yaps with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates
-- **Following/Followers Lists**: View and navigate to profiles of users you follow and users who follow you
+- **Following/Followers Lists**: Clickable counts that show detailed lists of users you follow and users who follow you, with navigation to their profiles
 - **User Profiles**: Complete profile management with bio, pronouns, tagline, birthday, and profile images
 - **Profile Editing**: Edit profile information including bio, pronouns, tagline, and birthday with real-time updates
 - **Yap Sharing**: Share yaps with social media integration and direct link copying
@@ -149,7 +149,8 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Profile Image Upload**: Camera icon overlay for easy profile picture changes with gallery picker
 - **Profile Information Display**: View all profile information including pronouns next to username
 - **Profile Images Everywhere**: User avatars displayed in timeline posts, user lists, and profiles
-- **Following/Followers Lists**: Tap Following or Followers count to view and navigate to user profiles with images
+- **Following/Followers Lists**: Tap Following or Followers count to view detailed lists and navigate to user profiles with images
+- **Enhanced Profile Layout**: Consolidated profile design with image on left, name/pronouns aligned to top, and tagline positioned directly underneath
 - **Enhanced Messaging**: Send text and photo messages with real-time delivery and read status
 - **Message Notifications**: Red badge on Messages tab showing total unread message count
 - **Visual Conversation Indicators**: Bold text and background highlights for conversations with unread messages
@@ -190,13 +191,15 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 
 ### Follow System
 - **Real-time Counts**: Instant follower/following count updates
-- **Following/Followers Lists**: Clickable counts that show lists of users you follow and users who follow you
+- **Following/Followers Lists**: Clickable counts that show detailed lists of users you follow and users who follow you
 - **Profile Navigation**: Tap any user in Following/Followers lists to navigate to their profile
+- **User-Specific Lists**: View following/followers for any user profile, not just your own
+- **Rich User Information**: Lists show profile images, usernames, pronouns, and bio snippets
 - **Privacy Integration**: Following relationships affect content visibility
 - **Profile Integration**: Follow/unfollow buttons on user profiles
 - **Timeline Impact**: Following users affects your timeline content
 - **Online Status**: Green circle indicators showing when followed users are currently online (active within 5 minutes)
-- **Mobile Support**: Full Following/Followers list functionality available in mobile app
+- **Mobile Support**: Full Following/Followers list functionality available in mobile app with enhanced profile layout
 
 ### User Management & Privacy
 - **User Blocking**: Block users to prevent interactions and hide content
@@ -291,6 +294,8 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `DELETE /api/users/{userId}/follow` - Unfollow user
 - `GET /api/users/me/following` - Get users that current user is following
 - `GET /api/users/me/followers` - Get users that are following the current user
+- `GET /api/users/{userId}/following` - Get users that a specific user is following
+- `GET /api/users/{userId}/followers` - Get users that are following a specific user
 - `GET /api/users/me/following/online-status` - Get following users with their online status
 - `POST /api/users/me/profile-image` - Upload profile image
 

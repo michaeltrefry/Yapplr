@@ -19,7 +19,8 @@ import { User } from '../../types';
 
 type FollowingListScreenProps = StackScreenProps<RootStackParamList, 'FollowingList'>;
 
-export default function FollowingListScreen({ navigation }: FollowingListScreenProps) {
+export default function FollowingListScreen({ route, navigation }: FollowingListScreenProps) {
+  const { userId, username } = route.params;
   const { api } = useAuth();
 
   // Helper function to generate image URL
@@ -34,8 +35,8 @@ export default function FollowingListScreen({ navigation }: FollowingListScreenP
     error,
     refetch,
   } = useQuery({
-    queryKey: ['following'],
-    queryFn: () => api.users.getFollowing(),
+    queryKey: ['userFollowing', userId],
+    queryFn: () => api.users.getUserFollowing(userId),
     retry: 2,
   });
 
@@ -117,7 +118,7 @@ export default function FollowingListScreen({ navigation }: FollowingListScreenP
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#1F2937" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Following</Text>
+          <Text style={styles.headerTitle}>@{username} following</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.loadingContainer}>
@@ -135,7 +136,7 @@ export default function FollowingListScreen({ navigation }: FollowingListScreenP
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#1F2937" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Following</Text>
+          <Text style={styles.headerTitle}>@{username} following</Text>
           <View style={styles.placeholder} />
         </View>
         {renderError()}
@@ -149,7 +150,7 @@ export default function FollowingListScreen({ navigation }: FollowingListScreenP
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#1F2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Following</Text>
+        <Text style={styles.headerTitle}>@{username} following</Text>
         <View style={styles.placeholder} />
       </View>
 

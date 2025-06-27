@@ -349,24 +349,25 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
                 )}
               </View>
 
-              <View style={styles.usernameContainer}>
-                <Text style={styles.username}>@{profile.username}</Text>
-                {profile.pronouns && (
-                  <Text style={styles.pronouns}> ({profile.pronouns})</Text>
+              <View style={styles.userInfo}>
+                <View style={styles.usernameContainer}>
+                  <Text style={styles.username}>@{profile.username}</Text>
+                  {profile.pronouns && (
+                    <Text style={styles.pronouns}> ({profile.pronouns})</Text>
+                  )}
+                </View>
+                {profile.tagline && (
+                  <Text style={styles.tagline}>"{profile.tagline}"</Text>
                 )}
               </View>
             </View>
 
-            {profile.bio && (
-              <Text style={styles.bio}>{profile.bio}</Text>
-            )}
-
-            {profile.tagline && (
-              <Text style={styles.tagline}>"{profile.tagline}"</Text>
-            )}
-
             {profile.birthday && (
               <Text style={styles.birthday}>🎂 Born {new Date(profile.birthday).toLocaleDateString()}</Text>
+            )}
+
+            {profile.bio && (
+              <Text style={styles.bio}>{profile.bio}</Text>
             )}
 
             <View style={styles.statsContainer}>
@@ -374,14 +375,28 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
                 <Text style={styles.statNumber}>{profile.postCount}</Text>
                 <Text style={styles.statLabel}>Posts</Text>
               </View>
-              <View style={styles.statItem}>
+              <TouchableOpacity
+                style={styles.statItem}
+                onPress={() => navigation.navigate('FollowingList', {
+                  userId: profile.id,
+                  username: profile.username
+                })}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.statNumber}>{profile.followingCount}</Text>
                 <Text style={styles.statLabel}>Following</Text>
-              </View>
-              <View style={styles.statItem}>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.statItem}
+                onPress={() => navigation.navigate('FollowersList', {
+                  userId: profile.id,
+                  username: profile.username
+                })}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.statNumber}>{profile.followerCount}</Text>
                 <Text style={styles.statLabel}>Followers</Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             {!isOwnProfile && (
@@ -525,12 +540,12 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   profileSection: {
-    alignItems: 'center',
     paddingVertical: 24,
     paddingHorizontal: 16,
   },
   userHeader: {
-    alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
   avatar: {
@@ -540,8 +555,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginRight: 16,
     overflow: 'hidden',
+  },
+  userInfo: {
+    flex: 1,
+    justifyContent: 'flex-start',
   },
   profileImage: {
     width: 80,
@@ -556,8 +575,7 @@ const styles = StyleSheet.create({
   usernameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   username: {
     fontSize: 24,
@@ -567,26 +585,24 @@ const styles = StyleSheet.create({
   bio: {
     fontSize: 16,
     color: '#1F2937',
-    textAlign: 'center',
     lineHeight: 24,
     marginBottom: 12,
   },
   pronouns: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#6B7280',
     fontWeight: 'normal',
   },
   tagline: {
     fontSize: 14,
     color: '#6B7280',
-    textAlign: 'center',
     fontStyle: 'italic',
+    marginTop: 4,
     marginBottom: 8,
   },
   birthday: {
     fontSize: 14,
     color: '#6B7280',
-    textAlign: 'center',
     marginBottom: 16,
   },
   statsContainer: {
@@ -620,7 +636,7 @@ const styles = StyleSheet.create({
   followButtonText: {
     color: '#fff',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14,
   },
   followingButtonText: {
     color: '#374151',
@@ -684,7 +700,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14,
   },
   messageButton: {
     backgroundColor: '#10B981',

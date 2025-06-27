@@ -29,8 +29,8 @@ export type RootStackParamList = {
   MainTabs: undefined;
   UserProfile: { username: string };
   EditProfile: undefined;
-  FollowingList: undefined;
-  FollowersList: undefined;
+  FollowingList: { userId: number; username: string };
+  FollowersList: { userId: number; username: string };
   Settings: undefined;
   BlockedUsers: undefined;
   Conversation: {

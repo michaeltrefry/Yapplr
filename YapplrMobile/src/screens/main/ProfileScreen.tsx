@@ -116,29 +116,29 @@ export default function ProfileScreen() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.usernameContainer}
-            onPress={() => navigation.navigate('UserProfile', { username: profile.username })}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.username}>@{profile.username}</Text>
-            {profile.pronouns && (
-              <Text style={styles.pronouns}> ({profile.pronouns})</Text>
+          <View style={styles.userInfo}>
+            <TouchableOpacity
+              style={styles.usernameContainer}
+              onPress={() => navigation.navigate('UserProfile', { username: profile.username })}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.username}>@{profile.username}</Text>
+              {profile.pronouns && (
+                <Text style={styles.pronouns}> ({profile.pronouns})</Text>
+              )}
+            </TouchableOpacity>
+            {profile.tagline && (
+              <Text style={styles.tagline}>"{profile.tagline}"</Text>
             )}
-          </TouchableOpacity>
+          </View>
         </View>
-        <Text style={styles.email}>{user.email}</Text>
-
-        {profile.bio && (
-          <Text style={styles.bio}>{profile.bio}</Text>
-        )}
-
-        {profile.tagline && (
-          <Text style={styles.tagline}>"{profile.tagline}"</Text>
-        )}
 
         {profile.birthday && (
           <Text style={styles.birthday}>🎂 Born {new Date(profile.birthday).toLocaleDateString()}</Text>
+        )}
+
+        {profile.bio && (
+          <Text style={styles.bio}>{profile.bio}</Text>
         )}
 
         <View style={styles.statsContainer}>
@@ -152,7 +152,10 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.statItem}
-            onPress={() => navigation.navigate('FollowingList')}
+            onPress={() => navigation.navigate('FollowingList', {
+              userId: profile.id,
+              username: profile.username
+            })}
             activeOpacity={0.7}
           >
             <Text style={styles.statNumber}>{profile.followingCount}</Text>
@@ -160,7 +163,10 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.statItem}
-            onPress={() => navigation.navigate('FollowersList')}
+            onPress={() => navigation.navigate('FollowersList', {
+              userId: profile.id,
+              username: profile.username
+            })}
             activeOpacity={0.7}
           >
             <Text style={styles.statNumber}>{profile.followerCount}</Text>
@@ -218,12 +224,12 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   profileSection: {
-    alignItems: 'center',
     paddingVertical: 32,
     paddingHorizontal: 16,
   },
   userHeader: {
-    alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
   avatar: {
@@ -233,8 +239,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginRight: 16,
     overflow: 'hidden',
+  },
+  userInfo: {
+    flex: 1,
+    justifyContent: 'flex-start',
   },
   profileImage: {
     width: 80,
@@ -249,7 +259,6 @@ const styles = StyleSheet.create({
   usernameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 4,
   },
   username: {
@@ -260,31 +269,28 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 16,
     color: '#6B7280',
-    marginBottom: 12,
   },
   bio: {
     fontSize: 16,
     color: '#1F2937',
-    textAlign: 'center',
     lineHeight: 24,
     marginBottom: 12,
   },
   pronouns: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#6B7280',
     fontWeight: 'normal',
   },
   tagline: {
     fontSize: 14,
     color: '#6B7280',
-    textAlign: 'center',
     fontStyle: 'italic',
+    marginTop: 4,
     marginBottom: 8,
   },
   birthday: {
     fontSize: 14,
     color: '#6B7280',
-    textAlign: 'center',
     marginBottom: 16,
   },
   statsContainer: {
