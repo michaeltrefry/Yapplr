@@ -152,6 +152,7 @@ export interface YapplrApi {
     getFollowers: () => Promise<User[]>;
     follow: (userId: number) => Promise<FollowResponse>;
     unfollow: (userId: number) => Promise<FollowResponse>;
+    uploadProfileImage: (uri: string, fileName: string, type: string) => Promise<User>;
   };
   messages: {
     getConversations: () => Promise<ConversationListItem[]>;

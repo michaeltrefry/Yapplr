@@ -8,6 +8,7 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,12 @@ type FollowersListScreenProps = StackScreenProps<RootStackParamList, 'FollowersL
 
 export default function FollowersListScreen({ navigation }: FollowersListScreenProps) {
   const { api } = useAuth();
+
+  // Helper function to generate image URL
+  const getImageUrl = (fileName: string) => {
+    if (!fileName) return '';
+    return `http://192.168.254.181:5161/api/images/${fileName}`;
+  };
 
   const {
     data: followersUsers,
@@ -48,9 +55,19 @@ export default function FollowersListScreen({ navigation }: FollowersListScreenP
     >
       <View style={styles.userInfo}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {item.username.charAt(0).toUpperCase()}
-          </Text>
+          {item.profileImageFileName ? (
+            <Image
+              source={{ uri: getImageUrl(item.profileImageFileName) }}
+              style={styles.profileImage}
+              onError={() => {
+                console.log('Failed to load profile image');
+              }}
+            />
+          ) : (
+            <Text style={styles.avatarText}>
+              {item.username.charAt(0).toUpperCase()}
+            </Text>
+          )}
         </View>
         <View style={styles.userDetails}>
           <View style={styles.usernameContainer}>
@@ -200,6 +217,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   avatarText: {
     color: '#fff',

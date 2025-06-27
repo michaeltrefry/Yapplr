@@ -11,10 +11,12 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../contexts/AuthContext';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
@@ -30,6 +32,15 @@ export default function EditProfileScreen({ navigation }: EditProfileScreenProps
     tagline: user?.tagline || '',
     birthday: user?.birthday ? user.birthday.split('T')[0] : '', // Convert ISO to YYYY-MM-DD
   });
+
+  const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // Helper function to generate image URL
+  const getImageUrl = (fileName: string) => {
+    if (!fileName) return '';
+    return `http://192.168.254.181:5161/api/images/${fileName}`;
+  };
 
   const updateMutation = useMutation({
     mutationFn: (data: { bio?: string; pronouns?: string; tagline?: string; birthday?: string }) =>
@@ -89,6 +100,70 @@ export default function EditProfileScreen({ navigation }: EditProfileScreenProps
     navigation.goBack();
   };
 
+  const pickImage = async () => {
+    try {
+      console.log('Starting image picker...');
+
+      // Request permission
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('Permission result:', permissionResult);
+
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Permission to access camera roll is required!');
+        return;
+      }
+
+      // Launch image picker
+      console.log('Launching image library...');
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      console.log('Image picker result:', result);
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        console.log('Selected image asset:', asset);
+        setProfileImageUri(asset.uri);
+        await uploadProfileImage(asset.uri, asset.fileName || 'profile.jpg');
+      } else {
+        console.log('Image picker was canceled or no assets');
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', `Failed to pick image: ${error.message}`);
+    }
+  };
+
+  const uploadProfileImage = async (uri: string, fileName: string) => {
+    try {
+      setIsUploadingImage(true);
+      console.log('Starting profile image upload...', { uri, fileName });
+
+      // Upload the profile image directly using the API client
+      const updatedUser = await api.users.uploadProfileImage(uri, fileName, 'image/jpeg');
+      console.log('Profile image upload successful:', updatedUser);
+
+      if (updateUser) {
+        updateUser(updatedUser);
+      }
+
+      // Invalidate profile queries
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+
+      Alert.alert('Success', 'Profile image updated successfully!');
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      Alert.alert('Error', `Failed to upload profile image: ${error.message}`);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -127,13 +202,40 @@ export default function EditProfileScreen({ navigation }: EditProfileScreenProps
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Profile Picture Section */}
           <View style={styles.profileSection}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {user.username.charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              onPress={pickImage}
+              disabled={isUploadingImage}
+              activeOpacity={0.7}
+            >
+              <View style={styles.avatar}>
+                {profileImageUri ? (
+                  <Image source={{ uri: profileImageUri }} style={styles.profileImage} />
+                ) : user.profileImageFileName ? (
+                  <Image
+                    source={{ uri: getImageUrl(user.profileImageFileName) }}
+                    style={styles.profileImage}
+                  />
+                ) : (
+                  <Text style={styles.avatarText}>
+                    {user.username.charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </View>
+
+              {/* Camera overlay - moved outside avatar */}
+              <View style={styles.cameraOverlay}>
+                {isUploadingImage ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="camera" size={18} color="#fff" />
+                )}
+              </View>
+            </TouchableOpacity>
+
             <Text style={styles.username}>@{user.username}</Text>
             <Text style={styles.email}>{user.email}</Text>
+            <Text style={styles.changePhotoText}>Tap to change photo</Text>
           </View>
 
           {/* Form Fields */}
@@ -235,6 +337,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 12,
+    width: 90, // Slightly larger to accommodate camera icon
+    height: 90,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   avatar: {
     width: 80,
     height: 80,
@@ -242,7 +352,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  cameraOverlay: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    zIndex: 10,
+    elevation: 5, // For Android shadow/elevation
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   avatarText: {
     color: '#fff',
@@ -258,6 +395,12 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  changePhotoText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   formSection: {
     padding: 16,

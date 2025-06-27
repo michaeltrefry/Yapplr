@@ -148,6 +148,22 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         const response = await client.delete(`/api/users/${userId}/follow`);
         return response.data;
       },
+
+      uploadProfileImage: async (uri: string, fileName: string, type: string): Promise<User> => {
+        const formData = new FormData();
+        formData.append('file', {
+          uri,
+          name: fileName,
+          type,
+        } as any);
+
+        const response = await client.post('/api/users/me/profile-image', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        return response.data;
+      },
     },
 
     messages: {

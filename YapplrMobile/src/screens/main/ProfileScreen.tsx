@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,12 @@ type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 export default function ProfileScreen() {
   const { user, logout, api } = useAuth();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+
+  // Helper function to generate image URL
+  const getImageUrl = (fileName: string) => {
+    if (!fileName) return '';
+    return `http://192.168.254.181:5161/api/images/${fileName}`;
+  };
 
   // Fetch full profile data for current user
   const { data: profile, isLoading, error } = useQuery({
@@ -87,17 +94,30 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.profileSection}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {profile.username.charAt(0).toUpperCase()}
-          </Text>
-        </View>
+        <View style={styles.userHeader}>
+          <View style={styles.avatar}>
+            {profile.profileImageFileName ? (
+              <Image
+                source={{ uri: getImageUrl(profile.profileImageFileName) }}
+                style={styles.profileImage}
+                onError={() => {
+                  // Fallback to initials if image fails to load
+                  console.log('Failed to load profile image');
+                }}
+              />
+            ) : (
+              <Text style={styles.avatarText}>
+                {profile.username.charAt(0).toUpperCase()}
+              </Text>
+            )}
+          </View>
 
-        <View style={styles.usernameContainer}>
-          <Text style={styles.username}>@{profile.username}</Text>
-          {profile.pronouns && (
-            <Text style={styles.pronouns}> ({profile.pronouns})</Text>
-          )}
+          <View style={styles.usernameContainer}>
+            <Text style={styles.username}>@{profile.username}</Text>
+            {profile.pronouns && (
+              <Text style={styles.pronouns}> ({profile.pronouns})</Text>
+            )}
+          </View>
         </View>
         <Text style={styles.email}>{user.email}</Text>
 
@@ -187,6 +207,10 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingHorizontal: 16,
   },
+  userHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   avatar: {
     width: 80,
     height: 80,
@@ -195,6 +219,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   avatarText: {
     color: '#fff',

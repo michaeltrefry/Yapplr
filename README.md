@@ -69,7 +69,9 @@ A complete Twitter-like social media platform built with modern web technologies
 - **React Navigation** - Navigation library with stack navigation
 - **TanStack Query** - Data fetching (shared with web)
 - **AsyncStorage** - Local data persistence
-- **Profile Management** - Complete profile editing functionality
+- **Expo Image Picker** - Camera and gallery integration for profile images
+- **Profile Management** - Complete profile editing with image upload functionality
+- **Profile Images** - Display and upload user profile pictures across all screens
 - **Shared Package** - 70-80% code reuse with web app
 
 ## 🏃‍♂️ Quick Start
@@ -136,11 +138,14 @@ npx expo start
 Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulator / `a` for Android emulator.
 
 #### Mobile App Features
-- **Complete Profile Management**: Edit bio, pronouns, tagline, and birthday
+- **Complete Profile Management**: Edit bio, pronouns, tagline, birthday, and profile images
+- **Profile Image Upload**: Camera icon overlay for easy profile picture changes with gallery picker
 - **Profile Information Display**: View all profile information including pronouns next to username
-- **Following/Followers Lists**: Tap Following or Followers count to view and navigate to user profiles
+- **Profile Images Everywhere**: User avatars displayed in timeline posts, user lists, and profiles
+- **Following/Followers Lists**: Tap Following or Followers count to view and navigate to user profiles with images
 - **Navigation**: Stack-based navigation with proper screen transitions
-- **API Integration**: Full integration with backend API for profile updates
+- **API Integration**: Full integration with backend API for profile updates and image uploads
+- **Image Fallbacks**: Graceful fallback to user initials when no profile image is available
 
 ## 📱 Key Features in Detail
 

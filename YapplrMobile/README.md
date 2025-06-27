@@ -65,8 +65,10 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Search**: Enhanced user search with navigation to profiles
 - ✅ **Messages**: Conversation list with unread counts and navigation
 - ✅ **Conversations**: Full messaging interface with real-time chat
-- ✅ **Profile**: User profile with logout
-- ✅ **User Profiles**: View other users' profiles and posts
+- ✅ **Profile**: User profile with logout and profile image display
+- ✅ **Edit Profile**: Profile editing with image upload functionality
+- ✅ **User Profiles**: View other users' profiles and posts with profile images
+- ✅ **Following/Followers**: User lists with profile image display
 
 ### **Post Management**
 - ✅ **Create Posts**: Text and image post creation
@@ -98,6 +100,9 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Full-Screen Viewer**: Tap to expand with zoom
 - ✅ **Pinch to Zoom**: Native zoom gestures
 - ✅ **Loading States**: Smooth image loading experience
+- ✅ **Profile Images**: Upload and display user profile pictures
+- ✅ **Avatar Display**: Profile images shown in timeline posts and user lists
+- ✅ **Profile Image Upload**: Camera icon overlay for easy profile picture changes
 
 ### **API Integration**
 - ✅ Custom API client with error handling
@@ -105,6 +110,8 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ Network error recovery
 - ✅ Real-time data updates
 - ✅ Image upload with progress tracking
+- ✅ Profile image upload endpoint integration
+- ✅ Multipart form data handling for image uploads
 
 ## 🔧 **Configuration**
 
@@ -144,8 +151,11 @@ YapplrMobile/
 │   │       ├── SearchScreen.tsx     # User search
 │   │       ├── MessagesScreen.tsx   # Conversation list
 │   │       ├── ConversationScreen.tsx # Individual conversation interface
-│   │       ├── ProfileScreen.tsx    # Current user profile
-│   │       └── UserProfileScreen.tsx # Other users' profiles
+│   │       ├── ProfileScreen.tsx    # Current user profile with image display
+│   │       ├── EditProfileScreen.tsx # Profile editing with image upload
+│   │       ├── UserProfileScreen.tsx # Other users' profiles with images
+│   │       ├── FollowingListScreen.tsx # Following list with profile images
+│   │       └── FollowersListScreen.tsx # Followers list with profile images
 │   ├── types/
 │   │   └── index.ts                 # TypeScript type definitions
 │   ├── utils/
@@ -238,16 +248,18 @@ For issues or questions:
 The Yapplr mobile app now has **full feature parity** with the web frontend for core functionality:
 
 - ✅ **Authentication**: Complete login/register flow
-- ✅ **Timeline**: Posts with images, likes, and reposts
+- ✅ **Timeline**: Posts with images, likes, reposts, and user profile images
 - ✅ **Post Creation**: Text and image posts with gallery picker
 - ✅ **Image Viewing**: Full-screen viewer with pinch-to-zoom
 - ✅ **Social Features**: Like, repost, and user interactions
 - ✅ **User Profiles**: Navigate to user profiles by tapping avatars/names
-- ✅ **Profile Timeline**: View any user's posts and profile information
+- ✅ **Profile Images**: Upload, display, and manage user profile pictures
+- ✅ **Profile Timeline**: View any user's posts and profile information with images
 - ✅ **User Search**: Search and navigate to user profiles instantly
 - ✅ **Private Messaging**: Complete messaging system with conversation management
 - ✅ **Message Composition**: Send and receive messages in real-time
 - ✅ **Conversation Navigation**: Access conversations from multiple entry points
 - ✅ **Real-time Updates**: Live timeline refresh
+- ✅ **Profile Management**: Edit profile information and upload profile pictures
 
 The app is ready for production use and further feature development!

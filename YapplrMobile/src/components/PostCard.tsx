@@ -24,6 +24,12 @@ export default function PostCard({ item, onLike, onRepost, onUserPress }: PostCa
   const [imageError, setImageError] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
 
+  // Helper function to generate image URL
+  const getImageUrl = (fileName: string) => {
+    if (!fileName) return '';
+    return `http://192.168.254.181:5161/api/images/${fileName}`;
+  };
+
   return (
     <View style={styles.postCard}>
       <View style={styles.postHeader}>
@@ -33,9 +39,19 @@ export default function PostCard({ item, onLike, onRepost, onUserPress }: PostCa
           activeOpacity={0.7}
         >
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {item.post.user.username.charAt(0).toUpperCase()}
-            </Text>
+            {item.post.user.profileImageFileName ? (
+              <Image
+                source={{ uri: getImageUrl(item.post.user.profileImageFileName) }}
+                style={styles.profileImage}
+                onError={() => {
+                  console.log('Failed to load profile image in timeline');
+                }}
+              />
+            ) : (
+              <Text style={styles.avatarText}>
+                {item.post.user.username.charAt(0).toUpperCase()}
+              </Text>
+            )}
           </View>
           <View>
             <Text style={styles.username}>@{item.post.user.username}</Text>
@@ -170,6 +186,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   avatarText: {
     color: '#fff',

@@ -255,6 +255,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               <div className="mb-3">
                 <h2 className="text-xl font-bold text-gray-900">
                   {profile.username}
+                  {profile.pronouns && (
+                    <span className="text-lg text-gray-500 font-normal"> ({profile.pronouns})</span>
+                  )}
                 </h2>
                 <p className="text-gray-500">@{profile.username}</p>
               </div>
@@ -262,13 +265,6 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               {/* Bio */}
               {profile.bio && (
                 <p className="text-gray-900 mb-3">{profile.bio}</p>
-              )}
-
-              {/* Pronouns */}
-              {profile.pronouns && (
-                <p className="text-gray-600 text-sm mb-3">
-                  Pronouns: {profile.pronouns}
-                </p>
               )}
 
               {/* Tagline */}
