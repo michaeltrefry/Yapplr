@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { messageApi } from '@/lib/api';
 import { useAuth } from './AuthContext';
@@ -32,10 +32,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Listen for changes in conversations to refresh unread count
   useEffect(() => {
-    const handleConversationsChange = () => {
-      refreshUnreadCount();
-    };
-
     // Listen for query invalidations that might affect unread count
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
       if (event.type === 'updated' && event.query.queryKey[0] === 'conversations') {
@@ -44,7 +40,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     });
 
     return unsubscribe;
-  }, [queryClient]);
+  }, [queryClient, refreshUnreadCount]);
 
   return (
     <NotificationContext.Provider

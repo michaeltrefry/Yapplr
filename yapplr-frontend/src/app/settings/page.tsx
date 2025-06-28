@@ -102,7 +102,7 @@ export default function SettingsPage() {
                       <div>
                         <h3 className="font-semibold text-gray-900">Blocklist</h3>
                         <p className="text-sm text-gray-600">
-                          Manage users you've blocked
+                          Manage users you&apos;ve blocked
                         </p>
                       </div>
                     </div>

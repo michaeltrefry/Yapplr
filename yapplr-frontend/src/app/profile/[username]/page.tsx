@@ -3,7 +3,7 @@
 import { use, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { userApi, postApi, blockApi, messageApi } from '@/lib/api';
+import { userApi, blockApi, messageApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/utils';
 import { Calendar, Shield, ShieldOff, MessageCircle } from 'lucide-react';
@@ -308,7 +308,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Block @{profile?.username}?</h3>
             <p className="text-gray-600 mb-6">
-              They won't be able to see your posts or interact with you. You won't see their content either.
+              They won&apos;t be able to see your posts or interact with you. You won&apos;t see their content either.
               {profile?.isFollowedByCurrentUser && " You will also unfollow each other."}
             </p>
             <div className="flex justify-end space-x-3">

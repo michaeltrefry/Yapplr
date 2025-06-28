@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { useRouter } from 'next/navigation';
@@ -67,7 +68,7 @@ export default function ConversationPage({ params }: ConversationPageProps) {
           <div className="flex-1 ml-16 lg:ml-64">
             <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
               <div className="p-8 text-center">
-                <div className="text-red-500 not found or you don't have access to it.</div>
+                <div className="text-red-500">Conversation not found or you don&apos;t have access to it.</div>
                 <Link href="/messages" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
                   ← Back to Messages
                 </Link>
@@ -91,7 +92,7 @@ export default function ConversationPage({ params }: ConversationPageProps) {
           <div className="flex-1 ml-16 lg:ml-64">
             <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
               <div className="p-8 text-center">
-                <div className="text-red-500 conversation.</div>
+                <div className="text-red-500">Failed to load conversation.</div>
                 <Link href="/messages" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
                   ← Back to Messages
                 </Link>
@@ -121,7 +122,7 @@ export default function ConversationPage({ params }: ConversationPageProps) {
                   href="/messages"
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <ArrowLeft className="w-5 h-5 text-gray-600 />
+                  <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </Link>
                 <UserAvatar user={otherParticipant} size="md" clickable={false} />
                 <div>

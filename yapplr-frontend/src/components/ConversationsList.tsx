@@ -87,7 +87,7 @@ export default function ConversationsList() {
         <div className="text-gray-500">
           <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
           <h3 className="text-lg font-semibold mb-2 text-gray-900">No conversations yet</h3>
-          <p className="text-sm">Start a conversation by visiting someone's profile and clicking "Message"</p>
+          <p className="text-sm">Start a conversation by visiting someone&apos;s profile and clicking &quot;Message&quot;</p>
         </div>
       </div>
     );
@@ -101,7 +101,7 @@ export default function ConversationsList() {
     }
   };
 
-  const getLastMessagePreview = (conversation: any) => {
+  const getLastMessagePreview = (conversation: { lastMessage?: { content?: string; imageUrl?: string } }) => {
     if (!conversation.lastMessage) {
       return 'No messages yet';
     }
@@ -173,7 +173,7 @@ export default function ConversationsList() {
         ) : hasNextPage ? (
           <div className="text-gray-400 text-sm">Scroll for more</div>
         ) : conversations.length > 0 ? (
-          <div className="text-gray-400 text-sm">You've reached the end!</div>
+          <div className="text-gray-400 text-sm">You&apos;ve reached the end!</div>
         ) : null}
       </div>
     </div>

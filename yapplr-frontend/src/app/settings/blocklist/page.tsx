@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -48,7 +49,7 @@ export default function BlocklistPage() {
                   href="/settings"
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <ArrowLeft className="w-5 h-5 text-gray-600 />
+                  <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </Link>
                 <h1 className="text-xl font-bold text-gray-900">Blocklist</h1>
               </div>
@@ -58,8 +59,8 @@ export default function BlocklistPage() {
             <div className="p-6">
               <div className="mb-6">
                 <p className="text-gray-600">
-                  Users you've blocked won't be able to see your posts or interact with you.
-                  You won't see their content either.
+                  Users you&apos;ve blocked won&apos;t be able to see your posts or interact with you.
+                  You won&apos;t see their content either.
                 </p>
               </div>
 
