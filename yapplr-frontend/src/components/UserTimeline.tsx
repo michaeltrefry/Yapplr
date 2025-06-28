@@ -72,7 +72,7 @@ export default function UserTimeline({ userId, isOwnProfile }: UserTimelineProps
   if (isLoading) {
     return (
       <div className="p-8 text-center">
-        <div className="text-gray-500 dark:text-gray-400">Loading yaps...</div>
+        <div className="text-gray-500">Loading yaps...</div>
       </div>
     );
   }
@@ -90,7 +90,7 @@ export default function UserTimeline({ userId, isOwnProfile }: UserTimelineProps
   if (timelineItems.length === 0) {
     return (
       <div className="p-8 text-center">
-        <div className="text-gray-500 dark:text-gray-400">
+        <div className="text-gray-500">
           {isOwnProfile ? "You haven't yapped anything yet" : "No yaps yet"}
         </div>
       </div>
@@ -106,15 +106,15 @@ export default function UserTimeline({ userId, isOwnProfile }: UserTimelineProps
       {/* Load more trigger */}
       <div ref={loadMoreRef} className="h-20 flex flex-col items-center justify-center space-y-3">
         {isFetchingNextPage ? (
-          <div className="text-gray-500 dark:text-gray-400">Loading more yaps...</div>
+          <div className="text-gray-500">Loading more yaps...</div>
         ) : hasNextPage ? (
-          <div className="text-gray-400 dark:text-gray-500 text-sm">Scroll for more</div>
+          <div className="text-gray-400 text-sm">Scroll for more</div>
         ) : (
           <div className="flex flex-col items-center space-y-3">
-            <div className="text-gray-400 dark:text-gray-500 text-sm">You've reached the end!</div>
+            <div className="text-gray-400 text-sm">You've reached the end!</div>
             <button
               onClick={scrollToTop}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 rounded-full transition-colors text-sm font-medium"
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-full transition-colors text-sm font-medium"
             >
               <ArrowUp className="w-4 h-4" />
               <span>Return to top</span>

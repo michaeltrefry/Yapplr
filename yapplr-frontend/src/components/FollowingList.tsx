@@ -16,7 +16,7 @@ export default function FollowingList() {
   if (isLoading) {
     return (
       <div className="px-3 py-2">
-        <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+        <div className="text-sm text-gray-500">Loading...</div>
       </div>
     );
   }
@@ -24,7 +24,7 @@ export default function FollowingList() {
   if (!following || following.length === 0) {
     return (
       <div className="px-3 py-2">
-        <div className="text-sm text-gray-500 dark:text-gray-400">No following yet</div>
+        <div className="text-sm text-gray-500">No following yet</div>
       </div>
     );
   }
@@ -35,16 +35,16 @@ export default function FollowingList() {
         <Link
           key={user.id}
           href={`/profile/${user.username}`}
-          className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
         >
           <div className="relative">
             <UserAvatar user={user} size="sm" clickable={false} />
             {user.isOnline && (
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
             )}
           </div>
           <div className="flex-1 min-w-0 hidden lg:block">
-            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+            <p className="text-sm font-medium text-gray-900 truncate">
               {user.username}
             </p>
           </div>

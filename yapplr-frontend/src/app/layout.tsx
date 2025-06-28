@@ -27,7 +27,7 @@ export default function RootLayout({
         <title>Yapplr - Social Media</title>
         <meta name="description" content="A Twitter-like social media platform" />
       </head>
-      <body className={`${inter.variable} font-sans antialiased bg-white dark:bg-gray-900`}>
+      <body className={`${inter.variable} font-sans antialiased bg-white`}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <ThemeProvider>

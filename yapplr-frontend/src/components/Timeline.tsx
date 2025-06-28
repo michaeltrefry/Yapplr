@@ -66,7 +66,7 @@ export default function Timeline() {
   if (isLoading) {
     return (
       <div className="p-8 text-center">
-        <div className="text-gray-500 dark:text-gray-400">Loading yaps...</div>
+        <div className="text-gray-500">Loading yaps...</div>
       </div>
     );
   }
@@ -84,7 +84,7 @@ export default function Timeline() {
   if (timelineItems.length === 0) {
     return (
       <div className="p-8 text-center">
-        <div className="text-gray-500 dark:text-gray-400">
+        <div className="text-gray-500">
           <h3 className="text-lg font-semibold mb-2">No yaps yet</h3>
           <p>Be the first to share something!</p>
         </div>

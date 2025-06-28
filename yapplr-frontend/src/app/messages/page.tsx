@@ -19,8 +19,8 @@ export default function MessagesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-lg text-gray-900 dark:text-white">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-lg text-gray-900">Loading...</div>
       </div>
     );
   }
@@ -30,7 +30,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto flex">
         {/* Sidebar */}
         <div className="w-16 lg:w-64 fixed h-full z-10">
@@ -39,12 +39,12 @@ export default function MessagesPage() {
 
         {/* Main Content */}
         <div className="flex-1 ml-16 lg:ml-64">
-          <div className="max-w-2xl mx-auto lg:border-x border-gray-200 dark:border-gray-700 min-h-screen bg-white dark:bg-gray-800">
+          <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
             {/* Header */}
-            <div className="sticky top-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-4">
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
               <div className="flex items-center space-x-3">
-                <MessageCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Messages</h1>
+                <MessageCircle className="w-6 h-6 text-blue-600" />
+                <h1 className="text-xl font-bold text-gray-900">Messages</h1>
               </div>
             </div>
 

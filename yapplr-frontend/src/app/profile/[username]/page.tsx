@@ -163,15 +163,15 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
         {/* Main Content */}
         <div className="flex-1 ml-16 lg:ml-64">
-          <div className="max-w-2xl mx-auto lg:border-x border-gray-200 dark:border-gray-700 min-h-screen bg-white dark:bg-gray-800">
+          <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
             {/* Header */}
-            <div className="sticky top-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-4">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">{profile.username}</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{profile.postCount} posts</p>
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
+              <h1 className="text-xl font-bold text-gray-900">{profile.username}</h1>
+              <p className="text-sm text-gray-500">{profile.postCount} posts</p>
             </div>
 
             {/* Profile Info */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200">
               {/* Avatar and basic info */}
               <div className="flex items-start justify-between mb-4">
                 <UserAvatar
@@ -193,7 +193,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 {isOwnProfile ? (
                   <button
                     onClick={() => router.push('/profile/edit')}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                    className="px-4 py-2 border border-gray-300 rounded-full font-semibold hover:bg-gray-50 transition-colors text-gray-900"
                   >
                     Edit profile
                   </button>
@@ -204,8 +204,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                       disabled={followMutation.isPending || unfollowMutation.isPending}
                       className={`px-4 py-2 rounded-full font-semibold transition-colors disabled:opacity-50 ${
                         profile.isFollowedByCurrentUser
-                          ? 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500'
-                          : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
+                          ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                          : 'bg-blue-500 text-white hover:bg-blue-600'
                       }`}
                     >
                       {followMutation.isPending || unfollowMutation.isPending
@@ -219,7 +219,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                       <button
                         onClick={handleMessage}
                         disabled={messageMutation.isPending}
-                        className="px-3 py-2 rounded-full font-semibold transition-colors disabled:opacity-50 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 border border-green-300 dark:border-green-700"
+                        className="px-3 py-2 rounded-full font-semibold transition-colors disabled:opacity-50 bg-green-100 text-green-800 hover:bg-green-200 border border-green-300"
                         title="Send message"
                       >
                         {messageMutation.isPending ? (
@@ -234,8 +234,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                       disabled={blockMutation.isPending || unblockMutation.isPending}
                       className={`px-3 py-2 rounded-full font-semibold transition-colors disabled:opacity-50 ${
                         blockStatus?.isBlocked
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 border border-green-300 dark:border-green-700'
-                          : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 border border-red-300 dark:border-red-700'
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200 border border-green-300'
+                          : 'bg-red-100 text-red-800 hover:bg-red-200 border border-red-300'
                       }`}
                       title={blockStatus?.isBlocked ? 'Unblock user' : 'Block user'}
                     >
@@ -253,44 +253,44 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
               {/* Name and username */}
               <div className="mb-3">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                <h2 className="text-xl font-bold text-gray-900">
                   {profile.username}
                   {profile.pronouns && (
-                    <span className="text-lg text-gray-500 dark:text-gray-400 font-normal"> ({profile.pronouns})</span>
+                    <span className="text-lg text-gray-500 font-normal"> ({profile.pronouns})</span>
                   )}
                 </h2>
-                <p className="text-gray-500 dark:text-gray-400">@{profile.username}</p>
+                <p className="text-gray-500">@{profile.username}</p>
               </div>
 
               {/* Bio */}
               {profile.bio && (
-                <p className="text-gray-900 dark:text-white mb-3">{profile.bio}</p>
+                <p className="text-gray-900 mb-3">{profile.bio}</p>
               )}
 
               {/* Tagline */}
               {profile.tagline && (
-                <p className="text-gray-600 dark:text-gray-300 italic mb-3">&ldquo;{profile.tagline}&rdquo;</p>
+                <p className="text-gray-600 italic mb-3">&ldquo;{profile.tagline}&rdquo;</p>
               )}
 
               {/* Birthday */}
               {profile.birthday && (
-                <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">
+                <p className="text-gray-600 text-sm mb-3">
                   🎂 Born {formatDate(profile.birthday)}
                 </p>
               )}
 
               {/* Follow counts */}
               <div className="flex items-center gap-4 text-sm mb-3">
-                <span className="text-gray-600 dark:text-gray-300">
-                  <span className="font-semibold text-gray-900 dark:text-white">{profile.followingCount}</span> Following
+                <span className="text-gray-600">
+                  <span className="font-semibold text-gray-900">{profile.followingCount}</span> Following
                 </span>
-                <span className="text-gray-600 dark:text-gray-300">
-                  <span className="font-semibold text-gray-900 dark:text-white">{profile.followerCount}</span> Followers
+                <span className="text-gray-600">
+                  <span className="font-semibold text-gray-900">{profile.followerCount}</span> Followers
                 </span>
               </div>
 
               {/* Join date */}
-              <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+              <div className="flex items-center text-gray-500 text-sm">
                 <Calendar className="w-4 h-4 mr-1" />
                 <span>Joined {formatDate(profile.createdAt)}</span>
               </div>
@@ -305,16 +305,16 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       {/* Block Confirmation Modal */}
       {showBlockConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Block @{profile?.username}?</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Block @{profile?.username}?</h3>
+            <p className="text-gray-600 mb-6">
               They won't be able to see your posts or interact with you. You won't see their content either.
               {profile?.isFollowedByCurrentUser && " You will also unfollow each other."}
             </p>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowBlockConfirm(false)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 disabled={blockMutation.isPending}
               >
                 Cancel
