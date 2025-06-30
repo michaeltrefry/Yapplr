@@ -107,6 +107,14 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         await client.post(`/api/posts/${postId}/repost`);
       },
 
+      deletePost: async (postId: number): Promise<void> => {
+        await client.delete(`/api/posts/${postId}`);
+      },
+
+      unrepost: async (postId: number): Promise<void> => {
+        await client.delete(`/api/posts/${postId}/repost`);
+      },
+
       getUserTimeline: async (userId: number, page: number, limit: number): Promise<TimelineItem[]> => {
         const response = await client.get(`/api/posts/user/${userId}/timeline?page=${page}&pageSize=${limit}`);
         return response.data;
@@ -265,19 +273,45 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
     images: {
       uploadImage: async (uri: string, fileName: string, type: string): Promise<ImageUploadResponse> => {
+        console.log('Uploading image:', { uri, fileName, type });
+
         const formData = new FormData();
+
+        // React Native specific FormData format - ensure proper MIME type
+        const mimeType = type.startsWith('image/') ? type : `image/${type}`;
+
         formData.append('file', {
-          uri,
+          uri: uri,
+          type: mimeType,
           name: fileName,
-          type,
         } as any);
 
-        const response = await client.post('/api/images/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        return response.data;
+        console.log('FormData created with MIME type:', mimeType);
+
+        try {
+          const response = await client.post('/api/images/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+
+          // Check if the response is actually successful (since we don't throw on 4xx)
+          if (response.status >= 400) {
+            const errorMessage = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            console.error('API error response:', errorMessage);
+            throw new Error(`Upload failed with status ${response.status}: ${errorMessage}`);
+          }
+
+          if (!response.data || !response.data.fileName) {
+            throw new Error('Upload succeeded but no file information returned');
+          }
+
+          console.log('Image upload successful:', response.data);
+          return response.data;
+        } catch (error: any) {
+          console.error('Image upload error:', error.message);
+          throw error;
+        }
       },
 
       deleteImage: async (fileName: string): Promise<void> => {

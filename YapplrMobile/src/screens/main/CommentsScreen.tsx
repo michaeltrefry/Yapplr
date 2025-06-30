@@ -12,6 +12,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
@@ -28,6 +29,113 @@ type RootStackParamList = {
 
 type CommentsScreenRouteProp = RouteProp<RootStackParamList, 'Comments'>;
 type CommentsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Comments'>;
+
+// CommentItem component with delete functionality
+interface CommentItemProps {
+  comment: Comment;
+  getImageUrl: (fileName: string) => string;
+  onDelete: () => void;
+}
+
+function CommentItem({ comment, getImageUrl, onDelete }: CommentItemProps) {
+  const { user, api } = useAuth();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const isOwner = user && user.id === comment.user.id;
+
+  const handleDelete = async () => {
+    if (!isOwner) return;
+
+    setIsDeleting(true);
+    try {
+      await api.posts.deleteComment(comment.id);
+      setShowDeleteConfirm(false);
+      onDelete();
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      Alert.alert('Error', 'Failed to delete comment. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <View style={commentStyles.commentItem}>
+      <View style={commentStyles.commentHeader}>
+        <View style={commentStyles.avatar}>
+          {comment.user.profileImageFileName ? (
+            <Image
+              source={{ uri: getImageUrl(comment.user.profileImageFileName) }}
+              style={commentStyles.profileImage}
+              onError={() => {
+                console.log('Failed to load profile image in comments');
+              }}
+            />
+          ) : (
+            <Text style={commentStyles.avatarText}>
+              {comment.user.username.charAt(0).toUpperCase()}
+            </Text>
+          )}
+        </View>
+        <View style={commentStyles.commentInfo}>
+          <Text style={commentStyles.username}>@{comment.user.username}</Text>
+          <Text style={commentStyles.timestamp}>
+            {new Date(comment.createdAt).toLocaleDateString()}
+            {comment.isEdited && <Text style={commentStyles.editedText}> (edited)</Text>}
+          </Text>
+        </View>
+        {isOwner && (
+          <TouchableOpacity
+            style={commentStyles.deleteButton}
+            onPress={() => setShowDeleteConfirm(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={16} color="#EF4444" />
+          </TouchableOpacity>
+        )}
+      </View>
+      <Text style={commentStyles.commentContent}>{comment.content}</Text>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDeleteConfirm(false)}
+      >
+        <View style={commentStyles.modalOverlay}>
+          <View style={commentStyles.modalContent}>
+            <Text style={commentStyles.modalTitle}>Delete Comment</Text>
+            <Text style={commentStyles.modalMessage}>
+              Are you sure you want to delete this comment? This action cannot be undone.
+            </Text>
+            <View style={commentStyles.modalButtons}>
+              <TouchableOpacity
+                style={commentStyles.cancelButton}
+                onPress={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                <Text style={commentStyles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={commentStyles.deleteConfirmButton}
+                onPress={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={commentStyles.deleteButtonText}>Delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
 
 export default function CommentsScreen() {
   const route = useRoute<CommentsScreenRouteProp>();
@@ -52,7 +160,7 @@ export default function CommentsScreen() {
     loadComments();
   }, []);
 
-  const loadComments = async () => {
+  const loadComments = useCallback(async () => {
     if (!api) {
       console.error('API not available in loadComments');
       setIsLoading(false);
@@ -73,7 +181,7 @@ export default function CommentsScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [api, post.id]);
 
   const handleSubmitComment = async () => {
     if (!newComment.trim()) return;
@@ -113,34 +221,12 @@ export default function CommentsScreen() {
   };
 
   const renderComment = useCallback(({ item }: { item: Comment }) => (
-    <View style={styles.commentItem}>
-      <View style={styles.commentHeader}>
-        <View style={styles.avatar}>
-          {item.user.profileImageFileName ? (
-            <Image
-              source={{ uri: getImageUrl(item.user.profileImageFileName) }}
-              style={styles.profileImage}
-              onError={() => {
-                console.log('Failed to load profile image in comments');
-              }}
-            />
-          ) : (
-            <Text style={styles.avatarText}>
-              {item.user.username.charAt(0).toUpperCase()}
-            </Text>
-          )}
-        </View>
-        <View style={styles.commentInfo}>
-          <Text style={styles.username}>@{item.user.username}</Text>
-          <Text style={styles.timestamp}>
-            {new Date(item.createdAt).toLocaleDateString()}
-            {item.isEdited && <Text style={styles.editedText}> (edited)</Text>}
-          </Text>
-        </View>
-      </View>
-      <Text style={styles.commentContent}>{item.content}</Text>
-    </View>
-  ), [getImageUrl]);
+    <CommentItem
+      comment={item}
+      getImageUrl={getImageUrl}
+      onDelete={loadComments}
+    />
+  ), [getImageUrl, loadComments]);
 
   const renderHeader = useMemo(() => (
     <View style={styles.postContainer}>
@@ -389,5 +475,127 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#9CA3AF',
+  },
+});
+
+// Styles for CommentItem component
+const commentStyles = StyleSheet.create({
+  commentItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  profileImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  avatarText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#6B7280',
+  },
+  commentInfo: {
+    flex: 1,
+  },
+  username: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  editedText: {
+    fontStyle: 'italic',
+  },
+  commentContent: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#000',
+    marginLeft: 44,
+  },
+  deleteButton: {
+    padding: 8,
+    borderRadius: 16,
+    backgroundColor: '#F9FAFB',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#F9FAFB',
+  },
+  cancelButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  deleteConfirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

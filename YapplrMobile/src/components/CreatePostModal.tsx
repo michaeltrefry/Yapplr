@@ -86,20 +86,43 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
         return;
       }
 
-      // Launch image picker
+      // Launch image picker with compression for large iPhone photos
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.8,
+        quality: 0.5, // Reduced quality to handle large iPhone photos (5MB API limit)
+        allowsMultipleSelection: false,
+        selectionLimit: 1,
+        exif: false,
       });
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
+        console.log('Full asset details:', JSON.stringify(asset, null, 2));
         setSelectedImage(asset.uri);
 
         // Upload image immediately
-        await uploadImage(asset.uri, asset.fileName || 'image.jpg', asset.type || 'image/jpeg');
+        const fileName = asset.fileName || 'image.jpg';
+        // Ensure proper MIME type based on file extension
+        let mimeType = asset.mimeType || asset.type || 'image/jpeg';
+
+        console.log('Original mimeType:', mimeType, 'fileName:', fileName);
+
+        if (!mimeType.startsWith('image/')) {
+          // Fallback based on file extension
+          if (fileName.toLowerCase().endsWith('.png')) {
+            mimeType = 'image/png';
+          } else if (fileName.toLowerCase().endsWith('.gif')) {
+            mimeType = 'image/gif';
+          } else if (fileName.toLowerCase().endsWith('.heic')) {
+            mimeType = 'image/heic';
+          } else {
+            mimeType = 'image/jpeg';
+          }
+        }
+
+        console.log('Final mimeType:', mimeType);
+        await uploadImage(asset.uri, fileName, mimeType);
       }
     } catch (error) {
       console.error('Error picking image:', error);

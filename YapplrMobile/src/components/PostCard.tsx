@@ -7,9 +7,11 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { useAuth } from '../contexts/AuthContext';
 import { TimelineItem, Post } from '../types';
 import ImageViewer from './ImageViewer';
 
@@ -20,13 +22,18 @@ interface PostCardProps {
   onUserPress?: (username: string) => void;
   onCommentPress?: (post: Post) => void;
   onCommentCountUpdate?: (postId: number, newCount: number) => void;
+  onDelete?: () => void;
+  onUnrepost?: () => void;
 }
 
-export default function PostCard({ item, onLike, onRepost, onUserPress, onCommentPress, onCommentCountUpdate }: PostCardProps) {
+export default function PostCard({ item, onLike, onRepost, onUserPress, onCommentPress, onCommentCountUpdate, onDelete, onUnrepost }: PostCardProps) {
   const colors = useThemeColors();
+  const { user, api } = useAuth();
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const styles = createStyles(colors);
 
@@ -34,6 +41,51 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
   const getImageUrl = (fileName: string) => {
     if (!fileName) return '';
     return `http://192.168.254.181:5161/api/images/${fileName}`;
+  };
+
+  // Check ownership
+  const isPostOwner = user && user.id === item.post.user.id;
+  const isRepostOwner = user && item.type === 'repost' && item.repostedBy && user.id === item.repostedBy.id;
+
+  // Delete handlers
+  const handleDeletePost = async () => {
+    if (!isPostOwner) return;
+
+    setIsDeleting(true);
+    try {
+      await api.posts.deletePost(item.post.id);
+      setShowDeleteConfirm(false);
+      onDelete?.();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      Alert.alert('Error', 'Failed to delete post. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleUnrepost = async () => {
+    if (!isRepostOwner) return;
+
+    setIsDeleting(true);
+    try {
+      await api.posts.unrepost(item.post.id);
+      setShowDeleteConfirm(false);
+      onUnrepost?.();
+    } catch (error) {
+      console.error('Error removing repost:', error);
+      Alert.alert('Error', 'Failed to remove repost. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (item.type === 'repost' && isRepostOwner) {
+      handleUnrepost();
+    } else if (isPostOwner) {
+      handleDeletePost();
+    }
   };
 
   return (
@@ -66,18 +118,31 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
             </Text>
           </View>
         </TouchableOpacity>
-        {item.type === 'repost' && item.repostedBy && (
-          <TouchableOpacity
-            style={styles.repostBadge}
-            onPress={() => onUserPress?.(item.repostedBy!.username)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="repeat" size={14} color="#10B981" />
-            <Text style={styles.repostText}>
-              Reposted by @{item.repostedBy.username}
-            </Text>
-          </TouchableOpacity>
-        )}
+
+        <View style={styles.headerRight}>
+          {item.type === 'repost' && item.repostedBy && (
+            <TouchableOpacity
+              style={styles.repostBadge}
+              onPress={() => onUserPress?.(item.repostedBy!.username)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="repeat" size={14} color="#10B981" />
+              <Text style={styles.repostText}>
+                Reposted by @{item.repostedBy.username}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {(isPostOwner || isRepostOwner) && (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => setShowDeleteConfirm(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash-outline" size={18} color="#EF4444" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <Text style={styles.postContent}>{item.post.content}</Text>
@@ -168,6 +233,50 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
           onClose={() => setShowImageViewer(false)}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDeleteConfirm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              {item.type === 'repost' && isRepostOwner ? 'Remove Repost' : 'Delete Post'}
+            </Text>
+            <Text style={styles.modalMessage}>
+              {item.type === 'repost' && isRepostOwner
+                ? 'Are you sure you want to remove this repost? This action cannot be undone.'
+                : 'Are you sure you want to delete this post? This action cannot be undone.'
+              }
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteConfirmButton}
+                onPress={handleDeleteConfirm}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.deleteButtonText}>
+                    {item.type === 'repost' && isRepostOwner ? 'Remove' : 'Delete'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -180,7 +289,13 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.border,
   },
   postHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
   },
   userInfo: {
     flexDirection: 'row',
@@ -284,5 +399,73 @@ const createStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 14,
     fontWeight: '500',
+  },
+  deleteButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    marginTop: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  cancelButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  deleteConfirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

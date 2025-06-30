@@ -75,7 +75,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **React Navigation** - Navigation library with stack navigation
 - **TanStack Query** - Data fetching (shared with web)
 - **AsyncStorage** - Local data persistence
-- **Expo Image Picker** - Camera and gallery integration for profile images and message attachments
+- **Expo Image Picker** - Camera and gallery integration for profile images, post images, and message attachments
+- **Image Upload Support** - Full image upload functionality for posts and messages with automatic HEIC to JPEG conversion
 - **Profile Management** - Complete profile editing with image upload functionality
 - **Profile Images** - Display and upload user profile pictures across all screens
 - **Message Notifications** - Real-time unread message badges and visual indicators
@@ -158,6 +159,9 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Message Notifications**: Red badge on Messages tab showing total unread message count
 - **Visual Conversation Indicators**: Bold text and background highlights for conversations with unread messages
 - **Image Message Support**: Send photos in messages with gallery picker and preview functionality
+- **Post Image Upload**: Create posts with images using gallery picker with automatic compression for large iPhone photos
+- **HEIC Format Support**: Automatic conversion of iPhone HEIC images to JPEG format for compatibility
+- **Image Compression**: Smart compression to handle large iPhone photos within 5MB API limits while maintaining quality
 - **Automatic Read Marking**: Conversations automatically marked as read when opened
 - **Comments System**: Dedicated comment screens with post context, real-time comment count updates, and auto-scroll to new comments
 - **Optimized Performance**: Memoized components prevent image flashing and unnecessary re-renders during typing
@@ -216,11 +220,14 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Dark Mode**: System-wide dark theme with user preferences stored in database and synchronized across platforms
 
 ### Image Management
-- **Yap Images**: Upload images with yaps (server-side storage)
-- **Profile Images**: Upload and manage profile pictures
-- **Message Images**: Send photo attachments in private messages
-- **Image Serving**: Optimized image serving with proper content types
-- **File Management**: Secure image upload with validation
+- **Yap Images**: Upload images with yaps (server-side storage) with support for JPG, PNG, GIF, WebP formats
+- **Profile Images**: Upload and manage profile pictures across web and mobile platforms
+- **Message Images**: Send photo attachments in private messages with gallery picker integration
+- **Mobile Image Support**: Full image upload functionality in React Native with automatic HEIC to JPEG conversion
+- **Smart Compression**: Automatic image compression for large iPhone photos to meet 5MB API limits
+- **Format Validation**: Server-side validation of image formats, file sizes, and security signatures
+- **Image Serving**: Optimized image serving with proper content types and secure file access
+- **File Management**: Secure image upload with comprehensive validation and error handling
 
 ### Private Messaging System
 - **Direct Messages**: Send private messages between users with text and photo attachments
@@ -291,10 +298,16 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `GET /api/posts/timeline` - Get timeline with yaps and reyaps (paginated, 25 per page)
 - `GET /api/posts/public` - Get public timeline (paginated, 25 per page)
 - `GET /api/posts/user/{userId}/timeline` - Get user timeline (yaps + reyaps, paginated)
+- `POST /api/posts` - Create new yap with optional image attachment
 - `POST /api/posts/{id}/repost` - Reyap a yap
 - `DELETE /api/posts/{id}/repost` - Remove reyap
 - `POST /api/posts/{id}/like` - Like a yap
 - `DELETE /api/posts/{id}` - Delete your own yap
+
+### Image Management
+- `POST /api/images/upload` - Upload image file (JPG, PNG, GIF, WebP, max 5MB)
+- `GET /api/images/{fileName}` - Serve uploaded image with proper content type
+- `DELETE /api/images/{fileName}` - Delete uploaded image (authorized users only)
 
 ### Comments System
 - `GET /api/posts/{id}/comments` - Get all comments for a specific yap

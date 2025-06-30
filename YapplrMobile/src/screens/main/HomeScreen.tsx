@@ -122,6 +122,14 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     });
   }, [timeline, commentCountUpdates]);
 
+  const handleDelete = () => {
+    refetch(); // Refresh timeline after deletion
+  };
+
+  const handleUnrepost = () => {
+    refetch(); // Refresh timeline after unrepost
+  };
+
   const renderTimelineItem = ({ item }: { item: TimelineItem }) => {
     // Debug: Log posts with images
     if (item.post.imageUrl) {
@@ -139,6 +147,8 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
         onUserPress={handleUserPress}
         onCommentPress={handleCommentPress}
         onCommentCountUpdate={handleCommentCountUpdate}
+        onDelete={handleDelete}
+        onUnrepost={handleUnrepost}
       />
     );
   };

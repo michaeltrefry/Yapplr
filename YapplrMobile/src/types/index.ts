@@ -168,6 +168,8 @@ export interface YapplrApi {
     createPost: (data: CreatePostData) => Promise<Post>;
     likePost: (postId: number) => Promise<void>;
     repostPost: (postId: number) => Promise<void>;
+    deletePost: (postId: number) => Promise<void>;
+    unrepost: (postId: number) => Promise<void>;
     getUserTimeline: (userId: number, page: number, limit: number) => Promise<TimelineItem[]>;
     getComments: (postId: number) => Promise<Comment[]>;
     addComment: (postId: number, data: CreateCommentData) => Promise<Comment>;

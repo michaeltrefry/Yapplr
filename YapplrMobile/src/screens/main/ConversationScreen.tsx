@@ -118,12 +118,14 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
         return;
       }
 
-      // Launch image picker
+      // Launch image picker with compression for large iPhone photos
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.8,
+        quality: 0.5, // Reduced quality to handle large iPhone photos (5MB API limit)
+        allowsMultipleSelection: false,
+        selectionLimit: 1,
+        exif: false,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {

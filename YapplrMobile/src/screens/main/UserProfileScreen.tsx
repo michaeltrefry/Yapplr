@@ -264,6 +264,14 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     });
   }, [userTimeline, commentCountUpdates]);
 
+  const handleDelete = () => {
+    refetchTimeline(); // Refresh timeline after deletion
+  };
+
+  const handleUnrepost = () => {
+    refetchTimeline(); // Refresh timeline after unrepost
+  };
+
   const renderTimelineItem = ({ item }: { item: TimelineItem }) => (
     <PostCard
       item={item}
@@ -272,6 +280,8 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
       onUserPress={handleUserPress}
       onCommentPress={handleCommentPress}
       onCommentCountUpdate={handleCommentCountUpdate}
+      onDelete={handleDelete}
+      onUnrepost={handleUnrepost}
     />
   );
 
