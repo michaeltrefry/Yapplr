@@ -28,7 +28,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Yap Privacy**: Three levels - Public (everyone), Followers (followers only), Private (author only)
 - **Privacy-Aware Timeline**: Smart filtering based on user relationships and yap privacy
 - **JWT Authentication**: Secure token-based authentication
-- **Password Reset**: Email-based password recovery with AWS SES
+- **Password Reset**: Email-based password recovery with 6-digit codes and AWS SES integration
 
 ### User Experience
 - **Responsive Design**: Mobile-first approach with collapsible sidebar
@@ -168,6 +168,7 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Navigation**: Stack-based navigation with proper screen transitions
 - **API Integration**: Full integration with backend API for profile updates and image uploads
 - **Image Fallbacks**: Graceful fallback to user initials when no profile image is available
+- **Password Recovery**: Complete password reset flow with 6-digit email codes and automatic navigation
 - **Dark Mode**: Complete dark theme with toggle in Settings, synchronized with web app preferences
 
 ## 📱 Key Features in Detail
@@ -252,6 +253,18 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Automatic Persistence**: User preferences automatically saved and restored on app launch
 - **Professional Design**: Carefully crafted dark color palette with proper contrast ratios
 - **Smooth Transitions**: Instant theme switching with optimistic updates
+
+### Password Recovery System
+- **6-Digit Codes**: User-friendly numeric codes instead of long cryptographic tokens
+- **Email Integration**: Professional HTML and text email templates with prominent code display
+- **Mobile-First Design**: Optimized for easy code entry on mobile devices with numeric keypad
+- **Automatic Navigation**: Seamless flow from forgot password to reset screen in mobile app
+- **Secure Token Generation**: Cryptographically secure random number generation
+- **Time-Limited Codes**: 1-hour expiration for security with automatic cleanup
+- **Token Invalidation**: Previous codes automatically invalidated when new ones are requested
+- **Cross-Platform Support**: Works on both web and mobile with consistent user experience
+- **AWS SES Integration**: Reliable email delivery with professional branding
+- **Error Handling**: Comprehensive error handling with user-friendly messages
 
 ## 🔧 Development
 
@@ -352,6 +365,8 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 
 - **Password Hashing**: BCrypt with salt rounds
 - **JWT Tokens**: Secure authentication with 60-minute expiration
+- **Password Recovery**: Secure 6-digit code system with 1-hour expiration and token invalidation
+- **Email Security**: AWS SES integration with professional email templates
 - **CORS Configuration**: Properly configured for frontend development
 - **Input Validation**: Comprehensive validation on all endpoints
 - **Privacy Controls**: Robust privacy system with relationship-based filtering

@@ -186,8 +186,10 @@ public class AuthService : IAuthService
     private string GenerateSecureToken()
     {
         using var rng = RandomNumberGenerator.Create();
-        var bytes = new byte[32];
+        var bytes = new byte[4];
         rng.GetBytes(bytes);
-        return Convert.ToBase64String(bytes).Replace("+", "-").Replace("/", "_").Replace("=", "");
+        var number = BitConverter.ToUInt32(bytes, 0);
+        // Generate a 6-digit code (100000 to 999999)
+        return (100000 + (number % 900000)).ToString();
     }
 }

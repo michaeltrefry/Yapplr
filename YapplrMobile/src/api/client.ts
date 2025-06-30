@@ -86,6 +86,16 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         const response = await client.get('/api/users/me');
         return response.data;
       },
+
+      forgotPassword: async (email: string): Promise<{ message: string }> => {
+        const response = await client.post('/api/auth/forgot-password', { email });
+        return response.data;
+      },
+
+      resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
+        const response = await client.post('/api/auth/reset-password', { token, newPassword });
+        return response.data;
+      },
     },
 
     posts: {
@@ -175,18 +185,6 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         const response = await client.get(`/api/users/${userId}/followers`);
         return response.data;
       },
-    },
-
-    preferences: {
-      get: async (): Promise<{ darkMode: boolean }> => {
-        const response = await client.get('/api/preferences');
-        return response.data;
-      },
-
-      update: async (preferences: { darkMode?: boolean }): Promise<{ darkMode: boolean }> => {
-        const response = await client.put('/api/preferences', preferences);
-        return response.data;
-      },
 
       follow: async (userId: number): Promise<FollowResponse> => {
         const response = await client.post(`/api/users/${userId}/follow`);
@@ -231,6 +229,18 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
       getBlockedUsers: async (): Promise<User[]> => {
         const response = await client.get('/api/blocks/');
+        return response.data;
+      },
+    },
+
+    preferences: {
+      get: async (): Promise<{ darkMode: boolean }> => {
+        const response = await client.get('/api/preferences');
+        return response.data;
+      },
+
+      update: async (preferences: { darkMode?: boolean }): Promise<{ darkMode: boolean }> => {
+        const response = await client.put('/api/preferences', preferences);
         return response.data;
       },
     },

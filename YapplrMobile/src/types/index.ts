@@ -162,6 +162,8 @@ export interface YapplrApi {
     login: (data: LoginData) => Promise<AuthResponse>;
     register: (data: RegisterData) => Promise<AuthResponse>;
     getCurrentUser: () => Promise<User>;
+    forgotPassword: (email: string) => Promise<{ message: string }>;
+    resetPassword: (token: string, newPassword: string) => Promise<{ message: string }>;
   };
   posts: {
     getTimeline: (page: number, limit: number) => Promise<TimelineItem[]>;
@@ -182,6 +184,8 @@ export interface YapplrApi {
     updateProfile: (data: { bio?: string; pronouns?: string; tagline?: string; birthday?: string }) => Promise<User>;
     getFollowing: () => Promise<User[]>;
     getFollowers: () => Promise<User[]>;
+    getUserFollowing: (userId: number) => Promise<User[]>;
+    getUserFollowers: (userId: number) => Promise<User[]>;
     follow: (userId: number) => Promise<FollowResponse>;
     unfollow: (userId: number) => Promise<FollowResponse>;
     uploadProfileImage: (uri: string, fileName: string, type: string) => Promise<User>;
@@ -202,5 +206,9 @@ export interface YapplrApi {
   images: {
     uploadImage: (uri: string, fileName: string, type: string) => Promise<ImageUploadResponse>;
     deleteImage: (fileName: string) => Promise<void>;
+  };
+  preferences: {
+    get: () => Promise<{ darkMode: boolean }>;
+    update: (preferences: { darkMode?: boolean }) => Promise<{ darkMode: boolean }>;
   };
 }

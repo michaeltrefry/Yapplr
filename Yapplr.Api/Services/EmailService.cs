@@ -18,8 +18,8 @@ public class EmailService : IEmailService
     public async Task<bool> SendPasswordResetEmailAsync(string toEmail, string username, string resetToken, string resetUrl)
     {
         var subject = "Reset Your Yapplr Password";
-        var htmlBody = GeneratePasswordResetHtml(username, resetUrl);
-        var textBody = GeneratePasswordResetText(username, resetUrl);
+        var htmlBody = GeneratePasswordResetHtml(username, resetToken, resetUrl);
+        var textBody = GeneratePasswordResetText(username, resetToken, resetUrl);
 
         return await SendEmailAsync(toEmail, subject, htmlBody, textBody);
     }
@@ -75,7 +75,7 @@ public class EmailService : IEmailService
         }
     }
 
-    private string GeneratePasswordResetHtml(string username, string resetUrl)
+    private string GeneratePasswordResetHtml(string username, string resetToken, string resetUrl)
     {
         return $@"
 <!DOCTYPE html>
@@ -91,6 +91,7 @@ public class EmailService : IEmailService
         .logo {{ font-size: 24px; font-weight: bold; color: #1d9bf0; }}
         .content {{ background: #f8f9fa; padding: 30px; border-radius: 8px; margin: 20px 0; }}
         .button {{ display: inline-block; background: #1d9bf0; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }}
+        .code {{ font-size: 32px; font-weight: bold; color: #1d9bf0; text-align: center; background: white; padding: 20px; border-radius: 8px; letter-spacing: 4px; margin: 20px 0; border: 2px solid #1d9bf0; }}
         .footer {{ text-align: center; margin-top: 30px; font-size: 14px; color: #666; }}
     </style>
 </head>
@@ -104,13 +105,13 @@ public class EmailService : IEmailService
             <h2>Reset Your Password</h2>
             <p>Hi {username},</p>
             <p>We received a request to reset your password for your Yapplr account. If you didn't make this request, you can safely ignore this email.</p>
-            <p>To reset your password, click the button below:</p>
+            <p>Enter this 6-digit code in the Yapplr app to reset your password:</p>
+            <div class='code'>{resetToken}</div>
+            <p>Alternatively, you can click the button below to reset your password on the web:</p>
             <p style='text-align: center; margin: 30px 0;'>
-                <a href='{resetUrl}' class='button'>Reset Password</a>
+                <a href='{resetUrl}' class='button'>Reset Password on Web</a>
             </p>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style='word-break: break-all; color: #666;'>{resetUrl}</p>
-            <p><strong>This link will expire in 1 hour for security reasons.</strong></p>
+            <p><strong>This code will expire in 1 hour for security reasons.</strong></p>
         </div>
         
         <div class='footer'>
@@ -121,7 +122,7 @@ public class EmailService : IEmailService
 </html>";
     }
 
-    private string GeneratePasswordResetText(string username, string resetUrl)
+    private string GeneratePasswordResetText(string username, string resetToken, string resetUrl)
     {
         return $@"Reset Your Yapplr Password
 
@@ -129,10 +130,14 @@ Hi {username},
 
 We received a request to reset your password for your Yapplr account. If you didn't make this request, you can safely ignore this email.
 
-To reset your password, visit this link:
+Enter this 6-digit code in the Yapplr app to reset your password:
+
+{resetToken}
+
+Alternatively, you can visit this link to reset your password on the web:
 {resetUrl}
 
-This link will expire in 1 hour for security reasons.
+This code will expire in 1 hour for security reasons.
 
 If you have any questions, please contact our support team.
 
