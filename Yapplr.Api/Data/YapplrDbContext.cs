@@ -22,6 +22,8 @@ public class YapplrDbContext : DbContext
     public DbSet<UserPreferences> UserPreferences { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<MessageStatus> MessageStatuses { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
+    public DbSet<Mention> Mentions { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -203,6 +205,61 @@ public class YapplrDbContext : DbContext
             entity.HasOne(e => e.User)
                   .WithOne()
                   .HasForeignKey<UserPreferences>(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Notification configuration
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Type)
+                  .HasConversion<int>();
+            entity.Property(e => e.Message).HasMaxLength(500);
+            entity.HasIndex(e => new { e.UserId, e.IsRead }); // For efficient querying of unread notifications
+            entity.HasOne(e => e.User)
+                  .WithMany(u => u.Notifications)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ActorUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.ActorUserId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.Post)
+                  .WithMany()
+                  .HasForeignKey(e => e.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Comment)
+                  .WithMany()
+                  .HasForeignKey(e => e.CommentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Mention configuration
+        modelBuilder.Entity<Mention>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Username).IsRequired().HasMaxLength(50);
+            entity.HasIndex(e => new { e.MentionedUserId, e.PostId }); // For efficient querying
+            entity.HasIndex(e => new { e.MentionedUserId, e.CommentId }); // For efficient querying
+            entity.HasOne(e => e.MentionedUser)
+                  .WithMany(u => u.MentionsReceived)
+                  .HasForeignKey(e => e.MentionedUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.MentioningUser)
+                  .WithMany(u => u.MentionsMade)
+                  .HasForeignKey(e => e.MentioningUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Post)
+                  .WithMany()
+                  .HasForeignKey(e => e.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Comment)
+                  .WithMany()
+                  .HasForeignKey(e => e.CommentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Notification)
+                  .WithOne()
+                  .HasForeignKey<Mention>(e => e.NotificationId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

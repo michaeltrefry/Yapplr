@@ -89,6 +89,7 @@ builder.Services.AddScoped<IBlockService, BlockService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // Register both email services
 builder.Services.AddScoped<EmailService>();
@@ -128,6 +129,7 @@ app.MapBlockEndpoints();
 app.MapImageEndpoints();
 app.MapMessageEndpoints();
 app.MapUserPreferencesEndpoints();
+app.MapNotificationEndpoints();
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));

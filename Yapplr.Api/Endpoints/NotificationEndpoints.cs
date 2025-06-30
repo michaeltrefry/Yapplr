@@ -1,0 +1,68 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Yapplr.Api.DTOs;
+using Yapplr.Api.Services;
+
+namespace Yapplr.Api.Endpoints;
+
+public static class NotificationEndpoints
+{
+    public static void MapNotificationEndpoints(this WebApplication app)
+    {
+        var notifications = app.MapGroup("/api/notifications").WithTags("Notifications");
+
+        // Get user notifications with pagination
+        notifications.MapGet("/", [Authorize] async (ClaimsPrincipal user, INotificationService notificationService, int page = 1, int pageSize = 25) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await notificationService.GetUserNotificationsAsync(userId, page, pageSize);
+            
+            return Results.Ok(result);
+        })
+        .WithName("GetNotifications")
+        .WithSummary("Get user notifications with pagination")
+        .Produces<NotificationListDto>(200)
+        .Produces(401);
+
+        // Get unread notification count
+        notifications.MapGet("/unread-count", [Authorize] async (ClaimsPrincipal user, INotificationService notificationService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var unreadCount = await notificationService.GetUnreadNotificationCountAsync(userId);
+            
+            return Results.Ok(new { unreadCount });
+        })
+        .WithName("GetUnreadNotificationCount")
+        .WithSummary("Get count of unread notifications for user")
+        .Produces(200)
+        .Produces(401);
+
+        // Mark notification as read
+        notifications.MapPut("/{notificationId:int}/read", [Authorize] async (int notificationId, ClaimsPrincipal user, INotificationService notificationService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var success = await notificationService.MarkNotificationAsReadAsync(notificationId, userId);
+            
+            return success ? Results.Ok(new { message = "Notification marked as read" }) : Results.NotFound(new { message = "Notification not found" });
+        })
+        .WithName("MarkNotificationAsRead")
+        .WithSummary("Mark a specific notification as read")
+        .Produces(200)
+        .Produces(404)
+        .Produces(401);
+
+        // Mark all notifications as read
+        notifications.MapPut("/read-all", [Authorize] async (ClaimsPrincipal user, INotificationService notificationService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var success = await notificationService.MarkAllNotificationsAsReadAsync(userId);
+            
+            return Results.Ok(new { message = success ? "All notifications marked as read" : "No unread notifications found" });
+        })
+        .WithName("MarkAllNotificationsAsRead")
+        .WithSummary("Mark all notifications as read for the user")
+        .Produces(200)
+        .Produces(401);
+    }
+}

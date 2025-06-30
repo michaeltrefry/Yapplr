@@ -8,11 +8,13 @@ public class UserService : IUserService
 {
     private readonly YapplrDbContext _context;
     private readonly IBlockService _blockService;
+    private readonly INotificationService _notificationService;
 
-    public UserService(YapplrDbContext context, IBlockService blockService)
+    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService)
     {
         _context = context;
         _blockService = blockService;
+        _notificationService = notificationService;
     }
 
     public async Task<UserDto?> GetUserByIdAsync(int userId)
@@ -191,6 +193,9 @@ public class UserService : IUserService
 
         _context.Follows.Add(follow);
         await _context.SaveChangesAsync();
+
+        // Create follow notification
+        await _notificationService.CreateFollowNotificationAsync(followingId, followerId);
 
         var followerCount = await _context.Follows
             .CountAsync(f => f.FollowingId == followingId);

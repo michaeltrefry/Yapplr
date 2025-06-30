@@ -10,12 +10,14 @@ public class PostService : IPostService
     private readonly YapplrDbContext _context;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IBlockService _blockService;
+    private readonly INotificationService _notificationService;
 
-    public PostService(YapplrDbContext context, IHttpContextAccessor httpContextAccessor, IBlockService blockService)
+    public PostService(YapplrDbContext context, IHttpContextAccessor httpContextAccessor, IBlockService blockService, INotificationService notificationService)
     {
         _context = context;
         _httpContextAccessor = httpContextAccessor;
         _blockService = blockService;
+        _notificationService = notificationService;
     }
 
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
@@ -32,6 +34,9 @@ public class PostService : IPostService
 
         _context.Posts.Add(post);
         await _context.SaveChangesAsync();
+
+        // Create mention notifications for users mentioned in the post
+        await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, post.Id);
 
         // Load the post with user data
         var createdPost = await _context.Posts
@@ -423,6 +428,14 @@ public class PostService : IPostService
 
         _context.Likes.Add(like);
         await _context.SaveChangesAsync();
+
+        // Get the post owner to create notification
+        var post = await _context.Posts.FindAsync(postId);
+        if (post != null)
+        {
+            await _notificationService.CreateLikeNotificationAsync(post.UserId, userId, postId);
+        }
+
         return true;
     }
 
@@ -453,6 +466,14 @@ public class PostService : IPostService
 
         _context.Reposts.Add(repost);
         await _context.SaveChangesAsync();
+
+        // Get the post owner to create notification
+        var post = await _context.Posts.FindAsync(postId);
+        if (post != null)
+        {
+            await _notificationService.CreateRepostNotificationAsync(post.UserId, userId, postId);
+        }
+
         return true;
     }
 
@@ -481,6 +502,16 @@ public class PostService : IPostService
 
         _context.Comments.Add(comment);
         await _context.SaveChangesAsync();
+
+        // Get the post owner to create comment notification
+        var post = await _context.Posts.FindAsync(postId);
+        if (post != null)
+        {
+            await _notificationService.CreateCommentNotificationAsync(post.UserId, userId, postId, comment.Id);
+        }
+
+        // Create mention notifications for users mentioned in the comment
+        await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, postId, comment.Id);
 
         // Load the comment with user data
         var createdComment = await _context.Comments
@@ -586,6 +617,9 @@ public class PostService : IPostService
 
         await _context.SaveChangesAsync();
 
+        // Create mention notifications for new mentions in the updated post
+        await _notificationService.CreateMentionNotificationsAsync(updateDto.Content, userId, post.Id);
+
         return MapToPostDto(post, userId);
     }
 
@@ -602,6 +636,9 @@ public class PostService : IPostService
         comment.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        // Create mention notifications for new mentions in the updated comment
+        await _notificationService.CreateMentionNotificationsAsync(updateDto.Content, userId, comment.PostId, comment.Id);
 
         return MapToCommentDto(comment);
     }

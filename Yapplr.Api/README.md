@@ -8,6 +8,9 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
 - **Yaps**: Create text yaps (up to 256 characters) with optional images
 - **Yap Privacy**: Three privacy levels - Public, Followers-only, and Private yaps
 - **Social Features**: Like, comment, and reyap functionality with full delete capabilities
+- **Mentions System**: @username mention detection with automatic notification creation
+- **Notifications**: Comprehensive notification system for mentions, likes, reposts, follows, and comments
+- **Comment Replies**: Reply to specific comments with automatic mention detection
 - **Follow System**: Users can follow/unfollow each other with follower/following counts
 - **User Profiles**: Username, bio, birthday, pronouns, tagline, and profile images
 - **Timeline**: Smart timeline with yaps and reyaps, privacy-aware filtering
@@ -114,9 +117,16 @@ The API will be available at:
 - `DELETE /api/posts/{id}/repost` - Remove reyap (authenticated)
 
 ### Comments
-- `POST /api/posts/{id}/comments` - Add comment to yap (authenticated)
+- `POST /api/posts/{id}/comments` - Add comment to yap with automatic mention detection (authenticated)
 - `GET /api/posts/{id}/comments` - Get yap comments
+- `PUT /api/posts/comments/{commentId}` - Update comment (authenticated, own comments only)
 - `DELETE /api/posts/comments/{commentId}` - Delete comment (authenticated, own comments only)
+
+### Notifications
+- `GET /api/notifications` - Get user notifications (paginated, 25 per page)
+- `GET /api/notifications/unread-count` - Get count of unread notifications
+- `PUT /api/notifications/{id}/read` - Mark specific notification as read
+- `PUT /api/notifications/read-all` - Mark all notifications as read for user
 
 ### Images
 - `POST /api/images/upload` - Upload image file (authenticated)
@@ -154,6 +164,20 @@ Authorization: Bearer <your-jwt-token>
 - Content (1-256 characters)
 - User (author)
 - Yap (parent yap)
+- Edit tracking (isEdited flag)
+
+### Notification
+- Type (Mention, Like, Repost, Follow, Comment)
+- Actor user (who performed the action)
+- Target user (who receives the notification)
+- Related post/comment (if applicable)
+- Read status and timestamp
+
+### Mention
+- Mentioned user
+- Mentioning user
+- Related post or comment
+- Username mentioned
 
 ### Follow
 - Follower (user who follows)

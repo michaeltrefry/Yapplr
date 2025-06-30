@@ -55,4 +55,9 @@ public class User
     public ICollection<ConversationParticipant> ConversationParticipants { get; set; } = new List<ConversationParticipant>();
     public ICollection<Message> SentMessages { get; set; } = new List<Message>();
     public ICollection<MessageStatus> MessageStatuses { get; set; } = new List<MessageStatus>();
+
+    // Notification relationships
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>(); // Notifications received by this user
+    public ICollection<Mention> MentionsReceived { get; set; } = new List<Mention>(); // Mentions of this user
+    public ICollection<Mention> MentionsMade { get; set; } = new List<Mention>(); // Mentions made by this user
 }
