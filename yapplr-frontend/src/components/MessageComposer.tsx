@@ -104,7 +104,7 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
     });
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -167,9 +167,14 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0"
+          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0 border-none bg-transparent focus:outline-none"
           title="Add image"
           disabled={isLoading}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            boxShadow: 'none'
+          }}
         >
           <ImageIcon className="w-5 h-5" />
         </button>
@@ -180,19 +185,20 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
             ref={textareaRef}
             value={content}
             onChange={handleTextareaChange}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="w-full resize-none border border-gray-300 rounded-2xl px-4 py-2 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full resize-none border border-gray-300 rounded-2xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] message-textarea"
             rows={1}
             maxLength={1000}
             disabled={isLoading}
+            style={{ lineHeight: '1.5' }}
           />
-          
+
           {/* Send Button */}
           <button
             type="submit"
             disabled={!canSend}
-            className={`absolute right-2 bottom-2 p-2 rounded-full transition-colors ${
+            className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full transition-colors ${
               canSend
                 ? 'text-blue-600 hover:bg-blue-50'
                 : 'text-gray-400 cursor-not-allowed'

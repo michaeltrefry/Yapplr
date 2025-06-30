@@ -15,16 +15,18 @@ export default function FollowingList() {
 
   if (isLoading) {
     return (
-      <div className="px-3 py-2">
-        <div className="text-sm text-gray-500">Loading...</div>
+      <div className="px-1 lg:px-3 py-2">
+        <div className="text-sm text-gray-500 hidden lg:block">Loading...</div>
+        <div className="text-xs text-gray-500 lg:hidden text-center">...</div>
       </div>
     );
   }
 
   if (!following || following.length === 0) {
     return (
-      <div className="px-3 py-2">
-        <div className="text-sm text-gray-500">No following yet</div>
+      <div className="px-1 lg:px-3 py-2">
+        <div className="text-sm text-gray-500 hidden lg:block">No following yet</div>
+        <div className="text-xs text-gray-500 lg:hidden text-center">-</div>
       </div>
     );
   }
@@ -35,9 +37,9 @@ export default function FollowingList() {
         <Link
           key={user.id}
           href={`/profile/${user.username}`}
-          className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
         >
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <UserAvatar user={user} size="sm" clickable={false} />
             {user.isOnline && (
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
