@@ -36,7 +36,10 @@ public class User
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime LastSeenAt { get; set; } = DateTime.UtcNow;
-    
+
+    [StringLength(500)]
+    public string FcmToken { get; set; } = string.Empty;
+
     // Navigation properties
     public ICollection<Post> Posts { get; set; } = new List<Post>();
     public ICollection<Like> Likes { get; set; } = new List<Like>();

@@ -7,7 +7,9 @@ A complete Twitter-like social media platform built with modern web technologies
 ### Core Social Features
 - **Yaps**: Create text yaps (up to 256 characters) with optional images
 - **Reyaps**: Reyap content with proper attribution in timeline feeds
-- **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, and auto-scroll to new comments
+- **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, auto-scroll to new comments, and reply functionality
+- **Mentions**: @username mention system with clickable links and real-time notifications
+- **Comment Replies**: Reply to specific comments with automatic @username prefilling and smart reply context
 - **Likes**: Like and unlike yaps with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates
 - **Following/Followers Lists**: Clickable counts that show detailed lists of users you follow and users who follow you, with navigation to their profiles
@@ -22,6 +24,10 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Messaging Privacy**: Blocked users cannot send messages to each other
 - **Message Notifications**: Real-time unread message badges on Messages tab and conversation list
 - **Enhanced Conversation UI**: Bold text and background highlights for unread conversations
+- **Real-time Notifications**: Firebase-powered instant push notifications for all social interactions
+- **Notifications System**: Comprehensive notification system for mentions, likes, reposts, follows, and comments with red badge indicators
+- **Smart Navigation**: Click notifications to navigate directly to mentioned posts or comments with automatic scrolling and highlighting
+- **Background Notifications**: Push notifications work even when the app is minimized or closed
 - **Dark Mode**: Complete dark theme support with user preferences and persistent storage
 
 ### Privacy & Security
@@ -54,6 +60,7 @@ A complete Twitter-like social media platform built with modern web technologies
 ### Backend (.NET 9 API)
 - **.NET 9** - Minimal Web API
 - **PostgreSQL** - Database with Entity Framework Core
+- **Firebase Admin SDK** - Real-time push notifications
 - **JWT Bearer** - Authentication
 - **BCrypt** - Password hashing
 - **AWS SES** - Email service for password reset
@@ -66,6 +73,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **TanStack Query** - Data fetching and caching
 - **Axios** - HTTP client
 - **Lucide React** - Beautiful icons
+- **Firebase SDK** - Real-time messaging and push notifications
+- **Service Workers** - Background notification handling
 - **date-fns** - Date formatting and manipulation
 
 ### Mobile App (React Native + Expo)
@@ -81,7 +90,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Profile Images** - Display and upload user profile pictures across all screens
 - **Message Notifications** - Real-time unread message badges and visual indicators
 - **Enhanced Messaging UI** - Image attachments, read status, and conversation management
-- **Comments System** - Full commenting functionality with dedicated screens, real-time updates, and optimized performance
+- **Comments System** - Full commenting functionality with dedicated screens, real-time updates, reply functionality, and optimized performance
+- **Mentions & Notifications**: @username mention system with comprehensive notification support and smart navigation
 - **Dark Mode**: Complete dark theme support with toggle in Settings and persistent user preferences
 - **Shared Package** - 70-80% code reuse with web app
 
@@ -187,10 +197,26 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Private Yaps**: Only visible to the author
 - **Smart Filtering**: Timeline automatically filters based on relationships
 
+### Mentions & Notifications System
+- **@Username Mentions**: Mention users in posts and comments using @username syntax with automatic detection
+- **Clickable Mentions**: All @username mentions are automatically converted to clickable profile links
+- **Real-time Notifications**: Instant notifications for mentions, likes, reposts, follows, and comments
+- **Notification Types**: Comprehensive notification system supporting all social interactions
+- **Smart Navigation**: Click notifications to navigate directly to relevant content (posts, comments, profiles)
+- **Comment Scrolling**: Automatic scrolling and highlighting when navigating to specific comments from notifications
+- **Notification Badges**: Red badge indicators showing unread notification count in sidebar
+- **Privacy Respect**: Blocked users don't receive notifications from users who blocked them
+- **Notification Management**: Mark individual notifications or all notifications as read
+- **Notification History**: Paginated notification list with timestamps and context
+- **Cross-Platform**: Consistent notification experience across web and mobile platforms
+
 ### Comments System
 - **Dedicated Comment Screens**: Full-screen comment interface showing post context and all comments
 - **Real-time Updates**: Comment counts update immediately across all screens when comments are added
 - **Auto-scroll**: Automatically scroll to show newly added comments for better user experience
+- **Reply Functionality**: Reply to specific comments with automatic @username prefilling and reply context UI
+- **Smart Reply Protection**: Prevents accidental removal of @username when replying to comments
+- **Reply Cancellation**: Cancel reply mode to return to normal commenting with clear UI indicators
 - **Post Context**: Display original post content at the top of comment screens for context
 - **User Information**: Show commenter avatars, usernames, and timestamps for each comment
 - **Performance Optimized**: Memoized components prevent image flashing and unnecessary re-renders
@@ -356,6 +382,12 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `GET /api/messages/can-message/{userId}` - Check if current user can message another user
 - `POST /api/messages/conversations/with/{userId}` - Get or create conversation with user
 - `GET /api/messages/unread-count` - Get total count of unread messages across all conversations
+
+### Notifications System
+- `GET /api/notifications` - Get user notifications (paginated, 25 per page)
+- `GET /api/notifications/unread-count` - Get count of unread notifications
+- `PUT /api/notifications/{id}/read` - Mark specific notification as read
+- `PUT /api/notifications/read-all` - Mark all notifications as read for user
 
 ### User Preferences
 - `GET /api/preferences` - Get current user's preferences (dark mode, etc.)

@@ -16,9 +16,16 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Settings Management**: Dedicated settings page with blocklist management
 - **Yap Privacy**: Create yaps with Public, Followers, or Private visibility
 - **Social Features**: Yaps, likes, comments, reyaps with timeline integration
+- **Mentions System**: @username mentions with clickable links and real-time notifications
+- **Real-time Notifications**: Firebase-powered instant push notifications for all social interactions
+- **Notifications**: Comprehensive notification system with red badge indicators and smart navigation
+- **Background Notifications**: Push notifications work even when the app is minimized or closed
+- **Comment Replies**: Reply to specific comments with automatic @username prefilling and reply context
 - **Content Management**: Delete your own yaps, comments, and reyaps with confirmation dialogs
 - **Image Upload**: Upload and display images in yaps and profiles with Next.js optimization
 - **Search**: Find users by username or bio
+- **Private Messaging**: Send direct messages with text and photo attachments with real-time notifications
+- **Message Conversations**: Organized conversation threads with read status tracking
 
 ## Tech Stack
 
@@ -28,6 +35,8 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **TanStack Query** - Data fetching and caching
 - **Axios** - HTTP client
 - **Lucide React** - Beautiful icons
+- **Firebase SDK** - Real-time messaging and push notifications
+- **Service Workers** - Background notification handling
 
 ## Getting Started
 
@@ -48,7 +57,20 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
    Create a `.env.local` file:
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:5161
+
+   # Firebase Configuration (for real-time notifications)
+   NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+   NEXT_PUBLIC_FIREBASE_DATABASE_URL=your-database-url
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
+   NEXT_PUBLIC_FIREBASE_VAPID_KEY=your-vapid-key
    ```
+
+   **Note**: See `FIREBASE_SETUP.md` in the root directory for detailed Firebase configuration instructions.
 
 3. **Start the development server:**
    ```bash
@@ -92,7 +114,10 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - Create yaps (256 character limit) with privacy settings
 - Upload images to yaps and profiles with Next.js Image optimization
 - Like and unlike yaps with real-time counts
-- Comment on yaps with expandable comment sections
+- Comment on yaps with expandable comment sections and reply functionality
+- @Username Mentions: Mention users in posts and comments with automatic detection and clickable links
+- Real-time Notifications: Instant notifications for mentions, likes, reposts, follows, and comments with red badge indicators
+- Smart Navigation: Click notifications to navigate directly to mentioned posts or comments with automatic scrolling
 - Reyap functionality with timeline integration and attribution
 - Follow/unfollow users with instant UI updates
 - Privacy-aware timeline filtering
@@ -112,26 +137,29 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 
 ### Main Pages
 - **Home** (`/`) - Timeline with yap creation, privacy selector, and infinite scroll
+- **Notifications** (`/notifications`) - Comprehensive notification center with red badge indicators and smart navigation
 - **Profile** (`/profile/[username]`) - User profiles with follow/block buttons and infinite scroll timeline
 - **Profile Edit** (`/profile/edit`) - Profile management with image upload
 - **Settings** (`/settings`) - Settings hub with organized sections
 - **Blocklist** (`/settings/blocklist`) - Manage blocked users with unblock functionality
-- **Yap Detail** (`/yap/[id]`) - Individual yap pages with comments and sharing
+- **Yap Detail** (`/yap/[id]`) - Individual yap pages with comments, replies, and sharing
 - **Login/Register** - Authentication with password reset functionality
 - **Forgot/Reset Password** - Email-based password recovery
 
 ### Key Components
-- **CreatePost** - Yap creation with privacy selector and image upload
-- **PostCard** - Yap display with privacy indicators, social actions, and delete functionality
+- **CreatePost** - Yap creation with privacy selector, image upload, and mention detection
+- **PostCard** - Yap display with privacy indicators, social actions, reply functionality, and delete functionality
 - **TimelineItemCard** - Unified display for yaps and reyaps with attribution and delete options
 - **UserAvatar** - Consistent user avatar display throughout the app
 - **Timeline** - Mixed timeline with infinite scroll, yaps and reyaps, privacy-filtered
 - **PublicTimeline** - Public timeline with infinite scroll for unauthenticated users
 - **UserTimeline** - User-specific timeline with infinite scroll for profile pages
 - **BlockedUsersList** - Blocklist management with unblock functionality
-- **CommentList** - Expandable comment sections with delete functionality for own comments
+- **CommentList** - Expandable comment sections with reply buttons and delete functionality for own comments
+- **NotificationsPage** - Comprehensive notification center with smart navigation and read status management
+- **MentionHighlight** - Automatic @username detection and clickable link conversion
 - **ShareModal** - Yap sharing modal with social media integration and link copying
-- **Sidebar** - Navigation with responsive design and settings link
+- **Sidebar** - Navigation with responsive design, notification badges, and settings link
 
 ## Code Quality
 

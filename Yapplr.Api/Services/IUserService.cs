@@ -16,4 +16,5 @@ public interface IUserService
     Task<IEnumerable<UserDto>> GetFollowingAsync(int userId);
     Task<IEnumerable<UserDto>> GetFollowersAsync(int userId);
     Task<IEnumerable<UserWithOnlineStatusDto>> GetFollowingWithOnlineStatusAsync(int userId);
+    Task<bool> UpdateFcmTokenAsync(int userId, string fcmToken);
 }

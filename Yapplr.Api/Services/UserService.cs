@@ -288,4 +288,17 @@ public class UserService : IUserService
 
         return following;
     }
+
+    public async Task<bool> UpdateFcmTokenAsync(int userId, string fcmToken)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            return false;
+
+        user.FcmToken = fcmToken;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
 }

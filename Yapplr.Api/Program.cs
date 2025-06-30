@@ -90,6 +90,7 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IFirebaseService, FirebaseService>();
 
 // Register both email services
 builder.Services.AddScoped<EmailService>();

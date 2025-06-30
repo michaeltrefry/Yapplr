@@ -192,3 +192,45 @@ export interface UpdateUserData {
   pronouns?: string;
   tagline?: string;
 }
+
+export enum NotificationType {
+  Mention = 1,
+  Like = 2,
+  Repost = 3,
+  Follow = 4,
+  Comment = 5,
+}
+
+export interface Notification {
+  id: number;
+  type: NotificationType;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  readAt?: string;
+  actorUser?: User;
+  post?: Post;
+  comment?: Comment;
+  mention?: Mention;
+}
+
+export interface Mention {
+  id: number;
+  username: string;
+  createdAt: string;
+  mentionedUserId: number;
+  mentioningUserId: number;
+  postId?: number;
+  commentId?: number;
+}
+
+export interface NotificationList {
+  notifications: Notification[];
+  totalCount: number;
+  unreadCount: number;
+  hasMore: boolean;
+}
+
+export interface UnreadCountResponse {
+  unreadCount: number;
+}

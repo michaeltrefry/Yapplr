@@ -1,8 +1,8 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { postApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,11 +20,35 @@ export default function PostPage({ params }: PostPageProps) {
   const { user } = useAuth();
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const scrollToComment = searchParams.get('scrollToComment');
 
   const { data: post, isLoading, error } = useQuery({
     queryKey: ['post', parseInt(id)],
     queryFn: () => postApi.getPost(parseInt(id)),
   });
+
+  // Scroll to comment if specified in URL
+  useEffect(() => {
+    if (post && scrollToComment) {
+      const timer = setTimeout(() => {
+        const commentElement = document.getElementById(`comment-${scrollToComment}`);
+        if (commentElement) {
+          commentElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+          // Add a highlight effect
+          commentElement.classList.add('bg-blue-50', 'border-l-4', 'border-blue-500');
+          setTimeout(() => {
+            commentElement.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
+          }, 3000);
+        }
+      }, 100); // Small delay to ensure DOM is ready
+
+      return () => clearTimeout(timer);
+    }
+  }, [post, scrollToComment]);
 
   if (isLoading) {
     return (

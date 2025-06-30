@@ -7,15 +7,17 @@ import { Comment } from '@/types';
 import Link from 'next/link';
 import UserAvatar from './UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trash2, Edit3 } from 'lucide-react';
+import { Trash2, Edit3, Reply } from 'lucide-react';
 import { useState } from 'react';
+import { MentionHighlight } from '@/utils/mentionUtils';
 
 interface CommentListProps {
   postId: number;
   showComments: boolean;
+  onReply?: (username: string) => void;
 }
 
-export default function CommentList({ postId, showComments }: CommentListProps) {
+export default function CommentList({ postId, showComments, onReply }: CommentListProps) {
   const { data: comments, isLoading } = useQuery({
     queryKey: ['comments', postId],
     queryFn: () => postApi.getComments(postId),
@@ -45,7 +47,7 @@ export default function CommentList({ postId, showComments }: CommentListProps) 
   return (
     <div className="mt-4 border-t border-gray-100 pt-4 space-y-4">
       {comments.map((comment) => (
-        <CommentItem key={comment.id} comment={comment} postId={postId} />
+        <CommentItem key={comment.id} comment={comment} postId={postId} onReply={onReply} />
       ))}
     </div>
   );
@@ -54,9 +56,10 @@ export default function CommentList({ postId, showComments }: CommentListProps) 
 interface CommentItemProps {
   comment: Comment;
   postId: number;
+  onReply?: (username: string) => void;
 }
 
-function CommentItem({ comment, postId }: CommentItemProps) {
+function CommentItem({ comment, postId, onReply }: CommentItemProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
@@ -100,7 +103,7 @@ function CommentItem({ comment, postId }: CommentItemProps) {
 
   const isOwner = user && user.id === comment.user.id;
   return (
-    <div className="flex space-x-3">
+    <div id={`comment-${comment.id}`} className="flex space-x-3 transition-colors duration-300">
       {/* Avatar */}
       <UserAvatar user={comment.user} size="sm" />
 
@@ -120,26 +123,39 @@ function CommentItem({ comment, postId }: CommentItemProps) {
             {formatDate(comment.createdAt)}
             {comment.isEdited && <span className="ml-1">(edited)</span>}
           </span>
-          {isOwner && (
-            <div className="ml-auto flex space-x-1">
+          <div className="ml-auto flex space-x-1">
+            {/* Reply button for all users */}
+            {onReply && (
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={() => onReply(comment.user.username)}
                 className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
-                title="Edit comment"
-                disabled={editMutation.isPending || isEditing}
+                title="Reply to comment"
               >
-                <Edit3 className="w-3 h-3" />
+                <Reply className="w-3 h-3" />
               </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
-                title="Delete comment"
-                disabled={deleteMutation.isPending}
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
-          )}
+            )}
+            {/* Edit and delete buttons only for owner */}
+            {isOwner && (
+              <>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                  title="Edit comment"
+                  disabled={editMutation.isPending || isEditing}
+                >
+                  <Edit3 className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                  title="Delete comment"
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Comment Text */}
@@ -172,7 +188,9 @@ function CommentItem({ comment, postId }: CommentItemProps) {
               </div>
             </form>
           ) : (
-            <p className="text-gray-900 text-sm whitespace-pre-wrap">{comment.content}</p>
+            <p className="text-gray-900 text-sm whitespace-pre-wrap">
+              <MentionHighlight content={comment.content} />
+            </p>
           )}
         </div>
       </div>

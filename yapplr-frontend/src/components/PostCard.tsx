@@ -12,6 +12,7 @@ import CommentList from './CommentList';
 import UserAvatar from './UserAvatar';
 import ShareModal from './ShareModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { MentionHighlight } from '@/utils/mentionUtils';
 
 interface PostCardProps {
   post: Post;
@@ -27,6 +28,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
   const [editPrivacy, setEditPrivacy] = useState(post.privacy);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -56,6 +58,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     mutationFn: () => postApi.addComment(post.id, { content: commentText }),
     onSuccess: () => {
       setCommentText('');
+      setReplyingTo(null);
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['post', post.id] });
       queryClient.invalidateQueries({ queryKey: ['comments', post.id] });
@@ -94,7 +97,35 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const handleComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
+
+    // Ensure @username is still present if replying
+    let finalCommentText = commentText;
+    if (replyingTo && !commentText.startsWith(`@${replyingTo}`)) {
+      finalCommentText = `@${replyingTo} ${commentText}`;
+    }
+
+    // Update the comment text state to reflect the final text
+    if (finalCommentText !== commentText) {
+      setCommentText(finalCommentText);
+    }
+
     commentMutation.mutate();
+  };
+
+  const handleCommentTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+
+    // If replying and user tries to remove the @username, prevent it
+    if (replyingTo) {
+      const expectedStart = `@${replyingTo} `;
+      if (!newText.startsWith(expectedStart) && newText.length < expectedStart.length) {
+        // User is trying to delete the @username, restore it
+        setCommentText(expectedStart);
+        return;
+      }
+    }
+
+    setCommentText(newText);
   };
 
   const handleEdit = (e: React.FormEvent) => {
@@ -111,6 +142,26 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
 
   const handleDelete = () => {
     deleteMutation.mutate();
+  };
+
+  const handleReply = (username: string) => {
+    setReplyingTo(username);
+    setCommentText(`@${username} `);
+    setShowComments(true);
+    // Focus the comment textarea after a short delay to ensure it's rendered
+    setTimeout(() => {
+      const textarea = document.querySelector(`[data-post-id="${post.id}"] textarea`);
+      if (textarea) {
+        (textarea as HTMLTextAreaElement).focus();
+        // Set cursor position after the @username
+        (textarea as HTMLTextAreaElement).setSelectionRange(username.length + 2, username.length + 2);
+      }
+    }, 100);
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+    setCommentText('');
   };
 
   const isOwner = user && user.id === post.user.id;
@@ -215,7 +266,9 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 </div>
               </form>
             ) : (
-              <p className="text-gray-900 whitespace-pre-wrap">{post.content}</p>
+              <p className="text-gray-900 whitespace-pre-wrap">
+                <MentionHighlight content={post.content} />
+              </p>
             )}
             
             {/* Image */}
@@ -287,30 +340,57 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
           </div>
 
           {/* Comments Section */}
-          <CommentList postId={post.id} showComments={showComments} />
+          <CommentList postId={post.id} showComments={showComments} onReply={handleReply} />
 
           {/* Comment Form */}
           {showComments && (
-            <div className="mt-4 border-t border-gray-100 pt-4">
+            <div className="mt-4 border-t border-gray-100 pt-4" data-post-id={post.id}>
+              {replyingTo && (
+                <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                  <span className="text-sm text-blue-700">
+                    Replying to <span className="font-semibold">@{replyingTo}</span>
+                  </span>
+                  <button
+                    onClick={handleCancelReply}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
               <form onSubmit={handleComment} className="flex space-x-3">
                 <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
                 <div className="flex-1">
                   <textarea
                     value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Yap your reply"
+                    onChange={handleCommentTextChange}
+                    placeholder={replyingTo ? `Reply to @${replyingTo}` : "Yap your reply"}
                     className="w-full text-sm border border-gray-200 bg-white text-gray-900 placeholder-gray-500 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     rows={2}
                     maxLength={256}
                   />
-                  <div className="flex justify-end mt-2">
-                    <button
-                      type="submit"
-                      disabled={!commentText.trim() || commentMutation.isPending}
-                      className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {commentMutation.isPending ? 'Replying...' : 'Reply'}
-                    </button>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-gray-500">
+                      {commentText.length}/256
+                    </span>
+                    <div className="flex space-x-2">
+                      {replyingTo && (
+                        <button
+                          type="button"
+                          onClick={handleCancelReply}
+                          className="text-gray-500 hover:text-gray-700 px-3 py-1 rounded-full text-sm transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={!commentText.trim() || commentMutation.isPending}
+                        className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {commentMutation.isPending ? 'Replying...' : 'Reply'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </form>

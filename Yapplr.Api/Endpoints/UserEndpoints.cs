@@ -178,5 +178,18 @@ public static class UserEndpoints
         .WithName("GetUserFollowers")
         .WithSummary("Get users that are following a specific user")
         .Produces<IEnumerable<UserDto>>(200);
+
+        users.MapPost("/me/fcm-token", [Authorize] async ([FromBody] UpdateFcmTokenDto tokenDto, ClaimsPrincipal user, IUserService userService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var success = await userService.UpdateFcmTokenAsync(userId, tokenDto.Token);
+
+            return success ? Results.Ok() : Results.BadRequest("Failed to update FCM token");
+        })
+        .WithName("UpdateFcmToken")
+        .WithSummary("Update FCM token for push notifications")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
     }
 }

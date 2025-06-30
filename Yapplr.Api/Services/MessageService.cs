@@ -9,11 +9,13 @@ public class MessageService : IMessageService
 {
     private readonly YapplrDbContext _context;
     private readonly IUserService _userService;
+    private readonly IFirebaseService _firebaseService;
 
-    public MessageService(YapplrDbContext context, IUserService userService)
+    public MessageService(YapplrDbContext context, IUserService userService, IFirebaseService firebaseService)
     {
         _context = context;
         _userService = userService;
+        _firebaseService = firebaseService;
     }
 
     public async Task<bool> CanUserMessageAsync(int senderId, int recipientId)
@@ -87,6 +89,18 @@ public class MessageService : IMessageService
 
         await _context.SaveChangesAsync();
 
+        // Send Firebase push notification to recipient
+        var sender = await _context.Users.FindAsync(senderId);
+        if (sender != null)
+        {
+            await _firebaseService.SendMessageNotificationAsync(
+                createDto.RecipientId,
+                sender.Username,
+                message.Content,
+                conversation.Id
+            );
+        }
+
         return await GetMessageDtoAsync(message.Id, senderId);
     }
 
@@ -137,6 +151,21 @@ public class MessageService : IMessageService
         }
 
         await _context.SaveChangesAsync();
+
+        // Send Firebase push notification to other participants
+        var sender = await _context.Users.FindAsync(senderId);
+        if (sender != null)
+        {
+            foreach (var participantId in otherParticipants)
+            {
+                await _firebaseService.SendMessageNotificationAsync(
+                    participantId,
+                    sender.Username,
+                    message.Content,
+                    sendDto.ConversationId
+                );
+            }
+        }
 
         return await GetMessageDtoAsync(message.Id, senderId);
     }

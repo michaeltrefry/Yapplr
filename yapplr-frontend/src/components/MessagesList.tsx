@@ -90,7 +90,15 @@ export default function MessagesList({ conversationId }: MessagesListProps) {
   // Flatten pages and reverse the order since pages come newest-first but we want oldest-first chronologically
   const allMessages = data?.pages ? [...data.pages].reverse().flat() : [];
 
-  if (allMessages.length === 0) {
+  // Deduplicate messages by ID to prevent duplicate keys
+  const uniqueMessages = allMessages.reduce((acc, message) => {
+    if (!acc.find(m => m.id === message.id)) {
+      acc.push(message);
+    }
+    return acc;
+  }, [] as typeof allMessages);
+
+  if (uniqueMessages.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center text-gray-500">
@@ -102,7 +110,7 @@ export default function MessagesList({ conversationId }: MessagesListProps) {
   }
 
   // Messages are already in chronological order within each page, just need to ensure overall order
-  const sortedMessages = [...allMessages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const sortedMessages = [...uniqueMessages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   return (
     <div className="flex-1 overflow-y-auto">

@@ -2,14 +2,14 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { Home, User, Search, LogOut, Settings, MessageCircle } from 'lucide-react';
+import { Home, User, Search, LogOut, Settings, MessageCircle, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import FollowingList from './FollowingList';
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
-  const { unreadMessageCount } = useNotifications();
+  const { unreadMessageCount, unreadNotificationCount } = useNotifications();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -42,6 +42,21 @@ export default function Sidebar() {
           >
             <Search className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Search</span>
+          </Link>
+
+          <Link
+            href="/notifications"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors relative text-gray-700"
+          >
+            <div className="relative">
+              <Bell className="w-6 h-6" />
+              {unreadNotificationCount > 0 && (
+                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                </div>
+              )}
+            </div>
+            <span className="text-lg hidden lg:block">Notifications</span>
           </Link>
 
           <Link

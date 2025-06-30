@@ -9,10 +9,12 @@ namespace Yapplr.Api.Services;
 public class NotificationService : INotificationService
 {
     private readonly YapplrDbContext _context;
+    private readonly IFirebaseService _firebaseService;
 
-    public NotificationService(YapplrDbContext context)
+    public NotificationService(YapplrDbContext context, IFirebaseService firebaseService)
     {
         _context = context;
+        _firebaseService = firebaseService;
     }
 
     public async Task<NotificationDto?> CreateNotificationAsync(CreateNotificationDto createDto)
@@ -76,6 +78,14 @@ public class NotificationService : INotificationService
 
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
+
+            // Send Firebase push notification
+            await _firebaseService.SendMentionNotificationAsync(
+                mentionedUser.Id,
+                mentioningUser.Username,
+                postId ?? 0,
+                commentId
+            );
 
             // Create mention record
             var mention = new Mention
@@ -262,6 +272,9 @@ public class NotificationService : INotificationService
 
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
+
+        // Send Firebase push notification
+        await _firebaseService.SendFollowNotificationAsync(followedUserId, followingUser.Username);
     }
 
     public async Task CreateCommentNotificationAsync(int postOwnerId, int commentingUserId, int postId, int commentId)

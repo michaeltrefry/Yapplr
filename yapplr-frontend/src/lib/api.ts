@@ -24,6 +24,8 @@ import type {
   SendMessageData,
   CanMessageResponse,
   UnreadCountResponse,
+  Notification,
+  NotificationList,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -123,6 +125,10 @@ export const userApi = {
   getFollowingWithOnlineStatus: async (): Promise<UserWithOnlineStatus[]> => {
     const response = await api.get('/users/me/following/online-status');
     return response.data;
+  },
+
+  updateFcmToken: async (token: string): Promise<void> => {
+    await api.post('/users/me/fcm-token', { token });
   },
 };
 
@@ -301,6 +307,28 @@ export const preferencesApi = {
 
   update: async (preferences: { darkMode?: boolean }): Promise<{ darkMode: boolean }> => {
     const response = await api.put('/preferences', preferences);
+    return response.data;
+  },
+};
+
+export const notificationApi = {
+  getNotifications: async (page: number = 1, pageSize: number = 25): Promise<NotificationList> => {
+    const response = await api.get(`/notifications?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  getUnreadCount: async (): Promise<UnreadCountResponse> => {
+    const response = await api.get('/notifications/unread-count');
+    return response.data;
+  },
+
+  markAsRead: async (notificationId: number): Promise<{ message: string }> => {
+    const response = await api.put(`/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  markAllAsRead: async (): Promise<{ message: string }> => {
+    const response = await api.put('/notifications/read-all');
     return response.data;
   },
 };

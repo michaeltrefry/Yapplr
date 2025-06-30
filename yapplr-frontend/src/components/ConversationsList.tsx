@@ -79,7 +79,14 @@ export default function ConversationsList() {
     );
   }
 
-  const conversations = data?.pages.flat() || [];
+  // Flatten pages and deduplicate conversations by ID
+  const allConversations = data?.pages.flat() || [];
+  const conversations = allConversations.reduce((acc, conversation) => {
+    if (!acc.find(c => c.id === conversation.id)) {
+      acc.push(conversation);
+    }
+    return acc;
+  }, [] as typeof allConversations);
 
   if (conversations.length === 0) {
     return (

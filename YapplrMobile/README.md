@@ -74,10 +74,13 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Blocked Users**: View and manage blocked users list
 
 ### **Post Management**
-- ✅ **Create Posts**: Text and image post creation
+- ✅ **Create Posts**: Text and image post creation with mention detection
 - ✅ **Image Upload**: Gallery picker integration
 - ✅ **Timeline Display**: Posts with images and interactions
 - ✅ **Like/Repost**: Social interaction features
+- ✅ **Comments System**: Full commenting functionality with dedicated screens
+- ✅ **Comment Replies**: Reply to specific comments with automatic @username prefilling
+- ✅ **Mentions**: @username mention system with clickable links and notifications
 
 ### **Navigation & User Interaction**
 - ✅ **User Profile Navigation**: Tap avatars/usernames to view profiles
@@ -99,6 +102,14 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Keyboard Handling**: Proper keyboard avoidance and input positioning
 - ✅ **Auto-scroll**: Automatic scrolling to latest messages
 - ✅ **Permission Checking**: Verify messaging permissions before allowing contact
+
+### **Notifications System**
+- ✅ **Real-time Notifications**: Instant notifications for mentions, likes, reposts, follows, and comments
+- ✅ **Notification Center**: Comprehensive notification list with smart navigation
+- ✅ **Smart Navigation**: Click notifications to navigate directly to mentioned posts or comments
+- ✅ **Notification Badges**: Red badge indicators showing unread notification count
+- ✅ **Auto-scroll & Highlighting**: Automatic scrolling to specific comments with visual highlighting
+- ✅ **Read Status Management**: Mark notifications as read with proper state management
 
 ### **Post Creation & Privacy**
 - ✅ **Tab Bar Integration**: Prominent create post button in center of tab bar
@@ -211,9 +222,8 @@ For development with physical devices:
 
 ### **Immediate Enhancements**
 1. **Camera Integration**: Add camera capture for posts
-2. **Push Notifications**: Real-time message and interaction alerts
-3. **Comments System**: Add comment creation and display
-4. **Follow/Unfollow**: Implement follow functionality in user profiles
+2. **Push Notifications**: Real-time push notification delivery (notifications system implemented, push delivery pending)
+3. **Follow/Unfollow**: Implement follow functionality in user profiles
 
 ### **Advanced Features**
 1. **Real-time Updates**: WebSocket integration for live features
