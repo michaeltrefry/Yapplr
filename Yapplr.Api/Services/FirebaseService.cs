@@ -205,6 +205,27 @@ public class FirebaseService : IFirebaseService
         return await SendNotificationAsync(user.FcmToken, title, body, data);
     }
 
+    public async Task<bool> SendCommentNotificationAsync(int userId, string commenterUsername, int postId, int commentId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null || string.IsNullOrEmpty(user.FcmToken))
+        {
+            return false;
+        }
+
+        var title = "New Comment";
+        var body = $"@{commenterUsername} commented on your post";
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "comment",
+            ["postId"] = postId.ToString(),
+            ["commentId"] = commentId.ToString(),
+            ["commenterUsername"] = commenterUsername
+        };
+
+        return await SendNotificationAsync(user.FcmToken, title, body, data);
+    }
+
     public async Task<bool> SendFollowNotificationAsync(int userId, string followerUsername)
     {
         var user = await _context.Users.FindAsync(userId);

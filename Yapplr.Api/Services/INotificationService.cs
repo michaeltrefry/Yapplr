@@ -58,7 +58,7 @@ public interface INotificationService
     /// <summary>
     /// Creates a comment notification
     /// </summary>
-    Task CreateCommentNotificationAsync(int postOwnerId, int commentingUserId, int postId, int commentId);
+    Task CreateCommentNotificationAsync(int postOwnerId, int commentingUserId, int postId, int commentId, string commentContent);
     
     /// <summary>
     /// Deletes notifications related to a post (when post is deleted)

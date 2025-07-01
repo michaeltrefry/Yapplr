@@ -312,7 +312,7 @@ public class NotificationService : INotificationService
         await _firebaseService.SendFollowRequestNotificationAsync(requestedUserId, requesterUser.Username);
     }
 
-    public async Task CreateCommentNotificationAsync(int postOwnerId, int commentingUserId, int postId, int commentId)
+    public async Task CreateCommentNotificationAsync(int postOwnerId, int commentingUserId, int postId, int commentId, string commentContent)
     {
         // Don't notify if user comments on their own post
         if (postOwnerId == commentingUserId)
@@ -321,8 +321,15 @@ public class NotificationService : INotificationService
         // Check if user has blocked the commenting user
         var isBlocked = await _context.Blocks
             .AnyAsync(b => b.BlockerId == postOwnerId && b.BlockedId == commentingUserId);
-        
+
         if (isBlocked)
+            return;
+
+        // Check if the post owner is mentioned in the comment
+        // If so, skip comment notification since they'll get a mention notification
+        var mentionedUsernames = MentionParser.ExtractMentions(commentContent);
+        var postOwner = await _context.Users.FindAsync(postOwnerId);
+        if (postOwner != null && mentionedUsernames.Contains(postOwner.Username))
             return;
 
         var commentingUser = await _context.Users.FindAsync(commentingUserId);
@@ -342,6 +349,9 @@ public class NotificationService : INotificationService
 
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
+
+        // Send Firebase push notification
+        await _firebaseService.SendCommentNotificationAsync(postOwnerId, commentingUser.Username, postId, commentId);
     }
 
     public async Task DeletePostNotificationsAsync(int postId)

@@ -507,7 +507,7 @@ public class PostService : IPostService
         var post = await _context.Posts.FindAsync(postId);
         if (post != null)
         {
-            await _notificationService.CreateCommentNotificationAsync(post.UserId, userId, postId, comment.Id);
+            await _notificationService.CreateCommentNotificationAsync(post.UserId, userId, postId, comment.Id, createDto.Content);
         }
 
         // Create mention notifications for users mentioned in the comment

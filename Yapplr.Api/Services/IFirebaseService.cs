@@ -8,6 +8,7 @@ public interface IFirebaseService
     Task<bool> SendMessageNotificationAsync(int userId, string senderUsername, string messageContent, int conversationId);
     Task<bool> SendMentionNotificationAsync(int userId, string mentionerUsername, int postId, int? commentId = null);
     Task<bool> SendReplyNotificationAsync(int userId, string replierUsername, int postId, int commentId);
+    Task<bool> SendCommentNotificationAsync(int userId, string commenterUsername, int postId, int commentId);
     Task<bool> SendFollowNotificationAsync(int userId, string followerUsername);
     Task<bool> SendFollowRequestNotificationAsync(int userId, string requesterUsername);
     Task<bool> SendFollowRequestApprovedNotificationAsync(int userId, string approverUsername);
