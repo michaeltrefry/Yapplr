@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
+using Yapplr.Api.Models;
 
 namespace Yapplr.Api.Services;
 
@@ -40,15 +41,31 @@ public class UserService : IUserService
             return null;
 
         var isFollowedByCurrentUser = false;
+        var hasPendingFollowRequest = false;
+
         if (currentUserId.HasValue)
         {
             isFollowedByCurrentUser = await _context.Follows
                 .AnyAsync(f => f.FollowerId == currentUserId.Value && f.FollowingId == user.Id);
+
+            if (!isFollowedByCurrentUser)
+            {
+                hasPendingFollowRequest = await _context.FollowRequests
+                    .AnyAsync(fr => fr.RequesterId == currentUserId.Value &&
+                                   fr.RequestedId == user.Id &&
+                                   fr.Status == FollowRequestStatus.Pending);
+            }
         }
+
+        // Get user preferences to check if follow approval is required
+        var userPreferences = await _context.UserPreferences
+            .FirstOrDefaultAsync(p => p.UserId == user.Id);
+        var requiresFollowApproval = userPreferences?.RequireFollowApproval ?? false;
 
         return new UserProfileDto(user.Id, user.Username, user.Bio, user.Birthday,
                                  user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt,
-                                 user.Posts.Count, user.Followers.Count, user.Following.Count, isFollowedByCurrentUser);
+                                 user.Posts.Count, user.Followers.Count, user.Following.Count,
+                                 isFollowedByCurrentUser, hasPendingFollowRequest, requiresFollowApproval);
     }
 
     public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateDto)
@@ -183,24 +200,68 @@ public class UserService : IUserService
             return new FollowResponseDto(true, currentFollowerCount);
         }
 
-        // Create new follow relationship
-        var follow = new Models.Follow
+        // Check if there's already a pending follow request
+        var existingPendingRequest = await _context.FollowRequests
+            .FirstOrDefaultAsync(fr => fr.RequesterId == followerId &&
+                                      fr.RequestedId == followingId &&
+                                      fr.Status == FollowRequestStatus.Pending);
+
+        if (existingPendingRequest != null)
         {
-            FollowerId = followerId,
-            FollowingId = followingId,
-            CreatedAt = DateTime.UtcNow
-        };
+            // Already has pending request, return current status
+            var currentFollowerCount = await _context.Follows
+                .CountAsync(f => f.FollowingId == followingId);
+            return new FollowResponseDto(false, currentFollowerCount, true);
+        }
 
-        _context.Follows.Add(follow);
-        await _context.SaveChangesAsync();
+        // Check if the user being followed requires approval
+        var targetUserPreferences = await _context.UserPreferences
+            .FirstOrDefaultAsync(p => p.UserId == followingId);
 
-        // Create follow notification
-        await _notificationService.CreateFollowNotificationAsync(followingId, followerId);
+        var requiresApproval = targetUserPreferences?.RequireFollowApproval ?? false;
 
-        var followerCount = await _context.Follows
-            .CountAsync(f => f.FollowingId == followingId);
+        if (requiresApproval)
+        {
+            // Create follow request instead of direct follow
+            var followRequest = new FollowRequest
+            {
+                RequesterId = followerId,
+                RequestedId = followingId,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        return new FollowResponseDto(true, followerCount);
+            _context.FollowRequests.Add(followRequest);
+            await _context.SaveChangesAsync();
+
+            // Create follow request notification
+            await _notificationService.CreateFollowRequestNotificationAsync(followingId, followerId);
+
+            var followerCount = await _context.Follows
+                .CountAsync(f => f.FollowingId == followingId);
+
+            return new FollowResponseDto(false, followerCount, true);
+        }
+        else
+        {
+            // Create direct follow relationship
+            var follow = new Models.Follow
+            {
+                FollowerId = followerId,
+                FollowingId = followingId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Follows.Add(follow);
+            await _context.SaveChangesAsync();
+
+            // Create follow notification
+            await _notificationService.CreateFollowNotificationAsync(followingId, followerId);
+
+            var followerCount = await _context.Follows
+                .CountAsync(f => f.FollowingId == followingId);
+
+            return new FollowResponseDto(true, followerCount);
+        }
     }
 
     public async Task<FollowResponseDto> UnfollowUserAsync(int followerId, int followingId)
@@ -300,5 +361,149 @@ public class UserService : IUserService
 
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<IEnumerable<FollowRequestDto>> GetPendingFollowRequestsAsync(int userId)
+    {
+        var requests = await _context.FollowRequests
+            .Include(fr => fr.Requester)
+            .Include(fr => fr.Requested)
+            .Where(fr => fr.RequestedId == userId && fr.Status == FollowRequestStatus.Pending)
+            .OrderByDescending(fr => fr.CreatedAt)
+            .Select(fr => new FollowRequestDto
+            {
+                Id = fr.Id,
+                CreatedAt = fr.CreatedAt,
+                Requester = new UserDto(
+                    fr.Requester.Id,
+                    fr.Requester.Email,
+                    fr.Requester.Username,
+                    fr.Requester.Bio,
+                    fr.Requester.Birthday,
+                    fr.Requester.Pronouns,
+                    fr.Requester.Tagline,
+                    fr.Requester.ProfileImageFileName,
+                    fr.Requester.CreatedAt
+                ),
+                Requested = new UserDto(
+                    fr.Requested.Id,
+                    fr.Requested.Email,
+                    fr.Requested.Username,
+                    fr.Requested.Bio,
+                    fr.Requested.Birthday,
+                    fr.Requested.Pronouns,
+                    fr.Requested.Tagline,
+                    fr.Requested.ProfileImageFileName,
+                    fr.Requested.CreatedAt
+                )
+            })
+            .ToListAsync();
+
+        return requests;
+    }
+
+    public async Task<FollowResponseDto> ApproveFollowRequestAsync(int requestId, int userId)
+    {
+        var request = await _context.FollowRequests
+            .FirstOrDefaultAsync(fr => fr.Id == requestId && fr.RequestedId == userId);
+
+        if (request == null)
+        {
+            throw new ArgumentException("Follow request not found or not authorized");
+        }
+
+        // Create the follow relationship
+        var follow = new Models.Follow
+        {
+            FollowerId = request.RequesterId,
+            FollowingId = request.RequestedId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Follows.Add(follow);
+
+        // Update the follow request status instead of deleting
+        request.Status = FollowRequestStatus.Approved;
+        request.ProcessedAt = DateTime.UtcNow;
+
+        // Mark the follow request notification as read
+        var followRequestNotification = await _context.Notifications
+            .FirstOrDefaultAsync(n => n.Type == NotificationType.FollowRequest &&
+                                     n.ActorUserId == request.RequesterId &&
+                                     n.UserId == request.RequestedId);
+        if (followRequestNotification != null)
+        {
+            followRequestNotification.IsRead = true;
+            followRequestNotification.ReadAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        // Create follow notification
+        await _notificationService.CreateFollowNotificationAsync(request.RequestedId, request.RequesterId);
+
+        var followerCount = await _context.Follows
+            .CountAsync(f => f.FollowingId == request.RequestedId);
+
+        return new FollowResponseDto(true, followerCount);
+    }
+
+    public async Task<FollowResponseDto> DenyFollowRequestAsync(int requestId, int userId)
+    {
+        var request = await _context.FollowRequests
+            .FirstOrDefaultAsync(fr => fr.Id == requestId && fr.RequestedId == userId);
+
+        if (request == null)
+        {
+            throw new ArgumentException("Follow request not found or not authorized");
+        }
+
+        // Update the follow request status instead of deleting
+        request.Status = FollowRequestStatus.Denied;
+        request.ProcessedAt = DateTime.UtcNow;
+
+        // Mark the follow request notification as read
+        var followRequestNotification = await _context.Notifications
+            .FirstOrDefaultAsync(n => n.Type == NotificationType.FollowRequest &&
+                                     n.ActorUserId == request.RequesterId &&
+                                     n.UserId == request.RequestedId);
+        if (followRequestNotification != null)
+        {
+            followRequestNotification.IsRead = true;
+            followRequestNotification.ReadAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        var followerCount = await _context.Follows
+            .CountAsync(f => f.FollowingId == request.RequestedId);
+
+        return new FollowResponseDto(false, followerCount);
+    }
+
+    public async Task<FollowResponseDto> ApproveFollowRequestByUserIdAsync(int requesterId, int userId)
+    {
+        var request = await _context.FollowRequests
+            .FirstOrDefaultAsync(fr => fr.RequesterId == requesterId && fr.RequestedId == userId);
+
+        if (request == null)
+        {
+            throw new ArgumentException("Follow request not found");
+        }
+
+        return await ApproveFollowRequestAsync(request.Id, userId);
+    }
+
+    public async Task<FollowResponseDto> DenyFollowRequestByUserIdAsync(int requesterId, int userId)
+    {
+        var request = await _context.FollowRequests
+            .FirstOrDefaultAsync(fr => fr.RequesterId == requesterId && fr.RequestedId == userId);
+
+        if (request == null)
+        {
+            throw new ArgumentException("Follow request not found");
+        }
+
+        return await DenyFollowRequestAsync(request.Id, userId);
     }
 }

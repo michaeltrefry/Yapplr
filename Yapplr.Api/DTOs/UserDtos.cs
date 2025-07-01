@@ -48,7 +48,9 @@ public record UserProfileDto(
     int PostCount,
     int FollowerCount,
     int FollowingCount,
-    bool IsFollowedByCurrentUser
+    bool IsFollowedByCurrentUser,
+    bool HasPendingFollowRequest = false,
+    bool RequiresFollowApproval = false
 );
 
 public record AuthResponseDto(
@@ -67,7 +69,8 @@ public record ResetPasswordDto(
 
 public record FollowResponseDto(
     bool IsFollowing,
-    int FollowerCount
+    int FollowerCount,
+    bool HasPendingRequest = false
 );
 
 public record UserWithOnlineStatusDto(

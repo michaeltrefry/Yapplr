@@ -11,7 +11,9 @@ public class UserPreferences
     public int UserId { get; set; }
     
     public bool DarkMode { get; set; } = false;
-    
+
+    public bool RequireFollowApproval { get; set; } = false;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     

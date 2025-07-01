@@ -6,5 +6,6 @@ public enum NotificationType
     Like = 2,
     Repost = 3,
     Follow = 4,
-    Comment = 5
+    Comment = 5,
+    FollowRequest = 6
 }

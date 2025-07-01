@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Yapplr.Api.Data;
@@ -11,9 +12,11 @@ using Yapplr.Api.Data;
 namespace Yapplr.Api.Migrations
 {
     [DbContext(typeof(YapplrDbContext))]
-    partial class YapplrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250701135316_AddStatusToNotifications")]
+    partial class AddStatusToNotifications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -170,23 +173,18 @@ namespace Yapplr.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("ProcessedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("RequestedId")
                         .HasColumnType("integer");
 
                     b.Property<int>("RequesterId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("RequestedId");
 
-                    b.HasIndex("RequesterId", "RequestedId", "Status");
+                    b.HasIndex("RequesterId", "RequestedId")
+                        .IsUnique();
 
                     b.ToTable("FollowRequests");
                 });

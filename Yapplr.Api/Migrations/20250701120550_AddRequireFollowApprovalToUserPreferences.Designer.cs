@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Yapplr.Api.Data;
@@ -11,9 +12,11 @@ using Yapplr.Api.Data;
 namespace Yapplr.Api.Migrations
 {
     [DbContext(typeof(YapplrDbContext))]
-    partial class YapplrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250701120550_AddRequireFollowApprovalToUserPreferences")]
+    partial class AddRequireFollowApprovalToUserPreferences
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -157,38 +160,6 @@ namespace Yapplr.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Follows");
-                });
-
-            modelBuilder.Entity("Yapplr.Api.Models.FollowRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ProcessedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("RequestedId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("RequesterId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RequestedId");
-
-                    b.HasIndex("RequesterId", "RequestedId", "Status");
-
-                    b.ToTable("FollowRequests");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Like", b =>
@@ -372,9 +343,6 @@ namespace Yapplr.Api.Migrations
 
                     b.Property<DateTime?>("ReadAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .HasColumnType("text");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -678,25 +646,6 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Following");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Models.FollowRequest", b =>
-                {
-                    b.HasOne("Yapplr.Api.Models.User", "Requested")
-                        .WithMany("FollowRequestsReceived")
-                        .HasForeignKey("RequestedId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Yapplr.Api.Models.User", "Requester")
-                        .WithMany("FollowRequestsSent")
-                        .HasForeignKey("RequesterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Requested");
-
-                    b.Navigation("Requester");
-                });
-
             modelBuilder.Entity("Yapplr.Api.Models.Like", b =>
                 {
                     b.HasOne("Yapplr.Api.Models.Post", "Post")
@@ -909,10 +858,6 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("ConversationParticipants");
-
-                    b.Navigation("FollowRequestsReceived");
-
-                    b.Navigation("FollowRequestsSent");
 
                     b.Navigation("Followers");
 

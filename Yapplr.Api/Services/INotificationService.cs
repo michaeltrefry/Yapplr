@@ -49,6 +49,11 @@ public interface INotificationService
     /// Creates a follow notification
     /// </summary>
     Task CreateFollowNotificationAsync(int followedUserId, int followingUserId);
+
+    /// <summary>
+    /// Creates a follow request notification
+    /// </summary>
+    Task CreateFollowRequestNotificationAsync(int requestedUserId, int requesterUserId);
     
     /// <summary>
     /// Creates a comment notification

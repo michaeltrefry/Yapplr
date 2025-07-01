@@ -25,7 +25,8 @@ public class UserPreferencesService : IUserPreferencesService
             preferences = new UserPreferences
             {
                 UserId = userId,
-                DarkMode = false
+                DarkMode = false,
+                RequireFollowApproval = false
             };
             
             _context.UserPreferences.Add(preferences);
@@ -34,7 +35,8 @@ public class UserPreferencesService : IUserPreferencesService
 
         return new UserPreferencesDto
         {
-            DarkMode = preferences.DarkMode
+            DarkMode = preferences.DarkMode,
+            RequireFollowApproval = preferences.RequireFollowApproval
         };
     }
 
@@ -49,7 +51,8 @@ public class UserPreferencesService : IUserPreferencesService
             preferences = new UserPreferences
             {
                 UserId = userId,
-                DarkMode = updateDto.DarkMode ?? false
+                DarkMode = updateDto.DarkMode ?? false,
+                RequireFollowApproval = updateDto.RequireFollowApproval ?? false
             };
             
             _context.UserPreferences.Add(preferences);
@@ -61,7 +64,12 @@ public class UserPreferencesService : IUserPreferencesService
             {
                 preferences.DarkMode = updateDto.DarkMode.Value;
             }
-            
+
+            if (updateDto.RequireFollowApproval.HasValue)
+            {
+                preferences.RequireFollowApproval = updateDto.RequireFollowApproval.Value;
+            }
+
             preferences.UpdatedAt = DateTime.UtcNow;
         }
 
@@ -69,7 +77,8 @@ public class UserPreferencesService : IUserPreferencesService
 
         return new UserPreferencesDto
         {
-            DarkMode = preferences.DarkMode
+            DarkMode = preferences.DarkMode,
+            RequireFollowApproval = preferences.RequireFollowApproval
         };
     }
 }

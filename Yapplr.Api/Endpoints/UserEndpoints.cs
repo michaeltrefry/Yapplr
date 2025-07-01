@@ -191,5 +191,117 @@ public static class UserEndpoints
         .Produces(200)
         .Produces(400)
         .Produces(401);
+
+        users.MapGet("/me/follow-requests", [Authorize] async (ClaimsPrincipal user, IUserService userService) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var requests = await userService.GetPendingFollowRequestsAsync(currentUserId);
+            return Results.Ok(requests);
+        })
+        .WithName("GetPendingFollowRequests")
+        .WithSummary("Get pending follow requests for current user")
+        .Produces<IEnumerable<FollowRequestDto>>(200)
+        .Produces(401);
+
+        users.MapPost("/follow-requests/{requestId}/approve", [Authorize] async (int requestId, ClaimsPrincipal user, IUserService userService) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            try
+            {
+                var result = await userService.ApproveFollowRequestAsync(requestId, currentUserId);
+                return Results.Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+        })
+        .WithName("ApproveFollowRequest")
+        .WithSummary("Approve a follow request")
+        .Produces<FollowResponseDto>(200)
+        .Produces(400)
+        .Produces(401);
+
+        users.MapPost("/follow-requests/{requestId}/deny", [Authorize] async (int requestId, ClaimsPrincipal user, IUserService userService) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            try
+            {
+                var result = await userService.DenyFollowRequestAsync(requestId, currentUserId);
+                return Results.Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+        })
+        .WithName("DenyFollowRequest")
+        .WithSummary("Deny a follow request")
+        .Produces<FollowResponseDto>(200)
+        .Produces(400)
+        .Produces(401);
+
+        users.MapPost("/follow-requests/approve-by-user/{requesterId}", [Authorize] async (int requesterId, ClaimsPrincipal user, IUserService userService) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            try
+            {
+                var result = await userService.ApproveFollowRequestByUserIdAsync(requesterId, currentUserId);
+                return Results.Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+        })
+        .WithName("ApproveFollowRequestByUserId")
+        .WithSummary("Approve a follow request by requester user ID")
+        .Produces<FollowResponseDto>(200)
+        .Produces(400)
+        .Produces(401);
+
+        users.MapPost("/follow-requests/deny-by-user/{requesterId}", [Authorize] async (int requesterId, ClaimsPrincipal user, IUserService userService) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            try
+            {
+                var result = await userService.DenyFollowRequestByUserIdAsync(requesterId, currentUserId);
+                return Results.Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+        })
+        .WithName("DenyFollowRequestByUserId")
+        .WithSummary("Deny a follow request by requester user ID")
+        .Produces<FollowResponseDto>(200)
+        .Produces(400)
+        .Produces(401);
+
+        users.MapGet("/debug-follow-status/{username}", [Authorize] async (string username, ClaimsPrincipal user, IUserService userService) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var profile = await userService.GetUserProfileAsync(username, currentUserId);
+
+            if (profile == null)
+                return Results.NotFound();
+
+            return Results.Ok(new {
+                username = profile.Username,
+                isFollowedByCurrentUser = profile.IsFollowedByCurrentUser,
+                hasPendingFollowRequest = profile.HasPendingFollowRequest,
+                requiresFollowApproval = profile.RequiresFollowApproval
+            });
+        })
+        .WithName("DebugFollowStatus")
+        .WithSummary("Debug follow status for a user")
+        .Produces(200)
+        .Produces(401)
+        .Produces(404);
     }
 }

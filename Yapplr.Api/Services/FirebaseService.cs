@@ -207,6 +207,46 @@ public class FirebaseService : IFirebaseService
         return await SendNotificationAsync(user.FcmToken, title, body, data);
     }
 
+    public async Task<bool> SendFollowRequestNotificationAsync(int userId, string requesterUsername)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null || string.IsNullOrEmpty(user.FcmToken))
+        {
+            return false;
+        }
+
+        var title = "Follow Request";
+        var body = $"@{requesterUsername} wants to follow you";
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "follow_request",
+            ["userId"] = userId.ToString(),
+            ["requesterUsername"] = requesterUsername
+        };
+
+        return await SendNotificationAsync(user.FcmToken, title, body, data);
+    }
+
+    public async Task<bool> SendFollowRequestApprovedNotificationAsync(int userId, string approverUsername)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null || string.IsNullOrEmpty(user.FcmToken))
+        {
+            return false;
+        }
+
+        var title = "Follow Request Approved";
+        var body = $"@{approverUsername} approved your follow request";
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "follow",
+            ["userId"] = userId.ToString(),
+            ["approverUsername"] = approverUsername
+        };
+
+        return await SendNotificationAsync(user.FcmToken, title, body, data);
+    }
+
     public async Task<bool> SendLikeNotificationAsync(int userId, string likerUsername, int postId)
     {
         var user = await _context.Users.FindAsync(userId);

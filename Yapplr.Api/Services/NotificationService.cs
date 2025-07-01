@@ -283,6 +283,35 @@ public class NotificationService : INotificationService
         await _firebaseService.SendFollowNotificationAsync(followedUserId, followingUser.Username);
     }
 
+    public async Task CreateFollowRequestNotificationAsync(int requestedUserId, int requesterUserId)
+    {
+        // Check if user has blocked the requesting user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == requestedUserId && b.BlockedId == requesterUserId);
+
+        if (isBlocked)
+            return;
+
+        var requesterUser = await _context.Users.FindAsync(requesterUserId);
+        if (requesterUser == null)
+            return;
+
+        var notification = new Notification
+        {
+            Type = NotificationType.FollowRequest,
+            Message = $"@{requesterUser.Username} wants to follow you",
+            UserId = requestedUserId,
+            ActorUserId = requesterUserId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send Firebase push notification
+        await _firebaseService.SendFollowRequestNotificationAsync(requestedUserId, requesterUser.Username);
+    }
+
     public async Task CreateCommentNotificationAsync(int postOwnerId, int commentingUserId, int postId, int commentId)
     {
         // Don't notify if user comments on their own post
@@ -356,6 +385,29 @@ public class NotificationService : INotificationService
 
     private async Task<NotificationDto> MapToNotificationDto(Notification notification)
     {
+        string? status = notification.Status;
+
+        // For follow request notifications, get status from the FollowRequest
+        if (notification.Type == NotificationType.FollowRequest && notification.ActorUserId.HasValue)
+        {
+            var followRequest = await _context.FollowRequests
+                .Where(fr => fr.RequesterId == notification.ActorUserId.Value &&
+                            fr.RequestedId == notification.UserId)
+                .OrderByDescending(fr => fr.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (followRequest != null)
+            {
+                status = followRequest.Status switch
+                {
+                    FollowRequestStatus.Pending => null,
+                    FollowRequestStatus.Approved => "approved",
+                    FollowRequestStatus.Denied => "denied",
+                    _ => null
+                };
+            }
+        }
+
         var dto = new NotificationDto
         {
             Id = notification.Id,
@@ -364,6 +416,7 @@ public class NotificationService : INotificationService
             IsRead = notification.IsRead,
             CreatedAt = notification.CreatedAt,
             ReadAt = notification.ReadAt,
+            Status = status,
             ActorUser = notification.ActorUser != null ? new UserDto(
                 notification.ActorUser.Id,
                 notification.ActorUser.Email,

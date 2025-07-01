@@ -16,7 +16,9 @@ public class Notification
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public DateTime? ReadAt { get; set; }
-    
+
+    public string? Status { get; set; } // For follow requests: "approved", "denied", null for pending
+
     // Foreign keys
     public int UserId { get; set; } // User who receives the notification
     public int? ActorUserId { get; set; } // User who triggered the notification (can be null for system notifications)

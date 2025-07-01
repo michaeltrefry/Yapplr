@@ -15,6 +15,7 @@ public class YapplrDbContext : DbContext
     public DbSet<Comment> Comments { get; set; }
     public DbSet<Repost> Reposts { get; set; }
     public DbSet<Follow> Follows { get; set; }
+    public DbSet<FollowRequest> FollowRequests { get; set; }
     public DbSet<Block> Blocks { get; set; }
     public DbSet<PasswordReset> PasswordResets { get; set; }
     public DbSet<Conversation> Conversations { get; set; }
@@ -111,6 +112,22 @@ public class YapplrDbContext : DbContext
             entity.HasOne(e => e.Following)
                   .WithMany(e => e.Followers)
                   .HasForeignKey(e => e.FollowingId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // FollowRequest configuration
+        modelBuilder.Entity<FollowRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            // Removed unique constraint to allow multiple requests over time
+            entity.HasIndex(e => new { e.RequesterId, e.RequestedId, e.Status }); // Index for performance
+            entity.HasOne(e => e.Requester)
+                  .WithMany(e => e.FollowRequestsSent)
+                  .HasForeignKey(e => e.RequesterId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Requested)
+                  .WithMany(e => e.FollowRequestsReceived)
+                  .HasForeignKey(e => e.RequestedId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
