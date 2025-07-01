@@ -28,9 +28,9 @@ class FirebaseMessagingService {
     }
 
     try {
-      // Register service worker
+      // Register service worker from API route (with environment variables injected)
       if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        const registration = await navigator.serviceWorker.register('/api/firebase-messaging-sw');
         console.log('Service Worker registered:', registration);
       }
 

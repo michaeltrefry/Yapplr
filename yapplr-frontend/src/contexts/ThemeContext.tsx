@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { preferencesApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ThemeContextType {
   isDarkMode: boolean;
@@ -16,17 +17,24 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
+  const { user, isLoading: authLoading } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user preferences on mount
+  // Load user preferences on mount or when user changes
   useEffect(() => {
     const loadPreferences = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (token) {
+        // Only try to load from API if user is authenticated
+        if (user) {
           const preferences = await preferencesApi.get();
           setIsDarkMode(preferences.darkMode);
+        } else {
+          // If not authenticated, check localStorage for a fallback
+          const savedTheme = localStorage.getItem('darkMode');
+          if (savedTheme) {
+            setIsDarkMode(savedTheme === 'true');
+          }
         }
       } catch (error) {
         console.error('Failed to load preferences:', error);
@@ -40,8 +48,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       }
     };
 
-    loadPreferences();
-  }, []);
+    // Only load preferences after auth has finished loading
+    if (!authLoading) {
+      loadPreferences();
+    }
+  }, [user, authLoading]);
 
   // Apply theme to document
   useEffect(() => {
@@ -65,13 +76,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     setIsDarkMode(newDarkMode); // Optimistic update
 
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
+      // Only try to update via API if user is authenticated
+      if (user) {
         console.log('ThemeContext: Updating preferences via API');
         await preferencesApi.update({ darkMode: newDarkMode });
         console.log('ThemeContext: Successfully updated preferences');
       } else {
-        console.log('ThemeContext: No token found, skipping API update');
+        console.log('ThemeContext: User not authenticated, skipping API update');
       }
     } catch (error) {
       console.error('Failed to update preferences:', error);

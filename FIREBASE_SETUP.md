@@ -73,7 +73,7 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
-NEXT_PUBLIC_FIREBASE_VAPID_KEY=your-vapid-key-here
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=
 ```
 
 ### Backend Configuration
@@ -90,19 +90,9 @@ Update `Yapplr.Api/appsettings.json`:
 That's it! No credentials needed in the configuration since we're using Application Default Credentials.
 
 ### Service Worker Configuration
-Update `yapplr-frontend/public/firebase-messaging-sw.js` with your Firebase config:
+The service worker configuration is now automatically handled using environment variables. The Firebase configuration is dynamically injected from your `.env.local` file through a Next.js API route.
 
-```javascript
-const firebaseConfig = {
-  apiKey: "your-api-key",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "your-app-id",
-  measurementId: "your-measurement-id"
-};
-```
+**No manual configuration needed!** The service worker will automatically use the same Firebase configuration as your main application from the environment variables.
 
 ## Testing
 
