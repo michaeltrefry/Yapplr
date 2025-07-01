@@ -9,5 +9,7 @@ public interface IFirebaseService
     Task<bool> SendMentionNotificationAsync(int userId, string mentionerUsername, int postId, int? commentId = null);
     Task<bool> SendReplyNotificationAsync(int userId, string replierUsername, int postId, int commentId);
     Task<bool> SendFollowNotificationAsync(int userId, string followerUsername);
+    Task<bool> SendLikeNotificationAsync(int userId, string likerUsername, int postId);
+    Task<bool> SendRepostNotificationAsync(int userId, string reposterUsername, int postId);
     Task<bool> SendMulticastNotificationAsync(List<string> fcmTokens, string title, string body, Dictionary<string, string>? data = null);
 }

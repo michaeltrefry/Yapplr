@@ -195,7 +195,7 @@ public class NotificationService : INotificationService
         // Check if user has blocked the liking user
         var isBlocked = await _context.Blocks
             .AnyAsync(b => b.BlockerId == likedUserId && b.BlockedId == likingUserId);
-        
+
         if (isBlocked)
             return;
 
@@ -215,6 +215,9 @@ public class NotificationService : INotificationService
 
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
+
+        // Send Firebase push notification
+        await _firebaseService.SendLikeNotificationAsync(likedUserId, likingUser.Username, postId);
     }
 
     public async Task CreateRepostNotificationAsync(int originalUserId, int repostingUserId, int postId)
@@ -246,6 +249,9 @@ public class NotificationService : INotificationService
 
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
+
+        // Send Firebase push notification
+        await _firebaseService.SendRepostNotificationAsync(originalUserId, repostingUser.Username, postId);
     }
 
     public async Task CreateFollowNotificationAsync(int followedUserId, int followingUserId)

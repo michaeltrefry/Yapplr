@@ -81,6 +81,10 @@ self.addEventListener('notificationclick', function(event) {
       case 'follow':
         url = `/profile/${data.userId}`;
         break;
+      case 'like':
+      case 'repost':
+        url = `/posts/${data.postId}`;
+        break;
       default:
         url = '/notifications';
     }

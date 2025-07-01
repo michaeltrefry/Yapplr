@@ -25,8 +25,11 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Message Notifications**: Real-time unread message badges on Messages tab and conversation list
 - **Enhanced Conversation UI**: Bold text and background highlights for unread conversations
 - **Real-time Notifications**: Firebase-powered instant push notifications for all social interactions
-- **Notifications System**: Comprehensive notification system for mentions, likes, reposts, follows, and comments with red badge indicators
-- **Smart Navigation**: Click notifications to navigate directly to mentioned posts or comments with automatic scrolling and highlighting
+- **Comprehensive Notifications**: Complete notification system for mentions, likes, reposts, follows, and comments with red badge indicators
+- **Follow Notifications**: Get notified when someone starts following you with direct navigation to their profile
+- **Like Notifications**: Instant notifications when someone likes your posts with navigation to the liked post
+- **Repost Notifications**: Real-time alerts when someone reposts your content with direct post navigation
+- **Smart Navigation**: Click notifications to navigate directly to mentioned posts, comments, or user profiles with automatic scrolling and highlighting
 - **Background Notifications**: Push notifications work even when the app is minimized or closed
 - **Dark Mode**: Complete dark theme support with user preferences and persistent storage
 
@@ -200,14 +203,19 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 ### Mentions & Notifications System
 - **@Username Mentions**: Mention users in posts and comments using @username syntax with automatic detection
 - **Clickable Mentions**: All @username mentions are automatically converted to clickable profile links
-- **Real-time Notifications**: Instant notifications for mentions, likes, reposts, follows, and comments
-- **Notification Types**: Comprehensive notification system supporting all social interactions
+- **Real-time Notifications**: Instant Firebase push notifications for mentions, likes, reposts, follows, and comments
+- **Follow Notifications**: Get notified immediately when someone follows you with navigation to their profile
+- **Like Notifications**: Real-time alerts when someone likes your posts with direct navigation to the liked post
+- **Repost Notifications**: Instant notifications when someone reposts your content with navigation to the original post
+- **Mention Notifications**: Immediate alerts when mentioned in posts or comments with smart navigation to context
+- **Comment Notifications**: Real-time notifications when someone comments on your posts
 - **Smart Navigation**: Click notifications to navigate directly to relevant content (posts, comments, profiles)
 - **Comment Scrolling**: Automatic scrolling and highlighting when navigating to specific comments from notifications
 - **Notification Badges**: Red badge indicators showing unread notification count in sidebar
 - **Privacy Respect**: Blocked users don't receive notifications from users who blocked them
 - **Notification Management**: Mark individual notifications or all notifications as read
 - **Notification History**: Paginated notification list with timestamps and context
+- **Background Push**: Notifications work even when app is closed or minimized
 - **Cross-Platform**: Consistent notification experience across web and mobile platforms
 
 ### Comments System

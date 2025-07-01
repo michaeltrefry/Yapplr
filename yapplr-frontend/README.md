@@ -18,7 +18,11 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Social Features**: Yaps, likes, comments, reyaps with timeline integration
 - **Mentions System**: @username mentions with clickable links and real-time notifications
 - **Real-time Notifications**: Firebase-powered instant push notifications for all social interactions
-- **Notifications**: Comprehensive notification system with red badge indicators and smart navigation
+- **Comprehensive Notifications**: Complete notification system for mentions, likes, reposts, follows, and comments
+- **Follow Notifications**: Instant alerts when someone follows you with navigation to their profile
+- **Like Notifications**: Real-time notifications when someone likes your posts with direct post navigation
+- **Repost Notifications**: Immediate alerts when someone reposts your content with navigation to the post
+- **Smart Navigation**: Click notifications to navigate directly to relevant content with automatic scrolling
 - **Background Notifications**: Push notifications work even when the app is minimized or closed
 - **Comment Replies**: Reply to specific comments with automatic @username prefilling and reply context
 - **Content Management**: Delete your own yaps, comments, and reyaps with confirmation dialogs
@@ -116,8 +120,10 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - Like and unlike yaps with real-time counts
 - Comment on yaps with expandable comment sections and reply functionality
 - @Username Mentions: Mention users in posts and comments with automatic detection and clickable links
-- Real-time Notifications: Instant notifications for mentions, likes, reposts, follows, and comments with red badge indicators
-- Smart Navigation: Click notifications to navigate directly to mentioned posts or comments with automatic scrolling
+- Real-time Notifications: Comprehensive Firebase push notifications for mentions, likes, reposts, follows, and comments with red badge indicators
+- Follow Notifications: Get notified when someone follows you with direct navigation to their profile
+- Like & Repost Notifications: Instant alerts when someone likes or reposts your content with navigation to the specific post
+- Smart Navigation: Click notifications to navigate directly to mentioned posts, comments, or user profiles with automatic scrolling
 - Reyap functionality with timeline integration and attribution
 - Follow/unfollow users with instant UI updates
 - Privacy-aware timeline filtering

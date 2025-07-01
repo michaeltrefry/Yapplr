@@ -207,6 +207,46 @@ public class FirebaseService : IFirebaseService
         return await SendNotificationAsync(user.FcmToken, title, body, data);
     }
 
+    public async Task<bool> SendLikeNotificationAsync(int userId, string likerUsername, int postId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null || string.IsNullOrEmpty(user.FcmToken))
+        {
+            return false;
+        }
+
+        var title = "Post Liked";
+        var body = $"@{likerUsername} liked your post";
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "like",
+            ["postId"] = postId.ToString(),
+            ["likerUsername"] = likerUsername
+        };
+
+        return await SendNotificationAsync(user.FcmToken, title, body, data);
+    }
+
+    public async Task<bool> SendRepostNotificationAsync(int userId, string reposterUsername, int postId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null || string.IsNullOrEmpty(user.FcmToken))
+        {
+            return false;
+        }
+
+        var title = "Post Reposted";
+        var body = $"@{reposterUsername} reposted your post";
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "repost",
+            ["postId"] = postId.ToString(),
+            ["reposterUsername"] = reposterUsername
+        };
+
+        return await SendNotificationAsync(user.FcmToken, title, body, data);
+    }
+
     public async Task<bool> SendMulticastNotificationAsync(List<string> fcmTokens, string title, string body, Dictionary<string, string>? data = null)
     {
         if (_messaging == null)

@@ -20,7 +20,7 @@ function ResetPasswordForm() {
   const router = useRouter();
 
   useEffect(() => {
-    const tokenParam = searchParams.get('token');
+    const tokenParam = searchParams?.get('token');
     if (!tokenParam) {
       setError('Invalid reset link. Please request a new password reset.');
     } else {

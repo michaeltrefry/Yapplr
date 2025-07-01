@@ -21,7 +21,7 @@ export default function PostPage({ params }: PostPageProps) {
   const { id } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const scrollToComment = searchParams.get('scrollToComment');
+  const scrollToComment = searchParams?.get('scrollToComment');
 
   const { data: post, isLoading, error } = useQuery({
     queryKey: ['post', parseInt(id)],

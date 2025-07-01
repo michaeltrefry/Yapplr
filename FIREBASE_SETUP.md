@@ -19,6 +19,8 @@ This guide explains how to set up Firebase for real-time messaging and notificat
    - Mentions in posts/comments
    - Replies to comments
    - New followers
+   - Post likes
+   - Post reposts
 4. **Database Migration**: Added FCM token storage
 
 ## Firebase Project Setup
@@ -119,6 +121,8 @@ npm run dev
 3. Mention a user in a post (@username)
 4. Reply to a comment
 5. Follow another user
+6. Like another user's post
+7. Repost another user's content
 
 ### 4. Test Background Notifications
 1. Minimize or switch away from the browser tab
@@ -159,7 +163,10 @@ npm run dev
 - ✅ Mention notifications (@username)
 - ✅ Reply notifications
 - ✅ Follow notifications
+- ✅ Like notifications
+- ✅ Repost notifications
 - ✅ Background notification support
 - ✅ Automatic notification count updates
+- ✅ Smart navigation to relevant content
 - ✅ Cross-browser compatibility
 - ✅ Fallback to polling if Firebase fails

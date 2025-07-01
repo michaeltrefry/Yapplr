@@ -8,7 +8,7 @@ export interface FirebaseNotificationPayload {
     icon?: string;
   };
   data?: {
-    type: 'message' | 'mention' | 'reply' | 'follow';
+    type: 'message' | 'mention' | 'reply' | 'follow' | 'like' | 'repost';
     userId?: string;
     postId?: string;
     commentId?: string;
@@ -137,6 +137,14 @@ class FirebaseMessagingService {
       case 'follow':
         if (data.userId) {
           window.location.href = `/profile/${data.userId}`;
+        } else {
+          window.location.href = '/notifications';
+        }
+        break;
+      case 'like':
+      case 'repost':
+        if (data.postId) {
+          window.location.href = `/posts/${data.postId}`;
         } else {
           window.location.href = '/notifications';
         }
