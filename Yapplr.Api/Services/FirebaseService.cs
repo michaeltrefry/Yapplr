@@ -1,6 +1,7 @@
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
+using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
@@ -29,9 +30,23 @@ public class FirebaseService : IFirebaseService
                 try
                 {
                     var projectId = configuration["Firebase:ProjectId"] ?? "yapplr";
+                    GoogleCredential credential;
 
-                    // Try to use Application Default Credentials first
-                    var credential = GoogleCredential.GetApplicationDefault();
+                    // Try to use Service Account Key first (production)
+                    var serviceAccountKey = configuration["Firebase:ServiceAccountKey"];
+                    if (!string.IsNullOrEmpty(serviceAccountKey))
+                    {
+                        // Use service account key from environment variable (production)
+                        var serviceAccountJson = System.Text.Encoding.UTF8.GetBytes(serviceAccountKey);
+                        credential = GoogleCredential.FromStream(new MemoryStream(serviceAccountJson));
+                        _logger.LogInformation("Firebase initialized using Service Account Key");
+                    }
+                    else
+                    {
+                        // Fallback to Application Default Credentials (development)
+                        credential = GoogleCredential.GetApplicationDefault();
+                        _logger.LogInformation("Firebase initialized using Application Default Credentials (development mode)");
+                    }
 
                     FirebaseApp.Create(new AppOptions()
                     {
@@ -39,13 +54,15 @@ public class FirebaseService : IFirebaseService
                         ProjectId = projectId,
                     });
 
-                    _logger.LogInformation("Firebase initialized successfully using Application Default Credentials");
                     _isInitialized = true;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to initialize Firebase with Application Default Credentials. Firebase notifications will be disabled.");
+                    _logger.LogWarning(ex, "Failed to initialize Firebase. Firebase notifications will be disabled. " +
+                        "For development: run 'gcloud auth application-default login'. " +
+                        "For production: set Firebase:ServiceAccountKey environment variable.");
                     _messaging = null;
+                    _isInitialized = true; // Mark as initialized to prevent retries
                     return;
                 }
             }
@@ -67,13 +84,13 @@ public class FirebaseService : IFirebaseService
     {
         if (_messaging == null)
         {
-            _logger.LogWarning("Firebase messaging not initialized. Skipping notification.");
+            _logger.LogWarning("Firebase messaging not initialized. Skipping notification for: {Title}", title);
             return false;
         }
 
         if (string.IsNullOrEmpty(fcmToken))
         {
-            _logger.LogWarning("FCM token is null or empty");
+            _logger.LogWarning("FCM token is null or empty for notification: {Title}", title);
             return false;
         }
 
@@ -108,12 +125,13 @@ public class FirebaseService : IFirebaseService
             };
 
             string response = await _messaging.SendAsync(message);
-            _logger.LogInformation($"Successfully sent message: {response}");
+            _logger.LogInformation("Successfully sent Firebase notification: {Title} - Response: {Response}", title, response);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error sending FCM notification to token: {fcmToken}");
+            _logger.LogError(ex, "Error sending FCM notification '{Title}' to token: {Token}. Error: {ErrorMessage}",
+                title, fcmToken.Substring(0, Math.Min(20, fcmToken.Length)) + "...", ex.Message);
             return false;
         }
     }
