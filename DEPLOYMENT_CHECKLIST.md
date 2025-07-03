@@ -119,7 +119,7 @@ Required in `.env` file:
 - [ ] `AWS_SES_FROM_EMAIL` - Verified sender email
 - [ ] `AWS_SES_ACCESS_KEY` - AWS access key
 - [ ] `AWS_SES_SECRET_KEY` - AWS secret key
-- [ ] `DOMAIN_NAME` - Your domain name
+- [ ] `API_DOMAIN_NAME` - Your domain name
 - [ ] `CERTBOT_EMAIL` - Email for SSL notifications
 
 ## Useful Commands

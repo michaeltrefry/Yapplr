@@ -23,7 +23,7 @@ LINODE_SSH_KEY=your-private-ssh-key-content
 ```
 DATABASE_CONNECTION_STRING=Host=your-db-host;Database=yapplr;Username=yapplr_user;Password=your-password
 JWT_SECRET_KEY=your-production-jwt-secret-key-minimum-32-characters
-DOMAIN_NAME=api.yapplr.com
+API_DOMAIN_NAME=api.yapplr.com
 ```
 
 **AWS SES Secrets:**

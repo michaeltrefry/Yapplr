@@ -99,7 +99,7 @@ docker run --rm \
   sh -c "dotnet tool install --global dotnet-ef && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update" || true
 
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
-echo -e "${GREEN}Your API is now running at: https://$DOMAIN_NAME${NC}"
+echo -e "${GREEN}Your API is now running at: https://$API_DOMAIN_NAME${NC}"
 
 # Clean up old images
 echo -e "${GREEN}🧹 Cleaning up old Docker images...${NC}"
