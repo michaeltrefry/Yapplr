@@ -27,16 +27,68 @@ jobs:
       run: |
         docker save yapplr-api:latest | gzip > yapplr-api.tar.gz
         
+    - name: Debug secrets
+      run: |
+        echo "LINODE_HOST is set: ${{ secrets.LINODE_HOST != '' }}"
+        echo "LINODE_USER is set: ${{ secrets.LINODE_USER != '' }}"
+        echo "SSH key length: ${{ length(secrets.LINODE_SSH_KEY) }}"
+
     - name: Deploy to Linode
-      uses: appleboy/ssh-action@v1.0.0
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.LINODE_HOST }}
         username: ${{ secrets.LINODE_USER }}
         key: ${{ secrets.LINODE_SSH_KEY }}
+        port: 22
+        timeout: 60s
+        envs: DATABASE_CONNECTION_STRING,JWT_SECRET_KEY,AWS_SES_REGION,AWS_SES_FROM_EMAIL,AWS_SES_ACCESS_KEY,AWS_SES_SECRET_KEY,FIREBASE_PROJECT_ID,FIREBASE_SERVICE_ACCOUNT_KEY,FIREBASE_API_KEY,FIREBASE_AUTH_DOMAIN,FIREBASE_STORAGE_BUCKET,FIREBASE_MESSAGING_SENDER_ID,FIREBASE_APP_ID,FIREBASE_VAPID_KEY,DOMAIN_NAME,CERTBOT_EMAIL,CERTBOT_DOMAIN
         script: |
-          cd /opt/yapplr/Yapplr.Api
+          cd /opt/yapplr
           git pull origin main
+          cd Yapplr.Api
+
+          # Create .env file with secrets
+          cat > .env << EOF
+          DATABASE_CONNECTION_STRING=$DATABASE_CONNECTION_STRING
+          JWT_SECRET_KEY=$JWT_SECRET_KEY
+          AWS_SES_REGION=$AWS_SES_REGION
+          AWS_SES_FROM_EMAIL=$AWS_SES_FROM_EMAIL
+          AWS_SES_ACCESS_KEY=$AWS_SES_ACCESS_KEY
+          AWS_SES_SECRET_KEY=$AWS_SES_SECRET_KEY
+          FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID
+          FIREBASE_SERVICE_ACCOUNT_KEY=$FIREBASE_SERVICE_ACCOUNT_KEY
+          FIREBASE_API_KEY=$FIREBASE_API_KEY
+          FIREBASE_AUTH_DOMAIN=$FIREBASE_AUTH_DOMAIN
+          FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET
+          FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID
+          FIREBASE_APP_ID=$FIREBASE_APP_ID
+          FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY
+          DOMAIN_NAME=$DOMAIN_NAME
+          CERTBOT_EMAIL=$CERTBOT_EMAIL
+          CERTBOT_DOMAIN=$CERTBOT_DOMAIN
+          EOF
+
+          # Run deployment
+          chmod +x deploy.sh
           ./deploy.sh
+      env:
+        DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
+        JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+        AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+        AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
+        AWS_SES_ACCESS_KEY: ${{ secrets.AWS_SES_ACCESS_KEY }}
+        AWS_SES_SECRET_KEY: ${{ secrets.AWS_SES_SECRET_KEY }}
+        FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+        FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+        FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+        FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+        FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+        FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
+        DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+        CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
+        CERTBOT_DOMAIN: ${{ secrets.CERTBOT_DOMAIN }}
           
     - name: Health Check
       run: |
