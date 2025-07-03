@@ -34,12 +34,20 @@ public class FirebaseService : IFirebaseService
 
                     // Try to use Service Account Key first (production)
                     var serviceAccountKey = configuration["Firebase:ServiceAccountKey"];
+                    var serviceAccountKeyFile = configuration["Firebase:ServiceAccountKeyFile"];
+
                     if (!string.IsNullOrEmpty(serviceAccountKey))
                     {
                         // Use service account key from environment variable (production)
                         var serviceAccountJson = System.Text.Encoding.UTF8.GetBytes(serviceAccountKey);
                         credential = GoogleCredential.FromStream(new MemoryStream(serviceAccountJson));
-                        _logger.LogInformation("Firebase initialized using Service Account Key");
+                        _logger.LogInformation("Firebase initialized using Service Account Key from environment variable");
+                    }
+                    else if (!string.IsNullOrEmpty(serviceAccountKeyFile) && File.Exists(serviceAccountKeyFile))
+                    {
+                        // Use service account key from file (production alternative)
+                        credential = GoogleCredential.FromFile(serviceAccountKeyFile);
+                        _logger.LogInformation("Firebase initialized using Service Account Key from file: {File}", serviceAccountKeyFile);
                     }
                     else
                     {
