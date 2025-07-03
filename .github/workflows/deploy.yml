@@ -31,7 +31,7 @@ jobs:
       run: |
         echo "LINODE_HOST is set: ${{ secrets.LINODE_HOST != '' }}"
         echo "LINODE_USER is set: ${{ secrets.LINODE_USER != '' }}"
-        echo "SSH key length: ${{ length(secrets.LINODE_SSH_KEY) }}"
+        echo "SSH key is set: ${{ secrets.LINODE_SSH_KEY != '' }}"
 
     - name: Deploy to Linode
       uses: appleboy/ssh-action@v1.0.3
