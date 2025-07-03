@@ -2,11 +2,12 @@
 
 ## Overview
 
-This guide covers deploying your Yapplr application with AWS SES email functionality to production.
+This guide covers deploying your Yapplr application with AWS SES email functionality and Firebase real-time notifications to production.
 
 ## Prerequisites
 
 - AWS Account with SES configured
+- Firebase project with Cloud Messaging enabled
 - Domain name
 - SSL certificate
 - Production database (PostgreSQL)
@@ -35,9 +36,27 @@ yourdomain.com. TXT "v=spf1 include:amazonses.com ~all"
 _dmarc.yourdomain.com. TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain.com"
 ```
 
-## 2. Environment Configuration
+## 2. Firebase Production Setup
 
-### 2.1 Production appsettings.json
+### 2.1 Create Firebase Service Account
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project
+3. Go to **Project Settings** → **Service Accounts**
+4. Click **Generate New Private Key**
+5. Download the JSON file (keep it secure!)
+
+### 2.2 Configure Firebase Environment Variables
+```bash
+# Required Firebase environment variables for production
+Firebase__ProjectId=your-firebase-project-id
+Firebase__ServiceAccountKey='{"type":"service_account","project_id":"your-project-id",...}'
+```
+
+**Important**: The `Firebase__ServiceAccountKey` should be the entire JSON content as a single-line string.
+
+## 3. Environment Configuration
+
+### 3.1 Production appsettings.json
 ```json
 {
   "ConnectionStrings": {
@@ -64,7 +83,7 @@ _dmarc.yourdomain.com. TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain.
 }
 ```
 
-### 2.2 Environment Variables
+### 3.2 Environment Variables
 ```bash
 # AWS Credentials (preferred method)
 export AWS_ACCESS_KEY_ID=your_access_key
@@ -79,11 +98,15 @@ export JwtSettings__SecretKey="your-production-secret-key"
 
 # Email
 export AwsSesSettings__FromEmail="noreply@yourdomain.com"
+
+# Firebase (REQUIRED for notifications)
+export Firebase__ProjectId="your-firebase-project-id"
+export Firebase__ServiceAccountKey='{"type":"service_account","project_id":"your-project-id",...}'
 ```
 
-## 3. Database Migration
+## 4. Database Migration
 
-### 3.1 Production Database Setup
+### 4.1 Production Database Setup
 ```bash
 # Create production database
 createdb -h your-db-host -U postgres yapplr
@@ -92,15 +115,15 @@ createdb -h your-db-host -U postgres yapplr
 dotnet ef database update --connection "Host=your-db;Database=yapplr;Username=user;Password=pass"
 ```
 
-### 3.2 Database Security
+### 4.2 Database Security
 - Use dedicated database user with minimal permissions
 - Enable SSL connections
 - Regular backups
 - Connection pooling
 
-## 4. Docker Deployment
+## 5. Docker Deployment
 
-### 4.1 Dockerfile
+### 5.1 Dockerfile
 ```dockerfile
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
@@ -124,7 +147,7 @@ COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Yapplr.Api.dll"]
 ```
 
-### 4.2 Docker Compose
+### 5.2 Docker Compose
 ```yaml
 version: '3.8'
 services:
@@ -138,6 +161,9 @@ services:
       - ConnectionStrings__DefaultConnection=Host=db;Database=yapplr;Username=yapplr;Password=password
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      # Firebase configuration (REQUIRED)
+      - Firebase__ProjectId=${FIREBASE_PROJECT_ID}
+      - Firebase__ServiceAccountKey=${FIREBASE_SERVICE_ACCOUNT_KEY}
     depends_on:
       - db
 
@@ -156,9 +182,46 @@ volumes:
   postgres_data:
 ```
 
-## 5. Security Considerations
+## 6. Frontend Firebase Configuration
 
-### 5.1 HTTPS Configuration
+### 6.1 Production Environment Variables
+Create a `.env.production` file in your frontend directory:
+
+```bash
+# Frontend Firebase Configuration (REQUIRED for notifications)
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=your-vapid-key
+```
+
+### 6.2 Get Firebase Configuration Values
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project
+3. Go to **Project Settings** → **General** → **Your apps**
+4. Select your web app or create one
+5. Copy the configuration values
+
+### 6.3 Generate VAPID Key
+1. In Firebase Console, go to **Project Settings** → **Cloud Messaging**
+2. Under **Web configuration**, click **Generate key pair**
+3. Copy the VAPID key to `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
+
+### 6.4 Frontend Deployment
+```bash
+# Build frontend with production environment
+npm run build
+
+# Deploy to your hosting provider (Vercel, Netlify, etc.)
+# Make sure to set the environment variables in your hosting platform
+```
+
+## 7. Security Considerations
+
+### 7.1 HTTPS Configuration
 ```csharp
 // In Program.cs
 if (!app.Environment.IsDevelopment())
@@ -168,7 +231,7 @@ if (!app.Environment.IsDevelopment())
 }
 ```
 
-### 5.2 CORS Configuration
+### 7.2 CORS Configuration
 ```csharp
 builder.Services.AddCors(options =>
 {
@@ -182,7 +245,7 @@ builder.Services.AddCors(options =>
 });
 ```
 
-### 5.3 Rate Limiting
+### 7.3 Rate Limiting
 ```csharp
 builder.Services.AddRateLimiter(options =>
 {
@@ -194,36 +257,37 @@ builder.Services.AddRateLimiter(options =>
 });
 ```
 
-## 6. Monitoring and Logging
+## 8. Monitoring and Logging
 
-### 6.1 Application Insights (Azure)
+### 8.1 Application Insights (Azure)
 ```csharp
 builder.Services.AddApplicationInsightsTelemetry();
 ```
 
-### 6.2 CloudWatch (AWS)
+### 8.2 CloudWatch (AWS)
 ```csharp
 builder.Services.AddAWSService<IAmazonCloudWatchLogs>();
 ```
 
-### 6.3 Health Checks
+### 8.3 Health Checks
 ```csharp
 builder.Services.AddHealthChecks()
     .AddDbContext<YapplrDbContext>()
     .AddCheck<EmailHealthCheck>("email");
 ```
 
-## 7. Performance Optimization
+### 8.4 Firebase Monitoring
+Monitor Firebase notification delivery in your Firebase Console:
+- Go to **Cloud Messaging** → **Reports**
+- Check delivery rates and error logs
+- Monitor FCM token registration success
 
-### 7.1 Database Indexing
-```sql
--- Add indexes for frequently queried columns
-CREATE INDEX idx_posts_userid_createdat ON "Posts" ("UserId", "CreatedAt" DESC);
-CREATE INDEX idx_passwordresets_token ON "PasswordResets" ("Token");
-CREATE INDEX idx_passwordresets_email_expiry ON "PasswordResets" ("Email", "ExpiresAt");
-```
+## 9. Performance Optimization
 
-### 7.2 Caching
+### 9.1 Database Indexing
+The application includes comprehensive performance indexes. See [Database Performance Analysis](Database-Performance-Analysis.md) for details.
+
+### 9.2 Caching
 ```csharp
 builder.Services.AddMemoryCache();
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -232,11 +296,14 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 ```
 
-## 8. Deployment Checklist
+## 10. Deployment Checklist
 
 ### Pre-Deployment
 - [ ] AWS SES domain verified
 - [ ] Production access approved
+- [ ] Firebase project configured
+- [ ] Firebase service account key generated
+- [ ] Frontend Firebase environment variables set
 - [ ] Database migrations tested
 - [ ] Environment variables configured
 - [ ] SSL certificates installed
@@ -245,6 +312,9 @@ builder.Services.AddStackExchangeRedisCache(options =>
 ### Post-Deployment
 - [ ] Health checks passing
 - [ ] Email sending functional
+- [ ] Firebase notifications working
+- [ ] Push notifications delivering to browsers
+- [ ] FCM token registration successful
 - [ ] Database connectivity verified
 - [ ] Logs monitoring setup
 - [ ] Performance metrics baseline

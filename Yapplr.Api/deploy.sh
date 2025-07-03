@@ -31,11 +31,19 @@ source .env
 set +a  # turn off automatic export
 
 # Validate required environment variables
-required_vars=("DATABASE_CONNECTION_STRING" "JWT_SECRET_KEY" "DOMAIN_NAME")
+required_vars=("DATABASE_CONNECTION_STRING" "JWT_SECRET_KEY" "DOMAIN_NAME" "FIREBASE_PROJECT_ID" "FIREBASE_SERVICE_ACCOUNT_KEY")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         echo -e "${RED}❌ Error: $var is not set in .env file${NC}"
         exit 1
+    fi
+done
+
+# Validate Firebase frontend variables
+firebase_frontend_vars=("FIREBASE_API_KEY" "FIREBASE_AUTH_DOMAIN" "FIREBASE_STORAGE_BUCKET" "FIREBASE_MESSAGING_SENDER_ID" "FIREBASE_APP_ID" "FIREBASE_VAPID_KEY")
+for var in "${firebase_frontend_vars[@]}"; do
+    if [ -z "${!var}" ]; then
+        echo -e "${YELLOW}⚠️ Warning: $var is not set - Firebase notifications may not work in frontend${NC}"
     fi
 done
 

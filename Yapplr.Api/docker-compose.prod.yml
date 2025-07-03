@@ -16,6 +16,9 @@ services:
       - AwsSesSettings__AccessKey=${AWS_SES_ACCESS_KEY}
       - AwsSesSettings__SecretKey=${AWS_SES_SECRET_KEY}
       - EmailProvider=AwsSes
+      # Firebase configuration (REQUIRED for notifications)
+      - Firebase__ProjectId=${FIREBASE_PROJECT_ID}
+      - Firebase__ServiceAccountKey=${FIREBASE_SERVICE_ACCOUNT_KEY}
     volumes:
       - yapplr_uploads:/app/uploads
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -35,6 +38,14 @@ services:
       dockerfile: Dockerfile
     environment:
       - NEXT_PUBLIC_API_URL=https://api.yapplr.com
+      # Firebase configuration for frontend (REQUIRED for notifications)
+      - NEXT_PUBLIC_FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN}
+      - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
+      - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID}
+      - NEXT_PUBLIC_FIREBASE_APP_ID=${FIREBASE_APP_ID}
+      - NEXT_PUBLIC_FIREBASE_VAPID_KEY=${FIREBASE_VAPID_KEY}
     restart: unless-stopped
     networks:
       - yapplr-network
