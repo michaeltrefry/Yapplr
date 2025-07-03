@@ -81,9 +81,6 @@ export default function SearchPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900">
-                            {user.username}
-                          </p>
-                          <p className="text-gray-500 text-sm">
                             @{user.username}
                           </p>
                           {user.bio && (

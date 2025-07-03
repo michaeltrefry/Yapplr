@@ -11,8 +11,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Mentions**: @username mention system with clickable links and real-time notifications
 - **Comment Replies**: Reply to specific comments with automatic @username prefilling and smart reply context
 - **Likes**: Like and unlike yaps with real-time counts
-- **Follow System**: Follow/unfollow users with instant UI updates
-- **Following/Followers Lists**: Clickable counts that show detailed lists of users you follow and users who follow you, with navigation to their profiles
+- **Follow System**: Follow/unfollow users with instant UI updates and optional follow approval system
+- **Following/Followers Lists**: Tabbed interface on profile pages showing Posts, Following (count), and Followers (count) with detailed user lists and navigation to their profiles
 - **User Profiles**: Complete profile management with bio, pronouns, tagline, birthday, and profile images
 - **Profile Editing**: Edit profile information including bio, pronouns, tagline, and birthday with real-time updates
 - **Yap Sharing**: Share yaps with social media integration and direct link copying
@@ -24,13 +24,16 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Messaging Privacy**: Blocked users cannot send messages to each other
 - **Message Notifications**: Real-time unread message badges on Messages tab and conversation list
 - **Enhanced Conversation UI**: Bold text and background highlights for unread conversations
-- **Real-time Notifications**: Firebase-powered instant push notifications for all social interactions
-- **Comprehensive Notifications**: Complete notification system for mentions, likes, reposts, follows, and comments with red badge indicators
+- **Real-time Notifications**: Firebase-powered instant push notifications for all social interactions with production-ready authentication
+- **Comprehensive Notifications**: Complete notification system for mentions, likes, reposts, follows, and comments with real-time red badge indicators
+- **Comment Notifications**: Instant notifications when someone comments on your posts with smart duplicate prevention (no double notifications when mentioned)
 - **Follow Notifications**: Get notified when someone starts following you with direct navigation to their profile
+- **Follow Request System**: Optional follow approval with request/accept/decline workflow and persistent status tracking
 - **Like Notifications**: Instant notifications when someone likes your posts with navigation to the liked post
 - **Repost Notifications**: Real-time alerts when someone reposts your content with direct post navigation
 - **Smart Navigation**: Click notifications to navigate directly to mentioned posts, comments, or user profiles with automatic scrolling and highlighting
 - **Background Notifications**: Push notifications work even when the app is minimized or closed
+- **Production Firebase**: Service Account Key authentication for reliable deployment and real-time messaging
 - **Dark Mode**: Complete dark theme support with user preferences and persistent storage
 
 ### Privacy & Security
@@ -184,6 +187,53 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Password Recovery**: Complete password reset flow with 6-digit email codes and automatic navigation
 - **Dark Mode**: Complete dark theme with toggle in Settings, synchronized with web app preferences
 
+### 4. Firebase Setup (Required for Real-time Notifications)
+
+Firebase provides real-time push notifications for all social interactions. The system supports both development and production environments with automatic fallback.
+
+#### Development Setup (Application Default Credentials)
+```bash
+# Install Google Cloud CLI
+# macOS: brew install google-cloud-sdk
+# Windows: Download from https://cloud.google.com/sdk/docs/install
+
+# Authenticate with your Google account
+gcloud auth application-default login
+```
+
+#### Production Setup (Service Account Key)
+1. **Create Firebase Project**: Go to [Firebase Console](https://console.firebase.google.com/) and create a new project
+2. **Generate Service Account Key**:
+   - Go to Project Settings → Service Accounts
+   - Click "Generate new private key"
+   - Download the JSON file
+3. **Configure Environment Variables**:
+   ```bash
+   # For production deployment, set these environment variables:
+   Firebase__ProjectId=your-firebase-project-id
+   Firebase__ServiceAccountKey={"type":"service_account","project_id":"your-project-id",...}
+   ```
+
+#### Frontend Firebase Configuration
+Add these environment variables to `yapplr-frontend/.env.local`:
+```bash
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=your-vapid-key
+```
+
+#### Features
+- **Dual Authentication**: Automatic fallback from Service Account Key to Application Default Credentials
+- **Production Ready**: Service Account Key authentication for reliable deployment
+- **Real-time Messaging**: Instant notifications for comments, mentions, likes, reposts, and follows
+- **Smart Notifications**: Prevents duplicate notifications (e.g., no double notifications when post owner is mentioned in comments)
+- **Cross-Platform**: Works on web browsers with push notification support
+- **Background Notifications**: Notifications work even when the app is closed
+
 ## 📱 Key Features in Detail
 
 ### Timeline & Reyaps
@@ -234,15 +284,28 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 
 ### Follow System
 - **Real-time Counts**: Instant follower/following count updates
-- **Following/Followers Lists**: Clickable counts that show detailed lists of users you follow and users who follow you
-- **Profile Navigation**: Tap any user in Following/Followers lists to navigate to their profile
+- **Tabbed Profile Interface**: Clean tabbed navigation on profile pages with Posts, Following (count), and Followers (count) tabs
+- **Following/Followers Lists**: Detailed user lists accessible through profile tabs showing profile images, usernames, pronouns, and bio snippets
+- **Profile Navigation**: Click any user in Following/Followers lists to navigate to their profile
 - **User-Specific Lists**: View following/followers for any user profile, not just your own
-- **Rich User Information**: Lists show profile images, usernames, pronouns, and bio snippets
+- **Consistent Username Display**: Clean @username format throughout the application eliminating redundant username displays
 - **Privacy Integration**: Following relationships affect content visibility
 - **Profile Integration**: Follow/unfollow buttons on user profiles
 - **Timeline Impact**: Following users affects your timeline content
 - **Online Status**: Green circle indicators showing when followed users are currently online (active within 5 minutes)
 - **Mobile Support**: Full Following/Followers list functionality available in mobile app with enhanced profile layout
+
+### Follow Request Approval System
+- **Optional Follow Approval**: Users can require approval for follow requests in their preferences
+- **Request Workflow**: Send follow requests that show "Request Pending" until processed
+- **Accept/Decline Actions**: Notification-based approval system with Accept/Decline buttons
+- **Persistent Status Tracking**: Complete history of all follow requests with status (pending/approved/denied)
+- **Smart Button States**: Profile buttons dynamically show "Follow", "Request to Follow", "Request Pending", or "Following"
+- **Re-request Capability**: Users can send new follow requests after being denied
+- **Notification Integration**: Follow requests appear in notifications with actionable buttons
+- **Status Persistence**: Follow request status survives page refreshes and app restarts
+- **Audit Trail**: Complete history of follow request interactions for transparency
+- **Automatic Unfollowing**: Blocking users automatically removes follow relationships
 
 ### User Management & Privacy
 - **User Blocking**: Block users to prevent interactions and hide content
@@ -365,7 +428,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 ### User Management
 - `GET /api/users/{username}` - Get user profile
 - `PUT /api/users/me` - Update current user's profile (bio, pronouns, tagline, birthday)
-- `POST /api/users/{userId}/follow` - Follow user
+- `POST /api/users/{userId}/follow` - Follow user (creates follow request if approval required)
 - `DELETE /api/users/{userId}/follow` - Unfollow user
 - `GET /api/users/me/following` - Get users that current user is following
 - `GET /api/users/me/followers` - Get users that are following the current user
@@ -373,6 +436,13 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 - `GET /api/users/{userId}/followers` - Get users that are following a specific user
 - `GET /api/users/me/following/online-status` - Get following users with their online status
 - `POST /api/users/me/profile-image` - Upload profile image
+
+### Follow Request System
+- `GET /api/users/follow-requests` - Get pending follow requests for current user
+- `POST /api/users/follow-requests/{requestId}/approve` - Approve a follow request
+- `POST /api/users/follow-requests/{requestId}/deny` - Deny a follow request
+- `POST /api/users/follow-requests/approve-by-user/{requesterId}` - Approve follow request by requester user ID
+- `POST /api/users/follow-requests/deny-by-user/{requesterId}` - Deny follow request by requester user ID
 
 ### Blocking System
 - `POST /api/blocks/users/{userId}` - Block a user

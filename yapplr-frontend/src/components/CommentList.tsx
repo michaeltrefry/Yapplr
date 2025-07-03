@@ -115,9 +115,8 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
             href={`/profile/${comment.user.username}`}
             className="font-semibold text-gray-900 hover:underline text-sm"
           >
-            {comment.user.username}
+            @{comment.user.username}
           </Link>
-          <span className="text-gray-500 text-sm">@{comment.user.username}</span>
           <span className="text-gray-500 text-sm">·</span>
           <span className="text-gray-500 text-xs">
             {formatDate(comment.createdAt)}

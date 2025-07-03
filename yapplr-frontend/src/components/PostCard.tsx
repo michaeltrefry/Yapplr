@@ -181,9 +181,8 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               href={`/profile/${post.user.username}`}
               className="font-semibold text-gray-900 hover:underline"
             >
-              {post.user.username}
+              @{post.user.username}
             </Link>
-            <span className="text-gray-500">@{post.user.username}</span>
             <span className="text-gray-500">·</span>
             <span className="text-gray-500 text-sm">
               {formatDate(post.createdAt)}

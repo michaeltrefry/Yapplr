@@ -127,6 +127,16 @@ export const userApi = {
     return response.data;
   },
 
+  getUserFollowing: async (userId: number): Promise<User[]> => {
+    const response = await api.get(`/users/${userId}/following`);
+    return response.data;
+  },
+
+  getUserFollowers: async (userId: number): Promise<User[]> => {
+    const response = await api.get(`/users/${userId}/followers`);
+    return response.data;
+  },
+
   updateFcmToken: async (token: string): Promise<void> => {
     await api.post('/users/me/fcm-token', { token });
   },
@@ -300,13 +310,41 @@ export const blockApi = {
 
 // Preferences API
 export const preferencesApi = {
-  get: async (): Promise<{ darkMode: boolean }> => {
+  get: async (): Promise<{ darkMode: boolean; requireFollowApproval: boolean }> => {
     const response = await api.get('/preferences');
     return response.data;
   },
 
-  update: async (preferences: { darkMode?: boolean }): Promise<{ darkMode: boolean }> => {
+  update: async (preferences: { darkMode?: boolean; requireFollowApproval?: boolean }): Promise<{ darkMode: boolean; requireFollowApproval: boolean }> => {
     const response = await api.put('/preferences', preferences);
+    return response.data;
+  },
+};
+
+// Follow Requests API
+export const followRequestsApi = {
+  getPending: async (): Promise<FollowRequest[]> => {
+    const response = await api.get('/users/me/follow-requests');
+    return response.data;
+  },
+
+  approve: async (requestId: number): Promise<FollowResponse> => {
+    const response = await api.post(`/users/follow-requests/${requestId}/approve`);
+    return response.data;
+  },
+
+  deny: async (requestId: number): Promise<FollowResponse> => {
+    const response = await api.post(`/users/follow-requests/${requestId}/deny`);
+    return response.data;
+  },
+
+  approveByUserId: async (requesterId: number): Promise<FollowResponse> => {
+    const response = await api.post(`/users/follow-requests/approve-by-user/${requesterId}`);
+    return response.data;
+  },
+
+  denyByUserId: async (requesterId: number): Promise<FollowResponse> => {
+    const response = await api.post(`/users/follow-requests/deny-by-user/${requesterId}`);
     return response.data;
   },
 };

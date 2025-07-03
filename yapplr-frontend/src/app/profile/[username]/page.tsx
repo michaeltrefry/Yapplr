@@ -11,6 +11,7 @@ import { Calendar, Shield, ShieldOff, MessageCircle } from 'lucide-react';
 import UserTimeline from '@/components/UserTimeline';
 import Sidebar from '@/components/Sidebar';
 import UserAvatar from '@/components/UserAvatar';
+import UserList from '@/components/UserList';
 
 interface ProfilePageProps {
   params: Promise<{
@@ -24,6 +25,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'following' | 'followers'>('posts');
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', username],
@@ -164,12 +166,6 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         {/* Main Content */}
         <div className="flex-1 ml-16 lg:ml-64">
           <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
-            {/* Header */}
-            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
-              <h1 className="text-xl font-bold text-gray-900">{profile.username}</h1>
-              <p className="text-sm text-gray-500">{profile.postCount} posts</p>
-            </div>
-
             {/* Profile Info */}
             <div className="p-6 border-b border-gray-200">
               {/* Avatar and basic info */}
@@ -201,10 +197,12 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   <div className="flex space-x-2">
                     <button
                       onClick={handleFollowToggle}
-                      disabled={followMutation.isPending || unfollowMutation.isPending}
+                      disabled={followMutation.isPending || unfollowMutation.isPending || profile.hasPendingFollowRequest}
                       className={`px-4 py-2 rounded-full font-semibold transition-colors disabled:opacity-50 ${
                         profile.isFollowedByCurrentUser
                           ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                          : profile.hasPendingFollowRequest
+                          ? 'bg-orange-500 text-white hover:bg-orange-600'
                           : 'bg-blue-500 text-white hover:bg-blue-600'
                       }`}
                     >
@@ -212,6 +210,10 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                         ? '...'
                         : profile.isFollowedByCurrentUser
                         ? 'Unfollow'
+                        : profile.hasPendingFollowRequest
+                        ? 'Request Pending'
+                        : profile.requiresFollowApproval
+                        ? 'Request to Follow'
                         : 'Follow'
                       }
                     </button>
@@ -251,15 +253,14 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 )}
               </div>
 
-              {/* Name and username */}
+              {/* Username and pronouns */}
               <div className="mb-3">
                 <h2 className="text-xl font-bold text-gray-900">
-                  {profile.username}
+                  @{profile.username}
                   {profile.pronouns && (
                     <span className="text-lg text-gray-500 font-normal"> ({profile.pronouns})</span>
                   )}
                 </h2>
-                <p className="text-gray-500">@{profile.username}</p>
               </div>
 
               {/* Bio */}
@@ -279,15 +280,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 </p>
               )}
 
-              {/* Follow counts */}
-              <div className="flex items-center gap-4 text-sm mb-3">
-                <span className="text-gray-600">
-                  <span className="font-semibold text-gray-900">{profile.followingCount}</span> Following
-                </span>
-                <span className="text-gray-600">
-                  <span className="font-semibold text-gray-900">{profile.followerCount}</span> Followers
-                </span>
-              </div>
+
 
               {/* Join date */}
               <div className="flex items-center text-gray-500 text-sm">
@@ -296,8 +289,52 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               </div>
             </div>
 
-            {/* Posts and Reposts */}
-            <UserTimeline userId={profile.id} isOwnProfile={isOwnProfile} />
+            {/* Tabs */}
+            <div className="border-b border-gray-200">
+              <nav className="flex">
+                <button
+                  onClick={() => setActiveTab('posts')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'posts'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Posts
+                </button>
+                <button
+                  onClick={() => setActiveTab('following')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'following'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Following ({profile.followingCount})
+                </button>
+                <button
+                  onClick={() => setActiveTab('followers')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'followers'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Followers ({profile.followerCount})
+                </button>
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'posts' && (
+              <UserTimeline userId={profile.id} isOwnProfile={isOwnProfile} />
+            )}
+            {activeTab === 'following' && (
+              <UserList userId={profile.id} type="following" />
+            )}
+            {activeTab === 'followers' && (
+              <UserList userId={profile.id} type="followers" />
+            )}
           </div>
         </div>
       </div>
@@ -330,6 +367,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           </div>
         </div>
       )}
+
+
     </div>
   );
 }
