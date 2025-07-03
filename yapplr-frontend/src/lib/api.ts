@@ -14,6 +14,7 @@ import type {
   UserProfile,
   UpdateUserData,
   FollowResponse,
+  FollowRequest,
   TimelineItem,
   BlockResponse,
   BlockStatusResponse,
