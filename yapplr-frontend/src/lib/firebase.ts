@@ -17,13 +17,16 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 
 // Initialize Firebase Cloud Messaging and get a reference to the service
 let messaging: any = null;
+let messagingPromise: Promise<any> | null = null;
 
 if (typeof window !== 'undefined') {
   // Only initialize messaging on client side
-  isSupported().then((supported) => {
+  messagingPromise = isSupported().then((supported) => {
     if (supported) {
       messaging = getMessaging(app);
+      return messaging;
     }
+    return null;
   });
 }
 
@@ -33,17 +36,26 @@ export { app, messaging };
 // This should be generated in Firebase Console -> Project Settings -> Cloud Messaging -> Web configuration
 export const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || '';
 
+// Get messaging instance (wait for initialization if needed)
+const getMessagingInstance = async () => {
+  if (messagingPromise) {
+    await messagingPromise;
+  }
+  return messaging;
+};
+
 // Request notification permission and get FCM token
 export const requestNotificationPermission = async (): Promise<string | null> => {
-  if (!messaging) {
-    console.warn('Firebase messaging not supported');
-    return null;
-  }
-
   try {
+    const messagingInstance = await getMessagingInstance();
+    if (!messagingInstance) {
+      console.warn('Firebase messaging not supported');
+      return null;
+    }
+
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      const token = await getToken(messaging, {
+      const token = await getToken(messagingInstance, {
         vapidKey: VAPID_KEY,
       });
       return token;
@@ -59,12 +71,17 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
 
 // Listen for foreground messages
 export const onMessageListener = () =>
-  new Promise((resolve) => {
-    if (!messaging) {
-      return;
+  new Promise(async (resolve) => {
+    try {
+      const messagingInstance = await getMessagingInstance();
+      if (!messagingInstance) {
+        return;
+      }
+
+      onMessage(messagingInstance, (payload) => {
+        resolve(payload);
+      });
+    } catch (error) {
+      console.error('Error setting up message listener:', error);
     }
-    
-    onMessage(messaging, (payload) => {
-      resolve(payload);
-    });
   });

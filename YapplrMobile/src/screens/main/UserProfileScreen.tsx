@@ -415,10 +415,11 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
                   style={[
                     styles.actionButton,
                     styles.followButton,
-                    profile.isFollowedByCurrentUser && styles.followingButton
+                    profile.isFollowedByCurrentUser && styles.followingButton,
+                    profile.hasPendingFollowRequest && styles.pendingRequestButton
                   ]}
                   onPress={handleFollowToggle}
-                  disabled={followMutation.isPending || unfollowMutation.isPending}
+                  disabled={followMutation.isPending || unfollowMutation.isPending || profile.hasPendingFollowRequest}
                 >
                   {(followMutation.isPending || unfollowMutation.isPending) ? (
                     <ActivityIndicator size="small" color="#fff" />
@@ -426,9 +427,17 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
                     <Text style={[
                       styles.actionButtonText,
                       styles.followButtonText,
-                      profile.isFollowedByCurrentUser && styles.followingButtonText
+                      profile.isFollowedByCurrentUser && styles.followingButtonText,
+                      profile.hasPendingFollowRequest && styles.pendingRequestButtonText
                     ]}>
-                      {profile.isFollowedByCurrentUser ? 'Following' : 'Follow'}
+                      {profile.isFollowedByCurrentUser
+                        ? 'Following'
+                        : profile.hasPendingFollowRequest
+                        ? 'Request Pending'
+                        : profile.requiresFollowApproval
+                        ? 'Request to Follow'
+                        : 'Follow'
+                      }
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -794,5 +803,11 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  pendingRequestButton: {
+    backgroundColor: '#F97316', // Orange color for pending requests
+  },
+  pendingRequestButtonText: {
+    color: '#fff',
   },
 });

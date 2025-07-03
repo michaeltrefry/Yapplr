@@ -21,7 +21,8 @@ export default function BlockedUsersList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['blockedUsers'] });
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
-      queryClient.invalidateQueries({ queryKey: ['following'] });
+      // Update sidebar following list immediately when unblocking
+      queryClient.invalidateQueries({ queryKey: ['followingWithOnlineStatus'] });
       setUnblockingUserId(null);
     },
     onError: () => {

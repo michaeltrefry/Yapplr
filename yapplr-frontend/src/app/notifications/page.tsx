@@ -3,11 +3,11 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { notificationApi } from '@/lib/api';
+import { notificationApi, followRequestsApi } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bell, Heart, MessageCircle, Repeat, UserPlus, AtSign } from 'lucide-react';
+import { ArrowLeft, Bell, Heart, MessageCircle, Repeat, UserPlus, AtSign, Check, X } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import type { Notification, NotificationType } from '@/types';
 
@@ -23,6 +23,8 @@ const getNotificationIcon = (type: NotificationType) => {
       return <UserPlus className="w-5 h-5 text-purple-500" />;
     case 5: // Comment
       return <MessageCircle className="w-5 h-5 text-blue-500" />;
+    case 6: // FollowRequest
+      return <UserPlus className="w-5 h-5 text-orange-500" />;
     default:
       return <Bell className="w-5 h-5 text-gray-500" />;
   }
@@ -47,6 +49,7 @@ export default function NotificationsPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const pageSize = 25;
+  const [processedRequests, setProcessedRequests] = useState<Record<number, 'approved' | 'denied'>>({});
 
   const { data: notificationData, isLoading, error } = useQuery({
     queryKey: ['notifications', page],
@@ -66,6 +69,28 @@ export default function NotificationsPage() {
     mutationFn: notificationApi.markAllAsRead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      refreshNotificationCount();
+    },
+  });
+
+  const approveFollowRequestMutation = useMutation({
+    mutationFn: followRequestsApi.approveByUserId,
+    onSuccess: () => {
+      // Refresh notifications and counts
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['followRequests'] });
+      // Update sidebar following list immediately when approving follow requests
+      queryClient.invalidateQueries({ queryKey: ['followingWithOnlineStatus'] });
+      refreshNotificationCount();
+    },
+  });
+
+  const denyFollowRequestMutation = useMutation({
+    mutationFn: followRequestsApi.denyByUserId,
+    onSuccess: () => {
+      // Refresh notifications and counts
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['followRequests'] });
       refreshNotificationCount();
     },
   });
@@ -119,6 +144,30 @@ export default function NotificationsPage() {
 
   const handleMarkAllAsRead = () => {
     markAllAsReadMutation.mutate();
+  };
+
+  const handleApproveFollowRequest = (notification: Notification, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (notification.actorUser) {
+      // Immediately update local state to show "Approved"
+      setProcessedRequests(prev => ({
+        ...prev,
+        [notification.id]: 'approved'
+      }));
+      approveFollowRequestMutation.mutate(notification.actorUser.id);
+    }
+  };
+
+  const handleDenyFollowRequest = (notification: Notification, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (notification.actorUser) {
+      // Immediately update local state to show "Declined"
+      setProcessedRequests(prev => ({
+        ...prev,
+        [notification.id]: 'denied'
+      }));
+      denyFollowRequestMutation.mutate(notification.actorUser.id);
+    }
   };
 
   return (
@@ -202,6 +251,48 @@ export default function NotificationsPage() {
                         {notification.comment && (
                           <div className="mt-2 p-2 bg-gray-100 rounded text-sm text-gray-700">
                             {notification.comment.content}
+                          </div>
+                        )}
+                        {notification.type === 6 && notification.actorUser && ( // FollowRequest
+                          <div className="mt-3">
+                            {notification.status || processedRequests[notification.id] ? (
+                              <div className={`flex items-center space-x-1 px-3 py-1 text-sm rounded-full ${
+                                (notification.status === 'approved' || processedRequests[notification.id] === 'approved')
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {(notification.status === 'approved' || processedRequests[notification.id] === 'approved') ? (
+                                  <>
+                                    <Check className="w-4 h-4" />
+                                    <span>Accepted</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <X className="w-4 h-4" />
+                                    <span>Declined</span>
+                                  </>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={(e) => handleApproveFollowRequest(notification, e)}
+                                  disabled={approveFollowRequestMutation.isPending || denyFollowRequestMutation.isPending}
+                                  className="flex items-center space-x-1 px-3 py-1 bg-green-500 text-white text-sm rounded-full hover:bg-green-600 transition-colors disabled:opacity-50"
+                                >
+                                  <Check className="w-4 h-4" />
+                                  <span>Accept</span>
+                                </button>
+                                <button
+                                  onClick={(e) => handleDenyFollowRequest(notification, e)}
+                                  disabled={approveFollowRequestMutation.isPending || denyFollowRequestMutation.isPending}
+                                  className="flex items-center space-x-1 px-3 py-1 bg-red-500 text-white text-sm rounded-full hover:bg-red-600 transition-colors disabled:opacity-50"
+                                >
+                                  <X className="w-4 h-4" />
+                                  <span>Decline</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

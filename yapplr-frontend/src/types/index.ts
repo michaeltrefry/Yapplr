@@ -42,6 +42,8 @@ export interface UserProfile {
   followerCount: number;
   followingCount: number;
   isFollowedByCurrentUser: boolean;
+  hasPendingFollowRequest: boolean;
+  requiresFollowApproval: boolean;
 }
 
 export interface Post {
@@ -72,6 +74,14 @@ export interface Comment {
 export interface FollowResponse {
   isFollowing: boolean;
   followerCount: number;
+  hasPendingRequest?: boolean;
+}
+
+export interface FollowRequest {
+  id: number;
+  createdAt: string;
+  requester: User;
+  requested: User;
 }
 
 export interface TimelineItem {
@@ -199,6 +209,7 @@ export enum NotificationType {
   Repost = 3,
   Follow = 4,
   Comment = 5,
+  FollowRequest = 6,
 }
 
 export interface Notification {
@@ -208,6 +219,7 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
   readAt?: string;
+  status?: string;
   actorUser?: User;
   post?: Post;
   comment?: Comment;

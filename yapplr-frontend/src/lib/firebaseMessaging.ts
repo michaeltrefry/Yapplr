@@ -8,7 +8,7 @@ export interface FirebaseNotificationPayload {
     icon?: string;
   };
   data?: {
-    type: 'message' | 'mention' | 'reply' | 'follow' | 'like' | 'repost';
+    type: 'message' | 'mention' | 'reply' | 'comment' | 'follow' | 'like' | 'repost' | 'follow_request';
     userId?: string;
     postId?: string;
     commentId?: string;
@@ -28,25 +28,38 @@ class FirebaseMessagingService {
     }
 
     try {
+      console.log('Initializing Firebase messaging...');
+
       // Register service worker from API route (with environment variables injected)
       if ('serviceWorker' in navigator) {
+        console.log('Registering service worker...');
         const registration = await navigator.serviceWorker.register('/api/firebase-messaging-sw');
-        console.log('Service Worker registered:', registration);
+        console.log('Service Worker registered successfully:', registration);
+
+        // Wait for service worker to be ready
+        await navigator.serviceWorker.ready;
+        console.log('Service Worker is ready');
+      } else {
+        console.warn('Service Worker not supported');
       }
 
       // Request notification permission and get token
+      console.log('Requesting notification permission...');
       const token = await requestNotificationPermission();
       if (token) {
         this.fcmToken = token;
-        console.log('FCM Token:', token);
-        
+        console.log('FCM Token obtained:', token.substring(0, 20) + '...');
+
         // Send token to backend
+        console.log('Sending token to server...');
         await this.sendTokenToServer(token);
-        
+
         // Set up foreground message listener
+        console.log('Setting up message listener...');
         this.setupMessageListener();
-        
+
         this.isInitialized = true;
+        console.log('Firebase messaging initialized successfully');
         return true;
       } else {
         console.warn('Failed to get FCM token');
@@ -69,15 +82,22 @@ class FirebaseMessagingService {
   }
 
   private setupMessageListener(): void {
+    console.log('Setting up Firebase message listener...');
     onMessageListener()
       .then((payload: any) => {
         console.log('Received foreground message:', payload);
-        
+
         // Show notification if the app is in foreground
         this.showForegroundNotification(payload);
-        
+
         // Notify all listeners
-        this.messageListeners.forEach(listener => listener(payload));
+        this.messageListeners.forEach(listener => {
+          try {
+            listener(payload);
+          } catch (error) {
+            console.error('Error in message listener:', error);
+          }
+        });
       })
       .catch((error) => {
         console.error('Error setting up message listener:', error);
@@ -124,6 +144,7 @@ class FirebaseMessagingService {
         break;
       case 'mention':
       case 'reply':
+      case 'comment':
         if (data.postId) {
           let url = `/posts/${data.postId}`;
           if (data.commentId) {

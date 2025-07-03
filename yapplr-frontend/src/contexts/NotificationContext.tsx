@@ -72,7 +72,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // Refresh counts based on notification type
       if (payload.data?.type === 'message') {
         refreshUnreadCount();
-      } else if (payload.data?.type === 'mention' || payload.data?.type === 'reply' || payload.data?.type === 'follow' || payload.data?.type === 'like' || payload.data?.type === 'repost') {
+      } else if (payload.data?.type === 'mention' || payload.data?.type === 'reply' || payload.data?.type === 'comment' || payload.data?.type === 'follow' || payload.data?.type === 'like' || payload.data?.type === 'repost' || payload.data?.type === 'follow_request') {
         refreshNotificationCount();
       }
 

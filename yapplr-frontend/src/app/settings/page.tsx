@@ -3,15 +3,41 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
-import { Shield, ArrowRight, Moon, Sun } from 'lucide-react';
+import { Shield, ArrowRight, Moon, Sun, UserCheck } from 'lucide-react';
+import { preferencesApi } from '@/lib/api';
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
   const { isDarkMode, toggleDarkMode } = useTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  // Fetch user preferences
+  const { data: preferences, isLoading: preferencesLoading } = useQuery({
+    queryKey: ['preferences'],
+    queryFn: preferencesApi.get,
+    enabled: !!user,
+  });
+
+  // Update preferences mutation
+  const updatePreferencesMutation = useMutation({
+    mutationFn: preferencesApi.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['preferences'] });
+    },
+  });
+
+  const handleFollowApprovalToggle = () => {
+    if (preferences) {
+      updatePreferencesMutation.mutate({
+        requireFollowApproval: !preferences.requireFollowApproval,
+      });
+    }
+  };
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -89,6 +115,34 @@ export default function SettingsPage() {
                 {/* Privacy & Safety Section */}
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Privacy & Safety</h2>
+
+                  {/* Follow Approval Setting */}
+                  <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <UserCheck className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Require Follow Approval</h3>
+                        <p className="text-sm text-gray-600">
+                          Require approval before users can follow you
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleFollowApprovalToggle}
+                      disabled={updatePreferencesMutation.isPending}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 ${
+                        preferences?.requireFollowApproval ? 'bg-purple-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          preferences?.requireFollowApproval ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
 
                   {/* Blocklist Setting */}
                   <Link

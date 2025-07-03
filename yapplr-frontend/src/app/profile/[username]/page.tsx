@@ -44,6 +44,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     mutationFn: (userId: number) => userApi.followUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', username] });
+      // Update sidebar following list immediately
+      queryClient.invalidateQueries({ queryKey: ['followingWithOnlineStatus'] });
     },
   });
 
@@ -51,6 +53,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     mutationFn: (userId: number) => userApi.unfollowUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', username] });
+      // Update sidebar following list immediately
+      queryClient.invalidateQueries({ queryKey: ['followingWithOnlineStatus'] });
     },
   });
 
@@ -61,7 +65,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       queryClient.invalidateQueries({ queryKey: ['profile', username] }); // Refresh profile to show unfollow
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['userTimeline', profile?.id] });
-      queryClient.invalidateQueries({ queryKey: ['following'] }); // Refresh following list
+      // Update sidebar following list immediately when blocking (which unfollows)
+      queryClient.invalidateQueries({ queryKey: ['followingWithOnlineStatus'] });
       setShowBlockConfirm(false);
     },
   });

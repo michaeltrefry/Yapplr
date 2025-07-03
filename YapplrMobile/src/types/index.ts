@@ -26,6 +26,8 @@ export interface UserProfile {
   followerCount: number;
   followingCount: number;
   isFollowedByCurrentUser: boolean;
+  hasPendingFollowRequest: boolean;
+  requiresFollowApproval: boolean;
 }
 
 export interface LoginData {
@@ -141,6 +143,7 @@ export interface SendMessageData {
 export interface FollowResponse {
   isFollowing: boolean;
   followerCount: number;
+  hasPendingRequest?: boolean;
 }
 
 export interface BlockResponse {

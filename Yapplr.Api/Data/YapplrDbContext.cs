@@ -39,6 +39,9 @@ public class YapplrDbContext : DbContext
             entity.Property(e => e.Email).IsRequired();
             entity.Property(e => e.Username).IsRequired();
             entity.Property(e => e.PasswordHash).IsRequired();
+
+            // Performance indexes for user queries
+            entity.HasIndex(e => e.LastSeenAt); // For online status queries
         });
         
         // Post configuration
@@ -53,6 +56,11 @@ public class YapplrDbContext : DbContext
                   .WithMany(e => e.Posts)
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Performance indexes for common query patterns
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt }); // User profile posts ordered by date
+            entity.HasIndex(e => new { e.Privacy, e.CreatedAt }); // Public timeline queries
+            entity.HasIndex(e => e.CreatedAt); // General timeline ordering
         });
         
         // Like configuration
@@ -83,6 +91,9 @@ public class YapplrDbContext : DbContext
                   .WithMany(e => e.Comments)
                   .HasForeignKey(e => e.PostId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Performance indexes for comment queries
+            entity.HasIndex(e => new { e.PostId, e.CreatedAt }); // Comments for a post ordered by date
         });
         
         // Repost configuration
@@ -98,6 +109,9 @@ public class YapplrDbContext : DbContext
                   .WithMany(e => e.Reposts)
                   .HasForeignKey(e => e.PostId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Performance indexes for repost timeline queries
+            entity.HasIndex(e => e.CreatedAt); // Timeline ordering for reposts
         });
 
         // Follow configuration
@@ -164,6 +178,9 @@ public class YapplrDbContext : DbContext
         modelBuilder.Entity<Conversation>(entity =>
         {
             entity.HasKey(e => e.Id);
+
+            // Performance indexes for conversation queries
+            entity.HasIndex(e => e.UpdatedAt); // For ordering conversations by last activity
         });
 
         // ConversationParticipant configuration
@@ -194,6 +211,10 @@ public class YapplrDbContext : DbContext
                   .WithMany(e => e.SentMessages)
                   .HasForeignKey(e => e.SenderId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Performance indexes for message queries
+            entity.HasIndex(e => new { e.ConversationId, e.CreatedAt }); // Messages in conversation ordered by date
+            entity.HasIndex(e => new { e.ConversationId, e.IsDeleted, e.CreatedAt }); // Non-deleted messages in conversation
         });
 
         // MessageStatus configuration
@@ -233,6 +254,7 @@ public class YapplrDbContext : DbContext
                   .HasConversion<int>();
             entity.Property(e => e.Message).HasMaxLength(500);
             entity.HasIndex(e => new { e.UserId, e.IsRead }); // For efficient querying of unread notifications
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt }); // For notification timeline ordering
             entity.HasOne(e => e.User)
                   .WithMany(u => u.Notifications)
                   .HasForeignKey(e => e.UserId)
