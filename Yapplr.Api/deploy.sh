@@ -31,7 +31,7 @@ source .env
 set +a  # turn off automatic export
 
 # Validate required environment variables
-required_vars=("DATABASE_CONNECTION_STRING" "JWT_SECRET_KEY" "DOMAIN_NAME" "FIREBASE_PROJECT_ID" "FIREBASE_SERVICE_ACCOUNT_KEY")
+required_vars=("DATABASE_CONNECTION_STRING" "JWT_SECRET_KEY" "API_DOMAIN_NAME" "FIREBASE_PROJECT_ID" "FIREBASE_SERVICE_ACCOUNT_KEY")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         echo -e "${RED}❌ Error: $var is not set in .env file${NC}"
