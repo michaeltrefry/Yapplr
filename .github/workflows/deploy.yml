@@ -1,9 +1,9 @@
-name: Deploy Yapplr API to Linode
+name: Deploy Yapplr to Linode
 
 on:
   push:
     branches: [ main ]
-    paths: [ 'Yapplr.Api/**' ]
+    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**' ]
   workflow_dispatch:
 
 jobs:
