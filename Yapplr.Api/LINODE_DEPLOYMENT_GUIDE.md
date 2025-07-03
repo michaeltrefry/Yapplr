@@ -97,6 +97,7 @@ AWS_SES_FROM_EMAIL=noreply@yourdomain.com
 AWS_SES_ACCESS_KEY=your-aws-access-key
 AWS_SES_SECRET_KEY=your-aws-secret-key
 DOMAIN_NAME=yourdomain.com
+CERTBOT_DOMAIN=yourdomain.com
 CERTBOT_EMAIL=admin@yourdomain.com
 ```
 
