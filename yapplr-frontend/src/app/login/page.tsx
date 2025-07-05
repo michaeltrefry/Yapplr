@@ -24,8 +24,9 @@ function LoginForm() {
     try {
       await login({ email, password });
       router.push(redirectUrl);
-    } catch {
-      setError('Invalid email or password');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Invalid email or password';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +86,20 @@ function LoginForm() {
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
+            <div className="text-red-600 text-sm text-center">
+              {error}
+              {error.toLowerCase().includes('unauthorized') && (
+                <div className="mt-2 text-blue-600">
+                  <p>Need to verify your email?</p>
+                  <Link
+                    href="/resend-verification"
+                    className="font-medium hover:text-blue-500"
+                  >
+                    Resend verification email
+                  </Link>
+                </div>
+              )}
+            </div>
           )}
 
           <div>
