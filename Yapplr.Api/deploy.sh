@@ -56,21 +56,20 @@ else
     exit 1
 fi
 
-# Stop and rebuild only the API service
+# Stop and rebuild only the API service using API-only compose file
 echo -e "${GREEN}🛑 Stopping API service...${NC}"
-docker-compose -f docker-compose.prod.yml stop yapplr-api || true
+docker-compose -f docker-compose.api.yml down || true
 
 # Remove old API container and image
 echo -e "${GREEN}🗑️ Removing old API container and image...${NC}"
-docker-compose -f docker-compose.prod.yml rm -f yapplr-api || true
-docker image rm yapplrapi_yapplr-api:latest || true
+docker image rm yapplr-api:latest || true
 
-# Build and start API service
+# Build and start API service using API-only compose file
 echo -e "${GREEN}🔨 Building new API image...${NC}"
-docker-compose -f docker-compose.prod.yml build yapplr-api
+docker build -t yapplr-api:latest .
 
 echo -e "${GREEN}🚀 Starting API service...${NC}"
-docker-compose -f docker-compose.prod.yml up -d yapplr-api
+docker-compose -f docker-compose.api.yml up -d
 
 # Note: nginx is not started here to avoid frontend dependencies
 # nginx will be started by frontend deployment or can be started manually
@@ -82,7 +81,7 @@ sleep 30
 
 # Check if API is responding directly (not through nginx)
 echo -e "${GREEN}🔍 Checking API health directly...${NC}"
-API_CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker-compose -f docker-compose.prod.yml ps -q yapplr-api))
+API_CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker-compose -f docker-compose.api.yml ps -q yapplr-api))
 if curl -f http://$API_CONTAINER_IP:8080/health > /dev/null 2>&1; then
     echo -e "${GREEN}✅ API is healthy and responding${NC}"
     echo -e "${YELLOW}ℹ️ API accessible at container IP: $API_CONTAINER_IP:8080${NC}"
@@ -90,7 +89,7 @@ if curl -f http://$API_CONTAINER_IP:8080/health > /dev/null 2>&1; then
 else
     echo -e "${RED}❌ API health check failed${NC}"
     echo -e "${YELLOW}Checking logs...${NC}"
-    docker-compose -f docker-compose.prod.yml logs yapplr-api
+    docker-compose -f docker-compose.api.yml logs yapplr-api
     exit 1
 fi
 
