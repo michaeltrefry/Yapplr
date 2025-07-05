@@ -67,16 +67,11 @@ Update `yapplr-frontend/.env.local`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5161
 
-# Firebase Configuration
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key-here
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
-NEXT_PUBLIC_FIREBASE_VAPID_KEY=
+# Notification Configuration (SignalR-only)
+NEXT_PUBLIC_ENABLE_SIGNALR=true
 ```
+
+**Note:** The frontend now uses SignalR-only for notifications. Firebase is only used in the API for mobile push notifications.
 
 ### Backend Configuration
 Update `Yapplr.Api/appsettings.json`:

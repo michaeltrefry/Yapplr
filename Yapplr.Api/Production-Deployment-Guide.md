@@ -182,35 +182,18 @@ volumes:
   postgres_data:
 ```
 
-## 6. Frontend Firebase Configuration
+## 6. Frontend Configuration
 
 ### 6.1 Production Environment Variables
-Create a `.env.production` file in your frontend directory:
+The frontend now uses SignalR-only for notifications. Create a `.env.production` file in your frontend directory:
 
 ```bash
-# Frontend Firebase Configuration (REQUIRED for notifications)
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
-NEXT_PUBLIC_FIREBASE_VAPID_KEY=your-vapid-key
+# Frontend Configuration (SignalR-only)
+NEXT_PUBLIC_API_URL=https://api.yapplr.com
+NEXT_PUBLIC_ENABLE_SIGNALR=true
 ```
 
-### 6.2 Get Firebase Configuration Values
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Select your project
-3. Go to **Project Settings** → **General** → **Your apps**
-4. Select your web app or create one
-5. Copy the configuration values
-
-### 6.3 Generate VAPID Key
-1. In Firebase Console, go to **Project Settings** → **Cloud Messaging**
-2. Under **Web configuration**, click **Generate key pair**
-3. Copy the VAPID key to `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
-
-### 6.4 Frontend Deployment
+### 6.2 Frontend Deployment
 ```bash
 # Build frontend with production environment
 npm run build
@@ -218,6 +201,8 @@ npm run build
 # Deploy to your hosting provider (Vercel, Netlify, etc.)
 # Make sure to set the environment variables in your hosting platform
 ```
+
+**Note:** Firebase is only used in the API for mobile push notifications. The web frontend uses SignalR exclusively for real-time notifications.
 
 ## 7. Security Considerations
 

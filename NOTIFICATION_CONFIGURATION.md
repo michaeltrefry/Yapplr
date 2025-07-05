@@ -115,10 +115,11 @@ Visit `/notification-test` to:
 Edit `yapplr-frontend/.env.local`:
 
 ```env
-# Enable/disable providers
-NEXT_PUBLIC_ENABLE_FIREBASE=true|false
+# Frontend uses SignalR-only
 NEXT_PUBLIC_ENABLE_SIGNALR=true|false
 ```
+
+**Note:** Firebase frontend variables have been removed. The frontend now uses SignalR exclusively.
 
 ### Backend Configuration
 

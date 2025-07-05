@@ -24,10 +24,10 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Messaging Privacy**: Blocked users cannot send messages to each other
 - **Message Notifications**: Real-time unread message badges on Messages tab and conversation list
 - **Enhanced Conversation UI**: Bold text and background highlights for unread conversations
-- **Platform-Optimized Notifications**: Intelligent notification system that uses the best provider for each platform
-  - **Web/Desktop**: SignalR real-time WebSocket notifications for instant delivery while browsing
-  - **Mobile**: Firebase push notifications for battery-efficient delivery even when app is closed
-  - **Automatic Detection**: Platform detection automatically selects the optimal notification provider
+- **Real-time Notifications**: Optimized notification system with platform-specific providers
+  - **Web Frontend**: SignalR WebSocket notifications for instant real-time delivery
+  - **Mobile Apps**: Firebase push notifications via API for battery-efficient delivery
+  - **Clean Architecture**: Frontend uses SignalR exclusively, API supports both for mobile compatibility
 - **Comprehensive Notifications**: Complete notification system for mentions, likes, reposts, follows, and comments with real-time red badge indicators
 - **Comment Notifications**: Instant notifications when someone comments on your posts with smart duplicate prevention (no double notifications when mentioned)
 - **Follow Notifications**: Get notified when someone starts following you with direct navigation to their profile
@@ -35,9 +35,9 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Like Notifications**: Instant notifications when someone likes your posts with navigation to the liked post
 - **Repost Notifications**: Real-time alerts when someone reposts your content with direct post navigation
 - **Smart Navigation**: Click notifications to navigate directly to mentioned posts, comments, or user profiles with automatic scrolling and highlighting
-- **Background Notifications**: Push notifications work even when the app is minimized or closed (mobile)
-- **Real-time Web Notifications**: Instant WebSocket-based notifications for active web sessions
-- **Configurable Providers**: Easy switching between Firebase, SignalR, or both for testing and deployment
+- **Background Notifications**: Push notifications work even when mobile apps are minimized or closed
+- **Real-time Web Notifications**: Instant SignalR WebSocket-based notifications for active web sessions
+- **Fallback System**: Automatic fallback between notification providers for reliability
 - **Dark Mode**: Complete dark theme support with user preferences and persistent storage
 
 ### Privacy & Security
@@ -73,7 +73,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **PostgreSQL** - Database with Entity Framework Core and performance-optimized indexing
 - **SignalR** - Real-time WebSocket notifications for web clients
 - **Firebase Admin SDK** - Push notifications for mobile clients
-- **Platform-Aware Notifications** - Configurable notification providers with automatic platform detection
+- **Composite Notification System** - Multi-provider notification system with automatic fallback
 - **JWT Bearer** - Authentication
 - **BCrypt** - Password hashing
 - **AWS SES** - Email service for password reset
@@ -86,10 +86,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **TanStack Query** - Data fetching and caching
 - **Axios** - HTTP client
 - **Lucide React** - Beautiful icons
-- **SignalR Client** - Real-time WebSocket notifications for web
-- **Firebase SDK** - Push notifications for mobile web
-- **Platform Detection** - Automatic notification provider selection
-- **Service Workers** - Background notification handling
+- **SignalR Client** - Real-time WebSocket notifications
 - **date-fns** - Date formatting and manipulation
 
 ### Mobile App (React Native + Expo)
@@ -223,16 +220,11 @@ gcloud auth application-default login
    Firebase__ServiceAccountKey={"type":"service_account","project_id":"your-project-id",...}
    ```
 
-#### Frontend Firebase Configuration
-Add these environment variables to `yapplr-frontend/.env.local`:
+#### Frontend Configuration
+The frontend now uses SignalR-only for notifications. Add to `yapplr-frontend/.env.local`:
 ```bash
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
-NEXT_PUBLIC_FIREBASE_VAPID_KEY=your-vapid-key
+NEXT_PUBLIC_API_URL=http://localhost:5161
+NEXT_PUBLIC_ENABLE_SIGNALR=true
 ```
 
 #### Features

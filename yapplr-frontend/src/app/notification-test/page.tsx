@@ -9,7 +9,7 @@ import { notificationApi } from '@/lib/api';
 
 export default function NotificationTestPage() {
   const { user } = useAuth();
-  const { activeNotificationProvider, isFirebaseReady, isSignalRReady } = useNotification();
+  const { activeNotificationProvider, isSignalRReady } = useNotification();
   const [showSettings, setShowSettings] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,7 +96,7 @@ export default function NotificationTestPage() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Notification Provider Test</h1>
                 <p className="mt-1 text-sm text-gray-600">
-                  Test and configure notification providers (Firebase, SignalR)
+                  Test and configure notification providers (SignalR)
                 </p>
               </div>
               <NotificationProviderIndicator showDetails={false} />
@@ -118,17 +118,13 @@ export default function NotificationTestPage() {
                 <div className="space-y-2">
                   <h3 className="font-medium text-blue-800">Environment Variables</h3>
                   <div className="text-sm space-y-1">
-                    <div>Firebase (Mobile): <span className="font-mono">{process.env.NEXT_PUBLIC_ENABLE_FIREBASE}</span></div>
-                    <div>Firebase (Web): <span className="font-mono">{process.env.NEXT_PUBLIC_ENABLE_FIREBASE_WEB}</span></div>
-                    <div>SignalR (Web): <span className="font-mono">{process.env.NEXT_PUBLIC_ENABLE_SIGNALR}</span></div>
-                    <div>SignalR (Mobile): <span className="font-mono">{process.env.NEXT_PUBLIC_ENABLE_SIGNALR_MOBILE}</span></div>
+                    <div>SignalR: <span className="font-mono">{process.env.NEXT_PUBLIC_ENABLE_SIGNALR}</span></div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <h3 className="font-medium text-blue-800">Runtime Status</h3>
                   <div className="text-sm space-y-1">
                     <div>Active Provider: <span className="font-mono capitalize">{activeNotificationProvider}</span></div>
-                    <div>Firebase Ready: <span className={`font-mono ${isFirebaseReady ? 'text-green-600' : 'text-red-600'}`}>{isFirebaseReady ? 'Yes' : 'No'}</span></div>
                     <div>SignalR Ready: <span className={`font-mono ${isSignalRReady ? 'text-green-600' : 'text-red-600'}`}>{isSignalRReady ? 'Yes' : 'No'}</span></div>
                   </div>
                 </div>
@@ -139,14 +135,7 @@ export default function NotificationTestPage() {
             {backendConfig && (
               <div className="bg-green-50 rounded-lg p-6">
                 <h2 className="text-lg font-semibold text-green-900 mb-4">Backend Configuration</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <h3 className="font-medium text-green-800">Firebase</h3>
-                    <div className="text-sm space-y-1">
-                      <div>Enabled: <span className={`font-mono ${backendConfig.Firebase.Enabled ? 'text-green-600' : 'text-red-600'}`}>{backendConfig.Firebase.Enabled ? 'Yes' : 'No'}</span></div>
-                      <div>Project ID: <span className="font-mono">{backendConfig.Firebase.ProjectId}</span></div>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <h3 className="font-medium text-green-800">SignalR</h3>
                     <div className="text-sm space-y-1">
@@ -212,26 +201,16 @@ export default function NotificationTestPage() {
             <div className="bg-purple-50 rounded-lg p-6">
               <h2 className="text-lg font-semibold text-purple-900 mb-4">Configuration Instructions</h2>
               <div className="text-sm text-purple-800 space-y-2">
-                <p><strong>To test Firebase only:</strong></p>
+                <p><strong>To enable SignalR notifications:</strong></p>
                 <ul className="list-disc list-inside ml-4 space-y-1">
-                  <li>Set <code>NEXT_PUBLIC_ENABLE_FIREBASE=true</code></li>
-                  <li>Set <code>NEXT_PUBLIC_ENABLE_SIGNALR=false</code></li>
-                  <li>Set backend <code>NotificationProviders:Firebase:Enabled=true</code></li>
-                  <li>Set backend <code>NotificationProviders:SignalR:Enabled=false</code></li>
-                </ul>
-                
-                <p className="pt-2"><strong>To test SignalR only:</strong></p>
-                <ul className="list-disc list-inside ml-4 space-y-1">
-                  <li>Set <code>NEXT_PUBLIC_ENABLE_FIREBASE=false</code></li>
                   <li>Set <code>NEXT_PUBLIC_ENABLE_SIGNALR=true</code></li>
-                  <li>Set backend <code>NotificationProviders:Firebase:Enabled=false</code></li>
                   <li>Set backend <code>NotificationProviders:SignalR:Enabled=true</code></li>
                 </ul>
-                
-                <p className="pt-2"><strong>To test both (fallback behavior):</strong></p>
+
+                <p className="pt-2"><strong>To disable notifications:</strong></p>
                 <ul className="list-disc list-inside ml-4 space-y-1">
-                  <li>Set both frontend and backend providers to <code>true</code></li>
-                  <li>Firebase will be tried first, SignalR as fallback</li>
+                  <li>Set <code>NEXT_PUBLIC_ENABLE_SIGNALR=false</code></li>
+                  <li>Set backend <code>NotificationProviders:SignalR:Enabled=false</code></li>
                 </ul>
               </div>
             </div>

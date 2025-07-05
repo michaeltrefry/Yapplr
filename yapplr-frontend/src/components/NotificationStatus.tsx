@@ -10,19 +10,11 @@ interface NotificationStatusProps {
 }
 
 export function NotificationStatus({ showDetails = false, className = '' }: NotificationStatusProps) {
-  const { activeNotificationProvider, isFirebaseReady, isSignalRReady } = useNotifications();
+  const { activeNotificationProvider, isSignalRReady } = useNotifications();
 
   const getStatusInfo = () => {
     switch (activeNotificationProvider) {
-      case 'firebase':
-        return {
-          icon: <Smartphone className="w-4 h-4 text-green-500" />,
-          label: 'Firebase',
-          description: 'Push notifications active',
-          color: 'text-green-600',
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200'
-        };
+
       case 'signalr':
         return {
           icon: <Wifi className="w-4 h-4 text-blue-500" />,
@@ -79,12 +71,6 @@ export function NotificationStatus({ showDetails = false, className = '' }: Noti
       {showDetails && (
         <div className="mt-3 space-y-1">
           <div className="flex items-center gap-2 text-xs">
-            <div className={`w-2 h-2 rounded-full ${isFirebaseReady ? 'bg-green-500' : 'bg-gray-300'}`} />
-            <span className={isFirebaseReady ? 'text-green-600' : 'text-gray-500'}>
-              Firebase {isFirebaseReady ? 'Connected' : 'Disconnected'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
             <div className={`w-2 h-2 rounded-full ${isSignalRReady ? 'bg-blue-500' : 'bg-gray-300'}`} />
             <span className={isSignalRReady ? 'text-blue-600' : 'text-gray-500'}>
               SignalR {isSignalRReady ? 'Connected' : 'Disconnected'}
@@ -105,8 +91,6 @@ export function NotificationStatusBadge() {
 
   const getStatusColor = () => {
     switch (activeNotificationProvider) {
-      case 'firebase':
-        return 'bg-green-500';
       case 'signalr':
         return 'bg-blue-500';
       case 'polling':

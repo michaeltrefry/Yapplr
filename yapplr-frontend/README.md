@@ -39,8 +39,7 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **TanStack Query** - Data fetching and caching
 - **Axios** - HTTP client
 - **Lucide React** - Beautiful icons
-- **Firebase SDK** - Real-time messaging and push notifications
-- **Service Workers** - Background notification handling
+- **SignalR Client** - Real-time WebSocket notifications
 
 ## Getting Started
 
@@ -62,19 +61,9 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:5161
 
-   # Firebase Configuration (for real-time notifications)
-   NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_DATABASE_URL=your-database-url
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-   NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
-   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
-   NEXT_PUBLIC_FIREBASE_VAPID_KEY=your-vapid-key
+   # Notification Configuration
+   NEXT_PUBLIC_ENABLE_SIGNALR=true
    ```
-
-   **Note**: See `FIREBASE_SETUP.md` in the root directory for detailed Firebase configuration instructions.
 
 3. **Start the development server:**
    ```bash

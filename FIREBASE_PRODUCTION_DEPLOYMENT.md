@@ -23,26 +23,13 @@ Firebase__ServiceAccountKey='{"type":"service_account","project_id":"your-projec
 
 ### 2. Frontend Configuration
 
-**Required Environment Variables:**
+**Frontend now uses SignalR-only:**
 ```bash
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
-NEXT_PUBLIC_FIREBASE_VAPID_KEY=your-vapid-key
+NEXT_PUBLIC_API_URL=https://api.yapplr.com
+NEXT_PUBLIC_ENABLE_SIGNALR=true
 ```
 
-**Get Configuration Values:**
-1. Firebase Console → Project Settings → General → Your apps
-2. Select/create web app
-3. Copy configuration values
-
-**Generate VAPID Key:**
-1. Firebase Console → Project Settings → Cloud Messaging
-2. Web configuration → Generate key pair
-3. Copy to `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
+**Note:** Firebase is no longer used in the frontend. The web frontend uses SignalR exclusively for real-time notifications. Firebase is only used in the API for mobile push notifications.
 
 ### 3. Docker Deployment Updates
 

@@ -14,73 +14,25 @@ const FRONTEND_ENV_FILE = path.join(__dirname, 'yapplr-frontend', '.env.local');
 const BACKEND_CONFIG_FILE = path.join(__dirname, 'Yapplr.Api', 'appsettings.Development.json');
 
 const configurations = {
-  'firebase-only': {
-    name: 'Firebase Only',
-    description: 'Enable Firebase, disable SignalR',
-    frontend: {
-      NEXT_PUBLIC_ENABLE_FIREBASE: 'true',
-      NEXT_PUBLIC_ENABLE_FIREBASE_WEB: 'true',
-      NEXT_PUBLIC_ENABLE_SIGNALR: 'false',
-      NEXT_PUBLIC_ENABLE_SIGNALR_MOBILE: 'false'
-    },
-    backend: {
-      'NotificationProviders:Firebase:Enabled': true,
-      'NotificationProviders:SignalR:Enabled': false
-    }
-  },
   'signalr-only': {
-    name: 'SignalR Only',
-    description: 'Enable SignalR, disable Firebase',
+    name: 'SignalR Only (Frontend)',
+    description: 'Frontend uses SignalR only, API keeps Firebase for mobile',
     frontend: {
-      NEXT_PUBLIC_ENABLE_FIREBASE: 'false',
-      NEXT_PUBLIC_ENABLE_FIREBASE_WEB: 'false',
-      NEXT_PUBLIC_ENABLE_SIGNALR: 'true',
-      NEXT_PUBLIC_ENABLE_SIGNALR_MOBILE: 'true'
-    },
-    backend: {
-      'NotificationProviders:Firebase:Enabled': false,
-      'NotificationProviders:SignalR:Enabled': true
-    }
-  },
-  'platform-optimized': {
-    name: 'Platform Optimized (SignalR Web + Firebase Mobile)',
-    description: 'SignalR for web/desktop, Firebase for mobile',
-    frontend: {
-      NEXT_PUBLIC_ENABLE_FIREBASE: 'true',
-      NEXT_PUBLIC_ENABLE_FIREBASE_WEB: 'false',
-      NEXT_PUBLIC_ENABLE_SIGNALR: 'true',
-      NEXT_PUBLIC_ENABLE_SIGNALR_MOBILE: 'false'
+      NEXT_PUBLIC_ENABLE_SIGNALR: 'true'
     },
     backend: {
       'NotificationProviders:Firebase:Enabled': true,
       'NotificationProviders:SignalR:Enabled': true
     }
   },
-  'both': {
-    name: 'Both (Firebase + SignalR)',
-    description: 'Enable both providers (Firebase first, SignalR fallback)',
+  'disable-signalr': {
+    name: 'Disable SignalR (Polling Only)',
+    description: 'Disable SignalR for frontend (polling only), API keeps Firebase for mobile',
     frontend: {
-      NEXT_PUBLIC_ENABLE_FIREBASE: 'true',
-      NEXT_PUBLIC_ENABLE_FIREBASE_WEB: 'true',
-      NEXT_PUBLIC_ENABLE_SIGNALR: 'true',
-      NEXT_PUBLIC_ENABLE_SIGNALR_MOBILE: 'true'
+      NEXT_PUBLIC_ENABLE_SIGNALR: 'false'
     },
     backend: {
       'NotificationProviders:Firebase:Enabled': true,
-      'NotificationProviders:SignalR:Enabled': true
-    }
-  },
-  'none': {
-    name: 'Polling Only',
-    description: 'Disable both providers (polling only)',
-    frontend: {
-      NEXT_PUBLIC_ENABLE_FIREBASE: 'false',
-      NEXT_PUBLIC_ENABLE_FIREBASE_WEB: 'false',
-      NEXT_PUBLIC_ENABLE_SIGNALR: 'false',
-      NEXT_PUBLIC_ENABLE_SIGNALR_MOBILE: 'false'
-    },
-    backend: {
-      'NotificationProviders:Firebase:Enabled': false,
       'NotificationProviders:SignalR:Enabled': false
     }
   }

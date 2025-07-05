@@ -4,7 +4,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { messageApi, notificationApi } from '@/lib/api';
 import { useAuth } from './AuthContext';
-import { firebaseMessagingService, FirebaseNotificationPayload } from '@/lib/firebaseMessaging';
 import { signalRMessagingService, SignalRNotificationPayload } from '@/lib/signalRMessaging';
 
 interface NotificationContextType {
@@ -12,9 +11,8 @@ interface NotificationContextType {
   unreadNotificationCount: number;
   refreshUnreadCount: () => void;
   refreshNotificationCount: () => void;
-  isFirebaseReady: boolean;
   isSignalRReady: boolean;
-  activeNotificationProvider: 'firebase' | 'signalr' | 'polling' | 'none';
+  activeNotificationProvider: 'signalr' | 'polling' | 'none';
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -22,28 +20,20 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
   const [isSignalRReady, setIsSignalRReady] = useState(false);
-  const [activeNotificationProvider, setActiveNotificationProvider] = useState<'firebase' | 'signalr' | 'polling' | 'none'>('none');
+  const [activeNotificationProvider, setActiveNotificationProvider] = useState<'signalr' | 'polling' | 'none'>('none');
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
 
-  // Platform detection
-  const isMobile = typeof window !== 'undefined' &&
-    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-     window.innerWidth <= 768);
+  // Configuration from environment variables
+  const isSignalREnabled = process.env.NEXT_PUBLIC_ENABLE_SIGNALR === 'true';
 
-  // Platform-specific configuration
-  const isFirebaseEnabled = isMobile ?
-    process.env.NEXT_PUBLIC_ENABLE_FIREBASE === 'true' :
-    process.env.NEXT_PUBLIC_ENABLE_FIREBASE_WEB === 'true';
-
-  const isSignalREnabled = !isMobile ?
-    process.env.NEXT_PUBLIC_ENABLE_SIGNALR === 'true' :
-    process.env.NEXT_PUBLIC_ENABLE_SIGNALR_MOBILE === 'true';
+  console.log('🔔 NOTIFICATION CONTEXT CONFIGURATION:');
+  console.log('🔔 SignalR enabled:', isSignalREnabled);
+  console.log('🔔 User authenticated:', !!user);
 
   // Determine polling interval based on active notification provider
-  const hasRealtimeNotifications = isFirebaseReady || isSignalRReady;
+  const hasRealtimeNotifications = isSignalRReady;
   const pollingInterval = hasRealtimeNotifications ? 60000 : 30000; // Slower polling when real-time is available
 
   const { data: unreadData, refetch } = useQuery({
@@ -73,43 +63,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     refetchNotifications();
   };
 
-  // Initialize notification providers when user is authenticated
+  // Initialize SignalR when user is authenticated
   useEffect(() => {
     if (!user) return;
 
-    const initializeNotificationProviders = async () => {
-      console.log('🔔 Initializing notification providers...');
-      console.log('🔔 Configuration - Firebase enabled:', isFirebaseEnabled, 'SignalR enabled:', isSignalREnabled);
+    const initializeSignalR = async () => {
+      console.log('🔔 Initializing SignalR...');
+      console.log('🔔 Configuration - SignalR enabled:', isSignalREnabled);
 
-      // Try Firebase first (but only if enabled and permissions might be available)
-      if (isFirebaseEnabled && !isFirebaseReady) {
-        console.log('🔥 Attempting Firebase initialization...');
-
-        // Check if notifications are supported and not denied
-        const notificationPermission = typeof window !== 'undefined' && 'Notification' in window
-          ? Notification.permission
-          : 'default';
-
-        if (notificationPermission === 'denied') {
-          console.warn('🔥 Firebase skipped: Notification permission denied, trying SignalR...');
-        } else {
-          const firebaseSuccess = await firebaseMessagingService.initialize();
-          if (firebaseSuccess) {
-            setIsFirebaseReady(true);
-            setActiveNotificationProvider('firebase');
-            console.log('🔥 Firebase messaging initialized successfully');
-            return; // Firebase is working, no need to try SignalR
-          } else {
-            console.warn('🔥 Firebase messaging initialization failed, trying SignalR...');
-          }
-        }
-      } else if (!isFirebaseEnabled) {
-        console.log('🔥 Firebase is disabled via configuration');
-      }
-
-      // If Firebase failed, is denied, disabled, or is not ready, try SignalR
+      // Initialize SignalR if enabled
       if (isSignalREnabled && !isSignalRReady) {
-        console.log('📡 Attempting SignalR initialization as fallback...');
+        console.log('📡 Attempting SignalR initialization...');
         try {
           // Check if SignalR is already ready first
           if (signalRMessagingService.isReady()) {
@@ -135,16 +99,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         console.log('📡 SignalR is disabled via configuration');
       }
 
-      // If both failed or are disabled, fall back to polling
-      if (!isFirebaseEnabled && !isSignalREnabled) {
-        console.warn('🔔 Both Firebase and SignalR are disabled, using polling only');
+      // If SignalR failed or is disabled, fall back to polling
+      if (!isSignalREnabled) {
+        console.warn('🔔 SignalR is disabled, using polling only');
       } else {
-        console.warn('🔔 All enabled notification providers failed, using polling only');
+        console.warn('🔔 SignalR failed, using polling only');
       }
       setActiveNotificationProvider('polling');
     };
 
-    initializeNotificationProviders();
+    initializeSignalR();
   }, [user]); // Only depend on user, not on the ready states to avoid loops
 
   // Monitor SignalR connection and retry if it disconnects
@@ -203,21 +167,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     console.log(`🔔 ${provider} message handling complete`);
   };
 
-  // Listen for Firebase messages
-  useEffect(() => {
-    if (!isFirebaseReady) return;
-
-    const handleFirebaseMessage = (payload: FirebaseNotificationPayload) => {
-      handleNotificationMessage(payload.data?.type || 'unknown', 'Firebase');
-    };
-
-    firebaseMessagingService.addMessageListener(handleFirebaseMessage);
-
-    return () => {
-      firebaseMessagingService.removeMessageListener(handleFirebaseMessage);
-    };
-  }, [isFirebaseReady, queryClient, refreshUnreadCount, refreshNotificationCount]);
-
   // Listen for SignalR messages
   useEffect(() => {
     if (!isSignalRReady) return;
@@ -248,7 +197,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      // Firebase cleanup is handled automatically
       if (isSignalRReady) {
         signalRMessagingService.disconnect();
       }
@@ -262,7 +210,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         unreadNotificationCount,
         refreshUnreadCount,
         refreshNotificationCount,
-        isFirebaseReady,
         isSignalRReady,
         activeNotificationProvider,
       }}

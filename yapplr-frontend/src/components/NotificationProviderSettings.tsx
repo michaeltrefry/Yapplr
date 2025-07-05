@@ -8,24 +8,20 @@ interface NotificationProviderSettingsProps {
 }
 
 export function NotificationProviderSettings({ onClose }: NotificationProviderSettingsProps) {
-  const { activeNotificationProvider, isFirebaseReady, isSignalRReady } = useNotification();
-  
+  const { activeNotificationProvider, isSignalRReady } = useNotification();
+
   // Get current configuration from environment variables
-  const [firebaseEnabled, setFirebaseEnabled] = useState(
-    process.env.NEXT_PUBLIC_ENABLE_FIREBASE === 'true'
-  );
   const [signalREnabled, setSignalREnabled] = useState(
     process.env.NEXT_PUBLIC_ENABLE_SIGNALR === 'true'
   );
 
   const handleSaveSettings = () => {
-    // Note: In a real application, you would need to restart the app or 
+    // Note: In a real application, you would need to restart the app or
     // implement dynamic configuration changes for these settings to take effect
-    alert(`Settings saved! 
-    
+    alert(`Settings saved!
+
 Note: To apply these changes, you need to:
 1. Update your .env.local file:
-   NEXT_PUBLIC_ENABLE_FIREBASE=${firebaseEnabled}
    NEXT_PUBLIC_ENABLE_SIGNALR=${signalREnabled}
 2. Restart the development server
 
@@ -36,20 +32,13 @@ Current runtime values cannot be changed without restart.`);
     }
   };
 
-  const getProviderStatus = (provider: 'firebase' | 'signalr') => {
-    if (provider === 'firebase') {
-      if (!firebaseEnabled) return { status: 'disabled', color: 'text-gray-500' };
-      if (isFirebaseReady) return { status: 'ready', color: 'text-green-600' };
-      return { status: 'failed', color: 'text-red-600' };
-    } else {
-      if (!signalREnabled) return { status: 'disabled', color: 'text-gray-500' };
-      if (isSignalRReady) return { status: 'ready', color: 'text-green-600' };
-      return { status: 'failed', color: 'text-red-600' };
-    }
+  const getSignalRStatus = () => {
+    if (!signalREnabled) return { status: 'disabled', color: 'text-gray-500' };
+    if (isSignalRReady) return { status: 'ready', color: 'text-green-600' };
+    return { status: 'failed', color: 'text-red-600' };
   };
 
-  const firebaseStatus = getProviderStatus('firebase');
-  const signalRStatus = getProviderStatus('signalr');
+  const signalRStatus = getSignalRStatus();
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
@@ -70,27 +59,6 @@ Current runtime values cannot be changed without restart.`);
         <div className="bg-blue-50 p-4 rounded-lg">
           <h3 className="font-medium text-blue-900 mb-2">Active Provider</h3>
           <p className="text-blue-700 capitalize">{activeNotificationProvider}</p>
-        </div>
-
-        {/* Firebase Configuration */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                checked={firebaseEnabled}
-                onChange={(e) => setFirebaseEnabled(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="font-medium text-gray-900">Firebase</span>
-            </label>
-            <span className={`text-sm font-medium ${firebaseStatus.color}`}>
-              {firebaseStatus.status}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 ml-6">
-            Push notifications via Firebase Cloud Messaging
-          </p>
         </div>
 
         {/* SignalR Configuration */}
@@ -114,8 +82,8 @@ Current runtime values cannot be changed without restart.`);
           </p>
         </div>
 
-        {/* Warning if both disabled */}
-        {!firebaseEnabled && !signalREnabled && (
+        {/* Warning if disabled */}
+        {!signalREnabled && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex">
               <div className="flex-shrink-0">

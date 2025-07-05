@@ -12,12 +12,10 @@ export function NotificationProviderIndicator({
   showDetails = false, 
   className = '' 
 }: NotificationProviderIndicatorProps) {
-  const { activeNotificationProvider, isFirebaseReady, isSignalRReady } = useNotification();
+  const { activeNotificationProvider, isSignalRReady } = useNotification();
 
   const getProviderIcon = () => {
     switch (activeNotificationProvider) {
-      case 'firebase':
-        return '🔥';
       case 'signalr':
         return '📡';
       case 'polling':
@@ -29,7 +27,6 @@ export function NotificationProviderIndicator({
 
   const getProviderColor = () => {
     switch (activeNotificationProvider) {
-      case 'firebase':
       case 'signalr':
         return 'text-green-600';
       case 'polling':
@@ -41,8 +38,6 @@ export function NotificationProviderIndicator({
 
   const getProviderName = () => {
     switch (activeNotificationProvider) {
-      case 'firebase':
-        return 'Firebase';
       case 'signalr':
         return 'SignalR';
       case 'polling':
@@ -78,13 +73,7 @@ export function NotificationProviderIndicator({
           </span>
         </div>
         
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex justify-between">
-            <span className="text-gray-500">Firebase:</span>
-            <span className={isFirebaseReady ? 'text-green-600' : 'text-gray-400'}>
-              {isFirebaseReady ? '✓' : '✗'}
-            </span>
-          </div>
+        <div className="grid grid-cols-1 gap-2 text-xs">
           <div className="flex justify-between">
             <span className="text-gray-500">SignalR:</span>
             <span className={isSignalRReady ? 'text-green-600' : 'text-gray-400'}>
