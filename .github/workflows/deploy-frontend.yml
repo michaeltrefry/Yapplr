@@ -1,5 +1,9 @@
 name: Deploy Frontend Only to Linode
 
+# This workflow deploys the frontend with SignalR-only configuration
+# for optimal web performance. SignalR provides real-time WebSocket
+# notifications for web users, while mobile apps use Firebase directly.
+
 on:
   push:
     branches: [ main ]
@@ -38,6 +42,15 @@ jobs:
           # Navigate to repository directory
           cd /opt/Yapplr
           git pull origin main
+
+          # Configure SignalR-only for production frontend deployment
+          echo "🔧 Configuring SignalR-only for production frontend..."
+          node configure-notifications.js signalr-only
+
+          # Verify configuration was applied
+          echo "✅ Verifying SignalR-only configuration..."
+          node configure-notifications.js status
+
           cd Yapplr.Api
           
           # Export Firebase variables for docker-compose build args
@@ -50,6 +63,12 @@ jobs:
           export NEXT_PUBLIC_FIREBASE_APP_ID="$FIREBASE_APP_ID"
           export NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="$FIREBASE_MEASUREMENT_ID"
           export NEXT_PUBLIC_FIREBASE_VAPID_KEY="$FIREBASE_VAPID_KEY"
+
+          # Export notification provider configuration (SignalR-only for production web)
+          export NEXT_PUBLIC_ENABLE_FIREBASE=false
+          export NEXT_PUBLIC_ENABLE_FIREBASE_WEB=false
+          export NEXT_PUBLIC_ENABLE_SIGNALR=true
+          export NEXT_PUBLIC_ENABLE_SIGNALR_MOBILE=false
           
           # Stop and rebuild only the frontend service
           echo "🛑 Stopping frontend service..."
