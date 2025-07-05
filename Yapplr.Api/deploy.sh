@@ -64,9 +64,19 @@ docker-compose -f docker-compose.prod.yml down --volumes --remove-orphans || tru
 echo -e "${GREEN}🧹 Cleaning up any remaining containers...${NC}"
 docker container prune -f || true
 
-# Start new containers (both API and frontend)
+# Remove old images to force complete rebuild
+echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"
+docker image rm yapplr-api:latest || true
+docker image rm yapplr-frontend:latest || true
+docker image prune -f || true
+
+# Set cache bust variable to force frontend rebuild
+export CACHE_BUST=$(date +%s)
+echo -e "${GREEN}🔄 Cache bust value: $CACHE_BUST${NC}"
+
+# Start new containers (both API and frontend) with forced rebuild
 echo -e "${GREEN}🚀 Starting all services (API + Frontend + nginx)...${NC}"
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.prod.yml up -d --build --force-recreate
 
 # Wait for services to be ready
 echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"

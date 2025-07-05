@@ -12,6 +12,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Cache busting argument to force rebuild
+ARG CACHE_BUST=1
+
 # Define build arguments for environment variables
 ARG NEXT_PUBLIC_API_URL=https://api.yapplr.com
 ARG NEXT_PUBLIC_ENABLE_SIGNALR=true
@@ -19,6 +22,9 @@ ARG NEXT_PUBLIC_ENABLE_SIGNALR=true
 # Set environment variables from build arguments
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_ENABLE_SIGNALR=$NEXT_PUBLIC_ENABLE_SIGNALR
+
+# Use cache bust to ensure fresh build
+RUN echo "Cache bust: $CACHE_BUST"
 
 # Build the Next.js app
 RUN npm run build

@@ -40,6 +40,8 @@ services:
         - NEXT_PUBLIC_API_URL=https://api.yapplr.com
         # Notification provider configuration (SignalR-only for production web)
         - NEXT_PUBLIC_ENABLE_SIGNALR=true
+        # Force rebuild by passing current timestamp
+        - CACHE_BUST=${CACHE_BUST:-$(date +%s)}
     restart: unless-stopped
     networks:
       - yapplr-network
