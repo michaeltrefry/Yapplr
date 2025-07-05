@@ -9,6 +9,7 @@ using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
+using Yapplr.Api.Exceptions;
 
 namespace Yapplr.Api.Services;
 
@@ -95,7 +96,7 @@ public class AuthService : IAuthService
         // Check if email is verified
         if (!user.EmailVerified)
         {
-            return null; // Email not verified - user cannot log in
+            throw new EmailNotVerifiedException(user.Email);
         }
 
         var token = GenerateJwtToken(user);

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
+using Yapplr.Api.Exceptions;
 using System.ComponentModel.DataAnnotations;
 
 namespace Yapplr.Api.Endpoints;
@@ -29,19 +30,32 @@ public static class AuthEndpoints
 
         auth.MapPost("/login", async ([FromBody] LoginUserDto loginDto, IAuthService authService) =>
         {
-            var result = await authService.LoginAsync(loginDto);
-            
-            if (result == null)
+            try
             {
-                return Results.Unauthorized();
-            }
+                var result = await authService.LoginAsync(loginDto);
 
-            return Results.Ok(result);
+                if (result == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+                return Results.Ok(result);
+            }
+            catch (EmailNotVerifiedException ex)
+            {
+                return Results.Problem(
+                    detail: ex.Message,
+                    statusCode: 403,
+                    title: "Email Verification Required",
+                    type: "email-verification-required"
+                );
+            }
         })
         .WithName("Login")
         .WithSummary("Login with email and password")
         .Produces<AuthResponseDto>(200)
-        .Produces(401);
+        .Produces(401)
+        .Produces(403);
 
         auth.MapPost("/forgot-password", async ([FromBody] ForgotPasswordDto forgotPasswordDto, IAuthService authService, HttpContext context) =>
         {
