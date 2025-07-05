@@ -40,13 +40,8 @@ for var in "${required_vars[@]}"; do
     fi
 done
 
-# Validate Firebase frontend variables for frontend notifications
-firebase_frontend_vars=("FIREBASE_API_KEY" "FIREBASE_AUTH_DOMAIN" "FIREBASE_STORAGE_BUCKET" "FIREBASE_MESSAGING_SENDER_ID" "FIREBASE_APP_ID" "FIREBASE_VAPID_KEY")
-for var in "${firebase_frontend_vars[@]}"; do
-    if [ -z "${!var}" ]; then
-        echo -e "${YELLOW}⚠️ Warning: $var is not set - Firebase notifications may not work in frontend${NC}"
-    fi
-done
+# Note: Frontend Firebase variables are not needed for API-only deployment
+# Frontend deployment is handled separately with its own configuration
 
 echo -e "${GREEN}✅ Environment variables validated${NC}"
 
