@@ -37,7 +37,7 @@ interface NotificationPreferences {
 
 const deliveryMethods = [
   { value: 0, label: 'Auto (Best Available)', description: 'Use the best available method' },
-  { value: 1, label: 'Push Notifications Only', description: 'Firebase push notifications only' },
+  { value: 1, label: 'Push Notifications Only', description: 'Push notifications only' },
   { value: 2, label: 'Real-time Only', description: 'SignalR real-time notifications only' },
   { value: 3, label: 'Polling Only', description: 'Check for updates periodically' },
   { value: 4, label: 'Disabled', description: 'No notifications' }
