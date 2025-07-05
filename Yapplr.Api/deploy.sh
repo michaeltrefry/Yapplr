@@ -71,9 +71,9 @@ docker build -t yapplr-api:latest .
 echo -e "${GREEN}🚀 Starting API service...${NC}"
 docker-compose -f docker-compose.api.yml up -d
 
-# Note: nginx is not started here to avoid frontend dependencies
-# nginx will be started by frontend deployment or can be started manually
-echo -e "${YELLOW}ℹ️ nginx not started (to avoid frontend build). Start with frontend deployment or manually.${NC}"
+# Start nginx using the main compose file (no dependencies now)
+echo -e "${GREEN}🌐 Starting nginx...${NC}"
+docker-compose -f docker-compose.prod.yml up -d nginx
 
 # Wait for services to be ready
 echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"

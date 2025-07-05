@@ -87,7 +87,7 @@ jobs:
         API_DOMAIN_NAME: ${{ secrets.API_DOMAIN_NAME }}
         CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
         CERTBOT_DOMAIN: ${{ secrets.CERTBOT_DOMAIN }}
-          
+
     - name: API Health Check
       run: |
         sleep 30
