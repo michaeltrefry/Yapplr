@@ -73,16 +73,20 @@ jobs:
           # Stop and rebuild only the frontend service
           echo "🛑 Stopping frontend service..."
           docker-compose -f docker-compose.prod.yml stop yapplr-frontend
-          
+
           echo "🗑️ Removing old frontend container and image..."
           docker-compose -f docker-compose.prod.yml rm -f yapplr-frontend
           docker image rm yapplrapi_yapplr-frontend:latest || true
-          
+
           echo "🔨 Building new frontend image..."
           docker-compose -f docker-compose.prod.yml build yapplr-frontend
-          
+
           echo "🚀 Starting frontend service..."
           docker-compose -f docker-compose.prod.yml up -d yapplr-frontend
+
+          # Ensure nginx is running (it may already be running from API deployment)
+          echo "🌐 Ensuring nginx is running..."
+          docker-compose -f docker-compose.prod.yml up -d nginx
           
           # Wait for frontend to be ready
           echo "⏳ Waiting for frontend to be ready..."

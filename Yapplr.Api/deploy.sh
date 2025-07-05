@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Yapplr API-Only Deployment Script for Linode
-# This script builds and deploys ONLY the Yapplr API to a Linode server
-# Frontend deployment is handled separately by deploy-frontend.yml workflow
+# Yapplr API Deployment Script for Linode
+# This script builds and deploys the API service using docker-compose.prod.yml
+# Frontend can be deployed independently using the same compose file
 
 set -e  # Exit on any error
 
@@ -40,8 +40,13 @@ for var in "${required_vars[@]}"; do
     fi
 done
 
-# Note: Firebase frontend variables are not needed for API-only deployment
-# Frontend deployment is handled separately with its own configuration
+# Validate Firebase frontend variables for frontend notifications
+firebase_frontend_vars=("FIREBASE_API_KEY" "FIREBASE_AUTH_DOMAIN" "FIREBASE_STORAGE_BUCKET" "FIREBASE_MESSAGING_SENDER_ID" "FIREBASE_APP_ID" "FIREBASE_VAPID_KEY")
+for var in "${firebase_frontend_vars[@]}"; do
+    if [ -z "${!var}" ]; then
+        echo -e "${YELLOW}⚠️ Warning: $var is not set - Firebase notifications may not work in frontend${NC}"
+    fi
+done
 
 echo -e "${GREEN}✅ Environment variables validated${NC}"
 
@@ -56,17 +61,25 @@ else
     exit 1
 fi
 
-# Stop existing API containers
-echo -e "${GREEN}🛑 Stopping existing API containers...${NC}"
-docker-compose -f docker-compose.api.yml down --volumes --remove-orphans || true
+# Stop and rebuild only the API service
+echo -e "${GREEN}🛑 Stopping API service...${NC}"
+docker-compose -f docker-compose.prod.yml stop yapplr-api || true
 
-# Additional cleanup to ensure ports are free
-echo -e "${GREEN}🧹 Cleaning up any remaining containers...${NC}"
-docker container prune -f || true
+# Remove old API container and image
+echo -e "${GREEN}🗑️ Removing old API container and image...${NC}"
+docker-compose -f docker-compose.prod.yml rm -f yapplr-api || true
+docker image rm yapplrapi_yapplr-api:latest || true
 
-# Start new API containers
-echo -e "${GREEN}🚀 Starting new API containers...${NC}"
-docker-compose -f docker-compose.api.yml up -d
+# Build and start API service
+echo -e "${GREEN}🔨 Building new API image...${NC}"
+docker-compose -f docker-compose.prod.yml build yapplr-api
+
+echo -e "${GREEN}🚀 Starting API service...${NC}"
+docker-compose -f docker-compose.prod.yml up -d yapplr-api
+
+# Ensure nginx is running (it may already be running from frontend deployment)
+echo -e "${GREEN}🌐 Ensuring nginx is running...${NC}"
+docker-compose -f docker-compose.prod.yml up -d nginx
 
 # Wait for services to be ready
 echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"
@@ -79,7 +92,7 @@ if curl -f http://localhost/health > /dev/null 2>&1; then
 else
     echo -e "${RED}❌ API health check failed${NC}"
     echo -e "${YELLOW}Checking logs...${NC}"
-    docker-compose -f docker-compose.api.yml logs yapplr-api
+    docker-compose -f docker-compose.prod.yml logs yapplr-api
     exit 1
 fi
 
