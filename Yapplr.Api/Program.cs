@@ -56,7 +56,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173") // Common frontend ports
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://192.168.254.181:3000", "https://yapplr.com", "https://www.yapplr.com", "https://app.yapplr.com") // Common frontend ports
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -65,7 +65,7 @@ builder.Services.AddCors(options =>
     // SignalR-specific CORS policy with credentials support
     options.AddPolicy("AllowSignalR", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://192.168.254.181:3000", "https://yapplr.com", "https://www.yapplr.com")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://192.168.254.181:3000", "https://yapplr.com", "https://www.yapplr.com", "https://app.yapplr.com")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
