@@ -69,7 +69,7 @@ public interface IOfflineNotificationService
 public class OfflineNotificationService : IOfflineNotificationService
 {
     private readonly YapplrDbContext _context;
-    private readonly ICompositeNotificationService _notificationService;
+    private readonly IEnumerable<IRealtimeNotificationProvider> _notificationProviders;
     private readonly ISignalRConnectionPool _connectionPool;
     private readonly ILogger<OfflineNotificationService> _logger;
     
@@ -85,12 +85,12 @@ public class OfflineNotificationService : IOfflineNotificationService
 
     public OfflineNotificationService(
         YapplrDbContext context,
-        ICompositeNotificationService notificationService,
+        IEnumerable<IRealtimeNotificationProvider> notificationProviders,
         ISignalRConnectionPool connectionPool,
         ILogger<OfflineNotificationService> logger)
     {
         _context = context;
-        _notificationService = notificationService;
+        _notificationProviders = notificationProviders;
         _connectionPool = connectionPool;
         _logger = logger;
     }
@@ -192,11 +192,31 @@ public class OfflineNotificationService : IOfflineNotificationService
                     notification.AttemptCount++;
                     notification.LastAttemptAt = DateTime.UtcNow;
 
-                    var success = await _notificationService.SendNotificationAsync(
-                        notification.UserId,
-                        notification.Title,
-                        notification.Body,
-                        notification.Data);
+                    // Try to send using available providers
+                    var success = false;
+                    foreach (var provider in _notificationProviders)
+                    {
+                        try
+                        {
+                            if (await provider.IsAvailableAsync())
+                            {
+                                success = await provider.SendNotificationAsync(
+                                    notification.UserId,
+                                    notification.Title,
+                                    notification.Body,
+                                    notification.Data);
+
+                                if (success)
+                                {
+                                    break; // Stop on first successful delivery
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Provider {ProviderName} failed to send offline notification", provider.ProviderName);
+                        }
+                    }
 
                     if (success)
                     {

@@ -75,14 +75,14 @@ public static class SecurityEndpoints
             .Produces(403);
 
         security.MapPost("/admin/block-user/{userId}", BlockUser)
-            .WithName("BlockUser")
+            .WithName("AdminBlockUser")
             .WithSummary("Block a user (admin only)")
             .Produces(200)
             .Produces(401)
             .Produces(403);
 
         security.MapPost("/admin/unblock-user/{userId}", UnblockUser)
-            .WithName("UnblockUser")
+            .WithName("AdminUnblockUser")
             .WithSummary("Unblock a user (admin only)")
             .Produces(200)
             .Produces(401)

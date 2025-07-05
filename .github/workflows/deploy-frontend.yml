@@ -33,28 +33,23 @@ jobs:
         key: ${{ secrets.LINODE_SSH_KEY }}
         port: 22
         timeout: 60s
-        envs: FIREBASE_API_KEY,FIREBASE_AUTH_DOMAIN,FIREBASE_PROJECT_ID,FIREBASE_STORAGE_BUCKET,FIREBASE_MESSAGING_SENDER_ID,FIREBASE_APP_ID,FIREBASE_VAPID_KEY
+        envs: FIREBASE_API_KEY,FIREBASE_AUTH_DOMAIN,FIREBASE_DATABASE_URL,FIREBASE_PROJECT_ID,FIREBASE_STORAGE_BUCKET,FIREBASE_MESSAGING_SENDER_ID,FIREBASE_APP_ID,FIREBASE_MEASUREMENT_ID,FIREBASE_VAPID_KEY
         script: |
           # Navigate to repository directory
           cd /opt/Yapplr
           git pull origin main
           cd Yapplr.Api
           
-          # Create temporary .env file with Firebase frontend variables
-          cat > .env.frontend << EOF
-          FIREBASE_API_KEY=$FIREBASE_API_KEY
-          FIREBASE_AUTH_DOMAIN=$FIREBASE_AUTH_DOMAIN
-          FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID
-          FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET
-          FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID
-          FIREBASE_APP_ID=$FIREBASE_APP_ID
-          FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY
-          EOF
-          
-          # Source the frontend environment variables
-          set -a
-          source .env.frontend
-          set +a
+          # Export Firebase variables for docker-compose build args
+          export NEXT_PUBLIC_FIREBASE_API_KEY="$FIREBASE_API_KEY"
+          export NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$FIREBASE_AUTH_DOMAIN"
+          export NEXT_PUBLIC_FIREBASE_DATABASE_URL="$FIREBASE_DATABASE_URL"
+          export NEXT_PUBLIC_FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID"
+          export NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="$FIREBASE_STORAGE_BUCKET"
+          export NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID"
+          export NEXT_PUBLIC_FIREBASE_APP_ID="$FIREBASE_APP_ID"
+          export NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="$FIREBASE_MEASUREMENT_ID"
+          export NEXT_PUBLIC_FIREBASE_VAPID_KEY="$FIREBASE_VAPID_KEY"
           
           # Stop and rebuild only the frontend service
           echo "🛑 Stopping frontend service..."
@@ -74,17 +69,18 @@ jobs:
           echo "⏳ Waiting for frontend to be ready..."
           sleep 20
           
-          # Clean up temporary file
-          rm -f .env.frontend
+
           
           echo "✅ Frontend deployment completed!"
       env:
         FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
         FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+        FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
         FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
         FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
         FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+        FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
         FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
           
     - name: Frontend Health Check

@@ -8,6 +8,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { NotificationStatusBadge } from "@/components/NotificationStatus";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,6 +34,7 @@ export default function RootLayout({
             <ThemeProvider>
               <NotificationProvider>
                 {children}
+                <NotificationStatusBadge />
               </NotificationProvider>
             </ThemeProvider>
           </AuthProvider>

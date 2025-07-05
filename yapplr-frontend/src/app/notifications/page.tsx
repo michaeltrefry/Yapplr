@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { notificationApi, followRequestsApi } from '@/lib/api';
+import { notificationApi, followRequestsApi, api } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -93,6 +93,17 @@ export default function NotificationsPage() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['followRequests'] });
       refreshNotificationCount();
+    },
+  });
+
+  // Test notification mutation
+  const testNotificationMutation = useMutation({
+    mutationFn: () => api.post('/notifications/test'),
+    onSuccess: () => {
+      console.log('Test notification sent successfully');
+    },
+    onError: (error) => {
+      console.error('Failed to send test notification:', error);
     },
   });
 
@@ -196,6 +207,13 @@ export default function NotificationsPage() {
                 </div>
                 <div className="flex items-center space-x-3">
                   <NotificationPermissionButton />
+                  <button
+                    onClick={() => testNotificationMutation.mutate()}
+                    disabled={testNotificationMutation.isPending}
+                    className="text-sm text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
+                  >
+                    Test
+                  </button>
                   {notificationData && notificationData.unreadCount > 0 && (
                     <button
                       onClick={handleMarkAllAsRead}

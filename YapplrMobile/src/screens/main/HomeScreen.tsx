@@ -17,6 +17,7 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { TimelineItem, Post } from '../../types';
 
 import PostCard from '../../components/PostCard';
+import { NotificationStatusIndicator } from '../../components/NotificationStatus';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MainTabs'>;
@@ -192,6 +193,8 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
+
+      <NotificationStatusIndicator />
     </SafeAreaView>
   );
 }

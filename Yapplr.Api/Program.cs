@@ -10,8 +10,14 @@ using Yapplr.Api.Services;
 using Yapplr.Api.Endpoints;
 using Yapplr.Api.Middleware;
 using Yapplr.Api.Hubs;
+using Yapplr.Api.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Load notification providers configuration early
+var notificationConfig = builder.Configuration
+    .GetSection(NotificationProvidersConfiguration.SectionName)
+    .Get<NotificationProvidersConfiguration>() ?? new NotificationProvidersConfiguration();
 
 // Add services to the container.
 builder.Services.AddOpenApi();
@@ -59,7 +65,7 @@ builder.Services.AddCors(options =>
     // SignalR-specific CORS policy with credentials support
     options.AddPolicy("AllowSignalR", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "https://yapplr.com", "https://www.yapplr.com")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://192.168.254.181:3000", "https://yapplr.com", "https://www.yapplr.com")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -93,8 +99,27 @@ else
         new AmazonSimpleEmailServiceClient(Amazon.RegionEndpoint.GetBySystemName(awsRegion)));
 }
 
-// Add SignalR
-builder.Services.AddSignalR();
+// Add SignalR with production configuration (if enabled)
+if (notificationConfig.SignalR.Enabled)
+{
+    builder.Services.AddSignalR(options =>
+    {
+        // Connection timeouts
+        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+        options.HandshakeTimeout = TimeSpan.FromSeconds(30);
+        options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+
+        // Message size and buffer limits
+        options.MaximumReceiveMessageSize = 32 * 1024; // 32KB
+        options.StreamBufferCapacity = 10;
+
+        // Enable detailed errors based on configuration
+        options.EnableDetailedErrors = notificationConfig.SignalR.EnableDetailedErrors || builder.Environment.IsDevelopment();
+
+        // Maximum parallel invocations per connection
+        options.MaximumParallelInvocationsPerClient = 1;
+    });
+}
 
 // Add custom services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -108,6 +133,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // Register performance and monitoring services
 builder.Services.AddSingleton<ISignalRConnectionPool, SignalRConnectionPool>();
+builder.Services.AddHostedService<SignalRCleanupService>();
 builder.Services.AddSingleton<INotificationMetricsService, NotificationMetricsService>();
 builder.Services.AddScoped<INotificationQueueService, NotificationQueueService>();
 
@@ -118,7 +144,7 @@ builder.Services.AddScoped<INotificationDeliveryService, NotificationDeliverySer
 // Register UX enhancement services
 builder.Services.AddSingleton<ISmartRetryService, SmartRetryService>();
 builder.Services.AddSingleton<INotificationCompressionService, NotificationCompressionService>();
-builder.Services.AddSingleton<IOfflineNotificationService, OfflineNotificationService>();
+builder.Services.AddScoped<IOfflineNotificationService, OfflineNotificationService>();
 
 // Register security services
 builder.Services.AddSingleton<INotificationRateLimitService, NotificationRateLimitService>();
@@ -128,19 +154,43 @@ builder.Services.AddScoped<INotificationAuditService, NotificationAuditService>(
 // Register background services
 builder.Services.AddHostedService<NotificationBackgroundService>();
 
-// Register notification providers
-builder.Services.AddScoped<IFirebaseService, FirebaseService>();
-builder.Services.AddScoped<SignalRNotificationService>();
+// Configure notification providers
+builder.Services.Configure<NotificationProvidersConfiguration>(
+    builder.Configuration.GetSection(NotificationProvidersConfiguration.SectionName));
+
+if (notificationConfig.Firebase.Enabled)
+{
+    builder.Services.AddScoped<IFirebaseService, FirebaseService>();
+}
+
+if (notificationConfig.SignalR.Enabled)
+{
+    builder.Services.AddScoped<SignalRNotificationService>();
+}
+
+// Register provider collection for dependency injection
+builder.Services.AddScoped<IEnumerable<IRealtimeNotificationProvider>>(provider =>
+{
+    var providers = new List<IRealtimeNotificationProvider>();
+
+    if (notificationConfig.Firebase.Enabled)
+    {
+        providers.Add(provider.GetRequiredService<IFirebaseService>());
+    }
+
+    if (notificationConfig.SignalR.Enabled)
+    {
+        providers.Add(provider.GetRequiredService<SignalRNotificationService>());
+    }
+
+    return providers;
+});
 
 // Register the composite notification service with explicit provider collection
 builder.Services.AddScoped<ICompositeNotificationService>(provider =>
 {
     var logger = provider.GetRequiredService<ILogger<CompositeNotificationService>>();
-    var providers = new List<IRealtimeNotificationProvider>
-    {
-        provider.GetRequiredService<IFirebaseService>(),
-        provider.GetRequiredService<SignalRNotificationService>()
-    };
+    var providers = provider.GetRequiredService<IEnumerable<IRealtimeNotificationProvider>>();
     var preferencesService = provider.GetRequiredService<INotificationPreferencesService>();
     var deliveryService = provider.GetRequiredService<INotificationDeliveryService>();
     var retryService = provider.GetRequiredService<ISmartRetryService>();
@@ -187,8 +237,8 @@ app.UseSwaggerUI(c =>
 
 app.MapOpenApi();
 app.UseHttpsRedirection();
-// Use AllowAll CORS policy for development (includes mobile)
-app.UseCors("AllowAll");
+// Use AllowSignalR CORS policy for development (supports credentials for SignalR)
+app.UseCors("AllowSignalR");
 app.UseAuthentication();
 app.UseMiddleware<UserActivityMiddleware>();
 app.UseAuthorization();
@@ -206,26 +256,17 @@ app.MapNotificationPreferencesEndpoints();
 app.MapUXEnhancementEndpoints();
 app.MapSecurityEndpoints();
 app.MapMetricsEndpoints();
+app.MapNotificationConfigurationEndpoints();
 
-// Map SignalR hub
-app.MapHub<NotificationHub>("/notificationHub");
+// Map SignalR hub (if enabled)
+if (notificationConfig.SignalR.Enabled)
+{
+    app.MapHub<NotificationHub>("/notificationHub");
+}
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
-// Test notification endpoint (uses composite service with Firebase + SignalR fallback)
-app.MapPost("/test-notification", [Authorize] async (ClaimsPrincipal user, ICompositeNotificationService notificationService, IUserService userService) =>
-{
-    var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-    var success = await notificationService.SendTestNotificationAsync(userId);
-
-    return success ? Results.Ok(new {
-        message = "Test notification sent successfully",
-        activeProvider = notificationService.ActiveProvider?.ProviderName ?? "None"
-    }) : Results.BadRequest("Failed to send test notification");
-})
-.WithName("TestNotification")
-.WithSummary("Send a test Firebase notification to the current user");
 
 app.Run();

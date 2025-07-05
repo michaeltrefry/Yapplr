@@ -57,8 +57,28 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notifications</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('NotificationDebug')}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconContainer, styles.orangeIconContainer]}>
+                <Ionicons name="bug-outline" size={20} color="#F97316" />
+              </View>
+              <View style={styles.menuItemText}>
+                <Text style={styles.menuItemTitle}>Debug Center</Text>
+                <Text style={styles.menuItemSubtitle}>Test notification functionality</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Privacy & Safety</Text>
-          
+
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => navigation.navigate('BlockedUsers')}
@@ -143,6 +163,9 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   blueIconContainer: {
     backgroundColor: colors.background === '#FFFFFF' ? '#EFF6FF' : '#1E3A8A',
+  },
+  orangeIconContainer: {
+    backgroundColor: colors.background === '#FFFFFF' ? '#FFF7ED' : '#9A3412',
   },
   menuItemText: {
     flex: 1,

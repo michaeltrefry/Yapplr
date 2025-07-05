@@ -26,11 +26,16 @@ public class SignalRConnectionPool : ISignalRConnectionPool
 {
     private readonly IHubContext<NotificationHub> _hubContext;
     private readonly ILogger<SignalRConnectionPool> _logger;
-    
+
+    // Configuration limits
+    private const int MAX_CONNECTIONS_PER_USER = 10; // Prevent abuse
+    private const int MAX_TOTAL_CONNECTIONS = 10000; // Server capacity limit
+    private const int CLEANUP_INTERVAL_MINUTES = 30; // Cleanup frequency
+
     // Thread-safe collections for managing user connections
     private readonly ConcurrentDictionary<int, ConcurrentBag<string>> _userConnections = new();
     private readonly ConcurrentDictionary<string, int> _connectionUsers = new();
-    
+
     // Connection statistics
     private readonly ConcurrentDictionary<int, DateTime> _userLastActivity = new();
     private long _totalConnectionsCreated = 0;
@@ -48,6 +53,29 @@ public class SignalRConnectionPool : ISignalRConnectionPool
     {
         try
         {
+            // Check total connection limit
+            var totalConnections = await GetActiveConnectionCountAsync();
+            if (totalConnections >= MAX_TOTAL_CONNECTIONS)
+            {
+                _logger.LogWarning("Connection limit reached. Rejecting connection {ConnectionId} for user {UserId}",
+                    connectionId, userId);
+                throw new InvalidOperationException("Server connection limit reached");
+            }
+
+            // Check per-user connection limit
+            var userConnections = await GetUserConnectionsAsync(userId);
+            if (userConnections.Count >= MAX_CONNECTIONS_PER_USER)
+            {
+                _logger.LogWarning("User {UserId} has reached connection limit of {MaxConnections}. Removing oldest connection.",
+                    userId, MAX_CONNECTIONS_PER_USER);
+
+                // Remove oldest connection for this user
+                if (userConnections.Any())
+                {
+                    await RemoveUserConnectionAsync(userId, userConnections.First());
+                }
+            }
+
             // Add connection to user's connection bag
             _userConnections.AddOrUpdate(
                 userId,

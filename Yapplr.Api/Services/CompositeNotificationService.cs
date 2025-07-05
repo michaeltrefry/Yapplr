@@ -144,51 +144,81 @@ public class CompositeNotificationService : ICompositeNotificationService
     {
         await EnsureActiveProviderAsync();
 
+        // Log available providers for debugging
+        var availableProviders = new List<string>();
+        foreach (var provider in _providers)
+        {
+            var isAvailable = await provider.IsAvailableAsync();
+            if (isAvailable)
+            {
+                availableProviders.Add(provider.ProviderName);
+            }
+        }
+
+        _logger.LogInformation("🔔 Starting operation {OperationName}. Available providers: [{Providers}]",
+            operationName, string.Join(", ", availableProviders));
+
         if (_activeProvider == null)
         {
-            _logger.LogWarning("No notification providers available for operation: {OperationName}", operationName);
+            _logger.LogWarning("❌ No notification providers available for operation: {OperationName}", operationName);
             return false;
         }
 
         // Try the active provider first
+        _logger.LogInformation("🎯 Attempting operation {OperationName} with active provider: {ProviderName}",
+            operationName, _activeProvider.ProviderName);
+
         try
         {
             var result = await operation(_activeProvider);
             if (result)
             {
+                _logger.LogInformation("✅ Operation {OperationName} succeeded with active provider: {ProviderName}",
+                    operationName, _activeProvider.ProviderName);
                 return true;
             }
-            
-            _logger.LogWarning("Active provider {ProviderName} failed for operation: {OperationName}", _activeProvider.ProviderName, operationName);
+
+            _logger.LogWarning("❌ Active provider {ProviderName} failed for operation: {OperationName}", _activeProvider.ProviderName, operationName);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Active provider {ProviderName} threw exception for operation: {OperationName}", _activeProvider.ProviderName, operationName);
+            _logger.LogError(ex, "💥 Active provider {ProviderName} threw exception for operation: {OperationName}", _activeProvider.ProviderName, operationName);
         }
 
         // Try fallback providers
-        foreach (var provider in _providers.Where(p => p != _activeProvider))
+        var fallbackProviders = _providers.Where(p => p != _activeProvider).ToList();
+        if (fallbackProviders.Any())
+        {
+            _logger.LogInformation("🔄 Trying fallback providers for operation: {OperationName}", operationName);
+        }
+
+        foreach (var provider in fallbackProviders)
         {
             try
             {
                 if (await provider.IsAvailableAsync())
                 {
-                    _logger.LogInformation("Trying fallback provider {ProviderName} for operation: {OperationName}", provider.ProviderName, operationName);
+                    _logger.LogInformation("🔄 Trying fallback provider {ProviderName} for operation: {OperationName}", provider.ProviderName, operationName);
                     var result = await operation(provider);
                     if (result)
                     {
-                        _logger.LogInformation("Fallback provider {ProviderName} succeeded for operation: {OperationName}", provider.ProviderName, operationName);
+                        _logger.LogInformation("✅ Fallback provider {ProviderName} succeeded for operation: {OperationName}", provider.ProviderName, operationName);
                         return true;
                     }
+                    _logger.LogWarning("❌ Fallback provider {ProviderName} failed for operation: {OperationName}", provider.ProviderName, operationName);
+                }
+                else
+                {
+                    _logger.LogInformation("⏭️ Fallback provider {ProviderName} is not available for operation: {OperationName}", provider.ProviderName, operationName);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Fallback provider {ProviderName} failed for operation: {OperationName}", provider.ProviderName, operationName);
+                _logger.LogWarning(ex, "💥 Fallback provider {ProviderName} failed for operation: {OperationName}", provider.ProviderName, operationName);
             }
         }
 
-        _logger.LogError("All notification providers failed for operation: {OperationName}", operationName);
+        _logger.LogError("🚫 All notification providers failed for operation: {OperationName}", operationName);
         return false;
     }
 
@@ -214,7 +244,7 @@ public class CompositeNotificationService : ICompositeNotificationService
             var securityResult = await PerformSecurityChecksAsync(userId, notificationType, title, body, data);
             if (!securityResult.IsAllowed)
             {
-                await LogSecurityViolationAsync(userId, notificationType, securityResult.Reason, title, body);
+                await LogSecurityViolationAsync(userId, notificationType, securityResult.Reason ?? "Security check failed", title, body);
                 return false;
             }
 

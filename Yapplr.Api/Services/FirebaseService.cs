@@ -3,8 +3,10 @@ using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
+using Yapplr.Api.Configuration;
 using System.Text.Json;
 
 namespace Yapplr.Api.Services;
@@ -14,15 +16,23 @@ public class FirebaseService : IFirebaseService
     private readonly YapplrDbContext _context;
     private readonly ILogger<FirebaseService> _logger;
     private readonly FirebaseMessaging? _messaging;
+    private readonly bool _isEnabled;
     private static readonly object _lock = new object();
     private static bool _isInitialized = false;
 
     public string ProviderName => "Firebase";
 
-    public FirebaseService(YapplrDbContext context, ILogger<FirebaseService> logger, IConfiguration configuration)
+    public FirebaseService(YapplrDbContext context, ILogger<FirebaseService> logger, IConfiguration configuration, IOptions<NotificationProvidersConfiguration> notificationOptions)
     {
         _context = context;
         _logger = logger;
+        _isEnabled = notificationOptions.Value.Firebase.Enabled;
+
+        if (!_isEnabled)
+        {
+            _logger.LogInformation("Firebase service is disabled via configuration");
+            return;
+        }
 
         // Initialize Firebase once using thread-safe singleton pattern
         lock (_lock)
@@ -126,6 +136,12 @@ public class FirebaseService : IFirebaseService
 
     public async Task<bool> SendNotificationAsync(string? fcmToken, string title, string body, Dictionary<string, string>? data = null)
     {
+        if (!_isEnabled)
+        {
+            _logger.LogInformation("Firebase service is disabled. Skipping notification for: {Title}", title);
+            return false;
+        }
+
         if (_messaging == null)
         {
             _logger.LogWarning("Firebase messaging not initialized. Skipping notification for: {Title}", title);
@@ -491,7 +507,7 @@ public class FirebaseService : IFirebaseService
     // IRealtimeNotificationProvider implementation
     public Task<bool> IsAvailableAsync()
     {
-        return Task.FromResult(_messaging != null);
+        return Task.FromResult(_isEnabled && _messaging != null);
     }
 
     public async Task<bool> SendTestNotificationAsync(int userId)

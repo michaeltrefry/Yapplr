@@ -7,8 +7,9 @@ import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
-import { Shield, ArrowRight, Moon, Sun, UserCheck } from 'lucide-react';
+import { Shield, ArrowRight, Moon, Sun, UserCheck, Bell, Bug } from 'lucide-react';
 import { preferencesApi } from '@/lib/api';
+import { NotificationStatus } from '@/components/NotificationStatus';
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
@@ -110,6 +111,65 @@ export default function SettingsPage() {
                       />
                     </button>
                   </div>
+                </div>
+
+                {/* Notifications Section */}
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Notifications</h2>
+
+                  {/* Notification Status */}
+                  <div className="p-4 bg-white border border-gray-200 rounded-lg mb-4">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Bell className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Notification Status</h3>
+                        <p className="text-sm text-gray-600">
+                          Current notification delivery method
+                        </p>
+                      </div>
+                    </div>
+                    <NotificationStatus showDetails={true} />
+                  </div>
+
+                  {/* Notification Preferences Link */}
+                  <Link
+                    href="/settings/notifications"
+                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Bell className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Notification Preferences</h3>
+                        <p className="text-sm text-gray-600">
+                          Customize how you receive notifications
+                        </p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-gray-400" />
+                  </Link>
+
+                  {/* Debug Link */}
+                  <Link
+                    href="/debug/notifications"
+                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <Bug className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Debug Center</h3>
+                        <p className="text-sm text-gray-600">
+                          Test notification fallback scenarios
+                        </p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-gray-400" />
+                  </Link>
                 </div>
 
                 {/* Privacy & Safety Section */}

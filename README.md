@@ -24,7 +24,10 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Messaging Privacy**: Blocked users cannot send messages to each other
 - **Message Notifications**: Real-time unread message badges on Messages tab and conversation list
 - **Enhanced Conversation UI**: Bold text and background highlights for unread conversations
-- **Real-time Notifications**: Firebase-powered instant push notifications for all social interactions with production-ready authentication
+- **Platform-Optimized Notifications**: Intelligent notification system that uses the best provider for each platform
+  - **Web/Desktop**: SignalR real-time WebSocket notifications for instant delivery while browsing
+  - **Mobile**: Firebase push notifications for battery-efficient delivery even when app is closed
+  - **Automatic Detection**: Platform detection automatically selects the optimal notification provider
 - **Comprehensive Notifications**: Complete notification system for mentions, likes, reposts, follows, and comments with real-time red badge indicators
 - **Comment Notifications**: Instant notifications when someone comments on your posts with smart duplicate prevention (no double notifications when mentioned)
 - **Follow Notifications**: Get notified when someone starts following you with direct navigation to their profile
@@ -32,8 +35,9 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Like Notifications**: Instant notifications when someone likes your posts with navigation to the liked post
 - **Repost Notifications**: Real-time alerts when someone reposts your content with direct post navigation
 - **Smart Navigation**: Click notifications to navigate directly to mentioned posts, comments, or user profiles with automatic scrolling and highlighting
-- **Background Notifications**: Push notifications work even when the app is minimized or closed
-- **Production Firebase**: Service Account Key authentication for reliable deployment and real-time messaging
+- **Background Notifications**: Push notifications work even when the app is minimized or closed (mobile)
+- **Real-time Web Notifications**: Instant WebSocket-based notifications for active web sessions
+- **Configurable Providers**: Easy switching between Firebase, SignalR, or both for testing and deployment
 - **Dark Mode**: Complete dark theme support with user preferences and persistent storage
 
 ### Privacy & Security
@@ -67,7 +71,9 @@ A complete Twitter-like social media platform built with modern web technologies
 ### Backend (.NET 9 API)
 - **.NET 9** - Minimal Web API
 - **PostgreSQL** - Database with Entity Framework Core and performance-optimized indexing
-- **Firebase Admin SDK** - Real-time push notifications
+- **SignalR** - Real-time WebSocket notifications for web clients
+- **Firebase Admin SDK** - Push notifications for mobile clients
+- **Platform-Aware Notifications** - Configurable notification providers with automatic platform detection
 - **JWT Bearer** - Authentication
 - **BCrypt** - Password hashing
 - **AWS SES** - Email service for password reset
@@ -80,7 +86,9 @@ A complete Twitter-like social media platform built with modern web technologies
 - **TanStack Query** - Data fetching and caching
 - **Axios** - HTTP client
 - **Lucide React** - Beautiful icons
-- **Firebase SDK** - Real-time messaging and push notifications
+- **SignalR Client** - Real-time WebSocket notifications for web
+- **Firebase SDK** - Push notifications for mobile web
+- **Platform Detection** - Automatic notification provider selection
 - **Service Workers** - Background notification handling
 - **date-fns** - Date formatting and manipulation
 
@@ -390,6 +398,27 @@ See [Database Performance Analysis](Yapplr.Api/Database-Performance-Analysis.md)
 
 ## 🔧 Development
 
+### Configuration Management
+
+The project includes powerful configuration management tools for easy testing and deployment:
+
+```bash
+# Quick notification provider switching
+npm run config:platform-optimized  # SignalR web + Firebase mobile (recommended)
+npm run config:signalr-only        # SignalR only (great for web testing)
+npm run config:firebase-only       # Firebase only (mobile-focused)
+npm run config:both                # Both providers (maximum coverage)
+npm run config:none                # Polling only (baseline testing)
+
+# Check current configuration
+npm run config:status
+
+# Manual configuration script
+node configure-notifications.js [option]
+```
+
+The configuration system automatically updates both frontend and backend settings, making it easy to test different notification strategies without manual file editing.
+
 ### Database Migrations
 ```bash
 # Create new migration
@@ -419,6 +448,64 @@ dotnet ef database update
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5161
 ```
+
+## 🔔 Notification Configuration
+
+Yapplr features a sophisticated platform-aware notification system that automatically selects the best notification provider for each platform.
+
+### Platform-Optimized Strategy
+- **Web/Desktop**: SignalR WebSocket notifications for instant real-time delivery
+- **Mobile**: Firebase push notifications for battery-efficient delivery even when app is closed
+- **Automatic Detection**: Platform detection automatically selects the optimal provider
+
+### Quick Configuration
+```bash
+# Platform-optimized (recommended)
+npm run config:platform-optimized
+
+# Test individual providers
+npm run config:signalr-only     # SignalR only
+npm run config:firebase-only    # Firebase only
+npm run config:both            # Both providers
+npm run config:none            # Polling only
+
+# Check current configuration
+npm run config:status
+```
+
+### Environment Variables
+```env
+# Platform-Specific Configuration
+NEXT_PUBLIC_ENABLE_FIREBASE_WEB=false      # Firebase for web
+NEXT_PUBLIC_ENABLE_SIGNALR=true            # SignalR for web
+NEXT_PUBLIC_ENABLE_FIREBASE=true           # Firebase for mobile
+NEXT_PUBLIC_ENABLE_SIGNALR_MOBILE=false    # SignalR for mobile
+```
+
+### Backend Configuration
+```json
+{
+  "NotificationProviders": {
+    "Firebase": {
+      "Enabled": true,
+      "ProjectId": "your-firebase-project-id"
+    },
+    "SignalR": {
+      "Enabled": true,
+      "MaxConnectionsPerUser": 10
+    }
+  }
+}
+```
+
+### Testing
+Visit `/notification-test` to:
+- View platform detection results
+- Check active notification providers
+- Send test notifications
+- Monitor provider behavior
+
+For detailed configuration options, see [PLATFORM_SPECIFIC_NOTIFICATIONS.md](PLATFORM_SPECIFIC_NOTIFICATIONS.md).
 
 ## 📚 API Documentation
 

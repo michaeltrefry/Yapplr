@@ -41,8 +41,12 @@ public class NotificationHub : Hub
             // Add to connection pool
             await _connectionPool.AddUserConnectionAsync(userId.Value, Context.ConnectionId);
 
-            _logger.LogInformation("User {UserId} connected to SignalR with connection {ConnectionId}",
-                userId.Value, Context.ConnectionId);
+            // Add user to their personal group for notifications
+            var userGroup = $"user_{userId.Value}";
+            await Groups.AddToGroupAsync(Context.ConnectionId, userGroup);
+
+            _logger.LogInformation("User {UserId} connected to SignalR with connection {ConnectionId} and added to group {UserGroup}",
+                userId.Value, Context.ConnectionId, userGroup);
 
             // Notify the user that SignalR is connected
             await Clients.Caller.SendAsync("Connected", new {
@@ -71,8 +75,12 @@ public class NotificationHub : Hub
             // Remove from connection pool
             await _connectionPool.RemoveUserConnectionAsync(userId.Value, Context.ConnectionId);
 
-            _logger.LogInformation("User {UserId} disconnected from SignalR with connection {ConnectionId}",
-                userId.Value, Context.ConnectionId);
+            // Remove user from their personal group
+            var userGroup = $"user_{userId.Value}";
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, userGroup);
+
+            _logger.LogInformation("User {UserId} disconnected from SignalR with connection {ConnectionId} and removed from group {UserGroup}",
+                userId.Value, Context.ConnectionId, userGroup);
         }
 
         await base.OnDisconnectedAsync(exception);

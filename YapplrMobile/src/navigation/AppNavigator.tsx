@@ -26,6 +26,7 @@ import CommentsScreen from '../screens/main/CommentsScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
 import BlockedUsersScreen from '../screens/main/BlockedUsersScreen';
 import CreatePostScreen from '../screens/main/CreatePostScreen';
+import NotificationDebugScreen from '../screens/main/NotificationDebugScreen';
 import { Post } from '../types';
 
 export type RootStackParamList = {
@@ -36,6 +37,7 @@ export type RootStackParamList = {
   FollowersList: { userId: number; username: string };
   Settings: undefined;
   BlockedUsers: undefined;
+  NotificationDebug: undefined;
   Conversation: {
     conversationId: number;
     otherUser: { id: number; username: string }
@@ -200,6 +202,11 @@ function MainStack() {
       <Stack.Screen
         name="BlockedUsers"
         component={BlockedUsersScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="NotificationDebug"
+        component={NotificationDebugScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

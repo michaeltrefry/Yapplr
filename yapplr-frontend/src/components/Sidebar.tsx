@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { Home, User, Search, LogOut, Settings, MessageCircle, Bell } from 'lucide-react';
+import { Home, User, Search, LogOut, Settings, MessageCircle, Bell, TestTube } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import FollowingList from './FollowingList';
@@ -89,6 +89,17 @@ export default function Sidebar() {
             <Settings className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Settings</span>
           </Link>
+
+          {/* Development only - Notification Test */}
+          {process.env.NODE_ENV === 'development' && (
+            <Link
+              href="/notification-test"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 border-t border-gray-200 mt-2 pt-2"
+            >
+              <TestTube className="w-6 h-6" />
+              <span className="text-lg hidden lg:block">Notification Test</span>
+            </Link>
+          )}
 
           {/* Following Section */}
           <div className="mt-4">

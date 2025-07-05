@@ -1,6 +1,21 @@
 {
+  "name": "yapplr",
+  "version": "1.0.0",
+  "description": "Yapplr social media application",
+  "scripts": {
+    "config:status": "node configure-notifications.js status",
+    "config:firebase-only": "node configure-notifications.js firebase-only",
+    "config:signalr-only": "node configure-notifications.js signalr-only",
+    "config:platform-optimized": "node configure-notifications.js platform-optimized",
+    "config:both": "node configure-notifications.js both",
+    "config:none": "node configure-notifications.js none",
+    "config:help": "node configure-notifications.js --help"
+  },
   "dependencies": {
+    "@microsoft/signalr": "^8.0.7",
+    "expo": "^53.0.17",
     "react-native-gesture-handler": "^2.26.0",
-    "react-native-reanimated": "^3.18.0"
+    "react-native-reanimated": "^3.18.0",
+    "react-native-url-polyfill": "^2.0.0"
   }
 }

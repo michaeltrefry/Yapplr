@@ -370,6 +370,11 @@ export const notificationApi = {
     const response = await api.put('/notifications/read-all');
     return response.data;
   },
+
+  sendTestNotification: async (): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/notification-config/test/current-user');
+    return response.data;
+  },
 };
 
 export default api;

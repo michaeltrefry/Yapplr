@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Yapplr.Api.Data;
 using Yapplr.Api.Hubs;
 using Yapplr.Api.Models;
+using Yapplr.Api.Configuration;
 
 namespace Yapplr.Api.Services;
 
@@ -15,29 +17,43 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
     private readonly YapplrDbContext _context;
     private readonly ILogger<SignalRNotificationService> _logger;
     private readonly INotificationMetricsService _metricsService;
+    private readonly bool _isEnabled;
 
     public SignalRNotificationService(
         IHubContext<NotificationHub> hubContext,
         YapplrDbContext context,
         ILogger<SignalRNotificationService> logger,
-        INotificationMetricsService metricsService)
+        INotificationMetricsService metricsService,
+        IOptions<NotificationProvidersConfiguration> notificationOptions)
     {
         _hubContext = hubContext;
         _context = context;
         _logger = logger;
         _metricsService = metricsService;
+        _isEnabled = notificationOptions.Value.SignalR.Enabled;
+
+        if (!_isEnabled)
+        {
+            _logger.LogInformation("SignalR notification service is disabled via configuration");
+        }
     }
 
     public string ProviderName => "SignalR";
 
     public Task<bool> IsAvailableAsync()
     {
-        // SignalR is always available if the service is running
-        return Task.FromResult(true);
+        // SignalR is available if enabled and the service is running
+        return Task.FromResult(_isEnabled);
     }
 
     public async Task<bool> SendTestNotificationAsync(int userId)
     {
+        if (!_isEnabled)
+        {
+            _logger.LogInformation("SignalR service is disabled. Skipping test notification for user {UserId}", userId);
+            return false;
+        }
+
         try
         {
             await _hubContext.SendNotificationToUserAsync(
@@ -60,6 +76,12 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
 
     public async Task<bool> SendNotificationAsync(int userId, string title, string body, Dictionary<string, string>? data = null)
     {
+        if (!_isEnabled)
+        {
+            _logger.LogInformation("SignalR service is disabled. Skipping notification for user {UserId}: {Title}", userId, title);
+            return false;
+        }
+
         // Start metrics tracking
         var trackingId = _metricsService.StartDeliveryTracking(userId, "generic", "SignalR");
 
