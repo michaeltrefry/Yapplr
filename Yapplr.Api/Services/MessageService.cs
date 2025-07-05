@@ -9,13 +9,13 @@ public class MessageService : IMessageService
 {
     private readonly YapplrDbContext _context;
     private readonly IUserService _userService;
-    private readonly IFirebaseService _firebaseService;
+    private readonly ICompositeNotificationService _notificationService;
 
-    public MessageService(YapplrDbContext context, IUserService userService, IFirebaseService firebaseService)
+    public MessageService(YapplrDbContext context, IUserService userService, ICompositeNotificationService notificationService)
     {
         _context = context;
         _userService = userService;
-        _firebaseService = firebaseService;
+        _notificationService = notificationService;
     }
 
     public async Task<bool> CanUserMessageAsync(int senderId, int recipientId)
@@ -89,11 +89,11 @@ public class MessageService : IMessageService
 
         await _context.SaveChangesAsync();
 
-        // Send Firebase push notification to recipient
+        // Send real-time notification to recipient (Firebase with SignalR fallback)
         var sender = await _context.Users.FindAsync(senderId);
         if (sender != null)
         {
-            await _firebaseService.SendMessageNotificationAsync(
+            await _notificationService.SendMessageNotificationAsync(
                 createDto.RecipientId,
                 sender.Username,
                 message.Content,
@@ -158,7 +158,7 @@ public class MessageService : IMessageService
         {
             foreach (var participantId in otherParticipants)
             {
-                await _firebaseService.SendMessageNotificationAsync(
+                await _notificationService.SendMessageNotificationAsync(
                     participantId,
                     sender.Username,
                     message.Content,

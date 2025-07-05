@@ -9,12 +9,12 @@ namespace Yapplr.Api.Services;
 public class NotificationService : INotificationService
 {
     private readonly YapplrDbContext _context;
-    private readonly IFirebaseService _firebaseService;
+    private readonly ICompositeNotificationService _notificationService;
 
-    public NotificationService(YapplrDbContext context, IFirebaseService firebaseService)
+    public NotificationService(YapplrDbContext context, ICompositeNotificationService notificationService)
     {
         _context = context;
-        _firebaseService = firebaseService;
+        _notificationService = notificationService;
     }
 
     public async Task<NotificationDto?> CreateNotificationAsync(CreateNotificationDto createDto)
@@ -79,8 +79,8 @@ public class NotificationService : INotificationService
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
 
-            // Send Firebase push notification
-            await _firebaseService.SendMentionNotificationAsync(
+            // Send real-time notification (Firebase with SignalR fallback)
+            await _notificationService.SendMentionNotificationAsync(
                 mentionedUser.Id,
                 mentioningUser.Username,
                 postId ?? 0,
@@ -216,8 +216,8 @@ public class NotificationService : INotificationService
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
 
-        // Send Firebase push notification
-        await _firebaseService.SendLikeNotificationAsync(likedUserId, likingUser.Username, postId);
+        // Send real-time notification (Firebase with SignalR fallback)
+        await _notificationService.SendLikeNotificationAsync(likedUserId, likingUser.Username, postId);
     }
 
     public async Task CreateRepostNotificationAsync(int originalUserId, int repostingUserId, int postId)
@@ -250,8 +250,8 @@ public class NotificationService : INotificationService
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
 
-        // Send Firebase push notification
-        await _firebaseService.SendRepostNotificationAsync(originalUserId, repostingUser.Username, postId);
+        // Send real-time notification (Firebase with SignalR fallback)
+        await _notificationService.SendRepostNotificationAsync(originalUserId, repostingUser.Username, postId);
     }
 
     public async Task CreateFollowNotificationAsync(int followedUserId, int followingUserId)
@@ -279,8 +279,8 @@ public class NotificationService : INotificationService
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
 
-        // Send Firebase push notification
-        await _firebaseService.SendFollowNotificationAsync(followedUserId, followingUser.Username);
+        // Send real-time notification (Firebase with SignalR fallback)
+        await _notificationService.SendFollowNotificationAsync(followedUserId, followingUser.Username);
     }
 
     public async Task CreateFollowRequestNotificationAsync(int requestedUserId, int requesterUserId)
@@ -308,8 +308,8 @@ public class NotificationService : INotificationService
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
 
-        // Send Firebase push notification
-        await _firebaseService.SendFollowRequestNotificationAsync(requestedUserId, requesterUser.Username);
+        // Send real-time notification (Firebase with SignalR fallback)
+        await _notificationService.SendFollowRequestNotificationAsync(requestedUserId, requesterUser.Username);
     }
 
     public async Task CreateCommentNotificationAsync(int postOwnerId, int commentingUserId, int postId, int commentId, string commentContent)
@@ -350,8 +350,8 @@ public class NotificationService : INotificationService
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
 
-        // Send Firebase push notification
-        await _firebaseService.SendCommentNotificationAsync(postOwnerId, commentingUser.Username, postId, commentId);
+        // Send real-time notification (Firebase with SignalR fallback)
+        await _notificationService.SendCommentNotificationAsync(postOwnerId, commentingUser.Username, postId, commentId);
     }
 
     public async Task DeletePostNotificationsAsync(int postId)

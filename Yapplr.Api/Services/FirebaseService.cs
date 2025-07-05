@@ -17,6 +17,8 @@ public class FirebaseService : IFirebaseService
     private static readonly object _lock = new object();
     private static bool _isInitialized = false;
 
+    public string ProviderName => "Firebase";
+
     public FirebaseService(YapplrDbContext context, ILogger<FirebaseService> logger, IConfiguration configuration)
     {
         _context = context;
@@ -486,11 +488,57 @@ public class FirebaseService : IFirebaseService
         }
     }
 
+    // IRealtimeNotificationProvider implementation
+    public Task<bool> IsAvailableAsync()
+    {
+        return Task.FromResult(_messaging != null);
+    }
+
+    public async Task<bool> SendTestNotificationAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user?.FcmToken == null)
+        {
+            _logger.LogInformation("No FCM token available for user {UserId}", userId);
+            return false;
+        }
+
+        return await SendTestNotificationAsync(user.FcmToken);
+    }
+
+    public async Task<bool> SendNotificationAsync(int userId, string title, string body, Dictionary<string, string>? data = null)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user?.FcmToken == null)
+        {
+            _logger.LogInformation("No FCM token available for user {UserId}", userId);
+            return false;
+        }
+
+        return await SendNotificationAsync(user.FcmToken, title, body, data);
+    }
+
+    public async Task<bool> SendMulticastNotificationAsync(List<int> userIds, string title, string body, Dictionary<string, string>? data = null)
+    {
+        var users = await _context.Users
+            .Where(u => userIds.Contains(u.Id) && !string.IsNullOrEmpty(u.FcmToken))
+            .Select(u => u.FcmToken!)
+            .ToListAsync();
+
+        if (!users.Any())
+        {
+            _logger.LogInformation("No FCM tokens available for users {UserIds}", string.Join(", ", userIds));
+            return false;
+        }
+
+        return await SendMulticastNotificationAsync(users, title, body, data);
+    }
+
     private static string TruncateMessage(string message, int maxLength = 50)
     {
         if (string.IsNullOrEmpty(message))
             return string.Empty;
-            
+
         return message.Length <= maxLength ? message : message[..maxLength] + "...";
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Models;
+using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Data;
 
@@ -25,6 +26,10 @@ public class YapplrDbContext : DbContext
     public DbSet<MessageStatus> MessageStatuses { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Mention> Mentions { get; set; }
+    public DbSet<NotificationPreferences> NotificationPreferences { get; set; }
+    public DbSet<NotificationDeliveryConfirmation> NotificationDeliveryConfirmations { get; set; }
+    public DbSet<NotificationHistory> NotificationHistory { get; set; }
+    public DbSet<NotificationAuditLog> NotificationAuditLogs { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

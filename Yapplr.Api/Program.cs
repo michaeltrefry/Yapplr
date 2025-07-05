@@ -9,6 +9,7 @@ using Yapplr.Api.Data;
 using Yapplr.Api.Services;
 using Yapplr.Api.Endpoints;
 using Yapplr.Api.Middleware;
+using Yapplr.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,7 +56,16 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 
-    // Allow all origins for mobile development
+    // SignalR-specific CORS policy with credentials support
+    options.AddPolicy("AllowSignalR", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "https://yapplr.com", "https://www.yapplr.com")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+
+    // Allow all origins for mobile development (no credentials for mobile)
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
@@ -83,6 +93,9 @@ else
         new AmazonSimpleEmailServiceClient(Amazon.RegionEndpoint.GetBySystemName(awsRegion)));
 }
 
+// Add SignalR
+builder.Services.AddSignalR();
+
 // Add custom services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -92,7 +105,63 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
+// Register performance and monitoring services
+builder.Services.AddSingleton<ISignalRConnectionPool, SignalRConnectionPool>();
+builder.Services.AddSingleton<INotificationMetricsService, NotificationMetricsService>();
+builder.Services.AddScoped<INotificationQueueService, NotificationQueueService>();
+
+// Register advanced notification services
+builder.Services.AddScoped<INotificationPreferencesService, NotificationPreferencesService>();
+builder.Services.AddScoped<INotificationDeliveryService, NotificationDeliveryService>();
+
+// Register UX enhancement services
+builder.Services.AddSingleton<ISmartRetryService, SmartRetryService>();
+builder.Services.AddSingleton<INotificationCompressionService, NotificationCompressionService>();
+builder.Services.AddSingleton<IOfflineNotificationService, OfflineNotificationService>();
+
+// Register security services
+builder.Services.AddSingleton<INotificationRateLimitService, NotificationRateLimitService>();
+builder.Services.AddSingleton<INotificationContentFilterService, NotificationContentFilterService>();
+builder.Services.AddScoped<INotificationAuditService, NotificationAuditService>();
+
+// Register background services
+builder.Services.AddHostedService<NotificationBackgroundService>();
+
+// Register notification providers
 builder.Services.AddScoped<IFirebaseService, FirebaseService>();
+builder.Services.AddScoped<SignalRNotificationService>();
+
+// Register the composite notification service with explicit provider collection
+builder.Services.AddScoped<ICompositeNotificationService>(provider =>
+{
+    var logger = provider.GetRequiredService<ILogger<CompositeNotificationService>>();
+    var providers = new List<IRealtimeNotificationProvider>
+    {
+        provider.GetRequiredService<IFirebaseService>(),
+        provider.GetRequiredService<SignalRNotificationService>()
+    };
+    var preferencesService = provider.GetRequiredService<INotificationPreferencesService>();
+    var deliveryService = provider.GetRequiredService<INotificationDeliveryService>();
+    var retryService = provider.GetRequiredService<ISmartRetryService>();
+    var compressionService = provider.GetRequiredService<INotificationCompressionService>();
+    var offlineService = provider.GetRequiredService<IOfflineNotificationService>();
+    var rateLimitService = provider.GetRequiredService<INotificationRateLimitService>();
+    var contentFilterService = provider.GetRequiredService<INotificationContentFilterService>();
+    var auditService = provider.GetRequiredService<INotificationAuditService>();
+
+    return new CompositeNotificationService(
+        logger,
+        providers,
+        preferencesService,
+        deliveryService,
+        retryService,
+        compressionService,
+        offlineService,
+        rateLimitService,
+        contentFilterService,
+        auditService);
+});
 
 // Register both email services
 builder.Services.AddScoped<EmailService>();
@@ -133,34 +202,28 @@ app.MapImageEndpoints();
 app.MapMessageEndpoints();
 app.MapUserPreferencesEndpoints();
 app.MapNotificationEndpoints();
+app.MapNotificationPreferencesEndpoints();
+app.MapUXEnhancementEndpoints();
+app.MapSecurityEndpoints();
+app.MapMetricsEndpoints();
+
+// Map SignalR hub
+app.MapHub<NotificationHub>("/notificationHub");
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
-// Test Firebase notification endpoint
-app.MapPost("/test-notification", [Authorize] async (ClaimsPrincipal user, IFirebaseService firebaseService, IUserService userService) =>
+// Test notification endpoint (uses composite service with Firebase + SignalR fallback)
+app.MapPost("/test-notification", [Authorize] async (ClaimsPrincipal user, ICompositeNotificationService notificationService, IUserService userService) =>
 {
     var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-    var currentUser = await userService.GetUserByIdAsync(userId);
 
-    if (currentUser?.FcmToken == null)
-    {
-        return Results.BadRequest("No FCM token found for user");
-    }
+    var success = await notificationService.SendTestNotificationAsync(userId);
 
-    var success = await firebaseService.SendNotificationAsync(
-        currentUser.FcmToken,
-        "Test Notification",
-        "This is a test notification from Yapplr!",
-        new Dictionary<string, string>
-        {
-            { "type", "test" },
-            { "userId", userId.ToString() }
-        }
-    );
-
-    return success ? Results.Ok(new { message = "Test notification sent successfully" })
-                  : Results.BadRequest("Failed to send test notification");
+    return success ? Results.Ok(new {
+        message = "Test notification sent successfully",
+        activeProvider = notificationService.ActiveProvider?.ProviderName ?? "None"
+    }) : Results.BadRequest("Failed to send test notification");
 })
 .WithName("TestNotification")
 .WithSummary("Send a test Firebase notification to the current user");
