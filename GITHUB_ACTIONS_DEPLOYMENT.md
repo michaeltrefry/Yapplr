@@ -1,8 +1,39 @@
 # GitHub Actions Deployment Strategy
 
-## 🎯 **Frontend Deployment Configuration**
+## 🎯 **Deployment Workflow Structure**
 
-The GitHub Actions workflow is now configured to automatically deploy the frontend with **SignalR-only** configuration for optimal web performance.
+The project now uses separate GitHub Actions workflows for independent API and frontend deployments:
+
+### **📁 Workflow Files:**
+- **`deploy-api.yml`**: Backend API deployment only
+- **`deploy-frontend.yml`**: Frontend deployment with SignalR-only configuration
+
+## 🔧 **API Deployment (deploy-api.yml)**
+
+Triggers on changes to `Yapplr.Api/**` and deploys only the backend API.
+
+### **API Deployment Flow**
+
+When changes are pushed to the `Yapplr.Api/**` directory on the `main` branch:
+
+1. **🏗️ Build API**: Creates Docker image for the .NET API
+2. **🔄 Pull Latest Code**: Updates the repository on the Linode server
+3. **⚙️ Configure Environment**: Sets up API secrets and configuration
+4. **🚀 Deploy API**: Starts the new API container
+5. **🩺 Health Check**: Verifies API accessibility at `/health` endpoint
+
+### **API Configuration**
+
+The API deployment includes:
+- **Database Connection**: PostgreSQL connection string
+- **Authentication**: JWT secret key configuration
+- **Email Service**: AWS SES configuration for password reset
+- **Notifications**: Firebase service account for backend notifications
+- **SignalR**: Real-time notification hub configuration
+
+## 🎯 **Frontend Deployment (deploy-frontend.yml)**
+
+The frontend workflow is configured to automatically deploy with **SignalR-only** configuration for optimal web performance.
 
 ### **Deployment Flow**
 
@@ -87,7 +118,11 @@ NEXT_PUBLIC_ENABLE_SIGNALR_MOBILE=false
 
 ### **Workflow Triggers**
 
-The deployment runs when:
+**API Deployment (`deploy-api.yml`)** runs when:
+- **Push to main**: Changes in `Yapplr.Api/**` directory
+- **Manual trigger**: Via GitHub Actions "workflow_dispatch"
+
+**Frontend Deployment (`deploy-frontend.yml`)** runs when:
 - **Push to main**: Changes in `yapplr-frontend/**` directory
 - **Manual trigger**: Via GitHub Actions "workflow_dispatch"
 
