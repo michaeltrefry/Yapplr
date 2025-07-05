@@ -68,12 +68,8 @@ docker image rm yapplr-api:latest || true
 echo -e "${GREEN}🔨 Building new API image...${NC}"
 docker build -t yapplr-api:latest .
 
-echo -e "${GREEN}🚀 Starting API service...${NC}"
+echo -e "${GREEN}🚀 Starting API services (API + nginx)...${NC}"
 docker-compose -f docker-compose.api.yml up -d
-
-# Start nginx using the main compose file (no dependencies now)
-echo -e "${GREEN}🌐 Starting nginx...${NC}"
-docker-compose -f docker-compose.prod.yml up -d nginx
 
 # Wait for services to be ready
 echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"
