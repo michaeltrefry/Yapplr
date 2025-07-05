@@ -18,7 +18,12 @@ services:
       - AwsSesSettings__FromName=Yapplr
       - AwsSesSettings__AccessKey=${AWS_SES_ACCESS_KEY}
       - AwsSesSettings__SecretKey=${AWS_SES_SECRET_KEY}
-      - EmailProvider=AwsSes
+      # SendGrid configuration
+      - SendGridSettings__ApiKey=${SENDGRID_API_KEY}
+      - SendGridSettings__FromEmail=${SENDGRID_FROM_EMAIL}
+      - SendGridSettings__FromName=${SENDGRID_FROM_NAME}
+      # Email provider selection
+      - EmailProvider=${EMAIL_PROVIDER}
       # Firebase configuration (REQUIRED for notifications)
       - Firebase__ProjectId=${FIREBASE_PROJECT_ID}
       - Firebase__ServiceAccountKey=${FIREBASE_SERVICE_ACCOUNT_KEY}

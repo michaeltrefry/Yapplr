@@ -24,6 +24,7 @@ public class EmailServiceFactory : IEmailServiceFactory
         {
             "awsses" => _serviceProvider.GetRequiredService<AwsSesEmailService>(),
             "smtp" => _serviceProvider.GetRequiredService<EmailService>(),
+            "sendgrid" => _serviceProvider.GetRequiredService<SendGridEmailService>(),
             _ => _serviceProvider.GetRequiredService<AwsSesEmailService>() // Default to AWS SES
         };
     }

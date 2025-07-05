@@ -11,6 +11,7 @@ using Yapplr.Api.Endpoints;
 using Yapplr.Api.Middleware;
 using Yapplr.Api.Hubs;
 using Yapplr.Api.Configuration;
+using SendGrid;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -97,6 +98,15 @@ else
     // Use default credential chain (IAM roles, environment variables, etc.)
     builder.Services.AddSingleton<IAmazonSimpleEmailService>(provider =>
         new AmazonSimpleEmailServiceClient(Amazon.RegionEndpoint.GetBySystemName(awsRegion)));
+}
+
+// Add SendGrid
+var sendGridSettings = builder.Configuration.GetSection("SendGridSettings");
+var sendGridApiKey = sendGridSettings["ApiKey"];
+if (!string.IsNullOrEmpty(sendGridApiKey))
+{
+    builder.Services.AddSingleton<ISendGridClient>(provider =>
+        new SendGridClient(sendGridApiKey));
 }
 
 // Add SignalR with production configuration (if enabled)
@@ -213,9 +223,10 @@ builder.Services.AddScoped<ICompositeNotificationService>(provider =>
         auditService);
 });
 
-// Register both email services
+// Register all email services
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<AwsSesEmailService>();
+builder.Services.AddScoped<SendGridEmailService>();
 builder.Services.AddScoped<IEmailServiceFactory, EmailServiceFactory>();
 
 // Register the email service based on configuration
