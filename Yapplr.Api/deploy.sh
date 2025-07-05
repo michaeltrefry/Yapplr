@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Yapplr API Deployment Script for Linode
-# This script builds and deploys the API service using docker-compose.prod.yml
-# Frontend can be deployed independently using the same compose file
+# Yapplr Unified Deployment Script for Linode
+# This script builds and deploys both API and Frontend services together
+# Single nginx handles all routing for both services
 
 set -e  # Exit on any error
 
@@ -40,8 +40,13 @@ for var in "${required_vars[@]}"; do
     fi
 done
 
-# Note: Frontend Firebase variables are not needed for API-only deployment
-# Frontend deployment is handled separately with its own configuration
+# Validate Firebase frontend variables
+firebase_frontend_vars=("FIREBASE_API_KEY" "FIREBASE_AUTH_DOMAIN" "FIREBASE_STORAGE_BUCKET" "FIREBASE_MESSAGING_SENDER_ID" "FIREBASE_APP_ID" "FIREBASE_VAPID_KEY")
+for var in "${firebase_frontend_vars[@]}"; do
+    if [ -z "${!var}" ]; then
+        echo -e "${YELLOW}⚠️ Warning: $var is not set - Firebase notifications may not work in frontend${NC}"
+    fi
+done
 
 echo -e "${GREEN}✅ Environment variables validated${NC}"
 
@@ -56,36 +61,30 @@ else
     exit 1
 fi
 
-# Stop and rebuild only the API service using API-only compose file
-echo -e "${GREEN}🛑 Stopping API service...${NC}"
-docker-compose -f docker-compose.api.yml down || true
+# Stop existing containers
+echo -e "${GREEN}🛑 Stopping existing containers...${NC}"
+docker-compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
 
-# Remove old API container and image
-echo -e "${GREEN}🗑️ Removing old API container and image...${NC}"
-docker image rm yapplr-api:latest || true
+# Additional cleanup to ensure ports are free
+echo -e "${GREEN}🧹 Cleaning up any remaining containers...${NC}"
+docker container prune -f || true
 
-# Build and start API service using API-only compose file
-echo -e "${GREEN}🔨 Building new API image...${NC}"
-docker build -t yapplr-api:latest .
-
-echo -e "${GREEN}🚀 Starting API services (API + nginx)...${NC}"
-docker-compose -f docker-compose.api.yml up -d
+# Start new containers (both API and frontend)
+echo -e "${GREEN}🚀 Starting all services (API + Frontend + nginx)...${NC}"
+docker-compose -f docker-compose.prod.yml up -d
 
 # Wait for services to be ready
 echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"
 sleep 30
 
-# Check if API is responding directly (not through nginx)
-echo -e "${GREEN}🔍 Checking API health directly...${NC}"
-API_CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker-compose -f docker-compose.api.yml ps -q yapplr-api))
-if curl -f http://$API_CONTAINER_IP:8080/health > /dev/null 2>&1; then
+# Check if API is responding through nginx
+echo -e "${GREEN}🔍 Checking API health...${NC}"
+if curl -f http://localhost/health > /dev/null 2>&1; then
     echo -e "${GREEN}✅ API is healthy and responding${NC}"
-    echo -e "${YELLOW}ℹ️ API accessible at container IP: $API_CONTAINER_IP:8080${NC}"
-    echo -e "${YELLOW}ℹ️ Deploy frontend to make API accessible via nginx${NC}"
 else
     echo -e "${RED}❌ API health check failed${NC}"
     echo -e "${YELLOW}Checking logs...${NC}"
-    docker-compose -f docker-compose.api.yml logs yapplr-api
+    docker-compose -f docker-compose.prod.yml logs yapplr-api
     exit 1
 fi
 
@@ -100,9 +99,10 @@ docker run --rm \
   mcr.microsoft.com/dotnet/sdk:9.0 \
   sh -c "dotnet tool install --global dotnet-ef && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update" || true
 
-echo -e "${GREEN}🎉 API deployment completed successfully!${NC}"
-echo -e "${GREEN}API container is running and healthy${NC}"
-echo -e "${YELLOW}⚠️ Deploy frontend to make API accessible via nginx at: https://$API_DOMAIN_NAME${NC}"
+echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
+echo -e "${GREEN}Your application is now running at:${NC}"
+echo -e "${GREEN}  Frontend: https://yapplr.com${NC}"
+echo -e "${GREEN}  API: https://$API_DOMAIN_NAME${NC}"
 
 # Clean up old images
 echo -e "${GREEN}🧹 Cleaning up old Docker images...${NC}"
