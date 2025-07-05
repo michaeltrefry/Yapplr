@@ -412,7 +412,8 @@ public class MessageService : IMessageService
             user.Pronouns,
             user.Tagline,
             user.ProfileImageFileName,
-            user.CreatedAt
+            user.CreatedAt,
+            user.FcmToken
         );
     }
 

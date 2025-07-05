@@ -64,5 +64,31 @@ public static class NotificationEndpoints
         .WithSummary("Mark all notifications as read for the user")
         .Produces(200)
         .Produces(401);
+
+        // Test Firebase notification endpoint
+        notifications.MapPost("/test-firebase", [Authorize] async (ClaimsPrincipal user, IFirebaseService firebaseService, IUserService userService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var currentUser = await userService.GetUserByIdAsync(userId);
+
+            if (currentUser?.FcmToken == null || string.IsNullOrEmpty(currentUser.FcmToken))
+            {
+                return Results.BadRequest(new { error = "No FCM token found for user" });
+            }
+
+            var success = await firebaseService.SendTestNotificationAsync(currentUser.FcmToken);
+
+            return Results.Ok(new {
+                success = success,
+                message = success ? "Test notification sent successfully" : "Failed to send test notification",
+                fcmTokenLength = currentUser.FcmToken.Length,
+                fcmTokenStart = currentUser.FcmToken.Substring(0, Math.Min(30, currentUser.FcmToken.Length)) + "..."
+            });
+        })
+        .WithName("TestFirebaseNotification")
+        .WithSummary("Send a test Firebase notification to the current user")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
     }
 }

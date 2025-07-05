@@ -187,10 +187,17 @@ public static class UserEndpoints
             return success ? Results.Ok() : Results.BadRequest("Failed to update FCM token");
         })
         .WithName("UpdateFcmToken")
-        .WithSummary("Update FCM token for push notifications")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
+        .WithSummary("Update user's FCM token for push notifications");
+
+        users.MapDelete("/me/fcm-token", [Authorize] async (ClaimsPrincipal user, IUserService userService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var success = await userService.UpdateFcmTokenAsync(userId, null);
+
+            return success ? Results.Ok(new { message = "FCM token cleared successfully" }) : Results.BadRequest("Failed to clear FCM token");
+        })
+        .WithName("ClearFcmToken")
+        .WithSummary("Clear user's FCM token");
 
         users.MapGet("/me/follow-requests", [Authorize] async (ClaimsPrincipal user, IUserService userService) =>
         {

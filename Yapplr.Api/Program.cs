@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 using Amazon.SimpleEmail;
 using Yapplr.Api.Data;
@@ -134,5 +136,33 @@ app.MapNotificationEndpoints();
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
+// Test Firebase notification endpoint
+app.MapPost("/test-notification", [Authorize] async (ClaimsPrincipal user, IFirebaseService firebaseService, IUserService userService) =>
+{
+    var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    var currentUser = await userService.GetUserByIdAsync(userId);
+
+    if (currentUser?.FcmToken == null)
+    {
+        return Results.BadRequest("No FCM token found for user");
+    }
+
+    var success = await firebaseService.SendNotificationAsync(
+        currentUser.FcmToken,
+        "Test Notification",
+        "This is a test notification from Yapplr!",
+        new Dictionary<string, string>
+        {
+            { "type", "test" },
+            { "userId", userId.ToString() }
+        }
+    );
+
+    return success ? Results.Ok(new { message = "Test notification sent successfully" })
+                  : Results.BadRequest("Failed to send test notification");
+})
+.WithName("TestNotification")
+.WithSummary("Send a test Firebase notification to the current user");
 
 app.Run();

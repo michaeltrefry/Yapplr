@@ -25,7 +25,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     queryKey: ['unreadMessageCount'],
     queryFn: messageApi.getUnreadCount,
     enabled: !!user,
-    refetchInterval: isFirebaseReady ? false : 30000, // Disable polling when Firebase is ready
+    refetchInterval: isFirebaseReady ? 60000 : 30000, // Slower polling when Firebase is ready, but keep it as backup
     refetchIntervalInBackground: false,
   });
 
@@ -33,7 +33,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     queryKey: ['unreadNotificationCount'],
     queryFn: notificationApi.getUnreadCount,
     enabled: !!user,
-    refetchInterval: isFirebaseReady ? false : 30000, // Disable polling when Firebase is ready
+    refetchInterval: isFirebaseReady ? 60000 : 30000, // Slower polling when Firebase is ready, but keep it as backup
     refetchIntervalInBackground: false,
   });
 
@@ -67,18 +67,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (!isFirebaseReady) return;
 
     const handleFirebaseMessage = (payload: FirebaseNotificationPayload) => {
-      console.log('Received Firebase message:', payload);
+      console.log('🔥🔥🔥 NOTIFICATION CONTEXT RECEIVED FIREBASE MESSAGE 🔥🔥🔥');
+      console.log('🔥 Payload:', payload);
+      console.log('🔥 Message type:', payload.data?.type);
+      console.log('🔥 Timestamp:', new Date().toISOString());
 
       // Refresh counts based on notification type
       if (payload.data?.type === 'message') {
+        console.log('🔥 Refreshing unread message count');
         refreshUnreadCount();
       } else if (payload.data?.type === 'mention' || payload.data?.type === 'reply' || payload.data?.type === 'comment' || payload.data?.type === 'follow' || payload.data?.type === 'like' || payload.data?.type === 'repost' || payload.data?.type === 'follow_request') {
+        console.log('🔥 Refreshing notification count');
         refreshNotificationCount();
       }
 
       // Invalidate relevant queries to refresh data
+      console.log('🔥 Invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
+      console.log('🔥 Firebase message handling complete');
     };
 
     firebaseMessagingService.addMessageListener(handleFirebaseMessage);

@@ -161,7 +161,7 @@ public class PostService : IPostService
             var repostedByUser = new UserDto(
                 repost.User.Id, repost.User.Email, repost.User.Username, repost.User.Bio,
                 repost.User.Birthday, repost.User.Pronouns, repost.User.Tagline,
-                repost.User.ProfileImageFileName, repost.User.CreatedAt);
+                repost.User.ProfileImageFileName, repost.User.CreatedAt, repost.User.FcmToken);
 
             timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, MapToPostDto(repost.Post, userId), repostedByUser));
         }
@@ -246,7 +246,8 @@ public class PostService : IPostService
                 r.User.Pronouns,
                 r.User.Tagline,
                 r.User.ProfileImageFileName,
-                r.User.CreatedAt
+                r.User.CreatedAt,
+                r.User.FcmToken
             )
         )));
 
@@ -386,7 +387,7 @@ public class PostService : IPostService
             var repostedByUser = new UserDto(
                 repost.User.Id, repost.User.Email, repost.User.Username, repost.User.Bio,
                 repost.User.Birthday, repost.User.Pronouns, repost.User.Tagline,
-                repost.User.ProfileImageFileName, repost.User.CreatedAt);
+                repost.User.ProfileImageFileName, repost.User.CreatedAt, repost.User.FcmToken);
 
             timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, MapToPostDto(repost.Post, currentUserId), repostedByUser));
         }
@@ -566,7 +567,7 @@ public class PostService : IPostService
     {
         var userDto = new UserDto(post.User.Id, post.User.Email, post.User.Username,
                                  post.User.Bio, post.User.Birthday, post.User.Pronouns,
-                                 post.User.Tagline, post.User.ProfileImageFileName, post.User.CreatedAt);
+                                 post.User.Tagline, post.User.ProfileImageFileName, post.User.CreatedAt, post.User.FcmToken);
 
         var isLiked = currentUserId.HasValue && post.Likes.Any(l => l.UserId == currentUserId.Value);
         var isReposted = currentUserId.HasValue && post.Reposts.Any(r => r.UserId == currentUserId.Value);
@@ -592,7 +593,7 @@ public class PostService : IPostService
     {
         var userDto = new UserDto(comment.User.Id, comment.User.Email, comment.User.Username,
                                  comment.User.Bio, comment.User.Birthday, comment.User.Pronouns,
-                                 comment.User.Tagline, comment.User.ProfileImageFileName, comment.User.CreatedAt);
+                                 comment.User.Tagline, comment.User.ProfileImageFileName, comment.User.CreatedAt, comment.User.FcmToken);
 
         var isEdited = comment.UpdatedAt > comment.CreatedAt.AddMinutes(1); // Consider edited if updated more than 1 minute after creation
 

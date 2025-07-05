@@ -88,7 +88,41 @@ public class FirebaseService : IFirebaseService
         }
     }
 
-    public async Task<bool> SendNotificationAsync(string fcmToken, string title, string body, Dictionary<string, string>? data = null)
+    public async Task<bool> SendTestNotificationAsync(string fcmToken)
+    {
+        if (_messaging == null)
+        {
+            _logger.LogWarning("Firebase messaging not initialized");
+            return false;
+        }
+
+        try
+        {
+            // Try the most basic possible message
+            var message = new FirebaseAdmin.Messaging.Message()
+            {
+                Token = fcmToken,
+                Notification = new FirebaseAdmin.Messaging.Notification()
+                {
+                    Title = "Test",
+                    Body = "Test message",
+                }
+            };
+
+            _logger.LogInformation("Sending basic test Firebase message to token: {Token}", fcmToken.Substring(0, Math.Min(30, fcmToken.Length)) + "...");
+
+            string response = await _messaging.SendAsync(message);
+            _logger.LogInformation("Firebase test message sent successfully. Response: {Response}", response);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Firebase test message failed. Error: {Error}", ex.Message);
+            return false;
+        }
+    }
+
+    public async Task<bool> SendNotificationAsync(string? fcmToken, string title, string body, Dictionary<string, string>? data = null)
     {
         if (_messaging == null)
         {
@@ -96,14 +130,54 @@ public class FirebaseService : IFirebaseService
             return false;
         }
 
-        if (string.IsNullOrEmpty(fcmToken))
+        if (string.IsNullOrWhiteSpace(fcmToken))
         {
-            _logger.LogWarning("FCM token is null or empty for notification: {Title}", title);
+            _logger.LogInformation("No FCM token available for user, skipping notification: {Title}", title);
             return false;
         }
 
+        _logger.LogInformation("Attempting to send Firebase notification: {Title} to token: {Token}", title, fcmToken.Substring(0, Math.Min(20, fcmToken.Length)) + "...");
+
         try
         {
+            // Validate FCM token format
+            if (fcmToken.Length < 10)
+            {
+                _logger.LogWarning("FCM token appears to be invalid: length={Length}, token={Token}", fcmToken.Length, fcmToken.Substring(0, Math.Min(10, fcmToken.Length)) + "...");
+                return false;
+            }
+
+            // Log token details for debugging
+            _logger.LogInformation("FCM Token validation - Length: {Length}, Starts with: {TokenStart}, Contains colon: {HasColon}",
+                fcmToken.Length,
+                fcmToken.Substring(0, Math.Min(20, fcmToken.Length)),
+                fcmToken.Contains(':'));
+
+            // Check if token looks like a valid FCM token (should be base64-like and not contain certain invalid characters)
+            if (fcmToken.Contains(' ') || fcmToken.Contains('\n') || fcmToken.Contains('\r'))
+            {
+                _logger.LogWarning("FCM token contains invalid characters (spaces or newlines)");
+                return false;
+            }
+
+            // Note: FCM tokens can have various formats, so we'll be less restrictive with validation
+
+            // Validate and clean data dictionary
+            Dictionary<string, string>? cleanData = null;
+            if (data != null)
+            {
+                cleanData = new Dictionary<string, string>();
+                foreach (var kvp in data)
+                {
+                    if (!string.IsNullOrEmpty(kvp.Key) && kvp.Value != null)
+                    {
+                        cleanData[kvp.Key] = kvp.Value.ToString();
+                    }
+                }
+                _logger.LogInformation("Cleaned data dictionary: {CleanData}", string.Join(", ", cleanData.Select(kvp => $"{kvp.Key}={kvp.Value}")));
+            }
+
+            // Try a simple message first without platform-specific configs and without data payload
             var message = new FirebaseAdmin.Messaging.Message()
             {
                 Token = fcmToken,
@@ -112,33 +186,46 @@ public class FirebaseService : IFirebaseService
                     Title = title,
                     Body = body,
                 },
-                Data = data,
-                Android = new AndroidConfig()
-                {
-                    Notification = new AndroidNotification()
-                    {
-                        Icon = "ic_notification",
-                        Color = "#1DA1F2", // Twitter blue
-                        ClickAction = "FLUTTER_NOTIFICATION_CLICK",
-                    }
-                },
-                Webpush = new WebpushConfig()
-                {
-                    Notification = new WebpushNotification()
-                    {
-                        Icon = "/next.svg",
-                        Badge = "/next.svg",
-                    }
-                }
+                Data = cleanData
             };
+
+            _logger.LogInformation("Created simple Firebase message without platform configs");
+
+            _logger.LogInformation("Sending Firebase message - Title: {Title}, Body: {Body}, Token length: {TokenLength}, Data: {Data}",
+                title, body, fcmToken.Length, data != null ? string.Join(", ", data.Select(kvp => $"{kvp.Key}={kvp.Value}")) : "null");
+
+            // Log the complete message structure for debugging
+            _logger.LogInformation("Complete Firebase message structure: Token={Token}, Title={Title}, Body={Body}, DataCount={DataCount}",
+                fcmToken.Substring(0, Math.Min(30, fcmToken.Length)) + "...",
+                message.Notification?.Title,
+                message.Notification?.Body,
+                message.Data?.Count ?? 0);
 
             string response = await _messaging.SendAsync(message);
             _logger.LogInformation("Successfully sent Firebase notification: {Title} - Response: {Response}", title, response);
             return true;
         }
+        catch (FirebaseAdmin.Messaging.FirebaseMessagingException fmEx)
+        {
+            _logger.LogError(fmEx, "Firebase Messaging Error sending '{Title}' to token: {Token}. Error Code: {ErrorCode}, Message: {Error}",
+                title,
+                fcmToken.Substring(0, Math.Min(20, fcmToken.Length)) + "...",
+                fmEx.ErrorCode,
+                fmEx.Message);
+
+            // Log additional details if available
+            if (fmEx.HttpResponse != null)
+            {
+                _logger.LogError("HTTP Response Status: {StatusCode}, Reason: {ReasonPhrase}",
+                    fmEx.HttpResponse.StatusCode,
+                    fmEx.HttpResponse.ReasonPhrase);
+            }
+
+            return false;
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending FCM notification '{Title}' to token: {Token}. Error: {ErrorMessage}",
+            _logger.LogError(ex, "General error sending FCM notification '{Title}' to token: {Token}. Error: {ErrorMessage}",
                 title, fcmToken.Substring(0, Math.Min(20, fcmToken.Length)) + "...", ex.Message);
             return false;
         }
@@ -167,8 +254,13 @@ public class FirebaseService : IFirebaseService
     public async Task<bool> SendMentionNotificationAsync(int userId, string mentionerUsername, int postId, int? commentId = null)
     {
         var user = await _context.Users.FindAsync(userId);
+        _logger.LogInformation("SendMentionNotificationAsync - User {UserId} found: {UserFound}, FcmToken: {FcmToken}",
+            userId, user != null, user?.FcmToken?.Substring(0, Math.Min(20, user?.FcmToken?.Length ?? 0)) + "...");
+
         if (user == null || string.IsNullOrEmpty(user.FcmToken))
         {
+            _logger.LogInformation("Skipping mention notification for user {UserId} - User null: {UserNull}, FcmToken null/empty: {TokenEmpty}",
+                userId, user == null, string.IsNullOrEmpty(user?.FcmToken));
             return false;
         }
 
@@ -216,8 +308,13 @@ public class FirebaseService : IFirebaseService
     public async Task<bool> SendCommentNotificationAsync(int userId, string commenterUsername, int postId, int commentId)
     {
         var user = await _context.Users.FindAsync(userId);
+        _logger.LogInformation("SendCommentNotificationAsync - User {UserId} found: {UserFound}, FcmToken: {FcmToken}",
+            userId, user != null, user?.FcmToken?.Substring(0, Math.Min(20, user?.FcmToken?.Length ?? 0)) + "...");
+
         if (user == null || string.IsNullOrEmpty(user.FcmToken))
         {
+            _logger.LogInformation("Skipping comment notification for user {UserId} - User null: {UserNull}, FcmToken null/empty: {TokenEmpty}",
+                userId, user == null, string.IsNullOrEmpty(user?.FcmToken));
             return false;
         }
 

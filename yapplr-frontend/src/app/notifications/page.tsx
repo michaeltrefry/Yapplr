@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Bell, Heart, MessageCircle, Repeat, UserPlus, AtSign, Check, X } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
+import NotificationPermissionButton from '@/components/NotificationPermissionButton';
 import type { Notification, NotificationType } from '@/types';
 
 const getNotificationIcon = (type: NotificationType) => {
@@ -193,15 +194,18 @@ export default function NotificationsPage() {
                   </button>
                   <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
                 </div>
-                {notificationData && notificationData.unreadCount > 0 && (
-                  <button
-                    onClick={handleMarkAllAsRead}
-                    disabled={markAllAsReadMutation.isPending}
-                    className="text-sm text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50"
-                  >
-                    Mark all as read
-                  </button>
-                )}
+                <div className="flex items-center space-x-3">
+                  <NotificationPermissionButton />
+                  {notificationData && notificationData.unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      disabled={markAllAsReadMutation.isPending}
+                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 

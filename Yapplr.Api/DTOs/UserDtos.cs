@@ -33,7 +33,8 @@ public record UserDto(
     string Pronouns,
     string Tagline,
     string ProfileImageFileName,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? FcmToken
 );
 
 public record UserProfileDto(

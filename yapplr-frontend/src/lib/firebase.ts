@@ -12,8 +12,21 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
+// Debug Firebase configuration
+console.log('Firebase config loaded:', {
+  apiKey: firebaseConfig.apiKey ? 'Set' : 'Missing',
+  authDomain: firebaseConfig.authDomain ? 'Set' : 'Missing',
+  databaseURL: firebaseConfig.databaseURL ? 'Set' : 'Missing',
+  projectId: firebaseConfig.projectId ? 'Set' : 'Missing',
+  storageBucket: firebaseConfig.storageBucket ? 'Set' : 'Missing',
+  messagingSenderId: firebaseConfig.messagingSenderId ? 'Set' : 'Missing',
+  appId: firebaseConfig.appId ? 'Set' : 'Missing',
+  measurementId: firebaseConfig.measurementId ? 'Set' : 'Missing',
+});
+
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+console.log('Firebase app initialized:', app.name);
 
 // Initialize Firebase Cloud Messaging and get a reference to the service
 let messaging: any = null;
@@ -44,20 +57,44 @@ const getMessagingInstance = async () => {
   return messaging;
 };
 
-// Request notification permission and get FCM token
+// Request notification permission and get FCM token (must be called from user gesture)
 export const requestNotificationPermission = async (): Promise<string | null> => {
   try {
+    console.log('Requesting notification permission...');
+    console.log('VAPID key available:', VAPID_KEY ? 'Yes' : 'No');
+
     const messagingInstance = await getMessagingInstance();
     if (!messagingInstance) {
       console.warn('Firebase messaging not supported');
       return null;
     }
+    console.log('Firebase messaging instance obtained');
 
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
+    // Check current permission status first
+    console.log('Current permission status:', Notification.permission);
+    if (Notification.permission === 'granted') {
+      // Permission already granted, just get token
+      console.log('Permission already granted, getting token...');
       const token = await getToken(messagingInstance, {
         vapidKey: VAPID_KEY,
       });
+      console.log('Token obtained:', token ? 'Success' : 'Failed');
+      return token;
+    } else if (Notification.permission === 'denied') {
+      console.warn('Notification permission previously denied');
+      return null;
+    }
+
+    // Request permission (must be from user gesture)
+    console.log('Requesting permission from user...');
+    const permission = await Notification.requestPermission();
+    console.log('Permission result:', permission);
+    if (permission === 'granted') {
+      console.log('Permission granted, getting token...');
+      const token = await getToken(messagingInstance, {
+        vapidKey: VAPID_KEY,
+      });
+      console.log('Token obtained:', token ? 'Success' : 'Failed');
       return token;
     } else {
       console.warn('Notification permission denied');
@@ -69,19 +106,35 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
   }
 };
 
-// Listen for foreground messages
-export const onMessageListener = () =>
-  new Promise(async (resolve) => {
+// Check if notifications are supported and permission status
+export const getNotificationStatus = () => {
+  return {
+    supported: 'Notification' in window,
+    permission: Notification.permission,
+    canRequest: Notification.permission === 'default'
+  };
+};
+
+// Listen for foreground messages - callback-based for multiple messages
+export const onMessageListener = (callback: (payload: any) => void) => {
+  const setupListener = async () => {
     try {
       const messagingInstance = await getMessagingInstance();
       if (!messagingInstance) {
+        console.warn('Firebase messaging instance not available');
         return;
       }
 
+      console.log('🔥 Setting up persistent Firebase message listener...');
       onMessage(messagingInstance, (payload) => {
-        resolve(payload);
+        console.log('🔥 Firebase onMessage triggered:', payload);
+        callback(payload);
       });
+      console.log('🔥 Persistent Firebase message listener setup complete');
     } catch (error) {
       console.error('Error setting up message listener:', error);
     }
-  });
+  };
+
+  setupListener();
+};

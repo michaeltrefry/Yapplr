@@ -38,7 +38,7 @@ public class User
     public DateTime LastSeenAt { get; set; } = DateTime.UtcNow;
 
     [StringLength(500)]
-    public string FcmToken { get; set; } = string.Empty;
+    public string? FcmToken { get; set; }
 
     // Navigation properties
     public ICollection<Post> Posts { get; set; } = new List<Post>();

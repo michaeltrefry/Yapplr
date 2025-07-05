@@ -436,7 +436,8 @@ public class NotificationService : INotificationService
                 notification.ActorUser.Pronouns,
                 notification.ActorUser.Tagline,
                 notification.ActorUser.ProfileImageFileName,
-                notification.ActorUser.CreatedAt
+                notification.ActorUser.CreatedAt,
+                notification.ActorUser.FcmToken
             ) : null
         };
 
@@ -468,7 +469,8 @@ public class NotificationService : INotificationService
                     notification.Post.User.Pronouns,
                     notification.Post.User.Tagline,
                     notification.Post.User.ProfileImageFileName,
-                    notification.Post.User.CreatedAt
+                    notification.Post.User.CreatedAt,
+                    notification.Post.User.FcmToken
                 ),
                 0, // LikeCount - we don't need this for notifications
                 0, // CommentCount - we don't need this for notifications
@@ -496,7 +498,8 @@ public class NotificationService : INotificationService
                     notification.Comment.User.Pronouns,
                     notification.Comment.User.Tagline,
                     notification.Comment.User.ProfileImageFileName,
-                    notification.Comment.User.CreatedAt
+                    notification.Comment.User.CreatedAt,
+                    notification.Comment.User.FcmToken
                 ),
                 notification.Comment.UpdatedAt > notification.Comment.CreatedAt.AddMinutes(1) // IsEdited
             );
@@ -526,7 +529,8 @@ public class NotificationService : INotificationService
                         notification.Comment.Post.User.Pronouns,
                         notification.Comment.Post.User.Tagline,
                         notification.Comment.Post.User.ProfileImageFileName,
-                        notification.Comment.Post.User.CreatedAt
+                        notification.Comment.Post.User.CreatedAt,
+                        notification.Comment.Post.User.FcmToken
                     ),
                     0, // LikeCount - we don't need this for notifications
                     0, // CommentCount - we don't need this for notifications

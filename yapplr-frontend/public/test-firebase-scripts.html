@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Firebase Scripts</title>
+</head>
+<body>
+    <h1>Firebase Scripts Test</h1>
+    <div id="output"></div>
+    <button onclick="testScripts()">Test Firebase Scripts</button>
+
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.style.color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            div.textContent = `${new Date().toISOString()}: ${message}`;
+            output.appendChild(div);
+            console.log(message);
+        }
+
+        function testScripts() {
+            log('Testing Firebase script loading...');
+            
+            // Test loading Firebase app script
+            const script1 = document.createElement('script');
+            script1.src = 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js';
+            script1.onload = () => {
+                log('Firebase app script loaded successfully', 'success');
+                
+                // Test loading Firebase messaging script
+                const script2 = document.createElement('script');
+                script2.src = 'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js';
+                script2.onload = () => {
+                    log('Firebase messaging script loaded successfully', 'success');
+                    
+                    // Test Firebase initialization
+                    try {
+                        if (typeof firebase !== 'undefined') {
+                            log('Firebase object is available', 'success');
+                            
+                            // Test Firebase config
+                            const testConfig = {
+                                apiKey: "test-key",
+                                authDomain: "test.firebaseapp.com",
+                                projectId: "test-project",
+                                storageBucket: "test.appspot.com",
+                                messagingSenderId: "123456789",
+                                appId: "1:123456789:web:test"
+                            };
+                            
+                            const app = firebase.initializeApp(testConfig, 'test-app');
+                            log('Firebase app initialized successfully', 'success');
+                            
+                            const messaging = firebase.messaging(app);
+                            log('Firebase messaging initialized successfully', 'success');
+                            
+                        } else {
+                            log('Firebase object not available', 'error');
+                        }
+                    } catch (error) {
+                        log(`Firebase initialization error: ${error.message}`, 'error');
+                    }
+                };
+                script2.onerror = () => {
+                    log('Firebase messaging script failed to load', 'error');
+                };
+                document.head.appendChild(script2);
+            };
+            script1.onerror = () => {
+                log('Firebase app script failed to load', 'error');
+            };
+            document.head.appendChild(script1);
+        }
+
+        // Auto-run test
+        window.addEventListener('load', () => {
+            log('Page loaded, running Firebase script test...');
+            testScripts();
+        });
+    </script>
+</body>
+</html>

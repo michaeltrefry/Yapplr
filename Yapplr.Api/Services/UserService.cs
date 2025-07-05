@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
@@ -10,12 +11,14 @@ public class UserService : IUserService
     private readonly YapplrDbContext _context;
     private readonly IBlockService _blockService;
     private readonly INotificationService _notificationService;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService)
+    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService, ILogger<UserService> logger)
     {
         _context = context;
         _blockService = blockService;
         _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<UserDto?> GetUserByIdAsync(int userId)
@@ -26,7 +29,7 @@ public class UserService : IUserService
             return null;
 
         return new UserDto(user.Id, user.Email, user.Username, user.Bio,
-                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
+                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.FcmToken);
     }
 
     public async Task<UserProfileDto?> GetUserProfileAsync(string username, int? currentUserId = null)
@@ -93,7 +96,7 @@ public class UserService : IUserService
         await _context.SaveChangesAsync();
 
         return new UserDto(user.Id, user.Email, user.Username, user.Bio,
-                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
+                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.FcmToken);
     }
 
     public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query)
@@ -104,7 +107,7 @@ public class UserService : IUserService
             .ToListAsync();
 
         return users.Select(u => new UserDto(u.Id, u.Email, u.Username, u.Bio,
-                                           u.Birthday, u.Pronouns, u.Tagline, u.ProfileImageFileName, u.CreatedAt));
+                                           u.Birthday, u.Pronouns, u.Tagline, u.ProfileImageFileName, u.CreatedAt, u.FcmToken));
     }
 
     public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query, int? currentUserId)
@@ -122,7 +125,7 @@ public class UserService : IUserService
         }
 
         return users.Select(u => new UserDto(u.Id, u.Email, u.Username, u.Bio,
-                                           u.Birthday, u.Pronouns, u.Tagline, u.ProfileImageFileName, u.CreatedAt));
+                                           u.Birthday, u.Pronouns, u.Tagline, u.ProfileImageFileName, u.CreatedAt, u.FcmToken));
     }
 
     private async Task<List<int>> GetBlockedUserIdsAsync(int userId)
@@ -162,7 +165,7 @@ public class UserService : IUserService
         await _context.SaveChangesAsync();
 
         return new UserDto(user.Id, user.Email, user.Username, user.Bio,
-                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
+                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.FcmToken);
     }
 
     public async Task<UserDto?> RemoveProfileImageAsync(int userId, IImageService imageService)
@@ -183,7 +186,7 @@ public class UserService : IUserService
         await _context.SaveChangesAsync();
 
         return new UserDto(user.Id, user.Email, user.Username, user.Bio,
-                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt);
+                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.FcmToken);
     }
 
     public async Task<FollowResponseDto> FollowUserAsync(int followerId, int followingId)
@@ -296,7 +299,8 @@ public class UserService : IUserService
                 f.Following.Pronouns,
                 f.Following.Tagline,
                 f.Following.ProfileImageFileName,
-                f.Following.CreatedAt
+                f.Following.CreatedAt,
+                f.Following.FcmToken
             ))
             .ToListAsync();
 
@@ -318,7 +322,8 @@ public class UserService : IUserService
                 f.Follower.Pronouns,
                 f.Follower.Tagline,
                 f.Follower.ProfileImageFileName,
-                f.Follower.CreatedAt
+                f.Follower.CreatedAt,
+                f.Follower.FcmToken
             ))
             .ToListAsync();
 
@@ -350,16 +355,26 @@ public class UserService : IUserService
         return following;
     }
 
-    public async Task<bool> UpdateFcmTokenAsync(int userId, string fcmToken)
+    public async Task<bool> UpdateFcmTokenAsync(int userId, string? fcmToken)
     {
         var user = await _context.Users.FindAsync(userId);
         if (user == null)
             return false;
 
+        if (fcmToken == null)
+        {
+            _logger.LogInformation("Clearing FCM token for user {UserId}", userId);
+        }
+        else
+        {
+            _logger.LogInformation("Updating FCM token for user {UserId}: {Token}", userId, fcmToken.Substring(0, Math.Min(20, fcmToken.Length)) + "...");
+        }
+
         user.FcmToken = fcmToken;
         user.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+        _logger.LogInformation("Successfully updated FCM token for user {UserId}", userId);
         return true;
     }
 
@@ -383,7 +398,8 @@ public class UserService : IUserService
                     fr.Requester.Pronouns,
                     fr.Requester.Tagline,
                     fr.Requester.ProfileImageFileName,
-                    fr.Requester.CreatedAt
+                    fr.Requester.CreatedAt,
+                    fr.Requester.FcmToken
                 ),
                 Requested = new UserDto(
                     fr.Requested.Id,
@@ -394,7 +410,8 @@ public class UserService : IUserService
                     fr.Requested.Pronouns,
                     fr.Requested.Tagline,
                     fr.Requested.ProfileImageFileName,
-                    fr.Requested.CreatedAt
+                    fr.Requested.CreatedAt,
+                    fr.Requested.FcmToken
                 )
             })
             .ToListAsync();

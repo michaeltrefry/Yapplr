@@ -4,6 +4,7 @@ namespace Yapplr.Api.Services;
 
 public interface IFirebaseService
 {
+    Task<bool> SendTestNotificationAsync(string fcmToken);
     Task<bool> SendNotificationAsync(string fcmToken, string title, string body, Dictionary<string, string>? data = null);
     Task<bool> SendMessageNotificationAsync(int userId, string senderUsername, string messageContent, int conversationId);
     Task<bool> SendMentionNotificationAsync(int userId, string mentionerUsername, int postId, int? commentId = null);
