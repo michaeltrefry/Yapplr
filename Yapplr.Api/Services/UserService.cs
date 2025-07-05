@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
+using Yapplr.Api.Extensions;
 
 namespace Yapplr.Api.Services;
 
@@ -28,8 +29,7 @@ public class UserService : IUserService
         if (user == null)
             return null;
 
-        return new UserDto(user.Id, user.Email, user.Username, user.Bio,
-                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.FcmToken);
+        return user.ToDto();
     }
 
     public async Task<UserProfileDto?> GetUserProfileAsync(string username, int? currentUserId = null)
@@ -95,8 +95,7 @@ public class UserService : IUserService
 
         await _context.SaveChangesAsync();
 
-        return new UserDto(user.Id, user.Email, user.Username, user.Bio,
-                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.FcmToken);
+        return user.ToDto();
     }
 
     public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query)
@@ -106,8 +105,7 @@ public class UserService : IUserService
             .Take(20) // Limit results
             .ToListAsync();
 
-        return users.Select(u => new UserDto(u.Id, u.Email, u.Username, u.Bio,
-                                           u.Birthday, u.Pronouns, u.Tagline, u.ProfileImageFileName, u.CreatedAt, u.FcmToken));
+        return users.Select(u => u.ToDto());
     }
 
     public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query, int? currentUserId)
@@ -124,8 +122,7 @@ public class UserService : IUserService
             users = users.Where(u => !blockedUserIds.Contains(u.Id)).ToList();
         }
 
-        return users.Select(u => new UserDto(u.Id, u.Email, u.Username, u.Bio,
-                                           u.Birthday, u.Pronouns, u.Tagline, u.ProfileImageFileName, u.CreatedAt, u.FcmToken));
+        return users.Select(u => u.ToDto());
     }
 
     private async Task<List<int>> GetBlockedUserIdsAsync(int userId)
@@ -164,8 +161,7 @@ public class UserService : IUserService
 
         await _context.SaveChangesAsync();
 
-        return new UserDto(user.Id, user.Email, user.Username, user.Bio,
-                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.FcmToken);
+        return user.ToDto();
     }
 
     public async Task<UserDto?> RemoveProfileImageAsync(int userId, IImageService imageService)
@@ -185,8 +181,7 @@ public class UserService : IUserService
 
         await _context.SaveChangesAsync();
 
-        return new UserDto(user.Id, user.Email, user.Username, user.Bio,
-                          user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.FcmToken);
+        return user.ToDto();
     }
 
     public async Task<FollowResponseDto> FollowUserAsync(int followerId, int followingId)
@@ -313,18 +308,7 @@ public class UserService : IUserService
             .Include(f => f.Follower)
             .Where(f => f.FollowingId == userId)
             .OrderBy(f => f.Follower.Username)
-            .Select(f => new UserDto(
-                f.Follower.Id,
-                f.Follower.Email,
-                f.Follower.Username,
-                f.Follower.Bio,
-                f.Follower.Birthday,
-                f.Follower.Pronouns,
-                f.Follower.Tagline,
-                f.Follower.ProfileImageFileName,
-                f.Follower.CreatedAt,
-                f.Follower.FcmToken
-            ))
+            .Select(f => f.Follower.ToDto())
             .ToListAsync();
 
         return followers;
@@ -389,30 +373,8 @@ public class UserService : IUserService
             {
                 Id = fr.Id,
                 CreatedAt = fr.CreatedAt,
-                Requester = new UserDto(
-                    fr.Requester.Id,
-                    fr.Requester.Email,
-                    fr.Requester.Username,
-                    fr.Requester.Bio,
-                    fr.Requester.Birthday,
-                    fr.Requester.Pronouns,
-                    fr.Requester.Tagline,
-                    fr.Requester.ProfileImageFileName,
-                    fr.Requester.CreatedAt,
-                    fr.Requester.FcmToken
-                ),
-                Requested = new UserDto(
-                    fr.Requested.Id,
-                    fr.Requested.Email,
-                    fr.Requested.Username,
-                    fr.Requested.Bio,
-                    fr.Requested.Birthday,
-                    fr.Requested.Pronouns,
-                    fr.Requested.Tagline,
-                    fr.Requested.ProfileImageFileName,
-                    fr.Requested.CreatedAt,
-                    fr.Requested.FcmToken
-                )
+                Requester = fr.Requester.ToDto(),
+                Requested = fr.Requested.ToDto()
             })
             .ToListAsync();
 

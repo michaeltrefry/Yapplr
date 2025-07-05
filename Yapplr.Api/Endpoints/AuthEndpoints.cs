@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
+using System.ComponentModel.DataAnnotations;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -69,5 +70,33 @@ public static class AuthEndpoints
         .WithSummary("Reset password with token")
         .Produces<object>(200)
         .Produces(400);
+
+        auth.MapPost("/verify-email", async ([FromBody] VerifyEmailDto verifyEmailDto, IAuthService authService) =>
+        {
+            var success = await authService.VerifyEmailAsync(verifyEmailDto.Token);
+
+            if (!success)
+            {
+                return Results.BadRequest(new { message = "Invalid or expired verification token" });
+            }
+
+            return Results.Ok(new { message = "Email verified successfully" });
+        })
+        .WithName("VerifyEmail")
+        .WithSummary("Verify email with token")
+        .Produces<object>(200)
+        .Produces(400);
+
+        auth.MapPost("/resend-verification", async ([FromBody] ResendVerificationDto resendDto, IAuthService authService, HttpContext context) =>
+        {
+            var verificationBaseUrl = $"{context.Request.Scheme}://{context.Request.Host}/verify-email";
+            var success = await authService.ResendEmailVerificationAsync(resendDto.Email, verificationBaseUrl);
+
+            // Always return success for security (don't reveal if email exists)
+            return Results.Ok(new { message = "If an account with that email exists and is unverified, a verification email has been sent." });
+        })
+        .WithName("ResendVerification")
+        .WithSummary("Resend email verification")
+        .Produces<object>(200);
     }
 }

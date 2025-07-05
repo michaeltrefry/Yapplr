@@ -8,6 +8,7 @@ using BCrypt.Net;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
+using Yapplr.Api.Extensions;
 
 namespace Yapplr.Api.Services;
 
@@ -37,7 +38,7 @@ public class AuthService : IAuthService
             return null; // Username already taken
         }
 
-        // Create new user
+        // Create new user (unverified by default)
         var user = new User
         {
             Email = registerDto.Email,
@@ -47,6 +48,7 @@ public class AuthService : IAuthService
             Birthday = registerDto.Birthday.HasValue ? DateTime.SpecifyKind(registerDto.Birthday.Value, DateTimeKind.Utc) : null,
             Pronouns = registerDto.Pronouns,
             Tagline = registerDto.Tagline,
+            EmailVerified = false, // User starts unverified
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -54,9 +56,29 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
+        // Generate and send email verification
+        var verificationToken = GenerateSecureToken();
+        var expiresAt = DateTime.UtcNow.AddHours(24); // Token expires in 24 hours
+
+        var emailVerification = new EmailVerification
+        {
+            Token = verificationToken,
+            Email = registerDto.Email,
+            UserId = user.Id,
+            ExpiresAt = expiresAt,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.EmailVerifications.Add(emailVerification);
+        await _context.SaveChangesAsync();
+
+        // Send verification email
+        var verificationUrl = $"https://yapplr.com/verify-email?token={verificationToken}";
+        await _emailService.SendEmailVerificationAsync(registerDto.Email, user.Username, verificationToken, verificationUrl);
+
+        // Return auth response but user will need to verify email to fully access the app
         var token = GenerateJwtToken(user);
-        var userDto = new UserDto(user.Id, user.Email, user.Username, user.Bio,
-                                 user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.FcmToken);
+        var userDto = user.ToDto();
 
         return new AuthResponseDto(token, userDto);
     }
@@ -64,15 +86,20 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto?> LoginAsync(LoginUserDto loginDto)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
-        
+
         if (user == null || !VerifyPassword(loginDto.Password, user.PasswordHash))
         {
             return null; // Invalid credentials
         }
 
+        // Check if email is verified
+        if (!user.EmailVerified)
+        {
+            return null; // Email not verified - user cannot log in
+        }
+
         var token = GenerateJwtToken(user);
-        var userDto = new UserDto(user.Id, user.Email, user.Username, user.Bio,
-                                 user.Birthday, user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt, user.FcmToken);
+        var userDto = user.ToDto();
 
         return new AuthResponseDto(token, userDto);
     }
@@ -181,6 +208,78 @@ public class AuthService : IAuthService
 
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<bool> SendEmailVerificationAsync(string email, string verificationBaseUrl)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (user == null || user.EmailVerified)
+        {
+            // Don't reveal if email exists or is already verified
+            return true;
+        }
+
+        // Invalidate any existing verification tokens for this user
+        var existingTokens = await _context.EmailVerifications
+            .Where(ev => ev.UserId == user.Id && !ev.IsUsed && ev.ExpiresAt > DateTime.UtcNow)
+            .ToListAsync();
+
+        foreach (var token in existingTokens)
+        {
+            token.IsUsed = true;
+            token.UsedAt = DateTime.UtcNow;
+        }
+
+        // Generate new verification token
+        var verificationToken = GenerateSecureToken();
+        var expiresAt = DateTime.UtcNow.AddHours(24); // Token expires in 24 hours
+
+        var emailVerification = new EmailVerification
+        {
+            Token = verificationToken,
+            Email = email,
+            UserId = user.Id,
+            ExpiresAt = expiresAt,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.EmailVerifications.Add(emailVerification);
+        await _context.SaveChangesAsync();
+
+        // Send verification email
+        var verificationUrl = $"{verificationBaseUrl}?token={verificationToken}";
+        await _emailService.SendEmailVerificationAsync(email, user.Username, verificationToken, verificationUrl);
+
+        return true;
+    }
+
+    public async Task<bool> VerifyEmailAsync(string token)
+    {
+        var emailVerification = await _context.EmailVerifications
+            .Include(ev => ev.User)
+            .FirstOrDefaultAsync(ev => ev.Token == token && !ev.IsUsed && ev.ExpiresAt > DateTime.UtcNow);
+
+        if (emailVerification == null)
+        {
+            return false; // Invalid or expired token
+        }
+
+        // Mark user as verified
+        emailVerification.User.EmailVerified = true;
+        emailVerification.User.UpdatedAt = DateTime.UtcNow;
+
+        // Mark token as used
+        emailVerification.IsUsed = true;
+        emailVerification.UsedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ResendEmailVerificationAsync(string email, string verificationBaseUrl)
+    {
+        // This is the same as SendEmailVerificationAsync - it will invalidate old tokens and send a new one
+        return await SendEmailVerificationAsync(email, verificationBaseUrl);
     }
 
     private string GenerateSecureToken()

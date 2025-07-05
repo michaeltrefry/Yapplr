@@ -34,7 +34,8 @@ public record UserDto(
     string Tagline,
     string ProfileImageFileName,
     DateTime CreatedAt,
-    string? FcmToken
+    string? FcmToken,
+    bool EmailVerified
 );
 
 public record UserProfileDto(
@@ -60,6 +61,14 @@ public record AuthResponseDto(
 );
 
 public record ForgotPasswordDto(
+    [Required][EmailAddress] string Email
+);
+
+public record VerifyEmailDto(
+    [Required] string Token
+);
+
+public record ResendVerificationDto(
     [Required][EmailAddress] string Email
 );
 
