@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
+using Yapplr.Api.Extensions;
 
 namespace Yapplr.Api.Services;
 
@@ -403,18 +404,7 @@ public class MessageService : IMessageService
 
     private UserDto MapToUserDto(User user)
     {
-        return new UserDto(
-            user.Id,
-            user.Email,
-            user.Username,
-            user.Bio,
-            user.Birthday,
-            user.Pronouns,
-            user.Tagline,
-            user.ProfileImageFileName,
-            user.CreatedAt,
-            user.FcmToken
-        );
+        return user.ToDto();
     }
 
     public async Task<int> GetTotalUnreadMessageCountAsync(int userId)

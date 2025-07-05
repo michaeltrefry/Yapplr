@@ -235,18 +235,7 @@ public class PostService : IPostService
             "repost",
             r.CreatedAt,
             MapToPostDto(r.Post, currentUserId),
-            new UserDto(
-                r.User.Id,
-                r.User.Email,
-                r.User.Username,
-                r.User.Bio,
-                r.User.Birthday,
-                r.User.Pronouns,
-                r.User.Tagline,
-                r.User.ProfileImageFileName,
-                r.User.CreatedAt,
-                r.User.FcmToken
-            )
+            r.User.ToDto()
         )));
 
         // Sort by creation date and take the requested page
