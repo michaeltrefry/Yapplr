@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Yapplr API Deployment Script for Linode
-# This script builds and deploys the Yapplr API to a Linode server
+# Yapplr API-Only Deployment Script for Linode
+# This script builds and deploys ONLY the Yapplr API to a Linode server
+# Frontend deployment is handled separately by deploy-frontend.yml workflow
 
 set -e  # Exit on any error
 
@@ -39,13 +40,8 @@ for var in "${required_vars[@]}"; do
     fi
 done
 
-# Validate Firebase frontend variables
-firebase_frontend_vars=("FIREBASE_API_KEY" "FIREBASE_AUTH_DOMAIN" "FIREBASE_STORAGE_BUCKET" "FIREBASE_MESSAGING_SENDER_ID" "FIREBASE_APP_ID" "FIREBASE_VAPID_KEY")
-for var in "${firebase_frontend_vars[@]}"; do
-    if [ -z "${!var}" ]; then
-        echo -e "${YELLOW}⚠️ Warning: $var is not set - Firebase notifications may not work in frontend${NC}"
-    fi
-done
+# Note: Firebase frontend variables are not needed for API-only deployment
+# Frontend deployment is handled separately with its own configuration
 
 echo -e "${GREEN}✅ Environment variables validated${NC}"
 
@@ -60,17 +56,17 @@ else
     exit 1
 fi
 
-# Stop existing containers
-echo -e "${GREEN}🛑 Stopping existing containers...${NC}"
-docker-compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
+# Stop existing API containers
+echo -e "${GREEN}🛑 Stopping existing API containers...${NC}"
+docker-compose -f docker-compose.api.yml down --volumes --remove-orphans || true
 
 # Additional cleanup to ensure ports are free
 echo -e "${GREEN}🧹 Cleaning up any remaining containers...${NC}"
 docker container prune -f || true
 
-# Start new containers
-echo -e "${GREEN}🚀 Starting new containers...${NC}"
-docker-compose -f docker-compose.prod.yml up -d
+# Start new API containers
+echo -e "${GREEN}🚀 Starting new API containers...${NC}"
+docker-compose -f docker-compose.api.yml up -d
 
 # Wait for services to be ready
 echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"
@@ -83,7 +79,7 @@ if curl -f http://localhost/health > /dev/null 2>&1; then
 else
     echo -e "${RED}❌ API health check failed${NC}"
     echo -e "${YELLOW}Checking logs...${NC}"
-    docker-compose -f docker-compose.prod.yml logs yapplr-api
+    docker-compose -f docker-compose.api.yml logs yapplr-api
     exit 1
 fi
 

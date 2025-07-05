@@ -78,7 +78,7 @@ jobs:
           echo '$FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
           echo 'FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> .env
 
-          # Run deployment
+          # Run API-only deployment
           chmod +x deploy.sh
           ./deploy.sh
       env:
