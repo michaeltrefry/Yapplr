@@ -72,18 +72,21 @@ docker-compose -f docker-compose.prod.yml build yapplr-api
 echo -e "${GREEN}🚀 Starting API service...${NC}"
 docker-compose -f docker-compose.prod.yml up -d yapplr-api
 
-# Ensure nginx is running (it may already be running from frontend deployment)
-echo -e "${GREEN}🌐 Ensuring nginx is running...${NC}"
-docker-compose -f docker-compose.prod.yml up -d nginx
+# Note: nginx is not started here to avoid frontend dependencies
+# nginx will be started by frontend deployment or can be started manually
+echo -e "${YELLOW}ℹ️ nginx not started (to avoid frontend build). Start with frontend deployment or manually.${NC}"
 
 # Wait for services to be ready
 echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"
 sleep 30
 
-# Check if API is responding
-echo -e "${GREEN}🔍 Checking API health...${NC}"
-if curl -f http://localhost/health > /dev/null 2>&1; then
+# Check if API is responding directly (not through nginx)
+echo -e "${GREEN}🔍 Checking API health directly...${NC}"
+API_CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker-compose -f docker-compose.prod.yml ps -q yapplr-api))
+if curl -f http://$API_CONTAINER_IP:8080/health > /dev/null 2>&1; then
     echo -e "${GREEN}✅ API is healthy and responding${NC}"
+    echo -e "${YELLOW}ℹ️ API accessible at container IP: $API_CONTAINER_IP:8080${NC}"
+    echo -e "${YELLOW}ℹ️ Deploy frontend to make API accessible via nginx${NC}"
 else
     echo -e "${RED}❌ API health check failed${NC}"
     echo -e "${YELLOW}Checking logs...${NC}"
@@ -102,8 +105,9 @@ docker run --rm \
   mcr.microsoft.com/dotnet/sdk:9.0 \
   sh -c "dotnet tool install --global dotnet-ef && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update" || true
 
-echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
-echo -e "${GREEN}Your API is now running at: https://$API_DOMAIN_NAME${NC}"
+echo -e "${GREEN}🎉 API deployment completed successfully!${NC}"
+echo -e "${GREEN}API container is running and healthy${NC}"
+echo -e "${YELLOW}⚠️ Deploy frontend to make API accessible via nginx at: https://$API_DOMAIN_NAME${NC}"
 
 # Clean up old images
 echo -e "${GREEN}🧹 Cleaning up old Docker images...${NC}"
