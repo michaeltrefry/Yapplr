@@ -45,16 +45,7 @@ done
 
 echo -e "${GREEN}✅ Environment variables validated${NC}"
 
-# Build Docker image
-echo -e "${GREEN}🔨 Building Docker image...${NC}"
-docker build -t $IMAGE_NAME:$TAG .
-
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Docker image built successfully${NC}"
-else
-    echo -e "${RED}❌ Docker build failed${NC}"
-    exit 1
-fi
+# Note: Docker images will be built by docker-compose with --build flag
 
 # Stop existing containers
 echo -e "${GREEN}🛑 Stopping existing containers...${NC}"
@@ -68,6 +59,9 @@ docker container prune -f || true
 echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"
 docker image rm yapplr-api:latest || true
 docker image rm yapplr-frontend:latest || true
+# Also remove docker-compose generated image names
+docker image rm yapplr-api_yapplr-api:latest || true
+docker image rm yapplr-api_yapplr-frontend:latest || true
 docker image prune -f || true
 
 # Set cache bust variable to force frontend rebuild
