@@ -90,7 +90,7 @@ class FirebaseMessagingService {
           );
 
           try {
-            const readyRegistration = await Promise.race([readyPromise, timeoutPromise]);
+            const readyRegistration = await Promise.race([readyPromise, timeoutPromise]) as ServiceWorkerRegistration;
             console.log('🔥 Service Worker is ready!', {
               installing: readyRegistration.installing?.state,
               waiting: readyRegistration.waiting?.state,
@@ -98,7 +98,7 @@ class FirebaseMessagingService {
               scope: readyRegistration.scope
             });
           } catch (readyError) {
-            console.warn('🔥 Service Worker ready timeout, but continuing:', readyError.message);
+            console.warn('🔥 Service Worker ready timeout, but continuing:', readyError instanceof Error ? readyError.message : readyError);
             console.warn('🔥 This was the "Service worker ready timeout" error you were seeing');
 
             // Check current service worker state after timeout

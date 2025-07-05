@@ -248,9 +248,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (isFirebaseReady) {
-        firebaseMessagingService.disconnect?.();
-      }
+      // Firebase cleanup is handled automatically
       if (isSignalRReady) {
         signalRMessagingService.disconnect();
       }

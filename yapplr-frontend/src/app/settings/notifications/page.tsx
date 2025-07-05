@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import api from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import { ArrowLeft, Bell, Clock, Shield, BarChart3 } from 'lucide-react';
 import Link from 'next/link';

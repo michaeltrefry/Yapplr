@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { notificationApi, followRequestsApi, api } from '@/lib/api';
+import api, { notificationApi, followRequestsApi } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
