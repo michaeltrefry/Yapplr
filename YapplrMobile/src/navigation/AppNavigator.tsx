@@ -13,6 +13,8 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
+import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
+import ResendVerificationScreen from '../screens/auth/ResendVerificationScreen';
 import HomeScreen from '../screens/main/HomeScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import UserProfileScreen from '../screens/main/UserProfileScreen';
@@ -53,6 +55,8 @@ export type AuthStackParamList = {
   Register: undefined;
   ForgotPassword: undefined;
   ResetPassword: { token?: string };
+  VerifyEmail: { email?: string };
+  ResendVerification: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -68,6 +72,8 @@ function AuthStackNavigator() {
       <AuthStack.Screen name="Register" component={RegisterScreen} />
       <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+      <AuthStack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+      <AuthStack.Screen name="ResendVerification" component={ResendVerificationScreen} />
     </AuthStack.Navigator>
   );
 }

@@ -32,7 +32,33 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     try {
       await login({ email, password });
     } catch (error: any) {
-      Alert.alert('Login Failed', error.response?.data?.message || 'An error occurred');
+      const errorMessage = error.response?.data?.message || 'An error occurred';
+
+      // Check if the error is related to email verification
+      if (errorMessage.toLowerCase().includes('unauthorized') ||
+          errorMessage.toLowerCase().includes('verify') ||
+          errorMessage.toLowerCase().includes('verification')) {
+        Alert.alert(
+          'Email Verification Required',
+          'Please verify your email address before logging in.',
+          [
+            {
+              text: 'Verify Email',
+              onPress: () => navigation.navigate('VerifyEmail', { email }),
+            },
+            {
+              text: 'Resend Email',
+              onPress: () => navigation.navigate('ResendVerification'),
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Login Failed', errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }

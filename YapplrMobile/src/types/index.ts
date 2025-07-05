@@ -11,6 +11,7 @@ export interface User {
   profileImageFileName: string;
   createdAt: string;
   lastSeenAt?: string;
+  emailVerified: boolean;
 }
 
 export interface UserProfile {
@@ -167,6 +168,8 @@ export interface YapplrApi {
     getCurrentUser: () => Promise<User>;
     forgotPassword: (email: string) => Promise<{ message: string }>;
     resetPassword: (token: string, newPassword: string) => Promise<{ message: string }>;
+    verifyEmail: (token: string) => Promise<{ message: string }>;
+    resendVerification: (email: string) => Promise<{ message: string }>;
   };
   posts: {
     getTimeline: (page: number, limit: number) => Promise<TimelineItem[]>;
