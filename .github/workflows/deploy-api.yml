@@ -1,13 +1,16 @@
-name: Deploy Yapplr to Linode
+name: Deploy Yapplr API to Linode
+
+# This workflow deploys only the backend API.
+# Frontend deployment is handled separately by deploy-frontend.yml
 
 on:
   push:
     branches: [ main ]
-    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**' ]
+    paths: [ 'Yapplr.Api/**' ]
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-api:
     runs-on: ubuntu-latest
     
     steps:
@@ -48,7 +51,10 @@ jobs:
           git pull origin main
           cd Yapplr.Api
 
-          # Create .env file with secrets (using printf to handle special characters)
+          # This deployment only handles the backend API
+          # Frontend deployment is handled separately by deploy-frontend.yml
+
+          # Create .env file with API secrets (using printf to handle special characters)
           cat > .env << 'EOF'
           DATABASE_CONNECTION_STRING=$DATABASE_CONNECTION_STRING
           JWT_SECRET_KEY=$JWT_SECRET_KEY
@@ -94,7 +100,7 @@ jobs:
         CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
         CERTBOT_DOMAIN: ${{ secrets.CERTBOT_DOMAIN }}
           
-    - name: Health Check
+    - name: API Health Check
       run: |
         sleep 30
         curl -f https://${{ secrets.API_DOMAIN_NAME }}/health || exit 1
