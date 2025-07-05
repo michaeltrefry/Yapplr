@@ -51,9 +51,25 @@ echo -e "${GREEN}✅ Environment variables validated${NC}"
 echo -e "${GREEN}🛑 Stopping existing containers...${NC}"
 docker-compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
 
+# Force remove specific containers that might be stuck
+echo -e "${GREEN}🧹 Force removing any stuck containers...${NC}"
+docker rm -f yapplrapi_certbot_1 || true
+docker rm -f yapplrapi_yapplr-api_1 || true
+docker rm -f yapplrapi_nginx_1 || true
+docker rm -f yapplrapi_yapplr-frontend_1 || true
+
+# Stop and remove all containers with yapplr in the name
+docker ps -a --filter "name=yapplr" --format "{{.Names}}" | xargs -r docker stop || true
+docker ps -a --filter "name=yapplr" --format "{{.Names}}" | xargs -r docker rm -f || true
+
 # Additional cleanup to ensure ports are free
 echo -e "${GREEN}🧹 Cleaning up any remaining containers...${NC}"
 docker container prune -f || true
+
+# Clean up networks that might be left behind
+echo -e "${GREEN}🌐 Cleaning up networks...${NC}"
+docker network rm yapplrapi_yapplr-network || true
+docker network rm yapplr-network || true
 
 # Remove old images to force complete rebuild
 echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"
