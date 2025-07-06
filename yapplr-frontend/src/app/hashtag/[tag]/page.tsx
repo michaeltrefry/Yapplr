@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { tagApi, postApi } from '@/lib/api';
+import { tagApi } from '@/lib/api';
 import { Hash, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
@@ -13,8 +13,8 @@ import { formatNumber } from '@/lib/utils';
 
 export default function HashtagPage() {
   const params = useParams();
-  const tag = params.tag as string;
-  const decodedTag = decodeURIComponent(tag);
+  const tag = params?.tag as string;
+  const decodedTag = tag ? decodeURIComponent(tag) : '';
 
   const { ref, inView } = useInView();
 
@@ -23,6 +23,7 @@ export default function HashtagPage() {
     queryKey: ['tag', decodedTag],
     queryFn: () => tagApi.getTag(decodedTag),
     retry: false,
+    enabled: !!decodedTag,
   });
 
   // Get posts for this tag with infinite scroll
@@ -40,6 +41,7 @@ export default function HashtagPage() {
       return lastPage.length === 25 ? pages.length + 1 : undefined;
     },
     initialPageParam: 1,
+    enabled: !!decodedTag,
   });
 
   // Fetch next page when scrolling to bottom
@@ -48,6 +50,10 @@ export default function HashtagPage() {
       fetchNextPage();
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  if (!decodedTag) {
+    return <div>Invalid hashtag</div>;
+  }
 
   const posts = data?.pages.flat() || [];
 
@@ -81,7 +87,7 @@ export default function HashtagPage() {
                 <Hash className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">Hashtag not found</h2>
                 <p className="text-gray-600">
-                  The hashtag #{decodedTag} doesn't exist or has no posts yet.
+                  The hashtag #{decodedTag} doesn&apos;t exist or has no posts yet.
                 </p>
                 <Link
                   href="/search"

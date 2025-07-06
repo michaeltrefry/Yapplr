@@ -26,6 +26,7 @@ import type {
   CanMessageResponse,
   UnreadCountResponse,
   NotificationList,
+  Tag,
   SystemTag,
   CreateSystemTagDto,
   UpdateSystemTagDto,
@@ -49,6 +50,13 @@ import type {
   AuditAction,
   AppealStatus,
   AppealType,
+  UserGrowthStats,
+  ContentStats,
+  ModerationTrends,
+  SystemHealth,
+  TopModerators,
+  ContentTrends,
+  UserEngagementStats,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';

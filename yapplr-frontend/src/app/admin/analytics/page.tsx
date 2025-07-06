@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { adminApi } from '@/lib/api';
 import {
   UserGrowthStats,
@@ -12,31 +12,12 @@ import {
   UserEngagementStats,
 } from '@/types';
 import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import {
-  TrendingUp,
   Users,
   FileText,
   Shield,
-  Activity,
   Server,
   Hash,
   Heart,
-  Calendar,
-  Filter,
 } from 'lucide-react';
 
 export default function AnalyticsPage() {
@@ -46,15 +27,14 @@ export default function AnalyticsPage() {
   const [contentStats, setContentStats] = useState<ContentStats | null>(null);
   const [moderationTrends, setModerationTrends] = useState<ModerationTrends | null>(null);
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
-  const [topModerators, setTopModerators] = useState<TopModerators | null>(null);
-  const [contentTrends, setContentTrends] = useState<ContentTrends | null>(null);
+
   const [userEngagement, setUserEngagement] = useState<UserEngagementStats | null>(null);
 
   useEffect(() => {
     fetchAnalytics();
-  }, [timeRange]);
+  }, [fetchAnalytics]);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       const [
@@ -79,17 +59,13 @@ export default function AnalyticsPage() {
       setContentStats(contentStatsData);
       setModerationTrends(moderationTrendsData);
       setSystemHealth(systemHealthData);
-      setTopModerators(topModeratorsData);
-      setContentTrends(contentTrendsData);
       setUserEngagement(userEngagementData);
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+  }, [timeRange]);
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -223,35 +199,59 @@ export default function AnalyticsPage() {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* User Growth Chart */}
+        {/* User Growth Data */}
         {userGrowth && (
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">User Growth Trend</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={userGrowth.dailyStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{userGrowth.totalNewUsers}</div>
+                <div className="text-sm text-gray-600">New Users</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{userGrowth.totalActiveUsers}</div>
+                <div className="text-sm text-gray-600">Active Users</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{userGrowth.growthRate}%</div>
+                <div className="text-sm text-gray-600">Growth Rate</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{userGrowth.peakDayNewUsers}</div>
+                <div className="text-sm text-gray-600">Peak Day</div>
+              </div>
+            </div>
+            <div className="text-sm text-gray-500">
+              Recent daily registrations: {userGrowth.dailyStats.slice(-7).map(d => d.count).join(', ')}
+            </div>
           </div>
         )}
 
-        {/* Content Creation Chart */}
+        {/* Content Creation Stats */}
         {contentStats && (
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Content Creation</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={contentStats.dailyPosts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#10B981" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{contentStats.totalPosts}</div>
+                <div className="text-sm text-gray-600">Total Posts</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{contentStats.totalComments}</div>
+                <div className="text-sm text-gray-600">Total Comments</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{contentStats.averagePostsPerDay}</div>
+                <div className="text-sm text-gray-600">Posts/Day</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{contentStats.averageCommentsPerDay}</div>
+                <div className="text-sm text-gray-600">Comments/Day</div>
+              </div>
+            </div>
+            <div className="text-sm text-gray-500">
+              Recent daily posts: {contentStats.dailyPosts.slice(-7).map(d => d.count).join(', ')}
+            </div>
           </div>
         )}
 
@@ -259,25 +259,28 @@ export default function AnalyticsPage() {
         {moderationTrends && (
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Moderation Actions</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={moderationTrends.actionBreakdown}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ actionType, percentage }) => `${actionType}: ${percentage}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {moderationTrends.actionBreakdown.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">{moderationTrends.totalActions}</div>
+                <div className="text-sm text-gray-600">Total Actions</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">{moderationTrends.peakDayActions}</div>
+                <div className="text-sm text-gray-600">Peak Day Actions</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{moderationTrends.actionsGrowthRate}%</div>
+                <div className="text-sm text-gray-600">Growth Rate</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {moderationTrends.actionBreakdown.map((action, index) => (
+                <div key={index} className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">{action.actionType}</span>
+                  <span className="text-sm font-medium">{action.count} ({action.percentage}%)</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -285,15 +288,32 @@ export default function AnalyticsPage() {
         {userEngagement && (
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Engagement Breakdown</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={userEngagement.engagementBreakdown}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="type" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#8B5CF6" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{userEngagement.totalSessions}</div>
+                <div className="text-sm text-gray-600">Total Sessions</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{userEngagement.averageSessionDuration}</div>
+                <div className="text-sm text-gray-600">Avg Duration (min)</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{userEngagement.retentionRate}%</div>
+                <div className="text-sm text-gray-600">Retention Rate</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{userEngagement.engagementBreakdown.length}</div>
+                <div className="text-sm text-gray-600">Engagement Types</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {userEngagement.engagementBreakdown.map((engagement, index) => (
+                <div key={index} className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">{engagement.type}</span>
+                  <span className="text-sm font-medium">{engagement.count}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

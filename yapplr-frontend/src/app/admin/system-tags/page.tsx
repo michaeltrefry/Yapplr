@@ -314,9 +314,9 @@ export default function SystemTagsPage() {
                               </div>
                               <div className="flex items-center space-x-1">
                                 {tag.isVisibleToUsers ? (
-                                  <Eye className="h-4 w-4 text-green-500" title="Visible to users" />
+                                  <Eye className="h-4 w-4 text-green-500" />
                                 ) : (
-                                  <EyeOff className="h-4 w-4 text-gray-400" title="Hidden from users" />
+                                  <EyeOff className="h-4 w-4 text-gray-400" />
                                 )}
                                 {!tag.isActive && (
                                   <span className="text-xs bg-red-100 text-red-800 px-1 rounded">Inactive</span>

@@ -28,11 +28,13 @@ export default function UsersPage() {
 
   useEffect(() => {
     // Get initial filters from URL params
-    const status = searchParams.get('status');
-    const role = searchParams.get('role');
-    
-    if (status) setStatusFilter(parseInt(status) as UserStatus);
-    if (role) setRoleFilter(parseInt(role) as UserRole);
+    if (searchParams) {
+      const status = searchParams.get('status');
+      const role = searchParams.get('role');
+
+      if (status) setStatusFilter(parseInt(status) as UserStatus);
+      if (role) setRoleFilter(parseInt(role) as UserRole);
+    }
   }, [searchParams]);
 
   useEffect(() => {

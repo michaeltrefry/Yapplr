@@ -124,9 +124,9 @@ export default function AdminPostsPage() {
   };
 
   const filteredPosts = posts.filter(post =>
-    searchTerm === '' || 
+    searchTerm === '' ||
     post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.username.toLowerCase().includes(searchTerm.toLowerCase())
+    post.user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {
@@ -286,7 +286,7 @@ export default function AdminPostsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <User className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900">@{post.username}</span>
+                      <span className="text-sm text-gray-900">@{post.user.username}</span>
                     </div>
                     <div className="text-xs text-gray-500">
                       {format(new Date(post.createdAt), 'MMM d, yyyy HH:mm')}

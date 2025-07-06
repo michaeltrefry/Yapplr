@@ -2,17 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { adminApi } from '@/lib/api';
-import { AdminComment, SystemTag, HideContentDto } from '@/types';
+import { AdminComment } from '@/types';
 import {
   Eye,
   EyeOff,
   Trash2,
   Tag,
-  Calendar,
   User,
-  MessageSquare,
   Search,
-  Filter,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -90,9 +87,9 @@ export default function AdminCommentsPage() {
   };
 
   const filteredComments = comments.filter(comment =>
-    searchTerm === '' || 
+    searchTerm === '' ||
     comment.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    comment.username.toLowerCase().includes(searchTerm.toLowerCase())
+    comment.user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {
@@ -237,7 +234,7 @@ export default function AdminCommentsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <User className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900">@{comment.username}</span>
+                      <span className="text-sm text-gray-900">@{comment.user.username}</span>
                     </div>
                     <div className="text-xs text-gray-500">
                       {format(new Date(comment.createdAt), 'MMM d, yyyy HH:mm')}
@@ -248,7 +245,7 @@ export default function AdminCommentsPage() {
                       Post #{comment.postId}
                     </div>
                     <div className="text-xs text-gray-500">
-                      by @{comment.postUsername}
+                      Post details
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

@@ -168,7 +168,7 @@ export default function AppealsStatusPage() {
             <Scale className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">No Appeals Submitted</h2>
             <p className="text-gray-600 mb-6">
-              You haven't submitted any appeals yet. If you believe a moderation action was taken in error,
+              You haven&apos;t submitted any appeals yet. If you believe a moderation action was taken in error,
               you can submit an appeal for review.
             </p>
             <Link
