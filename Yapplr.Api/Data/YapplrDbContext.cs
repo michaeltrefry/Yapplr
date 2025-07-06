@@ -42,6 +42,7 @@ public class YapplrDbContext : DbContext
     public DbSet<CommentSystemTag> CommentSystemTags { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<UserAppeal> UserAppeals { get; set; }
+    public DbSet<VideoProcessingJob> VideoProcessingJobs { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -507,6 +508,34 @@ public class YapplrDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.TargetCommentId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // VideoProcessingJob configuration
+        modelBuilder.Entity<VideoProcessingJob>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Status)
+                  .HasConversion<int>()
+                  .HasDefaultValue(VideoProcessingStatus.Pending);
+            entity.HasIndex(e => e.Status); // For querying by status
+            entity.HasIndex(e => e.UserId); // For user-specific queries
+            entity.HasIndex(e => e.CreatedAt); // For chronological queries
+            entity.HasIndex(e => new { e.PostId, e.Status }); // For post-specific video status
+            entity.HasIndex(e => new { e.MessageId, e.Status }); // For message-specific video status
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Post)
+                  .WithMany()
+                  .HasForeignKey(e => e.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Message)
+                  .WithMany()
+                  .HasForeignKey(e => e.MessageId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

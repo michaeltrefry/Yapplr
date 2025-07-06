@@ -30,6 +30,7 @@ public class PostService : IPostService
         {
             Content = createDto.Content,
             ImageFileName = createDto.ImageFileName,
+            VideoFileName = createDto.VideoFileName,
             Privacy = createDto.Privacy,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
@@ -620,8 +621,22 @@ public class PostService : IPostService
             plp.LinkPreview.CreatedAt
         )).ToList();
 
-        return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
-                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, linkPreviews, isLiked, isReposted, isEdited);
+        // Video URLs
+        string? videoUrl = null;
+        string? videoThumbnailUrl = null;
+        if (!string.IsNullOrEmpty(post.VideoFileName))
+        {
+            videoUrl = $"/api/videos/{post.VideoFileName}";
+        }
+        if (!string.IsNullOrEmpty(post.VideoThumbnailFileName))
+        {
+            videoThumbnailUrl = $"/api/videos/thumbnails/{post.VideoThumbnailFileName}";
+        }
+
+        return new PostDto(post.Id, post.Content, imageUrl, videoUrl, videoThumbnailUrl,
+                          post.VideoDurationSeconds, post.VideoProcessingStatus, post.Privacy,
+                          post.CreatedAt, post.UpdatedAt, userDto, post.Likes.Count, post.Comments.Count,
+                          post.Reposts.Count, tags, linkPreviews, isLiked, isReposted, isEdited);
     }
 
     private CommentDto MapToCommentDto(Comment comment)

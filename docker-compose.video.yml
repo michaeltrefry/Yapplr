@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  yapplr-api:
+    build:
+      context: .
+      dockerfile: Yapplr.Api/Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=yapplr;Username=postgres;Password=password
+    depends_on:
+      - postgres
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - yapplr-network
+
+  yapplr-video-processor:
+    build:
+      context: .
+      dockerfile: Yapplr.VideoProcessor/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=yapplr;Username=postgres;Password=password
+      - VideoProcessing__InputPath=/app/uploads/videos
+      - VideoProcessing__OutputPath=/app/uploads/videos
+      - VideoProcessing__ThumbnailPath=/app/uploads/thumbnails
+      - VideoProcessing__TempPath=/app/uploads/temp
+      - VideoProcessing__MaxConcurrentJobs=2
+      - VideoProcessing__PollIntervalSeconds=5
+    depends_on:
+      - postgres
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - yapplr-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=yapplr
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - yapplr-network
+
+volumes:
+  postgres_data:
+
+networks:
+  yapplr-network:
+    driver: bridge

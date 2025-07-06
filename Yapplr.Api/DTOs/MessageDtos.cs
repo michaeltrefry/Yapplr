@@ -6,19 +6,25 @@ namespace Yapplr.Api.DTOs;
 public record CreateMessageDto(
     [Required] int RecipientId,
     [StringLength(1000)] string Content = "",
-    string? ImageFileName = null
+    string? ImageFileName = null,
+    string? VideoFileName = null
 );
 
 public record SendMessageDto(
     [Required] int ConversationId,
     [StringLength(1000)] string Content = "",
-    string? ImageFileName = null
+    string? ImageFileName = null,
+    string? VideoFileName = null
 );
 
 public record MessageDto(
     int Id,
     string Content,
     string? ImageUrl,
+    string? VideoUrl,
+    string? VideoThumbnailUrl,
+    int? VideoDurationSeconds,
+    VideoProcessingStatus VideoProcessingStatus,
     DateTime CreatedAt,
     DateTime UpdatedAt,
     bool IsEdited,

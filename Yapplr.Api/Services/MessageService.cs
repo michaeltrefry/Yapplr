@@ -39,8 +39,10 @@ public class MessageService : IMessageService
         if (!await CanUserMessageAsync(senderId, createDto.RecipientId))
             return null;
 
-        // Validate that content or image is provided
-        if (string.IsNullOrWhiteSpace(createDto.Content) && string.IsNullOrWhiteSpace(createDto.ImageFileName))
+        // Validate that content, image, or video is provided
+        if (string.IsNullOrWhiteSpace(createDto.Content) &&
+            string.IsNullOrWhiteSpace(createDto.ImageFileName) &&
+            string.IsNullOrWhiteSpace(createDto.VideoFileName))
             return null;
 
         // Get or create conversation
@@ -55,6 +57,7 @@ public class MessageService : IMessageService
             SenderId = senderId,
             Content = createDto.Content?.Trim() ?? string.Empty,
             ImageFileName = createDto.ImageFileName,
+            VideoFileName = createDto.VideoFileName,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -127,8 +130,10 @@ public class MessageService : IMessageService
                 return null;
         }
 
-        // Validate that content or image is provided
-        if (string.IsNullOrWhiteSpace(sendDto.Content) && string.IsNullOrWhiteSpace(sendDto.ImageFileName))
+        // Validate that content, image, or video is provided
+        if (string.IsNullOrWhiteSpace(sendDto.Content) &&
+            string.IsNullOrWhiteSpace(sendDto.ImageFileName) &&
+            string.IsNullOrWhiteSpace(sendDto.VideoFileName))
             return null;
 
         // Create the message
@@ -138,6 +143,7 @@ public class MessageService : IMessageService
             SenderId = senderId,
             Content = sendDto.Content?.Trim() ?? string.Empty,
             ImageFileName = sendDto.ImageFileName,
+            VideoFileName = sendDto.VideoFileName,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -369,10 +375,26 @@ public class MessageService : IMessageService
             .Select(ms => ms.Status)
             .FirstOrDefaultAsync();
 
+        // Video URLs
+        string? videoUrl = null;
+        string? videoThumbnailUrl = null;
+        if (!string.IsNullOrEmpty(message.VideoFileName))
+        {
+            videoUrl = $"/api/videos/{message.VideoFileName}";
+        }
+        if (!string.IsNullOrEmpty(message.VideoThumbnailFileName))
+        {
+            videoThumbnailUrl = $"/api/videos/thumbnails/{message.VideoThumbnailFileName}";
+        }
+
         return new MessageDto(
             message.Id,
             message.Content,
             imageUrl,
+            videoUrl,
+            videoThumbnailUrl,
+            message.VideoDurationSeconds,
+            message.VideoProcessingStatus,
             message.CreatedAt,
             message.UpdatedAt,
             message.IsEdited,

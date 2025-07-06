@@ -10,7 +10,15 @@ public class Message
     public string Content { get; set; } = string.Empty;
     
     public string? ImageFileName { get; set; }
-    
+
+    // Video support
+    public string? VideoFileName { get; set; }
+    public string? VideoThumbnailFileName { get; set; }
+    public int? VideoDurationSeconds { get; set; }
+    public long? VideoSizeBytes { get; set; }
+    public string? VideoFormat { get; set; }
+    public VideoProcessingStatus VideoProcessingStatus { get; set; } = VideoProcessingStatus.None;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -27,4 +35,8 @@ public class Message
     public Conversation Conversation { get; set; } = null!;
     public User Sender { get; set; } = null!;
     public ICollection<MessageStatus> MessageStatuses { get; set; } = new List<MessageStatus>();
+
+    // Computed properties
+    public bool HasVideo => !string.IsNullOrEmpty(VideoFileName);
+    public bool IsVideoReady => HasVideo && VideoProcessingStatus == VideoProcessingStatus.Completed;
 }

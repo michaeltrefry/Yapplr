@@ -443,10 +443,26 @@ public class NotificationService : INotificationService
                 imageUrl = notification.Post.ImageFileName;
             }
 
+            // Video URLs for notifications
+            string? videoUrl = null;
+            string? videoThumbnailUrl = null;
+            if (!string.IsNullOrEmpty(notification.Post.VideoFileName))
+            {
+                videoUrl = notification.Post.VideoFileName; // Frontend will construct full URL
+            }
+            if (!string.IsNullOrEmpty(notification.Post.VideoThumbnailFileName))
+            {
+                videoThumbnailUrl = notification.Post.VideoThumbnailFileName; // Frontend will construct full URL
+            }
+
             dto.Post = new PostDto(
                 notification.Post.Id,
                 notification.Post.Content,
                 imageUrl,
+                videoUrl,
+                videoThumbnailUrl,
+                notification.Post.VideoDurationSeconds,
+                notification.Post.VideoProcessingStatus,
                 notification.Post.Privacy,
                 notification.Post.CreatedAt,
                 notification.Post.UpdatedAt,
@@ -483,10 +499,26 @@ public class NotificationService : INotificationService
                     imageUrl = notification.Comment.Post.ImageFileName;
                 }
 
+                // Video URLs for comment post notifications
+                string? videoUrl = null;
+                string? videoThumbnailUrl = null;
+                if (!string.IsNullOrEmpty(notification.Comment.Post.VideoFileName))
+                {
+                    videoUrl = notification.Comment.Post.VideoFileName; // Frontend will construct full URL
+                }
+                if (!string.IsNullOrEmpty(notification.Comment.Post.VideoThumbnailFileName))
+                {
+                    videoThumbnailUrl = notification.Comment.Post.VideoThumbnailFileName; // Frontend will construct full URL
+                }
+
                 dto.Post = new PostDto(
                     notification.Comment.Post.Id,
                     notification.Comment.Post.Content,
                     imageUrl,
+                    videoUrl,
+                    videoThumbnailUrl,
+                    notification.Comment.Post.VideoDurationSeconds,
+                    notification.Comment.Post.VideoProcessingStatus,
                     notification.Comment.Post.Privacy,
                     notification.Comment.Post.CreatedAt,
                     notification.Comment.Post.UpdatedAt,

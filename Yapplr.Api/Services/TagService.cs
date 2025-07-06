@@ -158,8 +158,22 @@ public class TagService : ITagService
         // Map tags to DTOs
         var tags = post.PostTags.Select(pt => pt.Tag.ToDto()).ToList();
 
-        return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
-                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, new List<LinkPreviewDto>(), isLiked, isReposted, isEdited);
+        // Video URLs
+        string? videoUrl = null;
+        string? videoThumbnailUrl = null;
+        if (!string.IsNullOrEmpty(post.VideoFileName))
+        {
+            videoUrl = $"/api/videos/{post.VideoFileName}";
+        }
+        if (!string.IsNullOrEmpty(post.VideoThumbnailFileName))
+        {
+            videoThumbnailUrl = $"/api/videos/thumbnails/{post.VideoThumbnailFileName}";
+        }
+
+        return new PostDto(post.Id, post.Content, imageUrl, videoUrl, videoThumbnailUrl,
+                          post.VideoDurationSeconds, post.VideoProcessingStatus, post.Privacy,
+                          post.CreatedAt, post.UpdatedAt, userDto, post.Likes.Count, post.Comments.Count,
+                          post.Reposts.Count, tags, new List<LinkPreviewDto>(), isLiked, isReposted, isEdited);
     }
 
     private async Task<List<int>> GetBlockedUserIdsAsync(int userId)

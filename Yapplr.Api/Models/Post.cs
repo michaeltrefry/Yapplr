@@ -12,6 +12,14 @@ public class Post
     
     public string? ImageFileName { get; set; }
 
+    // Video support
+    public string? VideoFileName { get; set; }
+    public string? VideoThumbnailFileName { get; set; }
+    public int? VideoDurationSeconds { get; set; }
+    public long? VideoSizeBytes { get; set; }
+    public string? VideoFormat { get; set; }
+    public VideoProcessingStatus VideoProcessingStatus { get; set; } = VideoProcessingStatus.None;
+
     public PostPrivacy Privacy { get; set; } = PostPrivacy.Public;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -42,4 +50,15 @@ public class Post
     public int LikeCount => Likes.Count;
     public int CommentCount => Comments.Count;
     public int RepostCount => Reposts.Count;
+    public bool HasVideo => !string.IsNullOrEmpty(VideoFileName);
+    public bool IsVideoReady => HasVideo && VideoProcessingStatus == VideoProcessingStatus.Completed;
+}
+
+public enum VideoProcessingStatus
+{
+    None = 0,
+    Pending = 1,
+    Processing = 2,
+    Completed = 3,
+    Failed = 4
 }
