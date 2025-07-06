@@ -407,4 +407,27 @@ export const notificationApi = {
   },
 };
 
+// Tag API
+export const tagApi = {
+  searchTags: async (query: string, limit = 20): Promise<Tag[]> => {
+    const response = await api.get(`/tags/search/${encodeURIComponent(query)}?limit=${limit}`);
+    return response.data;
+  },
+
+  getTrendingTags: async (limit = 10): Promise<Tag[]> => {
+    const response = await api.get(`/tags/trending?limit=${limit}`);
+    return response.data;
+  },
+
+  getTag: async (tagName: string): Promise<Tag> => {
+    const response = await api.get(`/tags/${encodeURIComponent(tagName)}`);
+    return response.data;
+  },
+
+  getPostsByTag: async (tagName: string, page = 1, pageSize = 25): Promise<Post[]> => {
+    const response = await api.get(`/tags/${encodeURIComponent(tagName)}/posts?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+};
+
 export default api;

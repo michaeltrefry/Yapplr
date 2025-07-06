@@ -28,6 +28,8 @@ public class YapplrDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Mention> Mentions { get; set; }
     public DbSet<NotificationPreferences> NotificationPreferences { get; set; }
+    public DbSet<Tag> Tags { get; set; }
+    public DbSet<PostTag> PostTags { get; set; }
     public DbSet<NotificationDeliveryConfirmation> NotificationDeliveryConfirmations { get; set; }
     public DbSet<NotificationHistory> NotificationHistory { get; set; }
     public DbSet<NotificationAuditLog> NotificationAuditLogs { get; set; }
@@ -319,6 +321,33 @@ public class YapplrDbContext : DbContext
             entity.HasOne(e => e.Notification)
                   .WithOne()
                   .HasForeignKey<Mention>(e => e.NotificationId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Tag configuration
+        modelBuilder.Entity<Tag>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            entity.HasIndex(e => e.Name).IsUnique(); // Ensure unique tag names
+            entity.HasIndex(e => e.PostCount); // For trending tags queries
+            entity.HasIndex(e => e.CreatedAt); // For chronological queries
+        });
+
+        // PostTag configuration
+        modelBuilder.Entity<PostTag>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.PostId, e.TagId }).IsUnique(); // Prevent duplicate post-tag relationships
+            entity.HasIndex(e => e.TagId); // For efficient tag-based queries
+            entity.HasIndex(e => e.PostId); // For efficient post-based queries
+            entity.HasOne(e => e.Post)
+                  .WithMany(e => e.PostTags)
+                  .HasForeignKey(e => e.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Tag)
+                  .WithMany(e => e.PostTags)
+                  .HasForeignKey(e => e.TagId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

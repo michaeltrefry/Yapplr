@@ -25,6 +25,7 @@ public record PostDto(
     int LikeCount,
     int CommentCount,
     int RepostCount,
+    IEnumerable<TagDto> Tags,
     bool IsLikedByCurrentUser = false,
     bool IsRepostedByCurrentUser = false,
     bool IsEdited = false
@@ -45,6 +46,12 @@ public record CommentDto(
     DateTime UpdatedAt,
     UserDto User,
     bool IsEdited = false
+);
+
+public record TagDto(
+    int Id,
+    string Name,
+    int PostCount
 );
 
 public record TimelineItemDto(

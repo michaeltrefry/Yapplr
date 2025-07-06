@@ -12,7 +12,7 @@ import CommentList from './CommentList';
 import UserAvatar from './UserAvatar';
 import ShareModal from './ShareModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { MentionHighlight } from '@/utils/mentionUtils';
+import { ContentHighlight } from '@/utils/contentUtils';
 
 interface PostCardProps {
   post: Post;
@@ -266,7 +266,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               </form>
             ) : (
               <p className="text-gray-900 whitespace-pre-wrap">
-                <MentionHighlight content={post.content} />
+                <ContentHighlight content={post.content} />
               </p>
             )}
             

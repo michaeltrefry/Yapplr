@@ -3,6 +3,7 @@ using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
+using Yapplr.Api.Utils;
 
 namespace Yapplr.Api.Services;
 
@@ -36,6 +37,9 @@ public class PostService : IPostService
         _context.Posts.Add(post);
         await _context.SaveChangesAsync();
 
+        // Process hashtags in the post content
+        await ProcessPostTagsAsync(post.Id, createDto.Content);
+
         // Create mention notifications for users mentioned in the post
         await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, post.Id);
 
@@ -45,6 +49,8 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
             .AsSplitQuery()
             .FirstAsync(p => p.Id == post.Id);
 
@@ -58,6 +64,8 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == postId);
 
@@ -80,6 +88,8 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
             .Where(p =>
                 !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
@@ -113,6 +123,8 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
             .AsSplitQuery()
             .Where(p =>
                 !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
@@ -192,6 +204,8 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
             .AsSplitQuery()
             .Where(p =>
                 p.Privacy == PostPrivacy.Public && // Only public posts
@@ -272,6 +286,8 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
             .AsSplitQuery()
             .Where(p => p.UserId == userId &&
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
@@ -314,6 +330,8 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
             .AsSplitQuery()
             .Where(p => p.UserId == userId &&
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
@@ -567,8 +585,11 @@ public class PostService : IPostService
 
         var isEdited = post.UpdatedAt > post.CreatedAt.AddMinutes(1); // Consider edited if updated more than 1 minute after creation
 
+        // Map tags to DTOs
+        var tags = post.PostTags.Select(pt => pt.Tag.ToDto()).ToList();
+
         return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
-                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, isLiked, isReposted, isEdited);
+                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, isLiked, isReposted, isEdited);
     }
 
     private CommentDto MapToCommentDto(Comment comment)
@@ -587,6 +608,8 @@ public class PostService : IPostService
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
             .FirstOrDefaultAsync(p => p.Id == postId);
 
         if (post == null || post.UserId != userId)
@@ -597,6 +620,9 @@ public class PostService : IPostService
         post.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        // Update hashtags for the post
+        await UpdatePostTagsAsync(post.Id, updateDto.Content);
 
         // Create mention notifications for new mentions in the updated post
         await _notificationService.CreateMentionNotificationsAsync(updateDto.Content, userId, post.Id);
@@ -640,5 +666,133 @@ public class PostService : IPostService
 
         // Combine both lists to filter out all blocked relationships
         return blockedByUser.Concat(blockedByOthers).Distinct().ToList();
+    }
+
+    private async Task ProcessPostTagsAsync(int postId, string content)
+    {
+        // Extract hashtags from the content
+        var tagNames = TagParser.ExtractTags(content);
+
+        if (!tagNames.Any())
+            return;
+
+        // Get or create tags
+        var existingTags = await _context.Tags
+            .Where(t => tagNames.Contains(t.Name))
+            .ToListAsync();
+
+        var existingTagNames = existingTags.Select(t => t.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var newTagNames = tagNames.Where(name => !existingTagNames.Contains(name)).ToList();
+
+        // Create new tags
+        var newTags = newTagNames.Select(name => new Tag
+        {
+            Name = name,
+            CreatedAt = DateTime.UtcNow,
+            PostCount = 1
+        }).ToList();
+
+        if (newTags.Any())
+        {
+            _context.Tags.AddRange(newTags);
+            await _context.SaveChangesAsync();
+        }
+
+        // Update post count for existing tags
+        foreach (var existingTag in existingTags)
+        {
+            existingTag.PostCount++;
+        }
+
+        // Combine all tags (existing + new)
+        var allTags = existingTags.Concat(newTags).ToList();
+
+        // Create PostTag relationships
+        var postTags = allTags.Select(tag => new PostTag
+        {
+            PostId = postId,
+            TagId = tag.Id,
+            CreatedAt = DateTime.UtcNow
+        }).ToList();
+
+        _context.PostTags.AddRange(postTags);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task UpdatePostTagsAsync(int postId, string content)
+    {
+        // Get current tags for the post
+        var currentPostTags = await _context.PostTags
+            .Include(pt => pt.Tag)
+            .Where(pt => pt.PostId == postId)
+            .ToListAsync();
+
+        var currentTagNames = currentPostTags.Select(pt => pt.Tag.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Extract new tags from content
+        var newTagNames = TagParser.ExtractTags(content).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Find tags to remove and add
+        var tagsToRemove = currentPostTags.Where(pt => !newTagNames.Contains(pt.Tag.Name)).ToList();
+        var tagNamesToAdd = newTagNames.Where(name => !currentTagNames.Contains(name)).ToList();
+
+        // Remove old tags
+        if (tagsToRemove.Any())
+        {
+            _context.PostTags.RemoveRange(tagsToRemove);
+
+            // Decrease post count for removed tags
+            foreach (var removedPostTag in tagsToRemove)
+            {
+                removedPostTag.Tag.PostCount = Math.Max(0, removedPostTag.Tag.PostCount - 1);
+            }
+        }
+
+        // Add new tags
+        if (tagNamesToAdd.Any())
+        {
+            // Get or create new tags
+            var existingTags = await _context.Tags
+                .Where(t => tagNamesToAdd.Contains(t.Name))
+                .ToListAsync();
+
+            var existingTagNames = existingTags.Select(t => t.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var newTagNamesToCreate = tagNamesToAdd.Where(name => !existingTagNames.Contains(name)).ToList();
+
+            // Create new tags
+            var newTags = newTagNamesToCreate.Select(name => new Tag
+            {
+                Name = name,
+                CreatedAt = DateTime.UtcNow,
+                PostCount = 1
+            }).ToList();
+
+            if (newTags.Any())
+            {
+                _context.Tags.AddRange(newTags);
+                await _context.SaveChangesAsync();
+            }
+
+            // Update post count for existing tags
+            foreach (var existingTag in existingTags)
+            {
+                existingTag.PostCount++;
+            }
+
+            // Combine all tags (existing + new)
+            var allTags = existingTags.Concat(newTags).ToList();
+
+            // Create PostTag relationships
+            var newPostTags = allTags.Select(tag => new PostTag
+            {
+                PostId = postId,
+                TagId = tag.Id,
+                CreatedAt = DateTime.UtcNow
+            }).ToList();
+
+            _context.PostTags.AddRange(newPostTags);
+        }
+
+        await _context.SaveChangesAsync();
     }
 }
