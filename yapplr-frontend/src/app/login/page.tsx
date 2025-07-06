@@ -24,8 +24,19 @@ function LoginForm() {
     try {
       await login({ email, password });
       router.push(redirectUrl);
-    } catch {
-      setError('Invalid email or password');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Invalid email or password';
+
+      // Check if the error is related to email verification
+      if (err.response?.status === 403 ||
+          errorMessage.toLowerCase().includes('verify') ||
+          errorMessage.toLowerCase().includes('verification')) {
+        // Redirect to email verification required page with email pre-filled
+        router.push(`/email-verification-required?email=${encodeURIComponent(email)}`);
+        return;
+      }
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

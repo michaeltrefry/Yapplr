@@ -96,6 +96,16 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         const response = await client.post('/api/auth/reset-password', { token, newPassword });
         return response.data;
       },
+
+      verifyEmail: async (token: string): Promise<{ message: string }> => {
+        const response = await client.post('/api/auth/verify-email', { token });
+        return response.data;
+      },
+
+      resendVerification: async (email: string): Promise<{ message: string }> => {
+        const response = await client.post('/api/auth/resend-verification', { email });
+        return response.data;
+      },
     },
 
     posts: {

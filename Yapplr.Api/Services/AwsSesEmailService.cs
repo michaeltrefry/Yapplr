@@ -29,6 +29,15 @@ public class AwsSesEmailService : IEmailService
         return await SendEmailAsync(toEmail, subject, htmlBody, textBody);
     }
 
+    public async Task<bool> SendEmailVerificationAsync(string toEmail, string username, string verificationToken, string verificationUrl)
+    {
+        var subject = "Verify Your Yapplr Email Address";
+        var htmlBody = GenerateEmailVerificationHtml(username, verificationToken, verificationUrl);
+        var textBody = GenerateEmailVerificationText(username, verificationToken, verificationUrl);
+
+        return await SendEmailAsync(toEmail, subject, htmlBody, textBody);
+    }
+
     public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string? textBody = null)
     {
         try
@@ -181,6 +190,99 @@ To reset your password, visit this link:
 SECURITY NOTICE: This link will expire in 1 hour for security reasons.
 
 If you have any questions, please contact our support team.
+
+Best regards,
+The Yapplr Team
+
+© 2025 Yapplr. All rights reserved.";
+    }
+
+    private string GenerateEmailVerificationHtml(string username, string verificationToken, string verificationUrl)
+    {
+        return $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Verify Your Yapplr Email</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }}
+        .container {{ max-width: 600px; margin: 0 auto; background-color: white; }}
+        .header {{ background: linear-gradient(135deg, #1d9bf0 0%, #1a8cd8 100%); color: white; padding: 40px 20px; text-align: center; }}
+        .logo {{ font-size: 28px; font-weight: bold; margin: 0; }}
+        .tagline {{ font-size: 16px; margin: 10px 0 0 0; opacity: 0.9; }}
+        .content {{ padding: 40px 30px; }}
+        .welcome-badge {{ background: #e8f5e8; color: #28a745; padding: 15px 20px; border-radius: 8px; margin: 0 0 30px 0; text-align: center; border: 2px solid #28a745; }}
+        .verification-code {{ font-size: 36px; font-weight: bold; color: #1d9bf0; text-align: center; background: #f8f9fa; padding: 25px; border-radius: 12px; letter-spacing: 6px; margin: 25px 0; border: 3px solid #1d9bf0; font-family: 'Courier New', monospace; }}
+        .button {{ display: inline-block; background: linear-gradient(135deg, #1d9bf0 0%, #1a8cd8 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(29, 155, 240, 0.3); }}
+        .button:hover {{ background: linear-gradient(135deg, #1a8cd8 0%, #1976d2 100%); }}
+        .security-note {{ background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 8px; margin: 25px 0; }}
+        .footer {{ background: #f8f9fa; padding: 30px; text-align: center; color: #666; border-top: 1px solid #e9ecef; }}
+        .social-links {{ margin: 20px 0; }}
+        .social-links a {{ color: #1d9bf0; text-decoration: none; margin: 0 10px; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1 class='logo'>Yapplr</h1>
+            <p class='tagline'>Connect. Share. Discover.</p>
+        </div>
+
+        <div class='content'>
+            <div class='welcome-badge'>
+                <strong>🎉 Welcome to Yapplr, {username}!</strong>
+            </div>
+
+            <h2 style='color: #333; margin-top: 0;'>Verify Your Email Address</h2>
+            <p>Thanks for joining our community! To complete your registration and start connecting with others on Yapplr, please verify your email address.</p>
+
+            <p><strong>Enter this verification code in the Yapplr app:</strong></p>
+            <div class='verification-code'>{verificationToken}</div>
+
+            <p>Or click the button below to verify your email instantly:</p>
+            <p style='text-align: center; margin: 30px 0;'>
+                <a href='{verificationUrl}' class='button'>Verify Email Address</a>
+            </p>
+
+            <div class='security-note'>
+                <strong>⚠️ Security Notice:</strong> This verification code will expire in 24 hours. If you didn't create a Yapplr account, you can safely ignore this email.
+            </div>
+        </div>
+
+        <div class='footer'>
+            <p><strong>Welcome to Yapplr!</strong></p>
+            <p>We're excited to have you join our growing community of creators, thinkers, and connectors.</p>
+            <div class='social-links'>
+                <a href='https://yapplr.com'>Visit Yapplr</a> |
+                <a href='https://yapplr.com/support'>Get Support</a>
+            </div>
+            <p style='font-size: 12px; margin-top: 20px;'>© 2025 Yapplr. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>";
+    }
+
+    private string GenerateEmailVerificationText(string username, string verificationToken, string verificationUrl)
+    {
+        return $@"Welcome to Yapplr!
+
+Hi {username},
+
+Thanks for joining our community! To complete your registration and start connecting with others on Yapplr, please verify your email address.
+
+Enter this verification code in the Yapplr app:
+
+{verificationToken}
+
+Or visit this link to verify your email:
+{verificationUrl}
+
+SECURITY NOTICE: This verification code will expire in 24 hours. If you didn't create a Yapplr account, you can safely ignore this email.
+
+Welcome to Yapplr! We're excited to have you join our growing community of creators, thinkers, and connectors.
 
 Best regards,
 The Yapplr Team

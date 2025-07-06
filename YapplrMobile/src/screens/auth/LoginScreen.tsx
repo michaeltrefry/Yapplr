@@ -32,7 +32,17 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     try {
       await login({ email, password });
     } catch (error: any) {
-      Alert.alert('Login Failed', error.response?.data?.message || 'An error occurred');
+      const errorMessage = error.response?.data?.message || 'An error occurred';
+
+      // Check if the error is related to email verification
+      if (error.response?.status === 403 ||
+          errorMessage.toLowerCase().includes('verify') ||
+          errorMessage.toLowerCase().includes('verification')) {
+        // Navigate to email verification required screen
+        navigation.navigate('EmailVerificationRequired', { email });
+      } else {
+        Alert.alert('Login Failed', errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }

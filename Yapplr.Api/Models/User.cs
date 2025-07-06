@@ -40,6 +40,8 @@ public class User
     [StringLength(500)]
     public string? FcmToken { get; set; }
 
+    public bool EmailVerified { get; set; } = false;
+
     // Navigation properties
     public ICollection<Post> Posts { get; set; } = new List<Post>();
     public ICollection<Like> Likes { get; set; } = new List<Like>();

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
+using Yapplr.Api.Exceptions;
+using System.ComponentModel.DataAnnotations;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -28,19 +30,32 @@ public static class AuthEndpoints
 
         auth.MapPost("/login", async ([FromBody] LoginUserDto loginDto, IAuthService authService) =>
         {
-            var result = await authService.LoginAsync(loginDto);
-            
-            if (result == null)
+            try
             {
-                return Results.Unauthorized();
-            }
+                var result = await authService.LoginAsync(loginDto);
 
-            return Results.Ok(result);
+                if (result == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+                return Results.Ok(result);
+            }
+            catch (EmailNotVerifiedException ex)
+            {
+                return Results.Problem(
+                    detail: ex.Message,
+                    statusCode: 403,
+                    title: "Email Verification Required",
+                    type: "email-verification-required"
+                );
+            }
         })
         .WithName("Login")
         .WithSummary("Login with email and password")
         .Produces<AuthResponseDto>(200)
-        .Produces(401);
+        .Produces(401)
+        .Produces(403);
 
         auth.MapPost("/forgot-password", async ([FromBody] ForgotPasswordDto forgotPasswordDto, IAuthService authService, HttpContext context) =>
         {
@@ -69,5 +84,33 @@ public static class AuthEndpoints
         .WithSummary("Reset password with token")
         .Produces<object>(200)
         .Produces(400);
+
+        auth.MapPost("/verify-email", async ([FromBody] VerifyEmailDto verifyEmailDto, IAuthService authService) =>
+        {
+            var success = await authService.VerifyEmailAsync(verifyEmailDto.Token);
+
+            if (!success)
+            {
+                return Results.BadRequest(new { message = "Invalid or expired verification token" });
+            }
+
+            return Results.Ok(new { message = "Email verified successfully" });
+        })
+        .WithName("VerifyEmail")
+        .WithSummary("Verify email with token")
+        .Produces<object>(200)
+        .Produces(400);
+
+        auth.MapPost("/resend-verification", async ([FromBody] ResendVerificationDto resendDto, IAuthService authService, HttpContext context) =>
+        {
+            var verificationBaseUrl = $"{context.Request.Scheme}://{context.Request.Host}/verify-email";
+            var success = await authService.ResendEmailVerificationAsync(resendDto.Email, verificationBaseUrl);
+
+            // Always return success for security (don't reveal if email exists)
+            return Results.Ok(new { message = "If an account with that email exists and is unverified, a verification email has been sent." });
+        })
+        .WithName("ResendVerification")
+        .WithSummary("Resend email verification")
+        .Produces<object>(200);
     }
 }

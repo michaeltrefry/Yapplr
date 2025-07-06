@@ -24,6 +24,15 @@ public class EmailService : IEmailService
         return await SendEmailAsync(toEmail, subject, htmlBody, textBody);
     }
 
+    public async Task<bool> SendEmailVerificationAsync(string toEmail, string username, string verificationToken, string verificationUrl)
+    {
+        var subject = "Verify Your Yapplr Email Address";
+        var htmlBody = GenerateEmailVerificationHtml(username, verificationToken, verificationUrl);
+        var textBody = GenerateEmailVerificationText(username, verificationToken, verificationUrl);
+
+        return await SendEmailAsync(toEmail, subject, htmlBody, textBody);
+    }
+
     public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string? textBody = null)
     {
         try
@@ -140,6 +149,83 @@ Alternatively, you can visit this link to reset your password on the web:
 This code will expire in 1 hour for security reasons.
 
 If you have any questions, please contact our support team.
+
+Best regards,
+The Yapplr Team";
+    }
+
+    private string GenerateEmailVerificationHtml(string username, string verificationToken, string verificationUrl)
+    {
+        return $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Verify Your Yapplr Email</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ text-align: center; margin-bottom: 30px; }}
+        .logo {{ font-size: 24px; font-weight: bold; color: #1d9bf0; }}
+        .content {{ background: #f8f9fa; padding: 30px; border-radius: 8px; margin: 20px 0; }}
+        .button {{ display: inline-block; background: #1d9bf0; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }}
+        .code {{ font-size: 32px; font-weight: bold; color: #1d9bf0; text-align: center; background: white; padding: 20px; border-radius: 8px; letter-spacing: 4px; margin: 20px 0; border: 2px solid #1d9bf0; }}
+        .footer {{ text-align: center; margin-top: 30px; font-size: 14px; color: #666; }}
+        .welcome {{ background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <div class='logo'>Yapplr</div>
+        </div>
+
+        <div class='welcome'>
+            <h2 style='color: #28a745; margin-top: 0;'>Welcome to Yapplr! 🎉</h2>
+            <p>Thanks for joining our community, <strong>{username}</strong>!</p>
+        </div>
+
+        <div class='content'>
+            <h2>Verify Your Email Address</h2>
+            <p>To complete your registration and start using Yapplr, please verify your email address by entering this 6-digit code in the app:</p>
+            <div class='code'>{verificationToken}</div>
+            <p>Alternatively, you can click the button below to verify your email on the web:</p>
+            <p style='text-align: center; margin: 30px 0;'>
+                <a href='{verificationUrl}' class='button'>Verify Email Address</a>
+            </p>
+            <p><strong>This verification code will expire in 24 hours for security reasons.</strong></p>
+            <p>If you didn't create a Yapplr account, you can safely ignore this email.</p>
+        </div>
+
+        <div class='footer'>
+            <p>Welcome to Yapplr! We're excited to have you join our community.</p>
+        </div>
+    </div>
+</body>
+</html>";
+    }
+
+    private string GenerateEmailVerificationText(string username, string verificationToken, string verificationUrl)
+    {
+        return $@"Welcome to Yapplr!
+
+Hi {username},
+
+Thanks for joining our community! To complete your registration and start using Yapplr, please verify your email address.
+
+Enter this 6-digit code in the Yapplr app to verify your email:
+
+{verificationToken}
+
+Alternatively, you can visit this link to verify your email on the web:
+{verificationUrl}
+
+This verification code will expire in 24 hours for security reasons.
+
+If you didn't create a Yapplr account, you can safely ignore this email.
+
+Welcome to Yapplr! We're excited to have you join our community.
 
 Best regards,
 The Yapplr Team";

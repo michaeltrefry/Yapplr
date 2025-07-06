@@ -19,6 +19,7 @@ public class YapplrDbContext : DbContext
     public DbSet<FollowRequest> FollowRequests { get; set; }
     public DbSet<Block> Blocks { get; set; }
     public DbSet<PasswordReset> PasswordResets { get; set; }
+    public DbSet<EmailVerification> EmailVerifications { get; set; }
     public DbSet<Conversation> Conversations { get; set; }
     public DbSet<ConversationParticipant> ConversationParticipants { get; set; }
     public DbSet<UserPreferences> UserPreferences { get; set; }
@@ -167,6 +168,20 @@ public class YapplrDbContext : DbContext
 
         // PasswordReset configuration
         modelBuilder.Entity<PasswordReset>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Token).IsUnique();
+            entity.HasIndex(e => e.Email);
+            entity.Property(e => e.Token).IsRequired();
+            entity.Property(e => e.Email).IsRequired();
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // EmailVerification configuration
+        modelBuilder.Entity<EmailVerification>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Token).IsUnique();

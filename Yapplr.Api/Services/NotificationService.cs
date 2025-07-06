@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
+using Yapplr.Api.Extensions;
 using Yapplr.Api.Utils;
 
 namespace Yapplr.Api.Services;
@@ -427,18 +428,7 @@ public class NotificationService : INotificationService
             CreatedAt = notification.CreatedAt,
             ReadAt = notification.ReadAt,
             Status = status,
-            ActorUser = notification.ActorUser != null ? new UserDto(
-                notification.ActorUser.Id,
-                notification.ActorUser.Email,
-                notification.ActorUser.Username,
-                notification.ActorUser.Bio,
-                notification.ActorUser.Birthday,
-                notification.ActorUser.Pronouns,
-                notification.ActorUser.Tagline,
-                notification.ActorUser.ProfileImageFileName,
-                notification.ActorUser.CreatedAt,
-                notification.ActorUser.FcmToken
-            ) : null
+            ActorUser = notification.ActorUser?.ToDto()
         };
 
         // Add post information if available
@@ -460,18 +450,7 @@ public class NotificationService : INotificationService
                 notification.Post.Privacy,
                 notification.Post.CreatedAt,
                 notification.Post.UpdatedAt,
-                new UserDto(
-                    notification.Post.User.Id,
-                    notification.Post.User.Email,
-                    notification.Post.User.Username,
-                    notification.Post.User.Bio,
-                    notification.Post.User.Birthday,
-                    notification.Post.User.Pronouns,
-                    notification.Post.User.Tagline,
-                    notification.Post.User.ProfileImageFileName,
-                    notification.Post.User.CreatedAt,
-                    notification.Post.User.FcmToken
-                ),
+                notification.Post.User.ToDto(),
                 0, // LikeCount - we don't need this for notifications
                 0, // CommentCount - we don't need this for notifications
                 0, // RepostCount - we don't need this for notifications
@@ -489,18 +468,7 @@ public class NotificationService : INotificationService
                 notification.Comment.Content,
                 notification.Comment.CreatedAt,
                 notification.Comment.UpdatedAt,
-                new UserDto(
-                    notification.Comment.User.Id,
-                    notification.Comment.User.Email,
-                    notification.Comment.User.Username,
-                    notification.Comment.User.Bio,
-                    notification.Comment.User.Birthday,
-                    notification.Comment.User.Pronouns,
-                    notification.Comment.User.Tagline,
-                    notification.Comment.User.ProfileImageFileName,
-                    notification.Comment.User.CreatedAt,
-                    notification.Comment.User.FcmToken
-                ),
+                notification.Comment.User.ToDto(),
                 notification.Comment.UpdatedAt > notification.Comment.CreatedAt.AddMinutes(1) // IsEdited
             );
 
@@ -520,18 +488,7 @@ public class NotificationService : INotificationService
                     notification.Comment.Post.Privacy,
                     notification.Comment.Post.CreatedAt,
                     notification.Comment.Post.UpdatedAt,
-                    new UserDto(
-                        notification.Comment.Post.User.Id,
-                        notification.Comment.Post.User.Email,
-                        notification.Comment.Post.User.Username,
-                        notification.Comment.Post.User.Bio,
-                        notification.Comment.Post.User.Birthday,
-                        notification.Comment.Post.User.Pronouns,
-                        notification.Comment.Post.User.Tagline,
-                        notification.Comment.Post.User.ProfileImageFileName,
-                        notification.Comment.Post.User.CreatedAt,
-                        notification.Comment.Post.User.FcmToken
-                    ),
+                    notification.Comment.Post.User.ToDto(),
                     0, // LikeCount - we don't need this for notifications
                     0, // CommentCount - we don't need this for notifications
                     0, // RepostCount - we don't need this for notifications

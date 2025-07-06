@@ -34,11 +34,11 @@ public static class NotificationConfigurationEndpoints
             .WithDescription("Sends a test notification to the currently authenticated user");
     }
 
-    private static async Task<IResult> GetNotificationConfiguration(
+    private static IResult GetNotificationConfiguration(
         IOptions<NotificationProvidersConfiguration> notificationOptions)
     {
         var config = notificationOptions.Value;
-        
+
         var response = new
         {
             Firebase = new

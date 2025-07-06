@@ -38,6 +38,17 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         password,
         bio: bio || undefined,
       });
+      // After successful registration, navigate to email verification
+      Alert.alert(
+        'Registration Successful',
+        'Please check your email for a verification code to complete your registration.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('VerifyEmail', { email }),
+          },
+        ]
+      );
     } catch (error: any) {
       Alert.alert('Registration Failed', error.response?.data?.message || 'An error occurred');
     } finally {

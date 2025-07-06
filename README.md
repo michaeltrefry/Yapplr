@@ -41,10 +41,16 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Dark Mode**: Complete dark theme support with user preferences and persistent storage
 
 ### Privacy & Security
+- **Email Verification**: Required email verification at signup to prevent bot registrations
+  - **6-digit verification codes** sent via SendGrid with beautiful email templates
+  - **Direct verification links** for one-click email confirmation
+  - **Login protection** - unverified users cannot log in
+  - **Dedicated verification pages** with resend functionality for better UX
+  - **Smart error handling** - redirects to verification page when unverified users try to log in
 - **Yap Privacy**: Three levels - Public (everyone), Followers (followers only), Private (author only)
 - **Privacy-Aware Timeline**: Smart filtering based on user relationships and yap privacy
 - **JWT Authentication**: Secure token-based authentication
-- **Password Reset**: Email-based password recovery with 6-digit codes and AWS SES integration
+- **Password Reset**: Email-based password recovery with 6-digit codes and email integration
 
 ### User Experience
 - **Responsive Design**: Mobile-first approach with collapsible sidebar
@@ -76,7 +82,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Composite Notification System** - Multi-provider notification system with automatic fallback
 - **JWT Bearer** - Authentication
 - **BCrypt** - Password hashing
-- **AWS SES** - Email service for password reset
+- **SendGrid** - Email service for verification and password reset (with AWS SES fallback)
 - **File System Storage** - Image upload and serving
 
 ### Frontend (Next.js 15)
@@ -227,6 +233,44 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 NEXT_PUBLIC_ENABLE_SIGNALR=true
 ```
 
+### 5. SendGrid Setup (Required for Email Verification & Password Reset)
+
+SendGrid provides reliable email delivery for email verification and password reset functionality.
+
+#### Development Setup
+1. **Create SendGrid Account**: Go to [SendGrid](https://sendgrid.com/) and sign up for a free account
+2. **Get API Key**:
+   - Go to Settings → API Keys
+   - Click "Create API Key"
+   - Choose "Restricted Access" and give it a name
+   - Under "Mail Send", select "Full Access"
+   - Copy the API key (you won't see it again!)
+3. **Verify Sender Identity**:
+   - Go to Settings → Sender Authentication
+   - Click "Verify a Single Sender"
+   - Fill out the form with your details
+   - Verify your email address
+
+#### Configuration
+Add to `Yapplr.Api/appsettings.Development.json`:
+```json
+{
+  "SendGridSettings": {
+    "ApiKey": "SG.your-api-key-here",
+    "FromEmail": "your-verified-email@domain.com",
+    "FromName": "Your App Name"
+  },
+  "EmailProvider": "SendGrid"
+}
+```
+
+#### Production Deployment
+For production, use GitHub secrets:
+- `SENDGRID_API_KEY`: Your SendGrid API key
+- `SENDGRID_FROM_EMAIL`: Your verified sender email
+- `SENDGRID_FROM_NAME`: Your app name
+- `EMAIL_PROVIDER`: `SendGrid`
+
 #### Features
 - **Dual Authentication**: Automatic fallback from Service Account Key to Application Default Credentials
 - **Production Ready**: Service Account Key authentication for reliable deployment
@@ -353,17 +397,18 @@ NEXT_PUBLIC_ENABLE_SIGNALR=true
 - **Professional Design**: Carefully crafted dark color palette with proper contrast ratios
 - **Smooth Transitions**: Instant theme switching with optimistic updates
 
-### Password Recovery System
-- **6-Digit Codes**: User-friendly numeric codes instead of long cryptographic tokens
-- **Email Integration**: Professional HTML and text email templates with prominent code display
+### Email System (Verification & Password Recovery)
+- **6-Digit Codes**: User-friendly numeric codes for both email verification and password reset
+- **Email Verification**: Required at signup with 24-hour expiration and beautiful templates
+- **Password Recovery**: Secure password reset with 1-hour expiration codes
+- **SendGrid Integration**: Professional email delivery with beautiful HTML templates and branding
 - **Mobile-First Design**: Optimized for easy code entry on mobile devices with numeric keypad
-- **Automatic Navigation**: Seamless flow from forgot password to reset screen in mobile app
+- **Automatic Navigation**: Seamless flow between verification and authentication screens
 - **Secure Token Generation**: Cryptographically secure random number generation
-- **Time-Limited Codes**: 1-hour expiration for security with automatic cleanup
 - **Token Invalidation**: Previous codes automatically invalidated when new ones are requested
 - **Cross-Platform Support**: Works on both web and mobile with consistent user experience
-- **AWS SES Integration**: Reliable email delivery with professional branding
-- **Error Handling**: Comprehensive error handling with user-friendly messages
+- **Dedicated UI Pages**: User-friendly verification required pages with resend functionality
+- **Error Handling**: Comprehensive error handling with helpful user guidance
 
 ## ⚡ Performance Optimizations
 
@@ -579,8 +624,9 @@ For detailed configuration options, see [PLATFORM_SPECIFIC_NOTIFICATIONS.md](PLA
 
 - **Password Hashing**: BCrypt with salt rounds
 - **JWT Tokens**: Secure authentication with 60-minute expiration
+- **Email Verification**: Required email verification to prevent bot registrations
 - **Password Recovery**: Secure 6-digit code system with 1-hour expiration and token invalidation
-- **Email Security**: AWS SES integration with professional email templates
+- **Email Security**: SendGrid integration with professional email templates and reliable delivery
 - **CORS Configuration**: Properly configured for frontend development
 - **Input Validation**: Comprehensive validation on all endpoints
 - **Privacy Controls**: Robust privacy system with relationship-based filtering
@@ -589,7 +635,7 @@ For detailed configuration options, see [PLATFORM_SPECIFIC_NOTIFICATIONS.md](PLA
 
 See individual README files for detailed deployment instructions:
 - [Backend Deployment Guide](Yapplr.Api/Production-Deployment-Guide.md)
-- [AWS SES Setup](Yapplr.Api/AWS-SES-Setup.md)
+- [SendGrid Email Setup](#5-sendgrid-setup-required-for-email-verification--password-reset)
 
 ## 📄 License
 
