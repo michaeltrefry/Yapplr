@@ -21,6 +21,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { CreatePostData, PostPrivacy } from '../types';
+import VideoUpload from './VideoUpload';
 
 interface CreatePostModalProps {
   visible: boolean;
@@ -38,6 +39,8 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadedVideoFileName, setUploadedVideoFileName] = useState<string | null>(null);
+  const [videoJobId, setVideoJobId] = useState<number | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
@@ -74,6 +77,8 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
     setSelectedImage(null);
     setUploadedFileName(null);
     setIsUploadingImage(false);
+    setUploadedVideoFileName(null);
+    setVideoJobId(null);
   };
 
   const pickImage = async () => {
@@ -150,6 +155,21 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
     setIsUploadingImage(false);
   };
 
+  const handleVideoUploaded = (videoData: {
+    fileName: string;
+    videoUrl: string;
+    jobId: number;
+    sizeBytes: number;
+  }) => {
+    setUploadedVideoFileName(videoData.fileName);
+    setVideoJobId(videoData.jobId);
+  };
+
+  const handleVideoRemove = () => {
+    setUploadedVideoFileName(null);
+    setVideoJobId(null);
+  };
+
   const handleSubmit = () => {
     if (!content.trim()) {
       Alert.alert('Error', 'Please enter some content for your post.');
@@ -170,6 +190,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
       content: content.trim(),
       privacy,
       imageFileName: uploadedFileName || undefined,
+      videoFileName: uploadedVideoFileName || undefined,
     });
   };
 
@@ -352,6 +373,16 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
                   <Ionicons name="close" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
+            )}
+
+            {/* Video Upload */}
+            {!selectedImage && !uploadedVideoFileName && (
+              <VideoUpload
+                onVideoUploaded={handleVideoUploaded}
+                onRemove={handleVideoRemove}
+                disabled={isUploadingImage}
+                uploadVideo={api.videos.uploadVideo}
+              />
             )}
           </ScrollView>
         </KeyboardAvoidingView>

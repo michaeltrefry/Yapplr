@@ -54,6 +54,7 @@ export interface AuthResponse {
 export interface CreatePostData {
   content: string;
   imageFileName?: string;
+  videoFileName?: string;
   privacy?: PostPrivacy;
 }
 
@@ -102,6 +103,10 @@ export interface Post {
   updatedAt?: string;
   isEdited: boolean;
   imageUrl?: string;
+  videoUrl?: string;
+  videoThumbnailUrl?: string;
+  videoDurationSeconds?: number;
+  videoProcessingStatus: 'None' | 'Pending' | 'Processing' | 'Completed' | 'Failed';
   user: User;
   likeCount: number;
   commentCount: number;
@@ -194,6 +199,23 @@ export interface ImageUploadResponse {
   imageUrl: string;
 }
 
+export interface VideoUploadResponse {
+  fileName: string;
+  videoUrl: string;
+  sizeBytes: number;
+  originalFileName: string;
+  contentType: string;
+  jobId: number;
+}
+
+export interface VideoProcessingStatusResponse {
+  jobId: number;
+  status: 'Pending' | 'Processing' | 'Completed' | 'Failed';
+  errorMessage?: string;
+  progressPercentage?: number;
+  currentStep?: string;
+}
+
 // API Client interface
 export interface YapplrApi {
   auth: {
@@ -246,6 +268,11 @@ export interface YapplrApi {
   images: {
     uploadImage: (uri: string, fileName: string, type: string) => Promise<ImageUploadResponse>;
     deleteImage: (fileName: string) => Promise<void>;
+  };
+  videos: {
+    uploadVideo: (uri: string, fileName: string, type: string, onProgress?: (progress: number) => void) => Promise<VideoUploadResponse>;
+    getProcessingStatus: (jobId: number) => Promise<VideoProcessingStatusResponse>;
+    deleteVideo: (fileName: string) => Promise<void>;
   };
   preferences: {
     get: () => Promise<{ darkMode: boolean }>;

@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, VideoUploadResponse, VideoProcessingStatusResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -336,6 +336,75 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
       deleteImage: async (fileName: string): Promise<void> => {
         await client.delete(`/api/images/${fileName}`);
+      },
+    },
+
+    videos: {
+      uploadVideo: async (uri: string, fileName: string, type: string, onProgress?: (progress: number) => void): Promise<VideoUploadResponse> => {
+        console.log('Uploading video:', { uri, fileName, type });
+
+        const formData = new FormData();
+
+        // React Native specific FormData format - ensure proper MIME type
+        const mimeType = type.startsWith('video/') ? type : `video/${type}`;
+
+        formData.append('file', {
+          uri: uri,
+          type: mimeType,
+          name: fileName,
+        } as any);
+
+        console.log('FormData created with MIME type:', mimeType);
+
+        try {
+          const response = await client.post('/api/videos/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total && onProgress) {
+                const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                onProgress(progress);
+              }
+            },
+          });
+
+          // Check if the response is actually successful
+          if (response.status >= 400) {
+            const errorMessage = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            console.error('API error response:', errorMessage);
+            throw new Error(`Upload failed with status ${response.status}: ${errorMessage}`);
+          }
+
+          if (!response.data || !response.data.fileName) {
+            throw new Error('Upload succeeded but no file information returned');
+          }
+
+          console.log('Video upload successful:', response.data);
+          return response.data;
+        } catch (error: any) {
+          console.error('Video upload error:', error.message);
+          throw error;
+        }
+      },
+
+      getProcessingStatus: async (jobId: number): Promise<VideoProcessingStatusResponse> => {
+        try {
+          const response = await client.get(`/api/videos/processing-status/${jobId}`);
+
+          if (response.status >= 400) {
+            throw new Error(`Failed to get processing status: ${response.status}`);
+          }
+
+          return response.data;
+        } catch (error: any) {
+          console.error('Get processing status error:', error.message);
+          throw error;
+        }
+      },
+
+      deleteVideo: async (fileName: string): Promise<void> => {
+        await client.delete(`/api/videos/${fileName}`);
       },
     },
   };

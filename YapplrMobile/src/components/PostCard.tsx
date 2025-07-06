@@ -14,6 +14,7 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import { useAuth } from '../contexts/AuthContext';
 import { TimelineItem, Post } from '../types';
 import ImageViewer from './ImageViewer';
+import VideoPlayer from './VideoPlayer';
 import { ContentHighlight } from '../utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
 
@@ -195,6 +196,45 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
           ) : (
             <View style={styles.imageErrorContainer}>
               <Text style={styles.imageErrorText}>Failed to load image</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Video Display */}
+      {item.post.videoUrl && (
+        <View style={styles.videoContainer}>
+          {item.post.videoProcessingStatus === 'Completed' ? (
+            <VideoPlayer
+              videoUrl={item.post.videoUrl}
+              thumbnailUrl={item.post.videoThumbnailUrl}
+              duration={item.post.videoDurationSeconds ? item.post.videoDurationSeconds * 1000 : undefined}
+              style={styles.video}
+            />
+          ) : (
+            <View style={styles.processingContainer}>
+              <View style={styles.processingContent}>
+                {item.post.videoProcessingStatus === 'Processing' && (
+                  <>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={styles.processingText}>Processing video...</Text>
+                  </>
+                )}
+                {item.post.videoProcessingStatus === 'Failed' && (
+                  <>
+                    <Ionicons name="alert-circle" size={20} color={colors.error} />
+                    <Text style={[styles.processingText, { color: colors.error }]}>
+                      Video processing failed
+                    </Text>
+                  </>
+                )}
+                {item.post.videoProcessingStatus === 'Pending' && (
+                  <>
+                    <ActivityIndicator size="small" color={colors.textSecondary} />
+                    <Text style={styles.processingText}>Video processing queued...</Text>
+                  </>
+                )}
+              </View>
             </View>
           )}
         </View>
@@ -487,5 +527,31 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   linkPreviewContainer: {
     marginTop: 12,
+  },
+  videoContainer: {
+    marginTop: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  video: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+  },
+  processingContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    aspectRatio: 16 / 9,
+  },
+  processingContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  processingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: colors.textSecondary,
   },
 });
