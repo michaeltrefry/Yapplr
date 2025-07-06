@@ -110,14 +110,7 @@ export default function Sidebar() {
             </Link>
           )}
 
-          {/* Temporary Admin Link for Testing - Remove after testing */}
-          <Link
-            href="/admin"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-red-100 transition-colors text-red-600 border border-red-200"
-          >
-            <TestTube className="w-6 h-6" />
-            <span className="text-lg hidden lg:block font-medium">Admin (Test)</span>
-          </Link>
+
 
           {/* Development only - Notification Test */}
           {process.env.NODE_ENV === 'development' && (

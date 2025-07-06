@@ -838,18 +838,50 @@ public class AdminService : IAdminService
             .Take(10)
             .ToListAsync();
 
-        // Get engagement trends (likes, comments, reposts)
-        var engagementTrends = await _context.Posts
-            .Where(p => p.CreatedAt >= startDate)
-            .GroupBy(p => p.CreatedAt.Date)
-            .Select(g => new DailyStatsDto
-            {
-                Date = g.Key,
-                Count = g.Sum(p => p.LikeCount + p.CommentCount + p.RepostCount),
-                Label = g.Key.ToString("MMM dd")
-            })
-            .OrderBy(d => d.Date)
+        // Get engagement trends (likes, comments, reposts) - calculate separately to avoid EF translation issues
+        var engagementTrends = new List<DailyStatsDto>();
+
+        // Get daily likes
+        var dailyLikes = await _context.Likes
+            .Where(l => l.CreatedAt >= startDate)
+            .GroupBy(l => l.CreatedAt.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync();
+
+        // Get daily comments
+        var dailyCommentsCount = await _context.Comments
+            .Where(c => c.CreatedAt >= startDate)
+            .GroupBy(c => c.CreatedAt.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        // Get daily reposts
+        var dailyReposts = await _context.Reposts
+            .Where(r => r.CreatedAt >= startDate)
+            .GroupBy(r => r.CreatedAt.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        // Combine all engagement data by date
+        var allDates = dailyLikes.Select(d => d.Date)
+            .Union(dailyCommentsCount.Select(d => d.Date))
+            .Union(dailyReposts.Select(d => d.Date))
+            .Distinct()
+            .OrderBy(d => d);
+
+        foreach (var date in allDates)
+        {
+            var likesCount = dailyLikes.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
+            var commentsCount = dailyCommentsCount.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
+            var repostsCount = dailyReposts.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
+
+            engagementTrends.Add(new DailyStatsDto
+            {
+                Date = date,
+                Count = likesCount + commentsCount + repostsCount,
+                Label = date.ToString("MMM dd")
+            });
+        }
 
         return new ContentTrendsDto
         {
@@ -864,18 +896,59 @@ public class AdminService : IAdminService
     {
         var startDate = DateTime.UtcNow.AddDays(-days);
 
-        // Daily engagement (posts + comments + likes + reposts)
-        var dailyEngagement = await _context.Posts
+        // Daily engagement (posts + comments + likes + reposts) - calculate separately to avoid EF translation issues
+        var dailyEngagement = new List<DailyStatsDto>();
+
+        // Get daily posts
+        var dailyPostsCount = await _context.Posts
             .Where(p => p.CreatedAt >= startDate)
             .GroupBy(p => p.CreatedAt.Date)
-            .Select(g => new DailyStatsDto
-            {
-                Date = g.Key,
-                Count = g.Count() + g.Sum(p => p.CommentCount + p.LikeCount + p.RepostCount),
-                Label = g.Key.ToString("MMM dd")
-            })
-            .OrderBy(d => d.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync();
+
+        // Get daily likes
+        var dailyLikesCount = await _context.Likes
+            .Where(l => l.CreatedAt >= startDate)
+            .GroupBy(l => l.CreatedAt.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        // Get daily comments
+        var dailyCommentsEngagement = await _context.Comments
+            .Where(c => c.CreatedAt >= startDate)
+            .GroupBy(c => c.CreatedAt.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        // Get daily reposts
+        var dailyRepostsCount = await _context.Reposts
+            .Where(r => r.CreatedAt >= startDate)
+            .GroupBy(r => r.CreatedAt.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        // Combine all engagement data by date
+        var allEngagementDates = dailyPostsCount.Select(d => d.Date)
+            .Union(dailyLikesCount.Select(d => d.Date))
+            .Union(dailyCommentsEngagement.Select(d => d.Date))
+            .Union(dailyRepostsCount.Select(d => d.Date))
+            .Distinct()
+            .OrderBy(d => d);
+
+        foreach (var date in allEngagementDates)
+        {
+            var postsCount = dailyPostsCount.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
+            var likesCount = dailyLikesCount.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
+            var commentsCount = dailyCommentsEngagement.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
+            var repostsCount = dailyRepostsCount.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
+
+            dailyEngagement.Add(new DailyStatsDto
+            {
+                Date = date,
+                Count = postsCount + likesCount + commentsCount + repostsCount,
+                Label = date.ToString("MMM dd")
+            });
+        }
 
         // Engagement breakdown by type
         var totalPosts = await _context.Posts.Where(p => p.CreatedAt >= startDate).CountAsync();

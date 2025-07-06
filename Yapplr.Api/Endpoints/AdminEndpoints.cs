@@ -407,75 +407,68 @@ public static class AdminEndpoints
         .RequireAuthorization(); // Only require authentication, not admin role
 
         // Enhanced Analytics Endpoints
-        admin.MapGet("/analytics/user-growth", async ([FromQuery] int days, IAdminService adminService) =>
+        admin.MapGet("/analytics/user-growth", [RequireModerator] async ([FromQuery] int days, IAdminService adminService) =>
         {
             var stats = await adminService.GetUserGrowthStatsAsync(days);
             return Results.Ok(stats);
         })
         .WithName("GetUserGrowthStats")
         .WithSummary("Get user growth analytics")
-        .Produces<UserGrowthStatsDto>()
-        .RequireAuthorization(policy => policy.RequireRole("Admin", "Moderator"));
+        .Produces<UserGrowthStatsDto>();
 
-        admin.MapGet("/analytics/content-stats", async ([FromQuery] int days, IAdminService adminService) =>
+        admin.MapGet("/analytics/content-stats", [RequireModerator] async ([FromQuery] int days, IAdminService adminService) =>
         {
             var stats = await adminService.GetContentStatsAsync(days);
             return Results.Ok(stats);
         })
         .WithName("GetContentStats")
         .WithSummary("Get content creation analytics")
-        .Produces<ContentStatsDto>()
-        .RequireAuthorization(policy => policy.RequireRole("Admin", "Moderator"));
+        .Produces<ContentStatsDto>();
 
-        admin.MapGet("/analytics/moderation-trends", async ([FromQuery] int days, IAdminService adminService) =>
+        admin.MapGet("/analytics/moderation-trends", [RequireModerator] async ([FromQuery] int days, IAdminService adminService) =>
         {
             var stats = await adminService.GetModerationTrendsAsync(days);
             return Results.Ok(stats);
         })
         .WithName("GetModerationTrends")
         .WithSummary("Get moderation trends analytics")
-        .Produces<ModerationTrendsDto>()
-        .RequireAuthorization(policy => policy.RequireRole("Admin", "Moderator"));
+        .Produces<ModerationTrendsDto>();
 
-        admin.MapGet("/analytics/system-health", async (IAdminService adminService) =>
+        admin.MapGet("/analytics/system-health", [RequireModerator] async (IAdminService adminService) =>
         {
             var health = await adminService.GetSystemHealthAsync();
             return Results.Ok(health);
         })
         .WithName("GetSystemHealth")
         .WithSummary("Get system health metrics")
-        .Produces<SystemHealthDto>()
-        .RequireAuthorization(policy => policy.RequireRole("Admin", "Moderator"));
+        .Produces<SystemHealthDto>();
 
-        admin.MapGet("/analytics/top-moderators", async ([FromQuery] int days, [FromQuery] int limit, IAdminService adminService) =>
+        admin.MapGet("/analytics/top-moderators", [RequireModerator] async ([FromQuery] int days, [FromQuery] int limit, IAdminService adminService) =>
         {
             var stats = await adminService.GetTopModeratorsAsync(days, limit);
             return Results.Ok(stats);
         })
         .WithName("GetTopModerators")
         .WithSummary("Get top moderators analytics")
-        .Produces<TopModeratorsDto>()
-        .RequireAuthorization(policy => policy.RequireRole("Admin", "Moderator"));
+        .Produces<TopModeratorsDto>();
 
-        admin.MapGet("/analytics/content-trends", async ([FromQuery] int days, IAdminService adminService) =>
+        admin.MapGet("/analytics/content-trends", [RequireModerator] async ([FromQuery] int days, IAdminService adminService) =>
         {
             var trends = await adminService.GetContentTrendsAsync(days);
             return Results.Ok(trends);
         })
         .WithName("GetContentTrends")
         .WithSummary("Get content trends analytics")
-        .Produces<ContentTrendsDto>()
-        .RequireAuthorization(policy => policy.RequireRole("Admin", "Moderator"));
+        .Produces<ContentTrendsDto>();
 
-        admin.MapGet("/analytics/user-engagement", async ([FromQuery] int days, IAdminService adminService) =>
+        admin.MapGet("/analytics/user-engagement", [RequireModerator] async ([FromQuery] int days, IAdminService adminService) =>
         {
             var engagement = await adminService.GetUserEngagementStatsAsync(days);
             return Results.Ok(engagement);
         })
         .WithName("GetUserEngagement")
         .WithSummary("Get user engagement analytics")
-        .Produces<UserEngagementStatsDto>()
-        .RequireAuthorization(policy => policy.RequireRole("Admin", "Moderator"));
+        .Produces<UserEngagementStatsDto>();
     }
 
     // Additional DTOs for bulk actions
