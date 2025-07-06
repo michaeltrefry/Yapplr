@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api';
 import Link from 'next/link';
@@ -15,15 +15,7 @@ function VerifyEmailForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  useEffect(() => {
-    const urlToken = searchParams?.get('token');
-    if (urlToken) {
-      setToken(urlToken);
-      handleVerification(urlToken);
-    }
-  }, [searchParams]);
-
-  const handleVerification = async (verificationToken: string) => {
+  const handleVerification = useCallback(async (verificationToken: string) => {
     setIsLoading(true);
     setError('');
     setMessage('');
@@ -32,18 +24,26 @@ function VerifyEmailForm() {
       const result = await authApi.verifyEmail(verificationToken);
       setMessage(result.message);
       setIsSuccess(true);
-      
+
       // Redirect to login after successful verification
       setTimeout(() => {
         router.push('/login?message=Email verified successfully! You can now log in.');
       }, 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Verification failed');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Verification failed');
       setIsSuccess(false);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    const urlToken = searchParams?.get('token');
+    if (urlToken) {
+      setToken(urlToken);
+      handleVerification(urlToken);
+    }
+  }, [searchParams, handleVerification]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +140,7 @@ function VerifyEmailForm() {
                 href="/resend-verification"
                 className="font-medium text-blue-600 hover:text-blue-500"
               >
-                Didn't receive the code? Resend verification email
+                Didn&apos;t receive the code? Resend verification email
               </Link>
             </div>
           </form>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { authApi } from '@/lib/api';
 import Link from 'next/link';
 
@@ -13,7 +13,6 @@ function EmailVerificationRequiredForm() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   useEffect(() => {
     const urlEmail = searchParams?.get('email');
@@ -36,8 +35,8 @@ function EmailVerificationRequiredForm() {
       const result = await authApi.resendVerification(email);
       setMessage(result.message);
       setIsSuccess(true);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to resend verification email');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to resend verification email');
       setIsSuccess(false);
     } finally {
       setIsLoading(false);
@@ -68,7 +67,7 @@ function EmailVerificationRequiredForm() {
                 Account Not Verified
               </h3>
               <div className="mt-2 text-sm text-yellow-700">
-                <p>Your account was created successfully, but you haven't verified your email address yet. Please check your email for a verification code or request a new one below.</p>
+                <p>Your account was created successfully, but you haven&apos;t verified your email address yet. Please check your email for a verification code or request a new one below.</p>
               </div>
             </div>
           </div>

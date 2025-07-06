@@ -21,8 +21,8 @@ export default function ResendVerificationPage() {
       const result = await authApi.resendVerification(email);
       setMessage(result.message);
       setIsSuccess(true);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to resend verification email');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to resend verification email');
       setIsSuccess(false);
     } finally {
       setIsLoading(false);

@@ -5,7 +5,7 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { notificationApi, followRequestsApi } from '@/lib/api';
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Bell, Heart, MessageCircle, Repeat, UserPlus, AtSign, Check, X } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
@@ -239,7 +239,7 @@ export default function NotificationsPage() {
                 <div className="p-8 text-center text-gray-500">
                   <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                   <p>No notifications yet</p>
-                  <p className="text-sm mt-2">When someone mentions you, likes your posts, or follows you, you'll see it here.</p>
+                  <p className="text-sm mt-2">When someone mentions you, likes your posts, or follows you, you&apos;ll see it here.</p>
                 </div>
               ) : (
                 notificationData.notifications.map((notification) => (

@@ -140,12 +140,12 @@ class SignalRMessagingService {
     });
 
     // Handle connection events
-    this.connection.on('Connected', (data: any) => {
+    this.connection.on('Connected', (data: unknown) => {
       console.log('📡 SignalR Connected event received:', data);
     });
 
     // Handle ping/pong for testing
-    this.connection.on('Pong', (data: any) => {
+    this.connection.on('Pong', (data: unknown) => {
       console.log('📡 SignalR Pong received:', data);
     });
 
@@ -158,7 +158,7 @@ class SignalRMessagingService {
       console.log('📡 Left conversation:', conversationId);
     });
 
-    this.connection.on('NewMessage', (messageData: any) => {
+    this.connection.on('NewMessage', (messageData: unknown) => {
       console.log('📡 New message in conversation:', messageData);
       // This could trigger a refresh of the conversation
     });

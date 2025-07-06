@@ -13,7 +13,6 @@ interface MessageComposerProps {
 
 export default function MessageComposer({ conversationId }: MessageComposerProps) {
   const [content, setContent] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +31,6 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
     mutationFn: messageApi.sendMessageToConversation,
     onSuccess: () => {
       setContent('');
-      setSelectedFile(null);
       setImagePreview(null);
       setUploadedFileName(null);
       if (fileInputRef.current) {
@@ -68,8 +66,6 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
         return;
       }
 
-      setSelectedFile(file);
-
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -83,7 +79,6 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
   };
 
   const removeImage = () => {
-    setSelectedFile(null);
     setImagePreview(null);
     setUploadedFileName(null);
     if (fileInputRef.current) {

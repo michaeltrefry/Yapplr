@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { messageApi, notificationApi } from '@/lib/api';
 import { useAuth } from './AuthContext';
@@ -55,13 +55,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const unreadMessageCount = unreadData?.unreadCount || 0;
   const unreadNotificationCount = notificationData?.unreadCount || 0;
 
-  const refreshUnreadCount = () => {
+  const refreshUnreadCount = useCallback(() => {
     refetch();
-  };
+  }, [refetch]);
 
-  const refreshNotificationCount = () => {
+  const refreshNotificationCount = useCallback(() => {
     refetchNotifications();
-  };
+  }, [refetchNotifications]);
 
   // Initialize SignalR when user is authenticated
   useEffect(() => {
@@ -109,7 +109,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
 
     initializeSignalR();
-  }, [user]); // Only depend on user, not on the ready states to avoid loops
+  }, [user, isSignalREnabled, isSignalRReady]); // Include all dependencies
 
   // Monitor SignalR connection and retry if it disconnects
   useEffect(() => {
@@ -145,7 +145,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [isSignalRReady, retryCount, maxRetries]);
 
   // Generic notification handler for both Firebase and SignalR
-  const handleNotificationMessage = (type: string, provider: string) => {
+  const handleNotificationMessage = useCallback((type: string, provider: string) => {
     console.log(`🔔 NOTIFICATION CONTEXT RECEIVED ${provider.toUpperCase()} MESSAGE`);
     console.log(`🔔 Message type: ${type}`);
     console.log('🔔 Timestamp:', new Date().toISOString());
@@ -165,7 +165,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
     console.log(`🔔 ${provider} message handling complete`);
-  };
+  }, [refreshUnreadCount, refreshNotificationCount, queryClient]);
 
   // Listen for SignalR messages
   useEffect(() => {
@@ -180,7 +180,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       signalRMessagingService.removeMessageListener(handleSignalRMessage);
     };
-  }, [isSignalRReady, queryClient, refreshUnreadCount, refreshNotificationCount]);
+  }, [isSignalRReady, handleNotificationMessage]);
 
   // Listen for changes in conversations to refresh unread count (fallback for non-Firebase updates)
   useEffect(() => {
@@ -201,7 +201,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         signalRMessagingService.disconnect();
       }
     };
-  }, []);
+  }, [isSignalRReady]);
 
   return (
     <NotificationContext.Provider

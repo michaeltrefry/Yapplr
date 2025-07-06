@@ -7,14 +7,30 @@ import { NotificationProviderSettings } from '@/components/NotificationProviderS
 import { NotificationProviderIndicator } from '@/components/NotificationProviderIndicator';
 import { notificationApi } from '@/lib/api';
 
+interface BackendConfig {
+  SignalR: {
+    Enabled: boolean;
+    MaxConnectionsPerUser: number;
+  };
+}
+
+interface ProviderStatus {
+  AvailableProviders: number;
+  TotalProviders: number;
+  Providers: Array<{
+    Name: string;
+    IsAvailable: boolean;
+  }>;
+}
+
 export default function NotificationTestPage() {
   const { user } = useAuth();
   const { activeNotificationProvider, isSignalRReady } = useNotification();
   const [showSettings, setShowSettings] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [backendConfig, setBackendConfig] = useState<any>(null);
-  const [providerStatus, setProviderStatus] = useState<any>(null);
+  const [backendConfig, setBackendConfig] = useState<BackendConfig | null>(null);
+  const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null);
 
   // Load backend configuration
   useEffect(() => {
@@ -156,7 +172,7 @@ export default function NotificationTestPage() {
                     Available Providers: <span className="font-mono">{providerStatus.AvailableProviders} / {providerStatus.TotalProviders}</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {providerStatus.Providers.map((provider: any, index: number) => (
+                    {providerStatus.Providers.map((provider, index: number) => (
                       <div key={index} className="flex justify-between items-center">
                         <span className="font-medium">{provider.Name}</span>
                         <span className={`text-sm font-mono ${provider.IsAvailable ? 'text-green-600' : 'text-red-600'}`}>

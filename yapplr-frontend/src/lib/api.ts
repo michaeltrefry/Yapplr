@@ -25,7 +25,6 @@ import type {
   SendMessageData,
   CanMessageResponse,
   UnreadCountResponse,
-  Notification,
   NotificationList,
 } from '@/types';
 

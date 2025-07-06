@@ -185,7 +185,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     pronouns: profile.pronouns,
                     tagline: profile.tagline,
                     profileImageFileName: profile.profileImageFileName,
-                    createdAt: profile.createdAt
+                    createdAt: profile.createdAt,
+                    emailVerified: false
                   }}
                   size="xl"
                   clickable={false}

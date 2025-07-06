@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
@@ -18,7 +18,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
 
   // Fetch user preferences
-  const { data: preferences, isLoading: preferencesLoading } = useQuery({
+  const { data: preferences } = useQuery({
     queryKey: ['preferences'],
     queryFn: preferencesApi.get,
     enabled: !!user,

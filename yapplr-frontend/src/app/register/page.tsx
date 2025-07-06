@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter, useSearchParams } from 'next/navigation';
+
 import Link from 'next/link';
 
 function RegisterForm() {
@@ -20,9 +20,6 @@ function RegisterForm() {
   const [registeredEmail, setRegisteredEmail] = useState('');
 
   const { register } = useAuth();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectUrl = searchParams?.get('redirect') || '/';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -41,8 +38,8 @@ function RegisterForm() {
       // After successful registration, show verification message instead of redirecting
       setRegisteredEmail(formData.email);
       setShowVerificationMessage(true);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +54,7 @@ function RegisterForm() {
               Check Your Email
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
-              We've sent a verification email to <strong>{registeredEmail}</strong>
+              We&apos;ve sent a verification email to <strong>{registeredEmail}</strong>
             </p>
           </div>
 
@@ -74,7 +71,7 @@ function RegisterForm() {
                 </h3>
                 <div className="mt-2 text-sm text-blue-700">
                   <p>Please check your email and click the verification link or enter the 6-digit code to activate your account.</p>
-                  <p className="mt-2">You won't be able to log in until your email is verified.</p>
+                  <p className="mt-2">You won&apos;t be able to log in until your email is verified.</p>
                 </div>
               </div>
             </div>
@@ -92,7 +89,7 @@ function RegisterForm() {
               href="/resend-verification"
               className="font-medium text-blue-600 hover:text-blue-500"
             >
-              Didn't receive the email? Resend verification
+              Didn&apos;t receive the email? Resend verification
             </Link>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { User } from '@/types';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface UserAvatarProps {
   user: User;
@@ -29,9 +30,11 @@ export default function UserAvatar({
   };
 
   const avatarContent = user.profileImageFileName ? (
-    <img
+    <Image
       src={getImageUrl(user.profileImageFileName) || ''}
       alt={`${user.username}'s profile`}
+      width={80}
+      height={80}
       className={`${sizeClass} rounded-full object-cover ${className}`}
       onError={(e) => {
         // Fallback to initials if image fails to load

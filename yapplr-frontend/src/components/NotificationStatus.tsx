@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { Wifi, WifiOff, Smartphone, Bell, Clock } from 'lucide-react';
+import { Wifi, WifiOff, Clock } from 'lucide-react';
 
 interface NotificationStatusProps {
   showDetails?: boolean;

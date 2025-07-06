@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { userApi } from '@/lib/api';
 import UserAvatar from './UserAvatar';
-import { User } from '@/types';
+
 import { useRouter } from 'next/navigation';
 
 interface UserListProps {

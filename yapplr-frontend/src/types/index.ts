@@ -27,6 +27,7 @@ export interface UserWithOnlineStatus {
   tagline: string;
   profileImageFileName: string;
   createdAt: string;
+  emailVerified: boolean;
   isOnline: boolean;
 }
 
