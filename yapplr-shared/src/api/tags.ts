@@ -13,10 +13,10 @@ export class TagsApi {
   }
 
   async getTag(tagName: string): Promise<Tag> {
-    return this.client.get(`/tags/${encodeURIComponent(tagName)}`);
+    return this.client.get(`/tags/tag/${encodeURIComponent(tagName)}`);
   }
 
   async getPostsByTag(tagName: string, page = 1, pageSize = 25): Promise<Post[]> {
-    return this.client.get(`/tags/${encodeURIComponent(tagName)}/posts?page=${page}&pageSize=${pageSize}`);
+    return this.client.get(`/tags/tag/${encodeURIComponent(tagName)}/posts?page=${page}&pageSize=${pageSize}`);
   }
 }

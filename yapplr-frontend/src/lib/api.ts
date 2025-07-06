@@ -420,12 +420,12 @@ export const tagApi = {
   },
 
   getTag: async (tagName: string): Promise<Tag> => {
-    const response = await api.get(`/tags/${encodeURIComponent(tagName)}`);
+    const response = await api.get(`/tags/tag/${encodeURIComponent(tagName)}`);
     return response.data;
   },
 
   getPostsByTag: async (tagName: string, page = 1, pageSize = 25): Promise<Post[]> => {
-    const response = await api.get(`/tags/${encodeURIComponent(tagName)}/posts?page=${page}&pageSize=${pageSize}`);
+    const response = await api.get(`/tags/tag/${encodeURIComponent(tagName)}/posts?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 };

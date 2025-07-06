@@ -9,7 +9,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Reyaps**: Reyap content with proper attribution in timeline feeds
 - **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, auto-scroll to new comments, and reply functionality
 - **Mentions**: @username mention system with clickable links and real-time notifications
-- **Hashtags**: #hashtag tagging system with searchable tags, trending topics, and clickable links
+- **Hashtags**: Complete #hashtag system with searchable tags, trending topics, clickable links, dedicated trending page with time periods, hashtag suggestions in post creation, and trending widgets
 - **Comment Replies**: Reply to specific comments with automatic @username prefilling and smart reply context
 - **Likes**: Like and unlike yaps with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates and optional follow approval system
@@ -115,6 +115,37 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Hashtag Support**: #hashtag tagging with search, trending topics, and clickable navigation
 - **Dark Mode**: Complete dark theme support with toggle in Settings and persistent user preferences
 - **Shared Package** - 70-80% code reuse with web app
+
+## 🏷️ Hashtag System
+
+Yapplr features a comprehensive hashtag system that enables content discovery and trending topic tracking:
+
+### Core Features
+- **Automatic Hashtag Detection**: Posts automatically parse and extract #hashtag syntax
+- **Clickable Hashtag Links**: All hashtags are clickable throughout the application
+- **Hashtag Search**: Dedicated search functionality with post counts and trending indicators
+- **Trending Algorithm**: Real-time trending hashtag calculation based on recent activity
+- **Privacy-Aware**: Hashtag counts respect user privacy settings and blocking relationships
+
+### User Interface
+- **Dedicated Trending Page**: `/trending` with time period filters (Now, Today, This Week)
+- **Hashtag Pages**: Individual pages for each hashtag showing all related posts
+- **Search Integration**: Hashtag search tab in the main search interface
+- **Trending Widget**: Sidebar widget on homepage showing top trending hashtags
+- **Post Creation Suggestions**: Smart hashtag suggestions when creating posts
+
+### Technical Implementation
+- **Database Optimization**: Efficient many-to-many relationship with performance indexes
+- **Real-time Updates**: Live trending calculations with configurable refresh intervals
+- **Cross-Platform**: Consistent hashtag functionality across web and mobile apps
+- **Analytics Ready**: Built-in analytics service for hashtag metrics and usage tracking
+
+### API Endpoints
+- `GET /api/tags/trending` - Get trending hashtags
+- `GET /api/tags/search/{query}` - Search hashtags
+- `GET /api/tags/tag/{tagName}` - Get specific hashtag details
+- `GET /api/tags/tag/{tagName}/posts` - Get posts by hashtag
+- Analytics endpoints for detailed hashtag metrics
 
 ## 🏃‍♂️ Quick Start
 

@@ -6,6 +6,7 @@ import Timeline from '@/components/Timeline';
 import PublicTimeline from '@/components/PublicTimeline';
 import Sidebar from '@/components/Sidebar';
 import CreatePost from '@/components/CreatePost';
+import TrendingWidget from '@/components/TrendingWidget';
 import Link from 'next/link';
 
 export default function Home() {
@@ -84,14 +85,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto flex">
-        {/* Sidebar */}
+      <div className="max-w-7xl mx-auto flex">
+        {/* Left Sidebar */}
         <div className="w-16 lg:w-64 fixed h-full z-10">
           <Sidebar />
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 ml-16 lg:ml-64">
+        <div className="flex-1 ml-16 lg:ml-64 lg:mr-80">
           <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
             {/* Header */}
             <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
@@ -103,6 +104,33 @@ export default function Home() {
 
             {/* Timeline */}
             <Timeline />
+          </div>
+        </div>
+
+        {/* Right Sidebar - Hidden on mobile, visible on large screens */}
+        <div className="hidden lg:block w-80 fixed right-0 h-full overflow-y-auto">
+          <div className="p-4 space-y-4">
+            {/* Trending Hashtags Widget */}
+            <TrendingWidget limit={8} />
+
+            {/* Additional widgets could go here */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="font-bold text-gray-900 mb-3">Quick Actions</h3>
+              <div className="space-y-2">
+                <Link
+                  href="/search"
+                  className="block text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Search users & hashtags
+                </Link>
+                <Link
+                  href="/trending"
+                  className="block text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  View all trending topics
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

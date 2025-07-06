@@ -37,14 +37,27 @@ export function formatDate(dateString: string): string {
   });
 }
 
-export function formatNumber(num: number): string {
-  if (num < 1000) {
-    return num.toString();
+export function formatNumber(num: number | undefined | null): string {
+  // Handle undefined, null, or NaN values
+  if (num == null || isNaN(num)) {
+    return '0';
   }
-  
-  if (num < 1000000) {
-    return `${(num / 1000).toFixed(1)}K`;
+
+  // Ensure we have a valid number
+  const validNum = Number(num);
+  if (isNaN(validNum)) {
+    return '0';
   }
-  
-  return `${(num / 1000000).toFixed(1)}M`;
+
+  if (validNum < 1000) {
+    return validNum.toString();
+  }
+
+  if (validNum < 1000000) {
+    const formatted = (validNum / 1000).toFixed(1);
+    return `${formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted}K`;
+  }
+
+  const formatted = (validNum / 1000000).toFixed(1);
+  return `${formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted}M`;
 }

@@ -166,7 +166,7 @@ export default function SearchPage() {
                             #{hashtag.name}
                           </p>
                           <p className="text-gray-500 text-sm">
-                            {formatNumber(hashtag.postCount)} {hashtag.postCount === 1 ? 'post' : 'posts'}
+                            {formatNumber(hashtag.postCount || 0)} {(hashtag.postCount || 0) === 1 ? 'post' : 'posts'}
                           </p>
                         </div>
                       </div>

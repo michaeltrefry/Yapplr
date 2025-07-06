@@ -2,9 +2,9 @@
 
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { postApi, imageApi } from '@/lib/api';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Image as ImageIcon, X } from 'lucide-react';
+import { postApi, imageApi, tagApi } from '@/lib/api';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { Image as ImageIcon, X, Hash } from 'lucide-react';
 import Image from 'next/image';
 import { PostPrivacy } from '@/types';
 
@@ -14,9 +14,17 @@ export default function CreatePost() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [privacy, setPrivacy] = useState<PostPrivacy>(PostPrivacy.Public);
+  const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  // Get trending hashtags for suggestions
+  const { data: trendingTags } = useQuery({
+    queryKey: ['trending-tags-suggestions'],
+    queryFn: () => tagApi.getTrendingTags(5),
+    enabled: showHashtagSuggestions,
+  });
 
   const uploadImageMutation = useMutation({
     mutationFn: imageApi.uploadImage,
@@ -33,6 +41,7 @@ export default function CreatePost() {
       setImagePreview(null);
       setUploadedFileName(null);
       setPrivacy(PostPrivacy.Public);
+      setShowHashtagSuggestions(false); // Hide hashtag suggestions after posting
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -107,12 +116,52 @@ export default function CreatePost() {
           <div className="flex-1">
             <textarea
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => {
+                setContent(e.target.value);
+                // Show hashtag suggestions only when user types #
+                setShowHashtagSuggestions(e.target.value.includes('#'));
+              }}
               placeholder="What's happening?"
               className="w-full text-xl placeholder-gray-500 border-none resize-none focus:outline-none bg-transparent text-gray-900"
               rows={3}
               maxLength={256}
             />
+
+            {/* Hashtag Suggestions */}
+            {showHashtagSuggestions && trendingTags && trendingTags.length > 0 && (
+              <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Hash className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">Trending hashtags</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowHashtagSuggestions(false)}
+                    className="text-gray-400 hover:text-gray-600 p-1"
+                    title="Hide suggestions"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {trendingTags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => {
+                        const newContent = content + (content.endsWith(' ') || content === '' ? '' : ' ') + `#${tag.name} `;
+                        setContent(newContent);
+                        // Keep suggestions visible so users can add multiple hashtags
+                      }}
+                      className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full hover:bg-blue-200 transition-colors"
+                    >
+                      #{tag.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Hidden File Input */}
             <input

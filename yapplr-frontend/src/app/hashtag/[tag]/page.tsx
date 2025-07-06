@@ -120,7 +120,7 @@ export default function HashtagPage() {
                     <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
                   ) : tagInfo ? (
                     <p className="text-sm text-gray-500">
-                      {formatNumber(tagInfo.postCount)} {tagInfo.postCount === 1 ? 'post' : 'posts'}
+                      {formatNumber(tagInfo.postCount || 0)} {(tagInfo.postCount || 0) === 1 ? 'post' : 'posts'}
                     </p>
                   ) : (
                     <p className="text-sm text-gray-500">No posts yet</p>
