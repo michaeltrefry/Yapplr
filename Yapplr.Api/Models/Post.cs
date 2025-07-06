@@ -27,7 +27,8 @@ public class Post
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<Repost> Reposts { get; set; } = new List<Repost>();
     public ICollection<PostTag> PostTags { get; set; } = new List<PostTag>();
-    
+    public ICollection<PostLinkPreview> PostLinkPreviews { get; set; } = new List<PostLinkPreview>();
+
     // Computed properties
     public int LikeCount => Likes.Count;
     public int CommentCount => Comments.Count;

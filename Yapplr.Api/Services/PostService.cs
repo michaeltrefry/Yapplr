@@ -13,13 +13,15 @@ public class PostService : IPostService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IBlockService _blockService;
     private readonly INotificationService _notificationService;
+    private readonly ILinkPreviewService _linkPreviewService;
 
-    public PostService(YapplrDbContext context, IHttpContextAccessor httpContextAccessor, IBlockService blockService, INotificationService notificationService)
+    public PostService(YapplrDbContext context, IHttpContextAccessor httpContextAccessor, IBlockService blockService, INotificationService notificationService, ILinkPreviewService linkPreviewService)
     {
         _context = context;
         _httpContextAccessor = httpContextAccessor;
         _blockService = blockService;
         _notificationService = notificationService;
+        _linkPreviewService = linkPreviewService;
     }
 
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
@@ -40,6 +42,9 @@ public class PostService : IPostService
         // Process hashtags in the post content
         await ProcessPostTagsAsync(post.Id, createDto.Content);
 
+        // Process link previews in the post content
+        await ProcessPostLinkPreviewsAsync(post.Id, createDto.Content);
+
         // Create mention notifications for users mentioned in the post
         await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, post.Id);
 
@@ -51,6 +56,8 @@ public class PostService : IPostService
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
             .FirstAsync(p => p.Id == post.Id);
 
@@ -66,6 +73,8 @@ public class PostService : IPostService
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == postId);
 
@@ -90,6 +99,8 @@ public class PostService : IPostService
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
             .Where(p =>
                 !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
@@ -125,6 +136,8 @@ public class PostService : IPostService
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
             .Where(p =>
                 !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
@@ -206,6 +219,8 @@ public class PostService : IPostService
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
             .Where(p =>
                 p.Privacy == PostPrivacy.Public && // Only public posts
@@ -288,6 +303,8 @@ public class PostService : IPostService
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
             .Where(p => p.UserId == userId &&
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
@@ -332,6 +349,8 @@ public class PostService : IPostService
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
             .Where(p => p.UserId == userId &&
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
@@ -588,8 +607,21 @@ public class PostService : IPostService
         // Map tags to DTOs
         var tags = post.PostTags.Select(pt => pt.Tag.ToDto()).ToList();
 
+        // Map link previews to DTOs
+        var linkPreviews = post.PostLinkPreviews.Select(plp => new LinkPreviewDto(
+            plp.LinkPreview.Id,
+            plp.LinkPreview.Url,
+            plp.LinkPreview.Title,
+            plp.LinkPreview.Description,
+            plp.LinkPreview.ImageUrl,
+            plp.LinkPreview.SiteName,
+            plp.LinkPreview.Status,
+            plp.LinkPreview.ErrorMessage,
+            plp.LinkPreview.CreatedAt
+        )).ToList();
+
         return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
-                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, isLiked, isReposted, isEdited);
+                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, linkPreviews, isLiked, isReposted, isEdited);
     }
 
     private CommentDto MapToCommentDto(Comment comment)
@@ -610,6 +642,8 @@ public class PostService : IPostService
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
             .FirstOrDefaultAsync(p => p.Id == postId);
 
         if (post == null || post.UserId != userId)
@@ -623,6 +657,9 @@ public class PostService : IPostService
 
         // Update hashtags for the post
         await UpdatePostTagsAsync(post.Id, updateDto.Content);
+
+        // Update link previews for the post
+        await UpdatePostLinkPreviewsAsync(post.Id, updateDto.Content);
 
         // Create mention notifications for new mentions in the updated post
         await _notificationService.CreateMentionNotificationsAsync(updateDto.Content, userId, post.Id);
@@ -719,6 +756,35 @@ public class PostService : IPostService
         await _context.SaveChangesAsync();
     }
 
+    private async Task ProcessPostLinkPreviewsAsync(int postId, string content)
+    {
+        try
+        {
+            // Extract and process link previews
+            var linkPreviews = await _linkPreviewService.ProcessPostLinksAsync(content);
+
+            if (!linkPreviews.Any())
+                return;
+
+            // Create PostLinkPreview relationships
+            var postLinkPreviews = linkPreviews.Select(lp => new PostLinkPreview
+            {
+                PostId = postId,
+                LinkPreviewId = lp.Id,
+                CreatedAt = DateTime.UtcNow
+            }).ToList();
+
+            _context.PostLinkPreviews.AddRange(postLinkPreviews);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't fail post creation if link preview processing fails
+            // This could be logged to a proper logging system
+            Console.WriteLine($"Failed to process link previews for post {postId}: {ex.Message}");
+        }
+    }
+
     private async Task UpdatePostTagsAsync(int postId, string content)
     {
         // Get current tags for the post
@@ -794,5 +860,46 @@ public class PostService : IPostService
         }
 
         await _context.SaveChangesAsync();
+    }
+
+    private async Task UpdatePostLinkPreviewsAsync(int postId, string content)
+    {
+        try
+        {
+            // Get current link previews for the post
+            var currentPostLinkPreviews = await _context.PostLinkPreviews
+                .Include(plp => plp.LinkPreview)
+                .Where(plp => plp.PostId == postId)
+                .ToListAsync();
+
+            // Remove all existing link preview relationships for this post
+            if (currentPostLinkPreviews.Any())
+            {
+                _context.PostLinkPreviews.RemoveRange(currentPostLinkPreviews);
+                await _context.SaveChangesAsync();
+            }
+
+            // Process new link previews
+            var linkPreviews = await _linkPreviewService.ProcessPostLinksAsync(content);
+
+            if (linkPreviews.Any())
+            {
+                // Create new PostLinkPreview relationships
+                var newPostLinkPreviews = linkPreviews.Select(lp => new PostLinkPreview
+                {
+                    PostId = postId,
+                    LinkPreviewId = lp.Id,
+                    CreatedAt = DateTime.UtcNow
+                }).ToList();
+
+                _context.PostLinkPreviews.AddRange(newPostLinkPreviews);
+                await _context.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't fail post update if link preview processing fails
+            Console.WriteLine($"Failed to update link previews for post {postId}: {ex.Message}");
+        }
     }
 }

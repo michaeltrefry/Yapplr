@@ -13,6 +13,7 @@ import UserAvatar from './UserAvatar';
 import ShareModal from './ShareModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentHighlight } from '@/utils/contentUtils';
+import LinkPreviewList from './LinkPreviewList';
 
 interface PostCardProps {
   post: Post;
@@ -280,6 +281,13 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                   height={300}
                   className="max-w-full h-auto rounded-lg border border-gray-200"
                 />
+              </div>
+            )}
+
+            {/* Link Previews */}
+            {post.linkPreviews && post.linkPreviews.length > 0 && (
+              <div className="mt-3">
+                <LinkPreviewList linkPreviews={post.linkPreviews} />
               </div>
             )}
           </div>

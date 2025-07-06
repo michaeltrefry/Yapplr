@@ -455,6 +455,7 @@ public class NotificationService : INotificationService
                 0, // CommentCount - we don't need this for notifications
                 0, // RepostCount - we don't need this for notifications
                 new List<TagDto>(), // Tags - empty for notifications
+                new List<LinkPreviewDto>(), // LinkPreviews - empty for notifications
                 false, // IsLikedByCurrentUser - not relevant for notifications
                 false, // IsRepostedByCurrentUser - not relevant for notifications
                 notification.Post.UpdatedAt > notification.Post.CreatedAt.AddMinutes(1) // IsEdited
@@ -494,6 +495,7 @@ public class NotificationService : INotificationService
                     0, // CommentCount - we don't need this for notifications
                     0, // RepostCount - we don't need this for notifications
                     new List<TagDto>(), // Tags - empty for notifications
+                    new List<LinkPreviewDto>(), // LinkPreviews - empty for notifications
                     false, // IsLikedByCurrentUser - not relevant for notifications
                     false, // IsRepostedByCurrentUser - not relevant for notifications
                     notification.Comment.Post.UpdatedAt > notification.Comment.Post.CreatedAt.AddMinutes(1) // IsEdited

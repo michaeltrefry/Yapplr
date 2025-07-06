@@ -10,6 +10,32 @@ export interface Tag {
   postCount: number;
 }
 
+export enum LinkPreviewStatus {
+  Pending = 0,
+  Success = 1,
+  NotFound = 2,
+  Unauthorized = 3,
+  Forbidden = 4,
+  Timeout = 5,
+  NetworkError = 6,
+  InvalidUrl = 7,
+  TooLarge = 8,
+  UnsupportedContent = 9,
+  Error = 10
+}
+
+export interface LinkPreview {
+  id: number;
+  url: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  siteName?: string;
+  status: LinkPreviewStatus;
+  errorMessage?: string;
+  createdAt: string;
+}
+
 export interface User {
   id: number;
   email: string;
@@ -66,6 +92,7 @@ export interface Post {
   commentCount: number;
   repostCount: number;
   tags: Tag[];
+  linkPreviews: LinkPreview[];
   isLikedByCurrentUser: boolean;
   isRepostedByCurrentUser: boolean;
   isEdited: boolean;

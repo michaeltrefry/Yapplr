@@ -46,6 +46,32 @@ export interface UserProfile {
   requiresFollowApproval: boolean;
 }
 
+export enum LinkPreviewStatus {
+  Pending = 0,
+  Success = 1,
+  NotFound = 2,
+  Unauthorized = 3,
+  Forbidden = 4,
+  Timeout = 5,
+  NetworkError = 6,
+  InvalidUrl = 7,
+  TooLarge = 8,
+  UnsupportedContent = 9,
+  Error = 10
+}
+
+export interface LinkPreview {
+  id: number;
+  url: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  siteName?: string;
+  status: LinkPreviewStatus;
+  errorMessage?: string;
+  createdAt: string;
+}
+
 export interface Post {
   id: number;
   content: string;
@@ -57,6 +83,7 @@ export interface Post {
   likeCount: number;
   commentCount: number;
   repostCount: number;
+  linkPreviews: LinkPreview[];
   isLikedByCurrentUser: boolean;
   isRepostedByCurrentUser: boolean;
   isEdited: boolean;

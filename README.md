@@ -10,6 +10,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, auto-scroll to new comments, and reply functionality
 - **Mentions**: @username mention system with clickable links and real-time notifications
 - **Hashtags**: Complete #hashtag system with searchable tags, trending topics, clickable links, dedicated trending page with time periods, hashtag suggestions in post creation, and trending widgets
+- **Link Previews**: Automatic visual previews for URLs in posts with title, description, images, and error handling for broken links
 - **Comment Replies**: Reply to specific comments with automatic @username prefilling and smart reply context
 - **Likes**: Like and unlike yaps with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates and optional follow approval system
@@ -347,6 +348,22 @@ For production, use GitHub secrets:
 - **Search Integration**: Hashtag search integrated into main search page with tabbed interface
 - **Mobile Optimized**: Touch-friendly hashtag interaction with proper navigation in mobile apps
 
+### Link Preview System
+- **Automatic URL Detection**: Posts automatically detect and parse HTTP/HTTPS URLs with comprehensive regex patterns
+- **Visual Link Previews**: Rich preview cards showing title, description, images, and site information from Open Graph metadata
+- **Error Handling**: Clear warning messages for inaccessible links (404, 401, 403, timeouts, network errors)
+- **Status Tracking**: Comprehensive status system (Pending, Success, NotFound, Unauthorized, Forbidden, Timeout, etc.)
+- **Performance Optimization**: Link previews are cached to avoid duplicate fetching of the same URLs
+- **Security Features**: URL validation, content type checking, size limits, and timeout protection
+- **Cross-Platform Support**: Consistent link preview experience across web and mobile applications
+- **External Image Support**: Properly configured Next.js image optimization for external preview images
+- **Smart Parsing**: Extracts metadata using Open Graph tags with fallback to Twitter Card and standard HTML meta tags
+- **Loading States**: Shows "Loading preview..." indicators while fetching link metadata
+- **Clickable Previews**: Preview cards are clickable and open links in new tabs with proper security attributes
+- **Mobile Touch Support**: Touch-friendly preview cards with proper React Native styling and Linking integration
+- **Database Optimization**: Efficient link preview storage with proper indexing and relationship management
+- **API Integration**: RESTful endpoints for link preview management and processing
+
 ### Mentions & Notifications System
 - **@Username Mentions**: Mention users in posts and comments using @username syntax with automatic detection
 - **Clickable Mentions**: All @username mentions are automatically converted to clickable profile links
@@ -638,6 +655,11 @@ For detailed configuration options, see [PLATFORM_SPECIFIC_NOTIFICATIONS.md](PLA
 - `GET /api/tags/analytics/top` - Get top hashtags by total post count
 - `GET /api/tags/{tagName}/analytics` - Get detailed analytics for a specific hashtag
 - `GET /api/tags/{tagName}/usage` - Get hashtag usage over time (daily breakdown)
+
+### Link Preview System
+- `GET /api/link-previews?url={url}` - Get existing link preview by URL
+- `POST /api/link-previews` - Create or get link preview for a specific URL
+- `POST /api/link-previews/process` - Process and create link previews for URLs found in post content
 
 ### User Management
 - `GET /api/users/{username}` - Get user profile

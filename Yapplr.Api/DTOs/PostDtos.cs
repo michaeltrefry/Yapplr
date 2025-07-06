@@ -26,6 +26,7 @@ public record PostDto(
     int CommentCount,
     int RepostCount,
     IEnumerable<TagDto> Tags,
+    IEnumerable<LinkPreviewDto> LinkPreviews,
     bool IsLikedByCurrentUser = false,
     bool IsRepostedByCurrentUser = false,
     bool IsEdited = false

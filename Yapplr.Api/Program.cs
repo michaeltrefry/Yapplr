@@ -142,6 +142,10 @@ builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<ITagAnalyticsService, TagAnalyticsService>();
+builder.Services.AddScoped<ILinkPreviewService, LinkPreviewService>();
+
+// Add HttpClient for LinkPreviewService
+builder.Services.AddHttpClient<LinkPreviewService>();
 
 // Register performance and monitoring services
 builder.Services.AddSingleton<ISignalRConnectionPool, SignalRConnectionPool>();
@@ -290,6 +294,7 @@ app.MapSecurityEndpoints();
 app.MapMetricsEndpoints();
 app.MapNotificationConfigurationEndpoints();
 app.MapTagEndpoints();
+app.MapLinkPreviewEndpoints();
 
 // Map SignalR hub (if enabled)
 if (notificationConfig.SignalR.Enabled)

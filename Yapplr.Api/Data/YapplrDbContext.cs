@@ -30,6 +30,8 @@ public class YapplrDbContext : DbContext
     public DbSet<NotificationPreferences> NotificationPreferences { get; set; }
     public DbSet<Tag> Tags { get; set; }
     public DbSet<PostTag> PostTags { get; set; }
+    public DbSet<LinkPreview> LinkPreviews { get; set; }
+    public DbSet<PostLinkPreview> PostLinkPreviews { get; set; }
     public DbSet<NotificationDeliveryConfirmation> NotificationDeliveryConfirmations { get; set; }
     public DbSet<NotificationHistory> NotificationHistory { get; set; }
     public DbSet<NotificationAuditLog> NotificationAuditLogs { get; set; }
@@ -348,6 +350,43 @@ public class YapplrDbContext : DbContext
             entity.HasOne(e => e.Tag)
                   .WithMany(e => e.PostTags)
                   .HasForeignKey(e => e.TagId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // LinkPreview configuration
+        modelBuilder.Entity<LinkPreview>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Url).IsRequired().HasMaxLength(2048);
+            entity.Property(e => e.Title).HasMaxLength(500);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.ImageUrl).HasMaxLength(2048);
+            entity.Property(e => e.SiteName).HasMaxLength(100);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(500);
+            entity.Property(e => e.Status)
+                  .HasConversion<int>()
+                  .HasDefaultValue(LinkPreviewStatus.Pending);
+
+            // Index for URL lookups to avoid duplicate previews
+            entity.HasIndex(e => e.Url).IsUnique();
+            entity.HasIndex(e => e.Status); // For querying by status
+            entity.HasIndex(e => e.CreatedAt); // For chronological queries
+        });
+
+        // PostLinkPreview configuration
+        modelBuilder.Entity<PostLinkPreview>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.PostId, e.LinkPreviewId }).IsUnique(); // Prevent duplicate post-linkpreview relationships
+            entity.HasIndex(e => e.LinkPreviewId); // For efficient linkpreview-based queries
+            entity.HasIndex(e => e.PostId); // For efficient post-based queries
+            entity.HasOne(e => e.Post)
+                  .WithMany(e => e.PostLinkPreviews)
+                  .HasForeignKey(e => e.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.LinkPreview)
+                  .WithMany(e => e.PostLinkPreviews)
+                  .HasForeignKey(e => e.LinkPreviewId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

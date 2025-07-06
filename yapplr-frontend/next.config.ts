@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
         port: '5161',
         pathname: '/api/images/**',
       },
+      {
+        protocol: 'https',
+        hostname: '**', // Allow all HTTPS hostnames for link preview images
+      },
+      {
+        protocol: 'http',
+        hostname: '**', // Allow all HTTP hostnames for link preview images
+      },
     ],
   },
 };

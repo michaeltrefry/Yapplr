@@ -4,13 +4,14 @@ import Link from 'next/link';
 // Regex patterns
 const MENTION_REGEX = /@([a-zA-Z0-9_-]{3,50})/g;
 const HASHTAG_REGEX = /#([a-zA-Z][a-zA-Z0-9_-]{0,49})/g;
+const URL_REGEX = /https?:\/\/(?:[-\w.])+(?:\:[0-9]+)?(?:\/(?:[\w/_.-])*(?:\?(?:[\w&=%.~+/-])*)?(?:\#(?:[\w.-])*)?)?/g;
 
 interface ContentMatch {
-  type: 'mention' | 'hashtag' | 'text';
+  type: 'mention' | 'hashtag' | 'url' | 'text';
   content: string;
   startIndex: number;
   endIndex: number;
-  value?: string; // username for mentions, hashtag for hashtags
+  value?: string; // username for mentions, hashtag for hashtags, full URL for urls
 }
 
 /**
@@ -43,6 +44,18 @@ function parseContent(content: string): ContentMatch[] {
       startIndex: match.index,
       endIndex: match.index + match[0].length,
       value: match[1].toLowerCase()
+    });
+  }
+
+  // Find all URLs
+  URL_REGEX.lastIndex = 0;
+  while ((match = URL_REGEX.exec(content)) !== null) {
+    matches.push({
+      type: 'url',
+      content: match[0],
+      startIndex: match.index,
+      endIndex: match.index + match[0].length,
+      value: match[0]
     });
   }
 
@@ -113,7 +126,21 @@ export function highlightContent(content: string): React.ReactNode[] {
             #{match.value}
           </Link>
         );
-      
+
+      case 'url':
+        return (
+          <a
+            key={`url-${index}-${match.value}`}
+            href={match.value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {match.value}
+          </a>
+        );
+
       case 'text':
       default:
         return match.content;
@@ -189,4 +216,29 @@ export function hasMentions(content: string): boolean {
 export function hasHashtags(content: string): boolean {
   if (!content) return false;
   return HASHTAG_REGEX.test(content);
+}
+
+/**
+ * Extract URLs from content
+ */
+export function extractUrls(content: string): string[] {
+  if (!content) return [];
+
+  const matches = content.match(URL_REGEX);
+  if (!matches) return [];
+
+  const urls = new Set<string>();
+  matches.forEach(match => {
+    urls.add(match);
+  });
+
+  return Array.from(urls);
+}
+
+/**
+ * Check if content has URLs
+ */
+export function hasUrls(content: string): boolean {
+  if (!content) return false;
+  return URL_REGEX.test(content);
 }

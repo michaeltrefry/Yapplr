@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { TimelineItem, Post } from '../types';
 import ImageViewer from './ImageViewer';
 import { ContentHighlight } from '../utils/contentUtils';
+import LinkPreviewList from './LinkPreviewList';
 
 interface PostCardProps {
   item: TimelineItem;
@@ -197,6 +198,14 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
             </View>
           )}
         </View>
+      )}
+
+      {/* Link Previews */}
+      {item.post.linkPreviews && item.post.linkPreviews.length > 0 && (
+        <LinkPreviewList
+          linkPreviews={item.post.linkPreviews}
+          style={styles.linkPreviewContainer}
+        />
       )}
 
       <View style={styles.postActions}>
@@ -475,5 +484,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  linkPreviewContainer: {
+    marginTop: 12,
   },
 });

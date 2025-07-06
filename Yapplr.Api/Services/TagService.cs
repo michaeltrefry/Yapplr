@@ -159,7 +159,7 @@ public class TagService : ITagService
         var tags = post.PostTags.Select(pt => pt.Tag.ToDto()).ToList();
 
         return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
-                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, isLiked, isReposted, isEdited);
+                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, new List<LinkPreviewDto>(), isLiked, isReposted, isEdited);
     }
 
     private async Task<List<int>> GetBlockedUserIdsAsync(int userId)
