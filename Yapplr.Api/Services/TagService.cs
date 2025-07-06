@@ -19,12 +19,19 @@ public class TagService : ITagService
         _blockService = blockService;
     }
 
-    public async Task<IEnumerable<TagDto>> SearchTagsAsync(string query, int limit = 20)
+    public async Task<IEnumerable<TagDto>> SearchTagsAsync(string query, int? currentUserId = null, int limit = 20)
     {
         if (string.IsNullOrWhiteSpace(query))
             return new List<TagDto>();
 
         var normalizedQuery = query.ToLowerInvariant().TrimStart('#');
+
+        // Get blocked user IDs to filter them out
+        var blockedUserIds = new List<int>();
+        if (currentUserId.HasValue)
+        {
+            blockedUserIds = await GetBlockedUserIdsAsync(currentUserId.Value);
+        }
 
         var tags = await _context.Tags
             .Where(t => t.Name.Contains(normalizedQuery))
@@ -33,7 +40,21 @@ public class TagService : ITagService
             .Take(limit)
             .ToListAsync();
 
-        return tags.Select(t => t.ToDto());
+        // Calculate actual visible post counts for each tag
+        var result = new List<TagDto>();
+        foreach (var tag in tags)
+        {
+            var actualPostCount = await _context.PostTags
+                .Where(pt => pt.TagId == tag.Id &&
+                            !blockedUserIds.Contains(pt.Post.UserId) &&
+                            (pt.Post.Privacy == PostPrivacy.Public ||
+                             (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)))
+                .CountAsync();
+
+            result.Add(new TagDto(tag.Id, tag.Name, actualPostCount));
+        }
+
+        return result.OrderByDescending(t => t.PostCount).ThenBy(t => t.Name);
     }
 
     public async Task<IEnumerable<TagDto>> GetTrendingTagsAsync(int limit = 10)
@@ -82,7 +103,7 @@ public class TagService : ITagService
         return posts.Select(p => MapToPostDto(p, currentUserId));
     }
 
-    public async Task<TagDto?> GetTagByNameAsync(string tagName)
+    public async Task<TagDto?> GetTagByNameAsync(string tagName, int? currentUserId = null)
     {
         if (string.IsNullOrWhiteSpace(tagName))
             return null;
@@ -92,7 +113,26 @@ public class TagService : ITagService
         var tag = await _context.Tags
             .FirstOrDefaultAsync(t => t.Name == normalizedTagName);
 
-        return tag?.ToDto();
+        if (tag == null)
+            return null;
+
+        // Get blocked user IDs to filter them out
+        var blockedUserIds = new List<int>();
+        if (currentUserId.HasValue)
+        {
+            blockedUserIds = await GetBlockedUserIdsAsync(currentUserId.Value);
+        }
+
+        // Calculate the actual visible post count based on user permissions
+        var actualPostCount = await _context.PostTags
+            .Where(pt => pt.Tag.Name == normalizedTagName &&
+                        !blockedUserIds.Contains(pt.Post.UserId) &&
+                        (pt.Post.Privacy == PostPrivacy.Public ||
+                         (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)))
+            .CountAsync();
+
+        // Create a new TagDto with the actual visible count
+        return new TagDto(tag.Id, tag.Name, actualPostCount);
     }
 
     private PostDto MapToPostDto(Post post, int? currentUserId)

@@ -13,9 +13,13 @@ public static class TagEndpoints
         var tags = app.MapGroup("/api/tags").WithTags("Tags");
 
         // Search tags
-        tags.MapGet("/search/{query}", async (string query, ITagService tagService, int limit = 20) =>
+        tags.MapGet("/search/{query}", async (string query, ClaimsPrincipal? user, ITagService tagService, int limit = 20) =>
         {
-            var tags = await tagService.SearchTagsAsync(query, limit);
+            var currentUserId = user?.Identity?.IsAuthenticated == true
+                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
+                : (int?)null;
+
+            var tags = await tagService.SearchTagsAsync(query, currentUserId, limit);
             return Results.Ok(tags);
         })
         .WithName("SearchTags")
@@ -33,9 +37,13 @@ public static class TagEndpoints
         .Produces<IEnumerable<TagDto>>(200);
 
         // Get tag by name
-        tags.MapGet("/{tagName}", async (string tagName, ITagService tagService) =>
+        tags.MapGet("/tag/{tagName}", async (string tagName, ClaimsPrincipal? user, ITagService tagService) =>
         {
-            var tag = await tagService.GetTagByNameAsync(tagName);
+            var currentUserId = user?.Identity?.IsAuthenticated == true
+                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
+                : (int?)null;
+
+            var tag = await tagService.GetTagByNameAsync(tagName, currentUserId);
             return tag == null ? Results.NotFound() : Results.Ok(tag);
         })
         .WithName("GetTag")
@@ -44,7 +52,7 @@ public static class TagEndpoints
         .Produces(404);
 
         // Get posts by tag
-        tags.MapGet("/{tagName}/posts", async (string tagName, ClaimsPrincipal? user, ITagService tagService, int page = 1, int pageSize = 25) =>
+        tags.MapGet("/tag/{tagName}/posts", async (string tagName, ClaimsPrincipal? user, ITagService tagService, int page = 1, int pageSize = 25) =>
         {
             var currentUserId = user?.Identity?.IsAuthenticated == true
                 ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
@@ -58,7 +66,7 @@ public static class TagEndpoints
         .Produces<IEnumerable<PostDto>>(200);
 
         // Analytics endpoints
-        tags.MapGet("/analytics/trending", async (ITagAnalyticsService analyticsService, int days = 7, int limit = 10) =>
+        tags.MapGet("/trending/analytics", async (ITagAnalyticsService analyticsService, int days = 7, int limit = 10) =>
         {
             var trendingTags = await analyticsService.GetTrendingTagsAsync(days, limit);
             return Results.Ok(trendingTags);
@@ -67,7 +75,7 @@ public static class TagEndpoints
         .WithSummary("Get trending hashtags based on recent activity")
         .Produces<IEnumerable<TagDto>>(200);
 
-        tags.MapGet("/analytics/top", async (ITagAnalyticsService analyticsService, int limit = 20) =>
+        tags.MapGet("/top/analytics", async (ITagAnalyticsService analyticsService, int limit = 20) =>
         {
             var topTags = await analyticsService.GetTopTagsAsync(limit);
             return Results.Ok(topTags);
@@ -76,7 +84,7 @@ public static class TagEndpoints
         .WithSummary("Get top hashtags by total post count")
         .Produces<IEnumerable<TagDto>>(200);
 
-        tags.MapGet("/{tagName}/analytics", async (string tagName, ITagAnalyticsService analyticsService) =>
+        tags.MapGet("/tag/{tagName}/analytics", async (string tagName, ITagAnalyticsService analyticsService) =>
         {
             var analytics = await analyticsService.GetTagAnalyticsAsync(tagName);
             return analytics == null ? Results.NotFound() : Results.Ok(analytics);
@@ -86,7 +94,7 @@ public static class TagEndpoints
         .Produces<TagAnalyticsDto>(200)
         .Produces(404);
 
-        tags.MapGet("/{tagName}/usage", async (string tagName, ITagAnalyticsService analyticsService, int days = 30) =>
+        tags.MapGet("/tag/{tagName}/usage", async (string tagName, ITagAnalyticsService analyticsService, int days = 30) =>
         {
             var usage = await analyticsService.GetTagUsageOverTimeAsync(tagName, days);
             return Results.Ok(usage);
