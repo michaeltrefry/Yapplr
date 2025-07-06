@@ -129,14 +129,16 @@ cd Yapplr.Api
 # Install dependencies
 dotnet restore
 
-# Setup database (creates yapplr_db and runs migrations)
+# Setup database (creates yapplr_db)
 ./setup-db.sh
 
-# Start the API
+# Start the API (migrations run automatically at startup)
 dotnet run
 ```
 
 The API will be available at `http://localhost:5161`
+
+**Note**: Database migrations now run automatically when the API starts, ensuring your database is always up-to-date.
 
 ### 2. Frontend Setup
 
@@ -461,9 +463,12 @@ The configuration system automatically updates both frontend and backend setting
 # Create new migration
 dotnet ef migrations add MigrationName
 
-# Update database
-dotnet ef database update
+# Migrations run automatically at application startup
+# No manual database update needed - just restart the API
+dotnet run
 ```
+
+**Automatic Migration System**: Database migrations now run automatically when the API starts, eliminating deployment issues and ensuring consistency across environments.
 
 ### Environment Configuration
 

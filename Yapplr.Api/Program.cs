@@ -238,6 +238,25 @@ builder.Services.AddScoped<IEmailService>(provider =>
 
 var app = builder.Build();
 
+// Run database migrations at startup
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<YapplrDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        logger.LogInformation("🗄️ Running database migrations at startup...");
+        await context.Database.MigrateAsync();
+        logger.LogInformation("✅ Database migrations completed successfully");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "❌ Failed to run database migrations at startup");
+        throw; // This will prevent the application from starting if migrations fail
+    }
+}
+
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI(c =>

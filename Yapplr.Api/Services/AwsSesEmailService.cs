@@ -42,6 +42,13 @@ public class AwsSesEmailService : IEmailService
     {
         try
         {
+            // Check if SES client is available (might be null during migrations)
+            if (_sesClient == null)
+            {
+                _logger.LogWarning("AWS SES client is not available - email sending skipped");
+                return false;
+            }
+
             var sesSettings = _configuration.GetSection("AwsSesSettings");
             var fromEmail = sesSettings["FromEmail"];
             var fromName = sesSettings["FromName"] ?? "Yapplr";
