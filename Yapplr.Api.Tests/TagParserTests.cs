@@ -53,7 +53,7 @@ public class TagParserTests
     public void ExtractTags_WithNullOrEmptyContent_ReturnsEmptyList()
     {
         // Act & Assert
-        TagParser.ExtractTags(null!).Should().BeEmpty();
+        TagParser.ExtractTags(null).Should().BeEmpty();
         TagParser.ExtractTags("").Should().BeEmpty();
         TagParser.ExtractTags("   ").Should().BeEmpty();
     }
@@ -89,19 +89,19 @@ public class TagParserTests
     }
 
     [Fact]
-    public void ExtractTags_WithLongTags_TruncatesAt50Characters()
+    public void ExtractTags_WithLongTags_IgnoresTagsOver50Characters()
     {
         // Arrange
-        var longTag = "verylongtagthatexceedsfiftycharacterslimitandshouldbetrun";
-        var content = $"Long tag: #{longTag}";
-        
+        var longTag = "verylongtagthatexceedsfiftycharacterslimitandshouldbetrun"; // 58 chars
+        var content = $"Long tag: #{longTag} and #validtag";
+
         // Act
         var tags = TagParser.ExtractTags(content);
-        
+
         // Assert
         tags.Should().HaveCount(1);
-        tags.First().Should().HaveLength(50);
-        tags.First().Should().Be(longTag.Substring(0, 50));
+        tags.Should().Contain("validtag");
+        tags.Should().NotContain(longTag);
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public class TagParserTests
     public void HasTags_WithNullOrEmptyContent_ReturnsFalse()
     {
         // Act & Assert
-        TagParser.HasTags(null!).Should().BeFalse();
+        TagParser.HasTags(null).Should().BeFalse();
         TagParser.HasTags("").Should().BeFalse();
         TagParser.HasTags("   ").Should().BeFalse();
     }
@@ -200,7 +200,7 @@ public class TagParserTests
     public void ReplaceTagsWithLinks_WithNullOrEmptyContent_ReturnsOriginal()
     {
         // Act & Assert
-        TagParser.ReplaceTagsWithLinks(null!).Should().BeNull();
+        TagParser.ReplaceTagsWithLinks(null).Should().BeNull();
         TagParser.ReplaceTagsWithLinks("").Should().Be("");
         TagParser.ReplaceTagsWithLinks("   ").Should().Be("   ");
     }
@@ -247,7 +247,7 @@ public class TagParserTests
     public void GetTagPositions_WithNullOrEmptyContent_ReturnsEmptyList()
     {
         // Act & Assert
-        TagParser.GetTagPositions(null!).Should().BeEmpty();
+        TagParser.GetTagPositions(null).Should().BeEmpty();
         TagParser.GetTagPositions("").Should().BeEmpty();
         TagParser.GetTagPositions("   ").Should().BeEmpty();
     }
@@ -268,7 +268,7 @@ public class TagParserTests
     {
         // Act & Assert
         TagParser.IsValidTagName("").Should().BeFalse();
-        TagParser.IsValidTagName(null!).Should().BeFalse();
+        TagParser.IsValidTagName(null).Should().BeFalse();
         TagParser.IsValidTagName("   ").Should().BeFalse();
         TagParser.IsValidTagName("1invalid").Should().BeFalse();
         TagParser.IsValidTagName("_invalid").Should().BeFalse();

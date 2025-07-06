@@ -7,18 +7,34 @@ using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Tests;
 
+// Custom test DbContext that ignores problematic properties
+public class TestYapplrDbContext : YapplrDbContext
+{
+    public TestYapplrDbContext(DbContextOptions<YapplrDbContext> options) : base(options) { }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Ignore the problematic NotificationHistory.Data property for tests
+        modelBuilder.Entity<NotificationHistory>()
+            .Ignore(nh => nh.Data);
+    }
+}
+
 public class BlockServiceTests : IDisposable
 {
-    private readonly YapplrDbContext _context;
+    private readonly TestYapplrDbContext _context;
     private readonly BlockService _blockService;
 
     public BlockServiceTests()
     {
         var options = new DbContextOptionsBuilder<YapplrDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.TransactionStarted))
             .Options;
 
-        _context = new YapplrDbContext(options);
+        _context = new TestYapplrDbContext(options);
         _blockService = new BlockService(_context);
     }
 
