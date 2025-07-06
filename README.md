@@ -624,6 +624,7 @@ For detailed configuration options, see [PLATFORM_SPECIFIC_NOTIFICATIONS.md](PLA
 
 - **Password Hashing**: BCrypt with salt rounds
 - **JWT Tokens**: Secure authentication with 60-minute expiration
+- **Token Expiration Handling**: Automatic detection and seamless login redirection when tokens expire
 - **Email Verification**: Required email verification to prevent bot registrations
 - **Password Recovery**: Secure 6-digit code system with 1-hour expiration and token invalidation
 - **Email Security**: SendGrid integration with professional email templates and reliable delivery

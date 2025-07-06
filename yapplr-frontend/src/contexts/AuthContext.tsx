@@ -36,6 +36,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
+  // Listen for storage changes to handle token removal by API interceptor
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token' && e.newValue === null) {
+        // Token was removed, clear user state
+        setUser(null);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const login = async (data: LoginData) => {
     const response: AuthResponse = await authApi.login(data);
     localStorage.setItem('token', response.token);

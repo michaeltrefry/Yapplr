@@ -16,7 +16,8 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
 - **Timeline**: Smart timeline with yaps and reyaps, privacy-aware filtering
 - **Image Upload**: Server-side image storage and serving
 - **Password Reset**: Email-based password reset with AWS SES integration
-- **Authentication**: JWT-based authentication with secure password hashing
+- **Email Verification**: Email verification system for new user registrations
+- **Authentication**: JWT-based authentication with secure password hashing and automatic token expiration handling
 
 ## Tech Stack
 
@@ -25,7 +26,7 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
 - **Entity Framework Core** - ORM
 - **JWT Bearer** - Authentication
 - **BCrypt** - Password hashing
-- **AWS SES** - Email service for password reset
+- **SendGrid/AWS SES** - Email service for password reset and email verification
 - **File System Storage** - Image upload and serving
 
 ## Getting Started
@@ -84,10 +85,12 @@ The API will be available at:
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - Register new user
+- `POST /api/auth/register` - Register new user (requires email verification)
 - `POST /api/auth/login` - Login user
 - `POST /api/auth/forgot-password` - Request password reset
 - `POST /api/auth/reset-password` - Reset password with token
+- `POST /api/auth/send-verification` - Send email verification token
+- `POST /api/auth/verify-email` - Verify email with token
 
 ### Users
 - `GET /api/users/me` - Get current user profile (authenticated)
@@ -144,13 +147,14 @@ Authorization: Bearer <your-jwt-token>
 ## Data Models
 
 ### User
-- Email (unique)
+- Email (unique, requires verification)
 - Username (unique, 3-50 characters)
 - Bio (up to 500 characters)
 - Birthday (optional)
 - Pronouns (up to 100 characters)
 - Tagline (up to 200 characters)
 - Profile image (optional)
+- Email verification status
 - Follower/Following counts
 
 ### Yap
@@ -216,6 +220,11 @@ Update database:
 dotnet ef database update
 ```
 
+Apply migrations to production:
+```bash
+./run-migrations.sh
+```
+
 ### Environment Variables
 
 For production, set these environment variables instead of using appsettings.json:
@@ -228,5 +237,29 @@ For production, set these environment variables instead of using appsettings.jso
 
 - Passwords are hashed using BCrypt
 - JWT tokens expire after 60 minutes (configurable)
+- Email verification required for new registrations
+- Automatic token expiration handling with login redirection
 - CORS is configured for frontend development
 - All sensitive endpoints require authentication
+
+## Email Verification
+
+New users must verify their email addresses before they can log in:
+
+1. User registers with email and password
+2. System sends verification email with token
+3. User clicks verification link or enters token
+4. Email is marked as verified
+5. User can now log in
+
+Unverified users will be redirected to email verification when attempting to log in.
+
+## Token Expiration Handling
+
+The application automatically handles token expiration:
+
+- **Frontend Web**: Automatically redirects to login page when tokens expire
+- **Mobile App**: Clears session and returns to authentication flow
+- **API**: Returns 401 Unauthorized for expired tokens
+
+This provides a seamless user experience without confusing error messages.

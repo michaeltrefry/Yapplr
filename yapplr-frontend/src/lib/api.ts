@@ -46,6 +46,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle auth errors and redirect to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token is expired or invalid, clear it and redirect to login
+      localStorage.removeItem('token');
+
+      // Only redirect if we're in a browser environment
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname + window.location.search;
+        // Avoid infinite redirects by checking if we're already on login page
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth API
 export const authApi = {
   register: async (data: RegisterData): Promise<AuthResponse> => {
