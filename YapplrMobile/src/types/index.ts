@@ -63,6 +63,12 @@ export enum PostPrivacy {
   Private = 2,
 }
 
+export interface Tag {
+  id: number;
+  name: string;
+  postCount: number;
+}
+
 export interface Post {
   id: number;
   content: string;
@@ -74,6 +80,7 @@ export interface Post {
   likeCount: number;
   commentCount: number;
   repostCount: number;
+  tags: Tag[];
   isLikedByCurrentUser: boolean;
   isRepostedByCurrentUser: boolean;
 }

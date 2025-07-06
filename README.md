@@ -9,6 +9,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Reyaps**: Reyap content with proper attribution in timeline feeds
 - **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, auto-scroll to new comments, and reply functionality
 - **Mentions**: @username mention system with clickable links and real-time notifications
+- **Hashtags**: Complete #hashtag system with searchable tags, trending topics, clickable links, dedicated trending page with time periods, hashtag suggestions in post creation, and trending widgets
 - **Comment Replies**: Reply to specific comments with automatic @username prefilling and smart reply context
 - **Likes**: Like and unlike yaps with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates and optional follow approval system
@@ -59,6 +60,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Return to Top**: Convenient navigation button when reaching the end of timelines
 - **Image Upload**: Server-side image storage for yaps and profile pictures
 - **User Search**: Find users by username or bio content
+- **Hashtag Search**: Search and discover hashtags with trending topics and post counts
 - **Clean UI**: 2015 Twitter-inspired design with modern touches
 - **Individual Yap Pages**: Dedicated URLs for each yap with shareable links
 - **Share Modal**: Popup sharing interface with social media integration (Twitter, Facebook, LinkedIn, Reddit)
@@ -110,8 +112,40 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Enhanced Messaging UI** - Image attachments, read status, and conversation management
 - **Comments System** - Full commenting functionality with dedicated screens, real-time updates, reply functionality, and optimized performance
 - **Mentions & Notifications**: @username mention system with comprehensive notification support and smart navigation
+- **Hashtag Support**: #hashtag tagging with search, trending topics, and clickable navigation
 - **Dark Mode**: Complete dark theme support with toggle in Settings and persistent user preferences
 - **Shared Package** - 70-80% code reuse with web app
+
+## 🏷️ Hashtag System
+
+Yapplr features a comprehensive hashtag system that enables content discovery and trending topic tracking:
+
+### Core Features
+- **Automatic Hashtag Detection**: Posts automatically parse and extract #hashtag syntax
+- **Clickable Hashtag Links**: All hashtags are clickable throughout the application
+- **Hashtag Search**: Dedicated search functionality with post counts and trending indicators
+- **Trending Algorithm**: Real-time trending hashtag calculation based on recent activity
+- **Privacy-Aware**: Hashtag counts respect user privacy settings and blocking relationships
+
+### User Interface
+- **Dedicated Trending Page**: `/trending` with time period filters (Now, Today, This Week)
+- **Hashtag Pages**: Individual pages for each hashtag showing all related posts
+- **Search Integration**: Hashtag search tab in the main search interface
+- **Trending Widget**: Sidebar widget on homepage showing top trending hashtags
+- **Post Creation Suggestions**: Smart hashtag suggestions when creating posts
+
+### Technical Implementation
+- **Database Optimization**: Efficient many-to-many relationship with performance indexes
+- **Real-time Updates**: Live trending calculations with configurable refresh intervals
+- **Cross-Platform**: Consistent hashtag functionality across web and mobile apps
+- **Analytics Ready**: Built-in analytics service for hashtag metrics and usage tracking
+
+### API Endpoints
+- `GET /api/tags/trending` - Get trending hashtags
+- `GET /api/tags/search/{query}` - Search hashtags
+- `GET /api/tags/tag/{tagName}` - Get specific hashtag details
+- `GET /api/tags/tag/{tagName}/posts` - Get posts by hashtag
+- Analytics endpoints for detailed hashtag metrics
 
 ## 🏃‍♂️ Quick Start
 
@@ -296,6 +330,22 @@ For production, use GitHub secrets:
 - **Followers Yaps**: Only visible to followers and author
 - **Private Yaps**: Only visible to the author
 - **Smart Filtering**: Timeline automatically filters based on relationships
+
+### Hashtag System
+- **#Hashtag Tagging**: Tag posts with hashtags using #hashtag syntax with automatic detection and validation
+- **Clickable Hashtags**: All #hashtag tags are automatically converted to clickable links leading to hashtag pages
+- **Hashtag Search**: Search for hashtags with autocomplete and real-time results showing post counts
+- **Trending Hashtags**: Algorithm-based trending hashtag detection based on recent activity and usage patterns
+- **Hashtag Pages**: Dedicated pages for each hashtag showing all posts containing that tag with infinite scroll
+- **Tag Analytics**: Comprehensive hashtag metrics including total posts, recent activity, and usage statistics
+- **Cross-Platform Support**: Consistent hashtag experience across web and mobile platforms
+- **Privacy Aware**: Hashtag searches respect post privacy settings and user blocking relationships
+- **Performance Optimized**: Database indexes and efficient queries for fast hashtag operations
+- **Tag Validation**: Robust hashtag validation (1-50 characters, starts with letter, alphanumeric + underscore/hyphen)
+- **Case Insensitive**: All hashtags normalized to lowercase for consistent behavior
+- **Real-time Updates**: Hashtag post counts update automatically when posts are created or deleted
+- **Search Integration**: Hashtag search integrated into main search page with tabbed interface
+- **Mobile Optimized**: Touch-friendly hashtag interaction with proper navigation in mobile apps
 
 ### Mentions & Notifications System
 - **@Username Mentions**: Mention users in posts and comments using @username syntax with automatic detection
@@ -578,6 +628,16 @@ For detailed configuration options, see [PLATFORM_SPECIFIC_NOTIFICATIONS.md](PLA
 - `POST /api/posts/{id}/comments` - Add a new comment to a yap
 - `PUT /api/posts/comments/{commentId}` - Update your own comment
 - `DELETE /api/posts/comments/{commentId}` - Delete your own comment
+
+### Hashtag System
+- `GET /api/tags/search/{query}` - Search for hashtags with optional limit parameter
+- `GET /api/tags/trending` - Get trending hashtags based on recent activity
+- `GET /api/tags/{tagName}` - Get specific hashtag information and post count
+- `GET /api/tags/{tagName}/posts` - Get all posts containing a specific hashtag (paginated)
+- `GET /api/tags/analytics/trending` - Get trending hashtags with analytics (days and limit parameters)
+- `GET /api/tags/analytics/top` - Get top hashtags by total post count
+- `GET /api/tags/{tagName}/analytics` - Get detailed analytics for a specific hashtag
+- `GET /api/tags/{tagName}/usage` - Get hashtag usage over time (daily breakdown)
 
 ### User Management
 - `GET /api/users/{username}` - Get user profile

@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { Home, User, Search, LogOut, Settings, MessageCircle, Bell, TestTube } from 'lucide-react';
+import { Home, User, Search, LogOut, Settings, MessageCircle, Bell, TestTube, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import FollowingList from './FollowingList';
@@ -42,6 +42,14 @@ export default function Sidebar() {
           >
             <Search className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Search</span>
+          </Link>
+
+          <Link
+            href="/trending"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+          >
+            <TrendingUp className="w-6 h-6" />
+            <span className="text-lg hidden lg:block">Trending</span>
           </Link>
 
           <Link

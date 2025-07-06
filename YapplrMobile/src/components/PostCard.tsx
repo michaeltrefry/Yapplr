@@ -14,6 +14,7 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import { useAuth } from '../contexts/AuthContext';
 import { TimelineItem, Post } from '../types';
 import ImageViewer from './ImageViewer';
+import { ContentHighlight } from '../utils/contentUtils';
 
 interface PostCardProps {
   item: TimelineItem;
@@ -24,9 +25,10 @@ interface PostCardProps {
   onCommentCountUpdate?: (postId: number, newCount: number) => void;
   onDelete?: () => void;
   onUnrepost?: () => void;
+  onHashtagPress?: (hashtag: string) => void;
 }
 
-export default function PostCard({ item, onLike, onRepost, onUserPress, onCommentPress, onCommentCountUpdate, onDelete, onUnrepost }: PostCardProps) {
+export default function PostCard({ item, onLike, onRepost, onUserPress, onCommentPress, onCommentCountUpdate, onDelete, onUnrepost, onHashtagPress }: PostCardProps) {
   const colors = useThemeColors();
   const { user, api } = useAuth();
   const [imageLoading, setImageLoading] = useState(true);
@@ -145,7 +147,13 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
         </View>
       </View>
 
-      <Text style={styles.postContent}>{item.post.content}</Text>
+      <ContentHighlight
+        content={item.post.content}
+        style={styles.postContent}
+        onMentionPress={onUserPress}
+        onHashtagPress={onHashtagPress}
+        linkColor={colors.primary}
+      />
 
       {/* Image Display */}
       {item.post.imageUrl && (

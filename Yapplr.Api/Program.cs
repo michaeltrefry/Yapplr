@@ -140,6 +140,8 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ITagService, TagService>();
+builder.Services.AddScoped<ITagAnalyticsService, TagAnalyticsService>();
 
 // Register performance and monitoring services
 builder.Services.AddSingleton<ISignalRConnectionPool, SignalRConnectionPool>();
@@ -287,6 +289,7 @@ app.MapUXEnhancementEndpoints();
 app.MapSecurityEndpoints();
 app.MapMetricsEndpoints();
 app.MapNotificationConfigurationEndpoints();
+app.MapTagEndpoints();
 
 // Map SignalR hub (if enabled)
 if (notificationConfig.SignalR.Enabled)
