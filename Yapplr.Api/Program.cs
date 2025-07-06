@@ -12,6 +12,7 @@ using Yapplr.Api.Middleware;
 using Yapplr.Api.Hubs;
 using Yapplr.Api.Configuration;
 using SendGrid;
+using Yapplr.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -144,6 +145,11 @@ builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<ITagAnalyticsService, TagAnalyticsService>();
 builder.Services.AddScoped<ILinkPreviewService, LinkPreviewService>();
 
+// Add admin services
+builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<SystemTagSeedService>();
+
 // Add HttpClient for LinkPreviewService
 builder.Services.AddHttpClient<LinkPreviewService>();
 
@@ -244,6 +250,19 @@ builder.Services.AddScoped<IEmailService>(provider =>
 
 var app = builder.Build();
 
+// Handle command line arguments for admin operations
+if (args.Length > 0 && args[0] == "create-admin")
+{
+    await CreateAdminUser(app.Services, args);
+    return;
+}
+
+if (args.Length > 0 && args[0] == "promote-user")
+{
+    await PromoteUser(app.Services, args);
+    return;
+}
+
 // Run database migrations at startup
 using (var scope = app.Services.CreateScope())
 {
@@ -255,10 +274,16 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("🗄️ Running database migrations at startup...");
         await context.Database.MigrateAsync();
         logger.LogInformation("✅ Database migrations completed successfully");
+
+        // Seed default system tags
+        logger.LogInformation("🏷️ Seeding default system tags...");
+        var systemTagSeedService = scope.ServiceProvider.GetRequiredService<SystemTagSeedService>();
+        await systemTagSeedService.SeedDefaultSystemTagsAsync();
+        logger.LogInformation("✅ System tags seeding completed successfully");
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "❌ Failed to run database migrations at startup");
+        logger.LogError(ex, "❌ Failed to run database migrations or seeding at startup");
         throw; // This will prevent the application from starting if migrations fail
     }
 }
@@ -294,7 +319,7 @@ app.MapSecurityEndpoints();
 app.MapMetricsEndpoints();
 app.MapNotificationConfigurationEndpoints();
 app.MapTagEndpoints();
-app.MapLinkPreviewEndpoints();
+app.MapAdminEndpoints();
 
 // Map SignalR hub (if enabled)
 if (notificationConfig.SignalR.Enabled)
@@ -308,3 +333,120 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = Dat
 
 
 app.Run();
+
+// Helper methods for command line operations
+static async Task CreateAdminUser(IServiceProvider services, string[] args)
+{
+    if (args.Length < 4)
+    {
+        Console.WriteLine("Usage: dotnet run create-admin <username> <email> <password>");
+        Console.WriteLine("Example: dotnet run create-admin admin admin@yapplr.com SecurePassword123!");
+        return;
+    }
+
+    var username = args[1];
+    var email = args[2];
+    var password = args[3];
+
+    using var scope = services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<YapplrDbContext>();
+    var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
+    var auditService = scope.ServiceProvider.GetRequiredService<IAuditService>();
+
+    try
+    {
+        // Check if user already exists
+        var existingUser = await context.Users.FirstOrDefaultAsync(u => u.Username == username || u.Email == email);
+        if (existingUser != null)
+        {
+            Console.WriteLine($"❌ User with username '{username}' or email '{email}' already exists.");
+            return;
+        }
+
+        // Create admin user
+        var user = new User
+        {
+            Username = username,
+            Email = email,
+            PasswordHash = authService.HashPassword(password),
+            Role = UserRole.Admin,
+            Status = UserStatus.Active,
+            EmailVerified = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+
+        // Log the admin creation
+        await auditService.LogActionAsync(AuditAction.UserRoleChanged, user.Id, $"Admin user created via command line");
+
+        Console.WriteLine($"✅ Admin user created successfully!");
+        Console.WriteLine($"   Username: {username}");
+        Console.WriteLine($"   Email: {email}");
+        Console.WriteLine($"   Role: Admin");
+        Console.WriteLine($"   Status: Active");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Error creating admin user: {ex.Message}");
+    }
+}
+
+static async Task PromoteUser(IServiceProvider services, string[] args)
+{
+    if (args.Length < 3)
+    {
+        Console.WriteLine("Usage: dotnet run promote-user <username-or-email> <role>");
+        Console.WriteLine("Roles: User, Moderator, Admin");
+        Console.WriteLine("Example: dotnet run promote-user john@example.com Admin");
+        return;
+    }
+
+    var usernameOrEmail = args[1];
+    var roleString = args[2];
+
+    if (!Enum.TryParse<UserRole>(roleString, true, out var role))
+    {
+        Console.WriteLine("❌ Invalid role. Valid roles are: User, Moderator, Admin");
+        return;
+    }
+
+    using var scope = services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<YapplrDbContext>();
+    var auditService = scope.ServiceProvider.GetRequiredService<IAuditService>();
+
+    try
+    {
+        // Find user
+        var user = await context.Users.FirstOrDefaultAsync(u =>
+            u.Username == usernameOrEmail || u.Email == usernameOrEmail);
+
+        if (user == null)
+        {
+            Console.WriteLine($"❌ User not found: {usernameOrEmail}");
+            return;
+        }
+
+        var oldRole = user.Role;
+        user.Role = role;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync();
+
+        // Log the role change
+        await auditService.LogActionAsync(AuditAction.UserRoleChanged, user.Id,
+            $"Role changed from {oldRole} to {role} via command line");
+
+        Console.WriteLine($"✅ User role updated successfully!");
+        Console.WriteLine($"   Username: {user.Username}");
+        Console.WriteLine($"   Email: {user.Email}");
+        Console.WriteLine($"   Old Role: {oldRole}");
+        Console.WriteLine($"   New Role: {role}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Error promoting user: {ex.Message}");
+    }
+}

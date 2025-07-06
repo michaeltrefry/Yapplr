@@ -1,0 +1,353 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { adminApi } from '@/lib/api';
+import { ContentQueue, AdminPost, AdminComment, SystemTag } from '@/types';
+import {
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  Trash2,
+  Tag,
+  User,
+  Calendar,
+  MessageSquare,
+  FileText,
+} from 'lucide-react';
+
+export default function ContentQueuePage() {
+  const [queue, setQueue] = useState<ContentQueue | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'posts' | 'comments' | 'appeals'>('posts');
+  const [systemTags, setSystemTags] = useState<SystemTag[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [queueData, tagsData] = await Promise.all([
+          adminApi.getContentQueue(),
+          adminApi.getSystemTags(),
+        ]);
+        setQueue(queueData);
+        setSystemTags(tagsData);
+      } catch (error) {
+        console.error('Failed to fetch queue data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleHidePost = async (postId: number) => {
+    const reason = prompt('Enter reason for hiding this post:');
+    if (!reason) return;
+
+    try {
+      await adminApi.hidePost(postId, { reason });
+      // Refresh queue
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to hide post:', error);
+      alert('Failed to hide post');
+    }
+  };
+
+  const handleDeletePost = async (postId: number) => {
+    const reason = prompt('Enter reason for deleting this post:');
+    if (!reason) return;
+
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await adminApi.deletePost(postId, { reason });
+      // Refresh queue
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      alert('Failed to delete post');
+    }
+  };
+
+  const handleHideComment = async (commentId: number) => {
+    const reason = prompt('Enter reason for hiding this comment:');
+    if (!reason) return;
+
+    try {
+      await adminApi.hideComment(commentId, { reason });
+      // Refresh queue
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to hide comment:', error);
+      alert('Failed to hide comment');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    const reason = prompt('Enter reason for deleting this comment:');
+    if (!reason) return;
+
+    if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await adminApi.deleteComment(commentId, { reason });
+      // Refresh queue
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      alert('Failed to delete comment');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  const tabs = [
+    { id: 'posts', name: 'Flagged Posts', count: queue?.flaggedPosts.length || 0, icon: FileText },
+    { id: 'comments', name: 'Flagged Comments', count: queue?.flaggedComments.length || 0, icon: MessageSquare },
+    { id: 'appeals', name: 'Pending Appeals', count: queue?.pendingAppeals.length || 0, icon: AlertTriangle },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Content Moderation Queue</h1>
+        <p className="text-gray-600">Review and moderate flagged content</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon className="h-5 w-5 mr-2" />
+                {tab.name}
+                {tab.count > 0 && (
+                  <span className="ml-2 bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs">
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Content */}
+      <div className="space-y-4">
+        {activeTab === 'posts' && (
+          <div className="space-y-4">
+            {queue?.flaggedPosts.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No flagged posts to review</p>
+              </div>
+            ) : (
+              queue?.flaggedPosts.map((post) => (
+                <div key={post.id} className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center space-x-3">
+                      <User className="h-8 w-8 text-gray-400" />
+                      <div>
+                        <p className="font-medium text-gray-900">@{post.user.username}</p>
+                        <p className="text-sm text-gray-500 flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {new Date(post.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleHidePost(post.id)}
+                        className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
+                      >
+                        <EyeOff className="h-4 w-4 mr-1" />
+                        Hide
+                      </button>
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-gray-900">{post.content}</p>
+                    {post.imageFileName && (
+                      <div className="mt-2">
+                        <img
+                          src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${post.imageFileName}`}
+                          alt="Post image"
+                          className="max-w-md rounded-lg"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {post.systemTags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {post.systemTags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                          style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+                        >
+                          <Tag className="h-3 w-3 mr-1" />
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex space-x-4">
+                      <span>{post.likeCount} likes</span>
+                      <span>{post.commentCount} comments</span>
+                      <span>{post.repostCount} reposts</span>
+                    </div>
+                    {post.isHidden && (
+                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
+                        Hidden
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {activeTab === 'comments' && (
+          <div className="space-y-4">
+            {queue?.flaggedComments.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No flagged comments to review</p>
+              </div>
+            ) : (
+              queue?.flaggedComments.map((comment) => (
+                <div key={comment.id} className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center space-x-3">
+                      <User className="h-8 w-8 text-gray-400" />
+                      <div>
+                        <p className="font-medium text-gray-900">@{comment.user.username}</p>
+                        <p className="text-sm text-gray-500 flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {new Date(comment.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleHideComment(comment.id)}
+                        className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
+                      >
+                        <EyeOff className="h-4 w-4 mr-1" />
+                        Hide
+                      </button>
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-gray-900">{comment.content}</p>
+                  </div>
+
+                  {comment.systemTags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {comment.systemTags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                          style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+                        >
+                          <Tag className="h-3 w-3 mr-1" />
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {comment.isHidden && (
+                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
+                      Hidden
+                    </span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {activeTab === 'appeals' && (
+          <div className="space-y-4">
+            {queue?.pendingAppeals.length === 0 ? (
+              <div className="text-center py-12">
+                <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No pending appeals to review</p>
+              </div>
+            ) : (
+              queue?.pendingAppeals.map((appeal) => (
+                <div key={appeal.id} className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <p className="font-medium text-gray-900">@{appeal.username}</p>
+                      <p className="text-sm text-gray-500">{appeal.type} Appeal</p>
+                    </div>
+                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
+                      {appeal.status}
+                    </span>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-gray-900">{appeal.reason}</p>
+                    {appeal.additionalInfo && (
+                      <p className="text-gray-600 mt-2">{appeal.additionalInfo}</p>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Submitted {new Date(appeal.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

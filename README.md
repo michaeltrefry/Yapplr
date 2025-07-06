@@ -42,6 +42,40 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Fallback System**: Automatic fallback between notification providers for reliability
 - **Dark Mode**: Complete dark theme support with user preferences and persistent storage
 
+### 🛡️ Admin & Moderation System
+- **Comprehensive Admin Dashboard**: Full-featured admin interface with role-based access control
+  - **Admin Roles**: Support for Admin and Moderator roles with different permission levels
+  - **Real-time Statistics**: Live dashboard with user counts, content metrics, and moderation activity
+  - **Quick Actions**: Fast access to common moderation tasks and system management
+- **User Management**: Complete user administration and moderation tools
+  - **User Overview**: Paginated user list with filtering by status (Active, Suspended, Banned, Shadow Banned) and role
+  - **User Actions**: Suspend, ban, shadow ban, and unban users with reason tracking
+  - **Role Management**: Promote users to Moderator or Admin roles with audit logging
+  - **Account Status**: View user details including login history, IP addresses, and account metrics
+- **Content Moderation**: Advanced content management and moderation capabilities
+  - **Post Management**: View, hide, unhide, and delete posts with reason tracking and bulk actions
+  - **Comment Management**: Moderate comments with hide/unhide/delete functionality and bulk operations
+  - **System Tags**: Apply and manage system tags for content categorization and violation tracking
+  - **Content Queue**: Review flagged content with priority-based moderation workflow
+  - **Bulk Actions**: Efficiently moderate multiple posts or comments simultaneously
+- **System Tags**: Flexible content labeling and violation tracking system
+  - **Tag Categories**: Organize tags by type (Violation, Warning, Information, etc.)
+  - **Content Tagging**: Apply system tags to posts and comments for tracking and filtering
+  - **Tag Management**: Create, edit, and manage system tags with descriptions and visibility settings
+- **Audit Logging**: Comprehensive activity tracking and accountability
+  - **Action Logging**: Track all admin and moderator actions with timestamps and reasons
+  - **User Activity**: Monitor user behavior and moderation history
+  - **System Events**: Log important system events and administrative changes
+- **Appeals System**: User appeal workflow for moderation decisions
+  - **Appeal Submission**: Users can appeal suspensions, bans, and content removals
+  - **Appeal Review**: Admins and moderators can review and respond to user appeals
+  - **Appeal Tracking**: Track appeal status and resolution history
+- **Analytics & Reporting**: Detailed insights into platform health and moderation effectiveness
+  - **User Growth**: Track user registration, activity, and retention metrics
+  - **Content Trends**: Monitor post and comment creation, engagement, and moderation patterns
+  - **Moderation Stats**: Analyze moderation activity, response times, and effectiveness
+  - **System Health**: Monitor platform performance and identify potential issues
+
 ### Privacy & Security
 - **Email Verification**: Required email verification at signup to prevent bot registrations
   - **6-digit verification codes** sent via SendGrid with beautiful email templates
@@ -315,6 +349,56 @@ For production, use GitHub secrets:
 - **Smart Notifications**: Prevents duplicate notifications (e.g., no double notifications when post owner is mentioned in comments)
 - **Cross-Platform**: Works on web browsers with push notification support
 - **Background Notifications**: Notifications work even when the app is closed
+
+### 6. Admin Setup (Creating Admin Users)
+
+The platform includes comprehensive admin and moderation tools. To access the admin interface, you need to create admin users using command-line tools.
+
+#### Creating the First Admin User
+```bash
+# Navigate to API directory
+cd Yapplr.Api
+
+# Create an admin user (requires API to be running)
+dotnet run create-admin <username> <email> <password>
+
+# Example:
+dotnet run create-admin admin admin@yapplr.com SecurePassword123!
+```
+
+#### Promoting Existing Users
+```bash
+# Promote an existing user to Admin or Moderator
+dotnet run promote-user <username-or-email> <role>
+
+# Examples:
+dotnet run promote-user john@example.com Admin
+dotnet run promote-user moderator1 Moderator
+```
+
+#### Admin Interface Access
+Once you have admin users created:
+1. **Login**: Use your admin credentials to log into the web app
+2. **Access Admin Panel**: Navigate to `/admin` or use the admin navigation
+3. **Admin Dashboard**: View platform statistics, user metrics, and moderation queue
+4. **Available Admin Pages**:
+   - **Dashboard** (`/admin`) - Overview and quick actions
+   - **Users** (`/admin/users`) - User management and moderation
+   - **Posts** (`/admin/posts`) - Post moderation and management
+   - **Comments** (`/admin/comments`) - Comment moderation
+   - **Content Queue** (`/admin/queue`) - Flagged content review
+   - **System Tags** (`/admin/system-tags`) - Content labeling system
+   - **Appeals** (`/admin/appeals`) - User appeal management
+   - **Audit Logs** (`/admin/audit-logs`) - Action tracking and accountability
+   - **Analytics** (`/admin/analytics`) - Platform insights and reporting
+
+#### Admin Features
+- **Role-Based Access**: Different permissions for Admin vs Moderator roles
+- **User Management**: Suspend, ban, shadow ban users with reason tracking
+- **Content Moderation**: Hide, delete, and tag posts and comments
+- **Bulk Actions**: Efficiently moderate multiple items simultaneously
+- **Audit Logging**: Complete tracking of all administrative actions
+- **Real-time Stats**: Live dashboard with platform metrics and activity
 
 ## 📱 Key Features in Detail
 

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Yapplr.Api.Models;
 
 namespace Yapplr.Api.DTOs;
 
@@ -35,7 +36,9 @@ public record UserDto(
     string ProfileImageFileName,
     DateTime CreatedAt,
     string? FcmToken,
-    bool EmailVerified
+    bool EmailVerified,
+    UserRole Role,
+    UserStatus Status
 );
 
 public record UserProfileDto(

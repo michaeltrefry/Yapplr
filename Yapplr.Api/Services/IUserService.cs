@@ -1,4 +1,5 @@
 using Yapplr.Api.DTOs;
+using Yapplr.Api.Models;
 
 namespace Yapplr.Api.Services;
 
@@ -22,4 +23,15 @@ public interface IUserService
     Task<FollowResponseDto> DenyFollowRequestAsync(int requestId, int userId);
     Task<FollowResponseDto> ApproveFollowRequestByUserIdAsync(int requesterId, int userId);
     Task<FollowResponseDto> DenyFollowRequestByUserIdAsync(int requesterId, int userId);
+
+    // Admin methods
+    Task<User?> GetUserEntityByIdAsync(int userId);
+    Task<bool> SuspendUserAsync(int userId, int suspendedByUserId, string reason, DateTime? suspendedUntil = null);
+    Task<bool> UnsuspendUserAsync(int userId);
+    Task<bool> BanUserAsync(int userId, int bannedByUserId, string reason, bool isShadowBan = false);
+    Task<bool> UnbanUserAsync(int userId);
+    Task<bool> ChangeUserRoleAsync(int userId, int changedByUserId, UserRole newRole, string reason);
+    Task<bool> ForcePasswordResetAsync(int userId, int requestedByUserId, string reason);
+    Task<IEnumerable<AdminUserDto>> GetUsersForAdminAsync(int page = 1, int pageSize = 25, UserStatus? status = null, UserRole? role = null);
+    Task<AdminUserDto?> GetUserForAdminAsync(int userId);
 }

@@ -18,7 +18,9 @@ public static class UserExtensions
             user.ProfileImageFileName,
             user.CreatedAt,
             user.FcmToken,
-            user.EmailVerified
+            user.EmailVerified,
+            user.Role,
+            user.Status
         );
     }
 }

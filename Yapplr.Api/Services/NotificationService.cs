@@ -526,4 +526,213 @@ public class NotificationService : INotificationService
 
         return dto;
     }
+
+    // Moderation notification methods
+    public async Task CreateUserSuspensionNotificationAsync(int userId, string reason, DateTime? suspendedUntil, string moderatorUsername)
+    {
+        var message = suspendedUntil.HasValue
+            ? $"Your account has been suspended until {suspendedUntil.Value:yyyy-MM-dd} by @{moderatorUsername}. Reason: {reason}"
+            : $"Your account has been suspended indefinitely by @{moderatorUsername}. Reason: {reason}";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.UserSuspended,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification
+        await _notificationService.SendNotificationAsync(userId, "Account Suspended", message);
+    }
+
+    public async Task CreateUserBanNotificationAsync(int userId, string reason, bool isShadowBan, string moderatorUsername)
+    {
+        var banType = isShadowBan ? "shadow banned" : "banned";
+        var message = $"Your account has been {banType} by @{moderatorUsername}. Reason: {reason}";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.UserBanned,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification (only for regular bans, not shadow bans)
+        if (!isShadowBan)
+        {
+            await _notificationService.SendNotificationAsync(userId, "Account Banned", message);
+        }
+    }
+
+    public async Task CreateUserUnsuspensionNotificationAsync(int userId, string moderatorUsername)
+    {
+        var message = $"Your account suspension has been lifted by @{moderatorUsername}. Welcome back!";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.UserUnsuspended,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification
+        await _notificationService.SendNotificationAsync(userId, "Account Unsuspended", message);
+    }
+
+    public async Task CreateUserUnbanNotificationAsync(int userId, string moderatorUsername)
+    {
+        var message = $"Your account ban has been lifted by @{moderatorUsername}. Welcome back!";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.UserUnbanned,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification
+        await _notificationService.SendNotificationAsync(userId, "Account Unbanned", message);
+    }
+
+    public async Task CreateContentHiddenNotificationAsync(int userId, string contentType, int contentId, string reason, string moderatorUsername)
+    {
+        var message = $"Your {contentType} #{contentId} has been hidden by @{moderatorUsername}. Reason: {reason}";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.ContentHidden,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            PostId = contentType == "post" ? contentId : null,
+            CommentId = contentType == "comment" ? contentId : null,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification
+        await _notificationService.SendNotificationAsync(userId, "Content Hidden", message);
+    }
+
+    public async Task CreateContentDeletedNotificationAsync(int userId, string contentType, int contentId, string reason, string moderatorUsername)
+    {
+        var message = $"Your {contentType} #{contentId} has been deleted by @{moderatorUsername}. Reason: {reason}";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.ContentDeleted,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification
+        await _notificationService.SendNotificationAsync(userId, "Content Deleted", message);
+    }
+
+    public async Task CreateContentRestoredNotificationAsync(int userId, string contentType, int contentId, string moderatorUsername)
+    {
+        var message = $"Your {contentType} #{contentId} has been restored by @{moderatorUsername}.";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.ContentRestored,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            PostId = contentType == "post" ? contentId : null,
+            CommentId = contentType == "comment" ? contentId : null,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification
+        await _notificationService.SendNotificationAsync(userId, "Content Restored", message);
+    }
+
+    public async Task CreateAppealApprovedNotificationAsync(int userId, int appealId, string reviewNotes, string moderatorUsername)
+    {
+        var message = $"Your appeal #{appealId} has been approved by @{moderatorUsername}. {reviewNotes}";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.AppealApproved,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification
+        await _notificationService.SendNotificationAsync(userId, "Appeal Approved", message);
+    }
+
+    public async Task CreateAppealDeniedNotificationAsync(int userId, int appealId, string reviewNotes, string moderatorUsername)
+    {
+        var message = $"Your appeal #{appealId} has been denied by @{moderatorUsername}. {reviewNotes}";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.AppealDenied,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification
+        await _notificationService.SendNotificationAsync(userId, "Appeal Denied", message);
+    }
+
+    public async Task CreateSystemMessageNotificationAsync(int userId, string message)
+    {
+        var notification = new Notification
+        {
+            Type = NotificationType.SystemMessage,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification
+        await _notificationService.SendNotificationAsync(userId, "System Message", message);
+    }
 }

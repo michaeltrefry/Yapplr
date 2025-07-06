@@ -2,7 +2,8 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { Home, User, Search, LogOut, Settings, MessageCircle, Bell, TestTube, TrendingUp } from 'lucide-react';
+import { Home, User, Search, LogOut, Settings, MessageCircle, Bell, TestTube, TrendingUp, Shield } from 'lucide-react';
+import { UserRole } from '@/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import FollowingList from './FollowingList';
@@ -96,6 +97,26 @@ export default function Sidebar() {
           >
             <Settings className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Settings</span>
+          </Link>
+
+          {/* Admin Navigation - Show for Moderators and Admins */}
+          {user && (user.role === UserRole.Moderator || user.role === UserRole.Admin) && (
+            <Link
+              href="/admin"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors text-blue-600 border border-blue-200"
+            >
+              <Shield className="w-6 h-6" />
+              <span className="text-lg hidden lg:block font-medium">Admin</span>
+            </Link>
+          )}
+
+          {/* Temporary Admin Link for Testing - Remove after testing */}
+          <Link
+            href="/admin"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-red-100 transition-colors text-red-600 border border-red-200"
+          >
+            <TestTube className="w-6 h-6" />
+            <span className="text-lg hidden lg:block font-medium">Admin (Test)</span>
           </Link>
 
           {/* Development only - Notification Test */}

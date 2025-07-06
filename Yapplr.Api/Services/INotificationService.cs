@@ -69,4 +69,55 @@ public interface INotificationService
     /// Deletes notifications related to a comment (when comment is deleted)
     /// </summary>
     Task DeleteCommentNotificationsAsync(int commentId);
+
+    // Moderation notifications
+    /// <summary>
+    /// Creates a user suspension notification
+    /// </summary>
+    Task CreateUserSuspensionNotificationAsync(int userId, string reason, DateTime? suspendedUntil, string moderatorUsername);
+
+    /// <summary>
+    /// Creates a user ban notification
+    /// </summary>
+    Task CreateUserBanNotificationAsync(int userId, string reason, bool isShadowBan, string moderatorUsername);
+
+    /// <summary>
+    /// Creates a user unsuspension notification
+    /// </summary>
+    Task CreateUserUnsuspensionNotificationAsync(int userId, string moderatorUsername);
+
+    /// <summary>
+    /// Creates a user unban notification
+    /// </summary>
+    Task CreateUserUnbanNotificationAsync(int userId, string moderatorUsername);
+
+    /// <summary>
+    /// Creates a content hidden notification
+    /// </summary>
+    Task CreateContentHiddenNotificationAsync(int userId, string contentType, int contentId, string reason, string moderatorUsername);
+
+    /// <summary>
+    /// Creates a content deleted notification
+    /// </summary>
+    Task CreateContentDeletedNotificationAsync(int userId, string contentType, int contentId, string reason, string moderatorUsername);
+
+    /// <summary>
+    /// Creates a content restored notification
+    /// </summary>
+    Task CreateContentRestoredNotificationAsync(int userId, string contentType, int contentId, string moderatorUsername);
+
+    /// <summary>
+    /// Creates an appeal approved notification
+    /// </summary>
+    Task CreateAppealApprovedNotificationAsync(int userId, int appealId, string reviewNotes, string moderatorUsername);
+
+    /// <summary>
+    /// Creates an appeal denied notification
+    /// </summary>
+    Task CreateAppealDeniedNotificationAsync(int userId, int appealId, string reviewNotes, string moderatorUsername);
+
+    /// <summary>
+    /// Creates a system message notification
+    /// </summary>
+    Task CreateSystemMessageNotificationAsync(int userId, string message);
 }

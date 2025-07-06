@@ -474,4 +474,184 @@ public class UserService : IUserService
 
         return await DenyFollowRequestAsync(request.Id, userId);
     }
+
+    // Admin methods
+    public async Task<User?> GetUserEntityByIdAsync(int userId)
+    {
+        return await _context.Users
+            .Include(u => u.SuspendedByUser)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+    }
+
+    public async Task<bool> SuspendUserAsync(int userId, int suspendedByUserId, string reason, DateTime? suspendedUntil = null)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return false;
+
+        var moderator = await _context.Users.FindAsync(suspendedByUserId);
+        if (moderator == null) return false;
+
+        user.Status = UserStatus.Suspended;
+        user.SuspendedUntil = suspendedUntil;
+        user.SuspensionReason = reason;
+        user.SuspendedByUserId = suspendedByUserId;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Send notification to the suspended user
+        await _notificationService.CreateUserSuspensionNotificationAsync(userId, reason, suspendedUntil, moderator.Username);
+
+        return true;
+    }
+
+    public async Task<bool> UnsuspendUserAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return false;
+
+        user.Status = UserStatus.Active;
+        user.SuspendedUntil = null;
+        user.SuspensionReason = null;
+        user.SuspendedByUserId = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Send notification to the unsuspended user
+        await _notificationService.CreateUserUnsuspensionNotificationAsync(userId, "System");
+
+        return true;
+    }
+
+    public async Task<bool> BanUserAsync(int userId, int bannedByUserId, string reason, bool isShadowBan = false)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return false;
+
+        var moderator = await _context.Users.FindAsync(bannedByUserId);
+        if (moderator == null) return false;
+
+        user.Status = isShadowBan ? UserStatus.ShadowBanned : UserStatus.Banned;
+        user.SuspensionReason = reason;
+        user.SuspendedByUserId = bannedByUserId;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Send notification to the banned user
+        await _notificationService.CreateUserBanNotificationAsync(userId, reason, isShadowBan, moderator.Username);
+
+        return true;
+    }
+
+    public async Task<bool> UnbanUserAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return false;
+
+        user.Status = UserStatus.Active;
+        user.SuspensionReason = null;
+        user.SuspendedByUserId = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Send notification to the unbanned user
+        await _notificationService.CreateUserUnbanNotificationAsync(userId, "System");
+
+        return true;
+    }
+
+    public async Task<bool> ChangeUserRoleAsync(int userId, int changedByUserId, UserRole newRole, string reason)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return false;
+
+        user.Role = newRole;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ForcePasswordResetAsync(int userId, int requestedByUserId, string reason)
+    {
+        // This would typically involve creating a password reset token and sending an email
+        // For now, we'll just log the action
+        await Task.CompletedTask;
+        return true;
+    }
+
+    public async Task<IEnumerable<AdminUserDto>> GetUsersForAdminAsync(int page = 1, int pageSize = 25, UserStatus? status = null, UserRole? role = null)
+    {
+        var query = _context.Users
+            .Include(u => u.SuspendedByUser)
+            .Include(u => u.Posts)
+            .Include(u => u.Followers)
+            .Include(u => u.Following)
+            .AsQueryable();
+
+        if (status.HasValue)
+            query = query.Where(u => u.Status == status.Value);
+
+        if (role.HasValue)
+            query = query.Where(u => u.Role == role.Value);
+
+        var users = await query
+            .OrderByDescending(u => u.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return users.Select(u => new AdminUserDto
+        {
+            Id = u.Id,
+            Username = u.Username,
+            Email = u.Email,
+            Role = u.Role,
+            Status = u.Status,
+            SuspendedUntil = u.SuspendedUntil,
+            SuspensionReason = u.SuspensionReason,
+            SuspendedByUsername = u.SuspendedByUser?.Username,
+            CreatedAt = u.CreatedAt,
+            LastLoginAt = u.LastLoginAt,
+            LastLoginIp = u.LastLoginIp,
+            EmailVerified = u.EmailVerified,
+            PostCount = u.Posts.Count,
+            FollowerCount = u.Followers.Count,
+            FollowingCount = u.Following.Count
+        });
+    }
+
+    public async Task<AdminUserDto?> GetUserForAdminAsync(int userId)
+    {
+        var user = await _context.Users
+            .Include(u => u.SuspendedByUser)
+            .Include(u => u.Posts)
+            .Include(u => u.Followers)
+            .Include(u => u.Following)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null) return null;
+
+        return new AdminUserDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Email = user.Email,
+            Role = user.Role,
+            Status = user.Status,
+            SuspendedUntil = user.SuspendedUntil,
+            SuspensionReason = user.SuspensionReason,
+            SuspendedByUsername = user.SuspendedByUser?.Username,
+            CreatedAt = user.CreatedAt,
+            LastLoginAt = user.LastLoginAt,
+            LastLoginIp = user.LastLoginIp,
+            EmailVerified = user.EmailVerified,
+            PostCount = user.Posts.Count,
+            FollowerCount = user.Followers.Count,
+            FollowingCount = user.Following.Count
+        };
+    }
 }

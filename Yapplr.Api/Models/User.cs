@@ -2,6 +2,21 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Yapplr.Api.Models;
 
+public enum UserRole
+{
+    User = 0,
+    Moderator = 1,
+    Admin = 2
+}
+
+public enum UserStatus
+{
+    Active = 0,
+    Suspended = 1,
+    Banned = 2,
+    ShadowBanned = 3
+}
+
 public class User
 {
     public int Id { get; set; }
@@ -42,6 +57,16 @@ public class User
 
     public bool EmailVerified { get; set; } = false;
 
+    // Admin/Moderation fields
+    public UserRole Role { get; set; } = UserRole.User;
+    public UserStatus Status { get; set; } = UserStatus.Active;
+    public DateTime? SuspendedUntil { get; set; }
+    public string? SuspensionReason { get; set; }
+    public int? SuspendedByUserId { get; set; }
+    public User? SuspendedByUser { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public string? LastLoginIp { get; set; }
+
     // Navigation properties
     public ICollection<Post> Posts { get; set; } = new List<Post>();
     public ICollection<Like> Likes { get; set; } = new List<Like>();
@@ -69,4 +94,9 @@ public class User
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>(); // Notifications received by this user
     public ICollection<Mention> MentionsReceived { get; set; } = new List<Mention>(); // Mentions of this user
     public ICollection<Mention> MentionsMade { get; set; } = new List<Mention>(); // Mentions made by this user
+
+    // Admin relationships
+    public ICollection<User> SuspendedUsers { get; set; } = new List<User>(); // Users suspended by this admin/moderator
+    public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>(); // Audit logs for actions on this user
+    public ICollection<AuditLog> PerformedAuditLogs { get; set; } = new List<AuditLog>(); // Audit logs for actions performed by this user
 }

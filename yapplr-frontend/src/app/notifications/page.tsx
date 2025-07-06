@@ -7,7 +7,7 @@ import api, { notificationApi, followRequestsApi } from '@/lib/api';
 import { useState, useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bell, Heart, MessageCircle, Repeat, UserPlus, AtSign, Check, X } from 'lucide-react';
+import { ArrowLeft, Bell, Heart, MessageCircle, Repeat, UserPlus, AtSign, Check, X, Shield, Ban, AlertTriangle, Eye, Trash2, RotateCcw, CheckCircle, XCircle, Info } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import type { Notification, NotificationType } from '@/types';
 
@@ -25,6 +25,29 @@ const getNotificationIcon = (type: NotificationType) => {
       return <MessageCircle className="w-5 h-5 text-blue-500" />;
     case 6: // FollowRequest
       return <UserPlus className="w-5 h-5 text-orange-500" />;
+
+    // Moderation notifications
+    case 100: // UserSuspended
+      return <Ban className="w-5 h-5 text-yellow-600" />;
+    case 101: // UserBanned
+      return <Ban className="w-5 h-5 text-red-600" />;
+    case 102: // UserUnsuspended
+      return <CheckCircle className="w-5 h-5 text-green-600" />;
+    case 103: // UserUnbanned
+      return <CheckCircle className="w-5 h-5 text-green-600" />;
+    case 104: // ContentHidden
+      return <Eye className="w-5 h-5 text-orange-600" />;
+    case 105: // ContentDeleted
+      return <Trash2 className="w-5 h-5 text-red-600" />;
+    case 106: // ContentRestored
+      return <RotateCcw className="w-5 h-5 text-green-600" />;
+    case 107: // AppealApproved
+      return <CheckCircle className="w-5 h-5 text-green-600" />;
+    case 108: // AppealDenied
+      return <XCircle className="w-5 h-5 text-red-600" />;
+    case 109: // SystemMessage
+      return <Info className="w-5 h-5 text-blue-600" />;
+
     default:
       return <Bell className="w-5 h-5 text-gray-500" />;
   }
@@ -150,6 +173,13 @@ export default function NotificationsPage() {
     } else if (notification.actorUser) {
       // Follow notifications - go to user profile
       router.push(`/profile/${notification.actorUser.username}`);
+    } else if (notification.type >= 100 && notification.type <= 109) {
+      // Moderation notifications - these are informational, just mark as read
+      // Could potentially navigate to appeals page for appeal-related notifications
+      if (notification.type === 107 || notification.type === 108) { // Appeal notifications
+        // Could navigate to appeals page if we had one for users
+        // For now, just mark as read
+      }
     }
   };
 
@@ -242,14 +272,27 @@ export default function NotificationsPage() {
                   <p className="text-sm mt-2">When someone mentions you, likes your posts, or follows you, you&apos;ll see it here.</p>
                 </div>
               ) : (
-                notificationData.notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                      !notification.isRead ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                    }`}
-                  >
+                notificationData.notifications.map((notification) => {
+                  const isModerationNotification = notification.type >= 100 && notification.type <= 109;
+                  const isNegativeModeration = [100, 101, 104, 105, 108].includes(notification.type); // Suspended, Banned, Hidden, Deleted, Appeal Denied
+                  const isPositiveModeration = [102, 103, 106, 107].includes(notification.type); // Unsuspended, Unbanned, Restored, Appeal Approved
+
+                  return (
+                    <div
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                        !notification.isRead
+                          ? isModerationNotification
+                            ? isNegativeModeration
+                              ? 'bg-red-50 border-l-4 border-red-500'
+                              : isPositiveModeration
+                              ? 'bg-green-50 border-l-4 border-green-500'
+                              : 'bg-blue-50 border-l-4 border-blue-500'
+                            : 'bg-blue-50 border-l-4 border-blue-500'
+                          : ''
+                      }`}
+                    >
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 mt-1">
                         {getNotificationIcon(notification.type)}
@@ -318,7 +361,8 @@ export default function NotificationsPage() {
                       </div>
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
 

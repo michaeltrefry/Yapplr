@@ -35,6 +35,13 @@ public class YapplrDbContext : DbContext
     public DbSet<NotificationDeliveryConfirmation> NotificationDeliveryConfirmations { get; set; }
     public DbSet<NotificationHistory> NotificationHistory { get; set; }
     public DbSet<NotificationAuditLog> NotificationAuditLogs { get; set; }
+
+    // Admin/Moderation entities
+    public DbSet<SystemTag> SystemTags { get; set; }
+    public DbSet<PostSystemTag> PostSystemTags { get; set; }
+    public DbSet<CommentSystemTag> CommentSystemTags { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<UserAppeal> UserAppeals { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -388,6 +395,118 @@ public class YapplrDbContext : DbContext
                   .WithMany(e => e.PostLinkPreviews)
                   .HasForeignKey(e => e.LinkPreviewId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // User admin relationships configuration
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasOne(e => e.SuspendedByUser)
+                  .WithMany(e => e.SuspendedUsers)
+                  .HasForeignKey(e => e.SuspendedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // SystemTag configuration
+        modelBuilder.Entity<SystemTag>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        // PostSystemTag configuration
+        modelBuilder.Entity<PostSystemTag>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.PostId, e.SystemTagId }).IsUnique();
+            entity.HasOne(e => e.Post)
+                  .WithMany(e => e.PostSystemTags)
+                  .HasForeignKey(e => e.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.SystemTag)
+                  .WithMany(e => e.PostSystemTags)
+                  .HasForeignKey(e => e.SystemTagId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.AppliedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.AppliedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // CommentSystemTag configuration
+        modelBuilder.Entity<CommentSystemTag>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.CommentId, e.SystemTagId }).IsUnique();
+            entity.HasOne(e => e.Comment)
+                  .WithMany(e => e.CommentSystemTags)
+                  .HasForeignKey(e => e.CommentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.SystemTag)
+                  .WithMany(e => e.CommentSystemTags)
+                  .HasForeignKey(e => e.SystemTagId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.AppliedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.AppliedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // AuditLog configuration
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Action);
+            entity.HasIndex(e => e.PerformedByUserId);
+            entity.HasIndex(e => e.TargetUserId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasOne(e => e.PerformedByUser)
+                  .WithMany(e => e.PerformedAuditLogs)
+                  .HasForeignKey(e => e.PerformedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.TargetUser)
+                  .WithMany(e => e.AuditLogs)
+                  .HasForeignKey(e => e.TargetUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.TargetPost)
+                  .WithMany(e => e.AuditLogs)
+                  .HasForeignKey(e => e.TargetPostId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.TargetComment)
+                  .WithMany(e => e.AuditLogs)
+                  .HasForeignKey(e => e.TargetCommentId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // UserAppeal configuration
+        modelBuilder.Entity<UserAppeal>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ReviewedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.ReviewedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.AuditLog)
+                  .WithMany()
+                  .HasForeignKey(e => e.AuditLogId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.TargetPost)
+                  .WithMany()
+                  .HasForeignKey(e => e.TargetPostId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.TargetComment)
+                  .WithMany()
+                  .HasForeignKey(e => e.TargetCommentId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

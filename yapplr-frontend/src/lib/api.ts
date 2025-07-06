@@ -26,6 +26,29 @@ import type {
   CanMessageResponse,
   UnreadCountResponse,
   NotificationList,
+  SystemTag,
+  CreateSystemTagDto,
+  UpdateSystemTagDto,
+  AdminUser,
+  AdminPost,
+  AdminComment,
+  AuditLog,
+  UserAppeal,
+  ModerationStats,
+  ContentQueue,
+  SuspendUserDto,
+  BanUserDto,
+  ChangeUserRoleDto,
+  HideContentDto,
+  ApplySystemTagDto,
+  ReviewAppealDto,
+  CreateAppealDto,
+  SystemTagCategory,
+  UserRole,
+  UserStatus,
+  AuditAction,
+  AppealStatus,
+  AppealType,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -426,6 +449,242 @@ export const tagApi = {
 
   getPostsByTag: async (tagName: string, page = 1, pageSize = 25): Promise<Post[]> => {
     const response = await api.get(`/tags/tag/${encodeURIComponent(tagName)}/posts?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+};
+
+// Admin API
+export const adminApi = {
+  // System Tags
+  getSystemTags: async (category?: SystemTagCategory, isActive?: boolean): Promise<SystemTag[]> => {
+    const params = new URLSearchParams();
+    if (category !== undefined) params.append('category', category.toString());
+    if (isActive !== undefined) params.append('isActive', isActive.toString());
+
+    const response = await api.get(`/admin/system-tags?${params.toString()}`);
+    return response.data;
+  },
+
+  getSystemTag: async (id: number): Promise<SystemTag> => {
+    const response = await api.get(`/admin/system-tags/${id}`);
+    return response.data;
+  },
+
+  createSystemTag: async (data: CreateSystemTagDto): Promise<SystemTag> => {
+    const response = await api.post('/admin/system-tags', data);
+    return response.data;
+  },
+
+  updateSystemTag: async (id: number, data: UpdateSystemTagDto): Promise<SystemTag> => {
+    const response = await api.put(`/admin/system-tags/${id}`, data);
+    return response.data;
+  },
+
+  deleteSystemTag: async (id: number): Promise<void> => {
+    await api.delete(`/admin/system-tags/${id}`);
+  },
+
+  // User Management
+  getUsers: async (page = 1, pageSize = 25, status?: UserStatus, role?: UserRole): Promise<AdminUser[]> => {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (status !== undefined) params.append('status', status.toString());
+    if (role !== undefined) params.append('role', role.toString());
+
+    const response = await api.get(`/admin/users?${params.toString()}`);
+    return response.data;
+  },
+
+  getUser: async (id: number): Promise<AdminUser> => {
+    const response = await api.get(`/admin/users/${id}`);
+    return response.data;
+  },
+
+  suspendUser: async (id: number, data: SuspendUserDto): Promise<void> => {
+    await api.post(`/admin/users/${id}/suspend`, data);
+  },
+
+  unsuspendUser: async (id: number): Promise<void> => {
+    await api.post(`/admin/users/${id}/unsuspend`);
+  },
+
+  banUser: async (id: number, data: BanUserDto): Promise<void> => {
+    await api.post(`/admin/users/${id}/ban`, data);
+  },
+
+  unbanUser: async (id: number): Promise<void> => {
+    await api.post(`/admin/users/${id}/unban`);
+  },
+
+  changeUserRole: async (id: number, data: ChangeUserRoleDto): Promise<void> => {
+    await api.post(`/admin/users/${id}/change-role`, data);
+  },
+
+  // Content Moderation
+  getPosts: async (page = 1, pageSize = 25, isHidden?: boolean): Promise<AdminPost[]> => {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (isHidden !== undefined) params.append('isHidden', isHidden.toString());
+
+    const response = await api.get(`/admin/posts?${params.toString()}`);
+    return response.data;
+  },
+
+  getPost: async (id: number): Promise<AdminPost> => {
+    const response = await api.get(`/admin/posts/${id}`);
+    return response.data;
+  },
+
+  hidePost: async (id: number, data: HideContentDto): Promise<void> => {
+    await api.post(`/admin/posts/${id}/hide`, data);
+  },
+
+  unhidePost: async (id: number): Promise<void> => {
+    await api.post(`/admin/posts/${id}/unhide`);
+  },
+
+  deletePost: async (id: number, data: HideContentDto): Promise<void> => {
+    await api.delete(`/admin/posts/${id}`, { data });
+  },
+
+  applySystemTagToPost: async (id: number, data: ApplySystemTagDto): Promise<void> => {
+    await api.post(`/admin/posts/${id}/system-tags`, data);
+  },
+
+  removeSystemTagFromPost: async (id: number, tagId: number): Promise<void> => {
+    await api.delete(`/admin/posts/${id}/system-tags/${tagId}`);
+  },
+
+  // Comment Moderation
+  getComments: async (page = 1, pageSize = 25, isHidden?: boolean): Promise<AdminComment[]> => {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (isHidden !== undefined) params.append('isHidden', isHidden.toString());
+
+    const response = await api.get(`/admin/comments?${params.toString()}`);
+    return response.data;
+  },
+
+  getComment: async (id: number): Promise<AdminComment> => {
+    const response = await api.get(`/admin/comments/${id}`);
+    return response.data;
+  },
+
+  hideComment: async (id: number, data: HideContentDto): Promise<void> => {
+    await api.post(`/admin/comments/${id}/hide`, data);
+  },
+
+  unhideComment: async (id: number): Promise<void> => {
+    await api.post(`/admin/comments/${id}/unhide`);
+  },
+
+  deleteComment: async (id: number, data: HideContentDto): Promise<void> => {
+    await api.delete(`/admin/comments/${id}`, { data });
+  },
+
+  // Analytics and Reporting
+  getStats: async (): Promise<ModerationStats> => {
+    const response = await api.get('/admin/stats');
+    return response.data;
+  },
+
+  getContentQueue: async (): Promise<ContentQueue> => {
+    const response = await api.get('/admin/queue');
+    return response.data;
+  },
+
+  getAuditLogs: async (page = 1, pageSize = 25, action?: AuditAction, performedByUserId?: number, targetUserId?: number): Promise<AuditLog[]> => {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (action !== undefined) params.append('action', action.toString());
+    if (performedByUserId !== undefined) params.append('performedByUserId', performedByUserId.toString());
+    if (targetUserId !== undefined) params.append('targetUserId', targetUserId.toString());
+
+    const response = await api.get(`/admin/audit-logs?${params.toString()}`);
+    return response.data;
+  },
+
+  // User Appeals
+  getAppeals: async (page = 1, pageSize = 25, status?: AppealStatus, type?: AppealType, userId?: number): Promise<UserAppeal[]> => {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (status !== undefined) params.append('status', status.toString());
+    if (type !== undefined) params.append('type', type.toString());
+    if (userId !== undefined) params.append('userId', userId.toString());
+
+    const response = await api.get(`/admin/appeals?${params.toString()}`);
+    return response.data;
+  },
+
+  getAppeal: async (id: number): Promise<UserAppeal> => {
+    const response = await api.get(`/admin/appeals/${id}`);
+    return response.data;
+  },
+
+  reviewAppeal: async (id: number, data: ReviewAppealDto): Promise<UserAppeal> => {
+    const response = await api.post(`/admin/appeals/${id}/review`, data);
+    return response.data;
+  },
+
+  createUserAppeal: async (userId: number, data: CreateAppealDto): Promise<UserAppeal> => {
+    const response = await api.post('/admin/appeals', data);
+    return response.data;
+  },
+
+  // Enhanced Analytics
+  getUserGrowthStats: async (days: number = 30): Promise<UserGrowthStats> => {
+    const response = await api.get(`/admin/analytics/user-growth?days=${days}`);
+    return response.data;
+  },
+
+  getContentStats: async (days: number = 30): Promise<ContentStats> => {
+    const response = await api.get(`/admin/analytics/content-stats?days=${days}`);
+    return response.data;
+  },
+
+  getModerationTrends: async (days: number = 30): Promise<ModerationTrends> => {
+    const response = await api.get(`/admin/analytics/moderation-trends?days=${days}`);
+    return response.data;
+  },
+
+  getSystemHealth: async (): Promise<SystemHealth> => {
+    const response = await api.get('/admin/analytics/system-health');
+    return response.data;
+  },
+
+  getTopModerators: async (days: number = 30, limit: number = 10): Promise<TopModerators> => {
+    const response = await api.get(`/admin/analytics/top-moderators?days=${days}&limit=${limit}`);
+    return response.data;
+  },
+
+  getContentTrends: async (days: number = 30): Promise<ContentTrends> => {
+    const response = await api.get(`/admin/analytics/content-trends?days=${days}`);
+    return response.data;
+  },
+
+  getUserEngagementStats: async (days: number = 30): Promise<UserEngagementStats> => {
+    const response = await api.get(`/admin/analytics/user-engagement?days=${days}`);
+    return response.data;
+  },
+
+  // Bulk Actions
+  bulkHidePosts: async (postIds: number[], reason: string): Promise<{ count: number }> => {
+    const response = await api.post('/admin/bulk/hide-posts', { postIds, reason });
+    return response.data;
+  },
+
+  bulkDeletePosts: async (postIds: number[], reason: string): Promise<{ count: number }> => {
+    const response = await api.post('/admin/bulk/delete-posts', { postIds, reason });
+    return response.data;
+  },
+
+  bulkApplySystemTag: async (postIds: number[], systemTagId: number, reason?: string): Promise<{ count: number }> => {
+    const response = await api.post('/admin/bulk/apply-system-tag', { postIds, systemTagId, reason });
     return response.data;
   },
 };
