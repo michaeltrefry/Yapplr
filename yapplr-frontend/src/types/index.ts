@@ -99,6 +99,10 @@ export interface Post {
   id: number;
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
+  videoThumbnailUrl?: string;
+  videoDurationSeconds?: number;
+  videoProcessingStatus: 'None' | 'Pending' | 'Processing' | 'Completed' | 'Failed';
   privacy: PostPrivacy;
   createdAt: string;
   updatedAt: string;
@@ -165,6 +169,7 @@ export interface LoginData {
 export interface CreatePostData {
   content: string;
   imageFileName?: string;
+  videoFileName?: string;
   privacy?: PostPrivacy;
 }
 
@@ -200,6 +205,10 @@ export interface Message {
   id: number;
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
+  videoThumbnailUrl?: string;
+  videoDurationSeconds?: number;
+  videoProcessingStatus: 'None' | 'Pending' | 'Processing' | 'Completed' | 'Failed';
   createdAt: string;
   updatedAt: string;
   isEdited: boolean;
@@ -231,12 +240,14 @@ export interface CreateMessageData {
   recipientId: number;
   content?: string;
   imageFileName?: string;
+  videoFileName?: string;
 }
 
 export interface SendMessageData {
   conversationId: number;
   content?: string;
   imageFileName?: string;
+  videoFileName?: string;
 }
 
 export interface CanMessageResponse {

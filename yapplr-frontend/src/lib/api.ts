@@ -300,6 +300,49 @@ export const imageApi = {
   },
 };
 
+// Video API
+export const videoApi = {
+  uploadVideo: async (file: File, onProgress?: (progress: number) => void): Promise<{
+    fileName: string;
+    videoUrl: string;
+    sizeBytes: number;
+    originalFileName: string;
+    contentType: string;
+    jobId: number;
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post('/videos/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(progress);
+        }
+      },
+    });
+    return response.data;
+  },
+
+  getProcessingStatus: async (jobId: number): Promise<{
+    jobId: number;
+    status: 'Pending' | 'Processing' | 'Completed' | 'Failed';
+    errorMessage?: string;
+    progressPercentage?: number;
+    currentStep?: string;
+  }> => {
+    const response = await api.get(`/videos/processing-status/${jobId}`);
+    return response.data;
+  },
+
+  deleteVideo: async (fileName: string): Promise<void> => {
+    await api.delete(`/videos/${fileName}`);
+  },
+};
+
 // Messaging API
 export const messageApi = {
   sendMessage: async (data: CreateMessageData): Promise<Message> => {

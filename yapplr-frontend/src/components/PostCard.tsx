@@ -11,6 +11,7 @@ import Image from 'next/image';
 import CommentList from './CommentList';
 import UserAvatar from './UserAvatar';
 import ShareModal from './ShareModal';
+import VideoPlayer from './VideoPlayer';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentHighlight } from '@/utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
@@ -281,6 +282,37 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                   height={300}
                   className="max-w-full h-auto rounded-lg border border-gray-200"
                 />
+              </div>
+            )}
+
+            {/* Video */}
+            {post.videoUrl && (
+              <div className="mt-3">
+                {post.videoProcessingStatus === 'Completed' ? (
+                  <VideoPlayer
+                    videoUrl={post.videoUrl}
+                    thumbnailUrl={post.videoThumbnailUrl}
+                    duration={post.videoDurationSeconds}
+                    className="w-full max-w-lg"
+                  />
+                ) : (
+                  <div className="bg-gray-100 rounded-lg p-8 text-center">
+                    <div className="flex items-center justify-center space-x-2">
+                      {post.videoProcessingStatus === 'Processing' && (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                          <span className="text-gray-600">Processing video...</span>
+                        </>
+                      )}
+                      {post.videoProcessingStatus === 'Failed' && (
+                        <span className="text-red-600">Video processing failed</span>
+                      )}
+                      {post.videoProcessingStatus === 'Pending' && (
+                        <span className="text-gray-600">Video processing queued...</span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

@@ -7,12 +7,15 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Image as ImageIcon, X, Hash } from 'lucide-react';
 import Image from 'next/image';
 import { PostPrivacy } from '@/types';
+import VideoUpload from './VideoUpload';
 
 export default function CreatePost() {
   const [content, setContent] = useState('');
   const [, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [uploadedVideoFileName, setUploadedVideoFileName] = useState<string | null>(null);
+  const [videoJobId, setVideoJobId] = useState<number | null>(null);
   const [privacy, setPrivacy] = useState<PostPrivacy>(PostPrivacy.Public);
   const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,6 +43,8 @@ export default function CreatePost() {
       setSelectedFile(null);
       setImagePreview(null);
       setUploadedFileName(null);
+      setUploadedVideoFileName(null);
+      setVideoJobId(null);
       setPrivacy(PostPrivacy.Public);
       setShowHashtagSuggestions(false); // Hide hashtag suggestions after posting
       if (fileInputRef.current) {
@@ -88,6 +93,21 @@ export default function CreatePost() {
     }
   };
 
+  const handleVideoUploaded = (videoData: {
+    fileName: string;
+    videoUrl: string;
+    jobId: number;
+    sizeBytes: number;
+  }) => {
+    setUploadedVideoFileName(videoData.fileName);
+    setVideoJobId(videoData.jobId);
+  };
+
+  const handleVideoRemove = () => {
+    setUploadedVideoFileName(null);
+    setVideoJobId(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
@@ -95,6 +115,7 @@ export default function CreatePost() {
     createPostMutation.mutate({
       content: content.trim(),
       imageFileName: uploadedFileName || undefined,
+      videoFileName: uploadedVideoFileName || undefined,
       privacy: privacy,
     });
   };
@@ -197,6 +218,17 @@ export default function CreatePost() {
               </div>
             )}
 
+            {/* Video Upload */}
+            {!imagePreview && !uploadedVideoFileName && (
+              <div className="mt-3">
+                <VideoUpload
+                  onVideoUploaded={handleVideoUploaded}
+                  onRemove={handleVideoRemove}
+                  disabled={uploadImageMutation.isPending || createPostMutation.isPending}
+                />
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex items-center justify-between mt-4">
               <div className="flex items-center space-x-4">
@@ -205,7 +237,7 @@ export default function CreatePost() {
                   onClick={() => fileInputRef.current?.click()}
                   className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
                   title="Add image"
-                  disabled={uploadImageMutation.isPending}
+                  disabled={uploadImageMutation.isPending || uploadedVideoFileName !== null}
                 >
                   <ImageIcon className="w-5 h-5" />
                 </button>
