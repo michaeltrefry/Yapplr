@@ -18,6 +18,7 @@ import {
   Server,
   Hash,
   Heart,
+  Filter,
 } from 'lucide-react';
 
 export default function AnalyticsPage() {
@@ -29,10 +30,6 @@ export default function AnalyticsPage() {
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
 
   const [userEngagement, setUserEngagement] = useState<UserEngagementStats | null>(null);
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
 
   const fetchAnalytics = useCallback(async () => {
     try {
@@ -66,6 +63,10 @@ export default function AnalyticsPage() {
       setLoading(false);
     }
   }, [timeRange]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
