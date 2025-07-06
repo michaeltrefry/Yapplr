@@ -51,20 +51,34 @@ echo -e "${GREEN}🚀 Applying database migrations...${NC}"
 echo -e "${YELLOW}Using connection string: ${DATABASE_CONNECTION_STRING}${NC}"
 
 # Apply migrations
+echo -e "${YELLOW}Running migration command...${NC}"
 if docker run --rm \
   -v $(pwd):/app \
   -w /app \
   -e "ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}" \
   mcr.microsoft.com/dotnet/sdk:9.0 \
-  sh -c "dotnet tool install --global dotnet-ef > /dev/null 2>&1 && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update --connection \"${DATABASE_CONNECTION_STRING}\""; then
+  sh -c "dotnet tool install --global dotnet-ef > /dev/null 2>&1 && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update"; then
   echo -e "${GREEN}✅ Database migrations completed successfully!${NC}"
 else
   echo -e "${RED}❌ Database migrations failed!${NC}"
-  echo -e "${YELLOW}Please check the error messages above and verify:${NC}"
-  echo -e "${YELLOW}  1. Database connection string is correct${NC}"
-  echo -e "${YELLOW}  2. Database server is accessible${NC}"
-  echo -e "${YELLOW}  3. Database user has sufficient permissions${NC}"
-  exit 1
+  echo -e "${YELLOW}Trying with explicit connection string parameter...${NC}"
+
+  # Try with explicit connection string parameter as fallback
+  if docker run --rm \
+    -v $(pwd):/app \
+    -w /app \
+    mcr.microsoft.com/dotnet/sdk:9.0 \
+    sh -c "dotnet tool install --global dotnet-ef > /dev/null 2>&1 && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update --connection \"${DATABASE_CONNECTION_STRING}\""; then
+    echo -e "${GREEN}✅ Database migrations completed successfully with explicit connection!${NC}"
+  else
+    echo -e "${RED}❌ Database migrations failed completely!${NC}"
+    echo -e "${YELLOW}Please check the error messages above and verify:${NC}"
+    echo -e "${YELLOW}  1. Database connection string is correct${NC}"
+    echo -e "${YELLOW}  2. Database server is accessible${NC}"
+    echo -e "${YELLOW}  3. Database user has sufficient permissions${NC}"
+    echo -e "${YELLOW}  4. Database exists and is accessible${NC}"
+    exit 1
+  fi
 fi
 
 echo -e "${GREEN}📋 Verifying migration status...${NC}"

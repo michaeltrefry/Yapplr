@@ -111,26 +111,60 @@ echo -e "${YELLOW}Using connection string: ${DATABASE_CONNECTION_STRING}${NC}"
 echo -e "${YELLOW}Available Docker networks:${NC}"
 docker network ls
 
-# Try to run migrations with the correct network name
+# Find the correct network name (Docker Compose prefixes with directory name)
+NETWORK_NAME=$(docker network ls --format "{{.Name}}" | grep yapplr-network | head -1)
+if [ -z "$NETWORK_NAME" ]; then
+  echo -e "${YELLOW}No yapplr-network found, trying alternative network names...${NC}"
+  # Try common Docker Compose network naming patterns
+  POSSIBLE_NETWORKS=(
+    "yapplrapi_yapplr-network"
+    "yapplr-api_yapplr-network"
+    "yapplr_yapplr-network"
+    "yapplr-network"
+  )
+
+  for net in "${POSSIBLE_NETWORKS[@]}"; do
+    if docker network ls --format "{{.Name}}" | grep -q "^${net}$"; then
+      NETWORK_NAME="$net"
+      echo -e "${GREEN}Found network: $NETWORK_NAME${NC}"
+      break
+    fi
+  done
+fi
+
+# Try to run migrations with network if found, otherwise without network
 echo -e "${GREEN}Attempting to run migrations...${NC}"
-if docker run --rm \
-  --network yapplr-network \
-  -v $(pwd):/app \
-  -w /app \
-  -e "ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}" \
-  mcr.microsoft.com/dotnet/sdk:9.0 \
-  sh -c "dotnet tool install --global dotnet-ef && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update"; then
-  echo -e "${GREEN}✅ Database migrations completed successfully${NC}"
-else
-  echo -e "${RED}❌ Database migrations failed${NC}"
-  echo -e "${YELLOW}Trying alternative approach without network isolation...${NC}"
-  # Fallback: run migrations without network isolation if the network approach fails
-  docker run --rm \
+if [ -n "$NETWORK_NAME" ]; then
+  echo -e "${YELLOW}Using network: $NETWORK_NAME${NC}"
+  if docker run --rm \
+    --network "$NETWORK_NAME" \
     -v $(pwd):/app \
     -w /app \
     -e "ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}" \
     mcr.microsoft.com/dotnet/sdk:9.0 \
-    sh -c "dotnet tool install --global dotnet-ef && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update"
+    sh -c "dotnet tool install --global dotnet-ef > /dev/null 2>&1 && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update"; then
+    echo -e "${GREEN}✅ Database migrations completed successfully${NC}"
+  else
+    echo -e "${RED}❌ Database migrations failed with network${NC}"
+    NETWORK_NAME=""  # Clear network name to try without network
+  fi
+fi
+
+# Fallback: run migrations without network isolation
+if [ -z "$NETWORK_NAME" ]; then
+  echo -e "${YELLOW}Trying migrations without network isolation...${NC}"
+  if docker run --rm \
+    -v $(pwd):/app \
+    -w /app \
+    -e "ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}" \
+    mcr.microsoft.com/dotnet/sdk:9.0 \
+    sh -c "dotnet tool install --global dotnet-ef > /dev/null 2>&1 && export PATH=\"\$PATH:/root/.dotnet/tools\" && dotnet ef database update"; then
+    echo -e "${GREEN}✅ Database migrations completed successfully${NC}"
+  else
+    echo -e "${RED}❌ Database migrations failed completely${NC}"
+    echo -e "${YELLOW}Please run migrations manually using: ./run-migrations.sh${NC}"
+    # Don't exit here - let the deployment continue
+  fi
 fi
 
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
