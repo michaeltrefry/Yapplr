@@ -35,27 +35,11 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       const errorMessage = error.response?.data?.message || 'An error occurred';
 
       // Check if the error is related to email verification
-      if (errorMessage.toLowerCase().includes('unauthorized') ||
+      if (error.response?.status === 403 ||
           errorMessage.toLowerCase().includes('verify') ||
           errorMessage.toLowerCase().includes('verification')) {
-        Alert.alert(
-          'Email Verification Required',
-          'Please verify your email address before logging in.',
-          [
-            {
-              text: 'Verify Email',
-              onPress: () => navigation.navigate('VerifyEmail', { email }),
-            },
-            {
-              text: 'Resend Email',
-              onPress: () => navigation.navigate('ResendVerification'),
-            },
-            {
-              text: 'Cancel',
-              style: 'cancel',
-            },
-          ]
-        );
+        // Navigate to email verification required screen
+        navigation.navigate('EmailVerificationRequired', { email });
       } else {
         Alert.alert('Login Failed', errorMessage);
       }
