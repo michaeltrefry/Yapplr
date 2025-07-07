@@ -6,7 +6,7 @@ name: Deploy Yapplr to Linode
 on:
   push:
     branches: [ main ]
-    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**' ]
+    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
       run: |
         echo "LINODE_HOST is set: ${{ secrets.LINODE_HOST != '' }}"
         echo "LINODE_USER is set: ${{ secrets.LINODE_USER != '' }}"
-        echo "SSH key is set: ${{ secrets.LINODE_SSH_KEY != '' }}"
+        echo "LINODE_SSH_KEY is set: ${{ secrets.LINODE_SSH_KEY != '' }}"
 
     - name: Deploy to Linode
       uses: appleboy/ssh-action@v1.0.3
@@ -44,7 +44,7 @@ jobs:
         key: ${{ secrets.LINODE_SSH_KEY }}
         port: 22
         timeout: 60s
-        envs: DATABASE_CONNECTION_STRING,JWT_SECRET_KEY,AWS_SES_REGION,AWS_SES_FROM_EMAIL,AWS_SES_ACCESS_KEY,AWS_SES_SECRET_KEY,SENDGRID_API_KEY,SENDGRID_FROM_EMAIL,SENDGRID_FROM_NAME,EMAIL_PROVIDER,FIREBASE_PROJECT_ID,FIREBASE_SERVICE_ACCOUNT_KEY,API_DOMAIN_NAME,CERTBOT_EMAIL,CERTBOT_DOMAIN
+        envs: DATABASE_CONNECTION_STRING,JWT_SECRET_KEY,SENDGRID_API_KEY,SENDGRID_FROM_EMAIL,SENDGRID_FROM_NAME,EMAIL_PROVIDER,FIREBASE_PROJECT_ID,FIREBASE_SERVICE_ACCOUNT_KEY,API_DOMAIN_NAME,CERTBOT_EMAIL,CERTBOT_DOMAIN
         script: |
           # Navigate to existing repository directory
           cd /opt/Yapplr
