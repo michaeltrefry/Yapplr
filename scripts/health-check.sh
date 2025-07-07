@@ -6,7 +6,12 @@
 set -e
 
 # Configuration
-COMPOSE_FILE="docker-compose.production.yml"
+ENVIRONMENT="${1:-production}"
+if [ "$ENVIRONMENT" = "staging" ]; then
+    COMPOSE_FILE="docker-compose.staging.yml"
+else
+    COMPOSE_FILE="docker-compose.production.yml"
+fi
 API_URL="http://localhost"
 TIMEOUT=10
 
@@ -247,32 +252,50 @@ main() {
 }
 
 # Parse command line arguments
-case "${1:-check}" in
+# Handle both: ./health-check.sh check and ./health-check.sh staging check
+if [ "$1" = "staging" ] || [ "$1" = "production" ]; then
+    COMMAND="${2:-check}"
+else
+    COMMAND="${1:-check}"
+fi
+
+case "$COMMAND" in
     "check")
         main
         ;;
     "quick")
-        log_info "Quick health check..."
+        log_info "Quick health check for $ENVIRONMENT environment..."
         check_url "$API_URL/health" "API Health"
         check_service "yapplr-api" "API Service"
         check_service "yapplr-video-processor" "Video Processor"
         ;;
     "services")
-        log_info "Checking services only..."
+        log_info "Checking services only for $ENVIRONMENT environment..."
         check_service "yapplr-api" "API Service"
         check_service "yapplr-video-processor" "Video Processor"
         check_service "yapplr-frontend" "Frontend Service"
         check_service "postgres" "Database"
-        check_service "redis" "Redis Cache"
+        if [ "$ENVIRONMENT" = "production" ]; then
+            check_service "redis" "Redis Cache"
+        fi
         check_service "nginx" "Nginx Proxy"
         ;;
     *)
-        echo "Usage: $0 {check|quick|services}"
+        echo "Usage: $0 [environment] {check|quick|services}"
+        echo ""
+        echo "Environment:"
+        echo "  production - Use production compose file (default)"
+        echo "  staging    - Use staging compose file"
         echo ""
         echo "Commands:"
         echo "  check    - Full comprehensive health check"
         echo "  quick    - Quick essential checks only"
         echo "  services - Check service status only"
+        echo ""
+        echo "Examples:"
+        echo "  $0 check                    # Production health check"
+        echo "  $0 staging check           # Staging health check"
+        echo "  $0 production quick        # Production quick check"
         exit 1
         ;;
 esac

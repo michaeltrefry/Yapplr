@@ -11,8 +11,9 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./uploads:/var/www/uploads:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/www/certbot:/var/www/certbot
+    depends_on:
+      - yapplr-api
+      - yapplr-frontend
     networks:
       - yapplr-network
     restart: unless-stopped
@@ -23,36 +24,28 @@ services:
       context: .
       dockerfile: Yapplr.Api/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Staging
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - JwtSettings__SecretKey=${JWT_SECRET_KEY}
-      - JwtSettings__Issuer=Yapplr.Api
-      - JwtSettings__Audience=Yapplr.Client
-      - JwtSettings__ExpirationInMinutes=60
-      # AWS SES configuration
-      - AwsSesSettings__Region=${AWS_SES_REGION}
-      - AwsSesSettings__FromEmail=${AWS_SES_FROM_EMAIL}
-      - AwsSesSettings__FromName=Yapplr
-      - AwsSesSettings__AccessKey=${AWS_SES_ACCESS_KEY}
-      - AwsSesSettings__SecretKey=${AWS_SES_SECRET_KEY}
-      # SendGrid configuration
-      - SendGridSettings__ApiKey=${SENDGRID_API_KEY}
-      - SendGridSettings__FromEmail=${SENDGRID_FROM_EMAIL}
-      - SendGridSettings__FromName=${SENDGRID_FROM_NAME}
-      # Email provider selection
-      - EmailProvider=${EMAIL_PROVIDER}
-      # Firebase configuration (REQUIRED for notifications)
-      - Firebase__ProjectId=${FIREBASE_PROJECT_ID}
-      - Firebase__ServiceAccountKey=${FIREBASE_SERVICE_ACCOUNT_KEY}
-      # Storage configuration
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - EmailSettings__Provider=${EMAIL_PROVIDER}
+      - EmailSettings__SendGrid__ApiKey=${SENDGRID_API_KEY}
+      - EmailSettings__SendGrid__FromEmail=${SENDGRID_FROM_EMAIL}
+      - EmailSettings__SendGrid__FromName=${SENDGRID_FROM_NAME}
       - StorageSettings__Type=Local
       - StorageSettings__LocalPath=/app/uploads
       - StorageSettings__BaseUrl=${API_BASE_URL}/uploads
       - VideoProcessing__Enabled=true
+      # Firebase configuration (REQUIRED for notifications)
+      - Firebase__ProjectId=${FIREBASE_PROJECT_ID}
+    depends_on:
+      - postgres
     volumes:
       - ./uploads:/app/uploads
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./logs/api:/app/logs
+      - ./firebase-service-account.json:/app/firebase-service-account.json:ro
     networks:
       - yapplr-network
     restart: unless-stopped
@@ -69,8 +62,8 @@ services:
       context: .
       dockerfile: Yapplr.VideoProcessor/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}
+      - ASPNETCORE_ENVIRONMENT=Staging
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - VideoProcessing__InputPath=/app/uploads/videos
       - VideoProcessing__OutputPath=/app/uploads/videos
       - VideoProcessing__ThumbnailPath=/app/uploads/thumbnails
@@ -90,6 +83,7 @@ services:
       - yapplr-api
     volumes:
       - ./uploads:/app/uploads
+      - ./logs/video-processor:/app/logs
     networks:
       - yapplr-network
     restart: unless-stopped
@@ -106,29 +100,51 @@ services:
       context: ./yapplr-frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=https://api.yapplr.com
-        - NEXT_PUBLIC_WS_URL=wss://api.yapplr.com
-        # Notification provider configuration (SignalR-only for production web)
-        - NEXT_PUBLIC_ENABLE_SIGNALR=true
-        # Force rebuild by passing current timestamp
-        - CACHE_BUST=${CACHE_BUST:-$(date +%s)}
+        - NEXT_PUBLIC_API_URL=${API_BASE_URL}
+        - NEXT_PUBLIC_WS_URL=${WS_BASE_URL}
+        - CACHE_BUST=${CACHE_BUST:-1}
     environment:
       - NODE_ENV=production
     networks:
       - yapplr-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-
-certbot:
-    image: certbot/certbot
+  # PostgreSQL Database (LOCAL FOR STAGING)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - /var/www/certbot:/var/www/certbot
-    command: certbot certonly --manual --preferred-challenges=dns --email ${CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${CERTBOT_DOMAIN} -d yapplr.com
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "5432:5432"  # Expose for debugging/admin access
+    networks:
+      - yapplr-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:
+    driver: local
 
 networks:
   yapplr-network:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.21.0.0/16

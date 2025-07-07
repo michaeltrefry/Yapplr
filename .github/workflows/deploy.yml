@@ -1,12 +1,12 @@
-name: Deploy Yapplr to Linode
+name: Deploy Yapplr Production System
 
-# This workflow deploys both API and Frontend together
-# Single nginx handles routing for both services
+# This workflow deploys the complete Yapplr system using docker-compose.production.yml
+# Includes API, Frontend, Database, Video Processing, and all services
 
 on:
   push:
     branches: [ main ]
-    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**' ]
+    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', 'Yapplr.VideoProcessor/**', 'docker-compose.production.yml', 'scripts/**' ]
   workflow_dispatch:
 
 jobs:
@@ -20,15 +20,8 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       
-    - name: Build Docker image
-      run: |
-        cd Yapplr.Api
-        docker build -t yapplr-api:${{ github.sha }} .
-        docker tag yapplr-api:${{ github.sha }} yapplr-api:latest
-        
-    - name: Save Docker image
-      run: |
-        docker save yapplr-api:latest | gzip > yapplr-api.tar.gz
+    # Note: Docker images will be built on the server by docker-compose
+    # This reduces CI/CD time and ensures consistency with production environment
         
     - name: Debug secrets
       run: |
@@ -44,59 +37,65 @@ jobs:
         key: ${{ secrets.LINODE_SSH_KEY }}
         port: 22
         timeout: 60s
-        envs: DATABASE_CONNECTION_STRING,JWT_SECRET_KEY,AWS_SES_REGION,AWS_SES_FROM_EMAIL,AWS_SES_ACCESS_KEY,AWS_SES_SECRET_KEY,SENDGRID_API_KEY,SENDGRID_FROM_EMAIL,SENDGRID_FROM_NAME,EMAIL_PROVIDER,FIREBASE_PROJECT_ID,FIREBASE_SERVICE_ACCOUNT_KEY,API_DOMAIN_NAME,CERTBOT_EMAIL,CERTBOT_DOMAIN
+        envs: DATABASE_CONNECTION_STRING,JWT_SECRET_KEY,JWT_ISSUER,JWT_AUDIENCE,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,SMTP_SERVER,SMTP_PORT,SMTP_USERNAME,SMTP_PASSWORD,FROM_EMAIL,FROM_NAME,API_BASE_URL,FIREBASE_PROJECT_ID,FIREBASE_SERVICE_ACCOUNT_KEY
         script: |
           # Navigate to existing repository directory
           cd /opt/Yapplr
           git pull origin main
-          cd Yapplr.Api
 
-          # This deployment only handles the backend API
-          # Frontend deployment is handled separately by deploy-frontend.yml
-
-          # Create .env file with all secrets (using printf to handle special characters)
-          cat > .env << 'EOF'
+          # Create .env.production file with all secrets
+          cat > .env.production << 'EOF'
+          # Database Configuration
           DATABASE_CONNECTION_STRING=$DATABASE_CONNECTION_STRING
+          POSTGRES_DB=$POSTGRES_DB
+          POSTGRES_USER=$POSTGRES_USER
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+
+          # JWT Configuration
           JWT_SECRET_KEY=$JWT_SECRET_KEY
-          AWS_SES_REGION=$AWS_SES_REGION
-          AWS_SES_FROM_EMAIL=$AWS_SES_FROM_EMAIL
-          AWS_SES_ACCESS_KEY=$AWS_SES_ACCESS_KEY
-          AWS_SES_SECRET_KEY=$AWS_SES_SECRET_KEY
-          SENDGRID_API_KEY=$SENDGRID_API_KEY
-          SENDGRID_FROM_EMAIL=$SENDGRID_FROM_EMAIL
-          SENDGRID_FROM_NAME=$SENDGRID_FROM_NAME
-          EMAIL_PROVIDER=$EMAIL_PROVIDER
+          JWT_ISSUER=$JWT_ISSUER
+          JWT_AUDIENCE=$JWT_AUDIENCE
+
+          # Email Configuration
+          SMTP_SERVER=$SMTP_SERVER
+          SMTP_PORT=$SMTP_PORT
+          SMTP_USERNAME=$SMTP_USERNAME
+          SMTP_PASSWORD=$SMTP_PASSWORD
+          FROM_EMAIL=$FROM_EMAIL
+          FROM_NAME=$FROM_NAME
+
+          # API Configuration
+          API_BASE_URL=$API_BASE_URL
+
+          # Firebase Configuration
           FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID
-          API_DOMAIN_NAME=$API_DOMAIN_NAME
-          CERTBOT_EMAIL=$CERTBOT_EMAIL
-          CERTBOT_DOMAIN=$CERTBOT_DOMAIN
           EOF
 
-          # Create Firebase Service Account Key as a file (more reliable than env var)
+          # Create Firebase Service Account Key as a file
           echo '$FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
-          echo 'FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> .env
 
-          # Run API-only deployment
-          chmod +x deploy.sh
-          ./deploy.sh
+          # Run production deployment using the enhanced script
+          chmod +x scripts/deploy-production.sh
+          ./scripts/deploy-production.sh deploy
       env:
         DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
         JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-        AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
-        AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
-        AWS_SES_ACCESS_KEY: ${{ secrets.AWS_SES_ACCESS_KEY }}
-        AWS_SES_SECRET_KEY: ${{ secrets.AWS_SES_SECRET_KEY }}
-        SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-        SENDGRID_FROM_EMAIL: ${{ secrets.SENDGRID_FROM_EMAIL }}
-        SENDGRID_FROM_NAME: ${{ secrets.SENDGRID_FROM_NAME }}
-        EMAIL_PROVIDER: ${{ secrets.EMAIL_PROVIDER }}
+        JWT_ISSUER: ${{ secrets.JWT_ISSUER }}
+        JWT_AUDIENCE: ${{ secrets.JWT_AUDIENCE }}
+        POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+        SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
+        FROM_NAME: ${{ secrets.FROM_NAME }}
+        API_BASE_URL: ${{ secrets.API_BASE_URL }}
         FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-        API_DOMAIN_NAME: ${{ secrets.API_DOMAIN_NAME }}
-        CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
-        CERTBOT_DOMAIN: ${{ secrets.CERTBOT_DOMAIN }}
 
     - name: API Health Check
       run: |
-        sleep 30
-        curl -f https://${{ secrets.API_DOMAIN_NAME }}/health || exit 1
+        sleep 60
+        curl -f ${{ secrets.API_BASE_URL }}/health || exit 1

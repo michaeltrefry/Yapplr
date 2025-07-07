@@ -1,0 +1,100 @@
+name: Deploy Yapplr Staging System
+
+# This workflow deploys the complete Yapplr system for staging with local PostgreSQL
+# Includes API, Frontend, Database, Video Processing, and all services
+
+on:
+  push:
+    branches: [ '**' ]  # Any branch
+    branches-ignore: [ main ]  # Except main branch
+    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', 'Yapplr.VideoProcessor/**', 'docker-compose.staging.yml', 'scripts/**' ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    # Note: Docker images will be built on the server by docker-compose
+    # This reduces CI/CD time and ensures consistency with staging environment
+      
+    - name: Deploy to Staging Server
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.STAGING_HOST }}
+        username: ${{ secrets.STAGING_USERNAME }}
+        key: ${{ secrets.STAGING_SSH_KEY }}
+        port: ${{ secrets.STAGING_PORT }}
+        envs: POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,JWT_SECRET_KEY,JWT_ISSUER,JWT_AUDIENCE,SENDGRID_API_KEY,SENDGRID_FROM_EMAIL,SENDGRID_FROM_NAME,EMAIL_PROVIDER,API_BASE_URL,WS_BASE_URL,FIREBASE_PROJECT_ID,FIREBASE_SERVICE_ACCOUNT_KEY
+        script: |
+          # Navigate to existing repository directory
+          cd /opt/Yapplr
+          git fetch origin
+          git checkout ${{ github.ref_name }}
+          git pull origin ${{ github.ref_name }}
+
+          # Create .env.staging file with all secrets
+          cat > .env.staging << 'EOF'
+          # Database Configuration (Local PostgreSQL)
+          POSTGRES_DB=$POSTGRES_DB
+          POSTGRES_USER=$POSTGRES_USER
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          
+          # JWT Configuration
+          JWT_SECRET_KEY=$JWT_SECRET_KEY
+          JWT_ISSUER=$JWT_ISSUER
+          JWT_AUDIENCE=$JWT_AUDIENCE
+          
+          # Email Configuration (SendGrid)
+          EMAIL_PROVIDER=$EMAIL_PROVIDER
+          SENDGRID_API_KEY=$SENDGRID_API_KEY
+          SENDGRID_FROM_EMAIL=$SENDGRID_FROM_EMAIL
+          SENDGRID_FROM_NAME=$SENDGRID_FROM_NAME
+          
+          # API Configuration
+          API_BASE_URL=$API_BASE_URL
+          WS_BASE_URL=$WS_BASE_URL
+          
+          # Firebase Configuration
+          FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID
+          
+          # Video Processing Configuration (Staging limits)
+          VIDEO_MAX_CONCURRENT_JOBS=1
+          VIDEO_POLL_INTERVAL=5
+          VIDEO_MAX_DURATION=300
+          VIDEO_MAX_SIZE=104857600
+          VIDEO_MAX_WIDTH=1280
+          VIDEO_MAX_HEIGHT=720
+          VIDEO_BITRATE=1000k
+          AUDIO_BITRATE=128k
+          EOF
+
+          # Create Firebase Service Account Key as a file
+          echo '$FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
+
+          # Run staging deployment using the staging script
+          chmod +x scripts/deploy-staging.sh
+          ./scripts/deploy-staging.sh deploy
+      env:
+        POSTGRES_DB: ${{ secrets.STAGING_POSTGRES_DB }}
+        POSTGRES_USER: ${{ secrets.STAGING_POSTGRES_USER }}
+        POSTGRES_PASSWORD: ${{ secrets.STAGING_POSTGRES_PASSWORD }}
+        JWT_SECRET_KEY: ${{ secrets.STAGING_JWT_SECRET_KEY }}
+        JWT_ISSUER: ${{ secrets.STAGING_JWT_ISSUER }}
+        JWT_AUDIENCE: ${{ secrets.STAGING_JWT_AUDIENCE }}
+        EMAIL_PROVIDER: ${{ secrets.STAGING_EMAIL_PROVIDER }}
+        SENDGRID_API_KEY: ${{ secrets.STAGING_SENDGRID_API_KEY }}
+        SENDGRID_FROM_EMAIL: ${{ secrets.STAGING_SENDGRID_FROM_EMAIL }}
+        SENDGRID_FROM_NAME: ${{ secrets.STAGING_SENDGRID_FROM_NAME }}
+        API_BASE_URL: ${{ secrets.STAGING_API_BASE_URL }}
+        WS_BASE_URL: ${{ secrets.STAGING_WS_BASE_URL }}
+        FIREBASE_PROJECT_ID: ${{ secrets.STAGING_FIREBASE_PROJECT_ID }}
+        FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.STAGING_FIREBASE_SERVICE_ACCOUNT_KEY }}
+
+    - name: API Health Check
+      run: |
+        sleep 60
+        curl -f ${{ secrets.STAGING_API_BASE_URL }}/health || exit 1
