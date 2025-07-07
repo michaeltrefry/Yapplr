@@ -49,9 +49,9 @@ echo -e "${GREEN}✅ Environment variables validated${NC}"
 
 # Note: Docker images will be built by docker compose with --build flag
 
-# Stop existing containers
+# Stop existing containers (preserving volumes to keep database data)
 echo -e "${GREEN}🛑 Stopping existing containers...${NC}"
-docker compose -f docker-compose.stage.yml down --volumes --remove-orphans || true
+docker compose -f docker-compose.stage.yml down --remove-orphans || true
 
 # Force remove specific containers that might be stuck
 echo -e "${GREEN}🧹 Force removing any stuck containers...${NC}"

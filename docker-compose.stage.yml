@@ -85,7 +85,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     restart: unless-stopped
@@ -100,7 +100,6 @@ services:
 
 volumes:
   yapplr_uploads:
-  postgres_data:
 
 networks:
   yapplr-network:
