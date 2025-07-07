@@ -6,7 +6,7 @@ name: Deploy Yapplr Production System
 on:
   push:
     branches: [ main ]
-    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', 'Yapplr.VideoProcessor/**', 'docker-compose.production.yml', 'scripts/**' ]
+    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', 'Yapplr.VideoProcessor/**', 'docker-compose.production.yml', 'scripts/**', '.github/workflows/**' ]
   workflow_dispatch:
 
 jobs:

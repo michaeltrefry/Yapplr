@@ -2,11 +2,12 @@ name: Deploy Yapplr Staging System
 
 # This workflow deploys the complete Yapplr system for staging with local PostgreSQL
 # Includes API, Frontend, Database, Video Processing, and all services
+# Tests run before deployment to ensure code quality
 
 on:
   push:
     branches-ignore: [ main ]  # Any branch except main
-    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', 'Yapplr.VideoProcessor/**', 'docker-compose.staging.yml', 'scripts/**' ]
+    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', 'Yapplr.VideoProcessor/**', 'docker-compose.staging.yml', 'scripts/**', '.github/workflows/**' ]
   workflow_dispatch:
 
 jobs:
