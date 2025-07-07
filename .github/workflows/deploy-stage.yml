@@ -1,0 +1,94 @@
+name: Deploy Yapplr to Stage
+
+# This workflow deploys both API and Frontend together
+# Single nginx handles routing for both services
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', '.github/workflows/**']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Docker image
+      run: |
+        cd Yapplr.Api
+        docker build -t yapplr-api:${{ github.sha }} .
+        docker tag yapplr-api:${{ github.sha }} yapplr-api:latest
+        
+    - name: Save Docker image
+      run: |
+        docker save yapplr-api:latest | gzip > yapplr-api.tar.gz
+        
+    - name: Debug secrets
+      run: |
+        echo "STAGE_SERVER_HOST is set: ${{ secrets.STAGE_SERVER_HOST != '' }}"
+        echo "STAGE_SERVER_USER is set: ${{ secrets.STAGE_SERVER_USER != '' }}"
+        echo "STAGE_SERVER_SSH_KEY is set: ${{ secrets.STAGE_SERVER_SSH_KEY != '' }}"
+
+    - name: Deploy to Linode
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.STAGE_SERVER_HOST }}
+        username: ${{ secrets.STAGE_SERVER_USER }}
+        key: ${{ secrets.STAGE_SERVER_SSH_KEY }}
+        port: 22
+        timeout: 60s
+        envs: STAGE_DATABASE_CONNECTION_STRING,STAGE_JWT_SECRET_KEY,STAGE_SENDGRID_API_KEY,STAGE_SENDGRID_FROM_EMAIL,STAGE_SENDGRID_FROM_NAME,STAGE_EMAIL_PROVIDER,STAGE_FIREBASE_PROJECT_ID,STAGE_FIREBASE_SERVICE_ACCOUNT_KEY,STAGE_API_DOMAIN_NAME,STAGE_CERTBOT_EMAIL,STAGE_CERTBOT_DOMAIN
+        script: |
+          # Navigate to existing repository directory
+          cd /opt/Yapplr
+          git pull origin main
+          cd Yapplr.Api
+
+          # This deployment only handles the backend API
+          # Frontend deployment is handled separately by deploy-frontend.yml
+
+          # Create .env file with all secrets (using printf to handle special characters)
+          cat > .env << 'EOF'
+          STAGE_DATABASE_CONNECTION_STRING=$STAGE_DATABASE_CONNECTION_STRING
+          STAGE_JWT_SECRET_KEY=$STAGE_JWT_SECRET_KEY
+          STAGE_SENDGRID_API_KEY=$STAGE_SENDGRID_API_KEY
+          STAGE_SENDGRID_FROM_EMAIL=$STAGE_SENDGRID_FROM_EMAIL
+          STAGE_SENDGRID_FROM_NAME=$STAGE_SENDGRID_FROM_NAME
+          STAGE_EMAIL_PROVIDER=$STAGE_EMAIL_PROVIDER
+          STAGE_FIREBASE_PROJECT_ID=$STAGE_FIREBASE_PROJECT_ID
+          STAGE_API_DOMAIN_NAME=$STAGE_API_DOMAIN_NAME
+          STAGE_CERTBOT_EMAIL=$STAGE_CERTBOT_EMAIL
+          STAGE_CERTBOT_DOMAIN=$STAGE_CERTBOT_DOMAIN
+          EOF
+
+          # Create Firebase Service Account Key as a file (more reliable than env var)
+          echo '$STAGE_FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
+          echo 'STAGE_FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> .env
+
+          # Run API-only deployment
+          chmod +x deploy-stage.sh
+          ./deploy-stage.sh
+      env:
+        STAGE_DATABASE_CONNECTION_STRING: ${{ secrets.STAGE_DATABASE_CONNECTION_STRING }}
+        STAGE_JWT_SECRET_KEY: ${{ secrets.STAGE_JWT_SECRET_KEY }}
+        STAGE_SENDGRID_API_KEY: ${{ secrets.STAGE_SENDGRID_API_KEY }}
+        STAGE_SENDGRID_FROM_EMAIL: ${{ secrets.STAGE_SENDGRID_FROM_EMAIL }}
+        STAGE_SENDGRID_FROM_NAME: ${{ secrets.STAGE_SENDGRID_FROM_NAME }}
+        STAGE_EMAIL_PROVIDER: ${{ secrets.STAGE_EMAIL_PROVIDER }}
+        STAGE_FIREBASE_PROJECT_ID: ${{ secrets.STAGE_FIREBASE_PROJECT_ID }}
+        STAGE_FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.STAGE_FIREBASE_SERVICE_ACCOUNT_KEY }}
+        STAGE_API_DOMAIN_NAME: ${{ secrets.STAGE_API_DOMAIN_NAME }}
+        STAGE_CERTBOT_EMAIL: ${{ secrets.STAGE_CERTBOT_EMAIL }}
+        STAGE_CERTBOT_DOMAIN: ${{ secrets.STAGE_CERTBOT_DOMAIN }}
+
+    - name: API Health Check
+      run: |
+        sleep 30
+        curl -f https://${{ secrets.STAGE_API_DOMAIN_NAME }}/health || exit 1

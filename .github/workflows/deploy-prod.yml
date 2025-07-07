@@ -1,4 +1,4 @@
-name: Deploy Yapplr to Linode
+name: Deploy Yapplr to Production
 
 # This workflow deploys both API and Frontend together
 # Single nginx handles routing for both services
@@ -73,8 +73,8 @@ jobs:
           echo 'PROD_FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> .env
 
           # Run API-only deployment
-          chmod +x deploy.sh
-          ./deploy.sh
+          chmod +x deploy-prod.sh
+          ./deploy-prod.sh
       env:
         PROD_DATABASE_CONNECTION_STRING: ${{ secrets.PROD_DATABASE_CONNECTION_STRING }}
         PROD_JWT_SECRET_KEY: ${{ secrets.PROD_JWT_SECRET_KEY }}

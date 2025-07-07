@@ -7,27 +7,29 @@ services:
       dockerfile: Dockerfile
     image: yapplr-api:latest
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=${PROD_DATABASE_CONNECTION_STRING}
-      - JwtSettings__SecretKey=${PROD_JWT_SECRET_KEY}
+      - ASPNETCORE_ENVIRONMENT=Staging
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=yapplr_db;Username=postgres;Password=postgres
+      - JwtSettings__SecretKey=${STAGE_JWT_SECRET_KEY}
       - JwtSettings__Issuer=Yapplr.Api
       - JwtSettings__Audience=Yapplr.Client
       - JwtSettings__ExpirationInMinutes=60
       # SendGrid configuration
-      - SendGridSettings__ApiKey=${PROD_SENDGRID_API_KEY}
-      - SendGridSettings__FromEmail=${PROD_SENDGRID_FROM_EMAIL}
-      - SendGridSettings__FromName=${PROD_SENDGRID_FROM_NAME}
+      - SendGridSettings__ApiKey=${STAGE_SENDGRID_API_KEY}
+      - SendGridSettings__FromEmail=${STAGE_SENDGRID_FROM_EMAIL}
+      - SendGridSettings__FromName=${STAGE_SENDGRID_FROM_NAME}
       # Email provider selection
-      - EmailProvider=${PROD_EMAIL_PROVIDER}
+      - EmailProvider=${STAGE_EMAIL_PROVIDER}
       # Firebase configuration (REQUIRED for notifications)
-      - Firebase__ProjectId=${PROD_FIREBASE_PROJECT_ID}
-      - Firebase__ServiceAccountKey=${PROD_FIREBASE_SERVICE_ACCOUNT_KEY}
+      - Firebase__ProjectId=${STAGE_FIREBASE_PROJECT_ID}
+      - Firebase__ServiceAccountKey=${STAGE_FIREBASE_SERVICE_ACCOUNT_KEY}
     volumes:
       - yapplr_uploads:/app/uploads
       - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: unless-stopped
     networks:
       - yapplr-network
+    depends_on:
+      - postgres
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
@@ -40,7 +42,7 @@ services:
       context: ../yapplr-frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=https://${PROD_API_DOMAIN_NAME}
+        - NEXT_PUBLIC_API_URL=https://${STAGE_API_DOMAIN_NAME}
         # Notification provider configuration (SignalR-only for production web)
         - NEXT_PUBLIC_ENABLE_SIGNALR=true
         # Force rebuild by passing current timestamp
@@ -64,12 +66,26 @@ services:
     networks:
       - yapplr-network
 
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=yapplr_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+
   certbot:
     image: certbot/certbot
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
       - /var/www/certbot:/var/www/certbot
-    command: certbot certonly --manual --preferred-challenges=dns --email ${PROD_CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${PROD_CERTBOT_DOMAIN} -d yapplr.com
+    command: certbot certonly --manual --preferred-challenges=dns --email ${STAGE_CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${STAGE_CERTBOT_DOMAIN} -d yapplr.com
 
 volumes:
   yapplr_uploads:
