@@ -75,9 +75,6 @@ docker network rm yapplr-network || true
 echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"
 docker image rm yapplr-api:latest || true
 docker image rm yapplr-frontend:latest || true
-# Also remove docker-compose generated image names
-docker image rm yapplr-api_yapplr-api:latest || true
-docker image rm yapplr-api_yapplr-frontend:latest || true
 docker image prune -f || true
 
 # Set cache bust variable to force frontend rebuild

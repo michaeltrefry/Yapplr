@@ -3,7 +3,7 @@ version: '3.8'
 services:
   yapplr-api:
     build:
-      context: .
+      context: Yapplr.Api
       dockerfile: Dockerfile
     image: yapplr-api:latest
     environment:
@@ -39,7 +39,7 @@ services:
 
   yapplr-frontend:
     build:
-      context: ../yapplr-frontend
+      context: yapplr-frontend
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=https://${STAGE_API_DOMAIN_NAME}

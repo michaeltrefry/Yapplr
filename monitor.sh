@@ -86,21 +86,3 @@ else
 fi
 
 echo ""
-
-# Check backup status
-echo -e "${BLUE}💾 Backup Status:${NC}"
-if [ -d "/opt/backups/yapplr" ]; then
-    LATEST_BACKUP=$(ls -t /opt/backups/yapplr/ | head -1)
-    if [ ! -z "$LATEST_BACKUP" ]; then
-        BACKUP_DATE=$(stat -c %y "/opt/backups/yapplr/$LATEST_BACKUP" | cut -d' ' -f1)
-        echo -e "${GREEN}✅ Latest backup: $LATEST_BACKUP ($BACKUP_DATE)${NC}"
-    else
-        echo -e "${YELLOW}⚠️ No backups found${NC}"
-    fi
-else
-    echo -e "${YELLOW}⚠️ Backup directory not found${NC}"
-fi
-
-echo ""
-echo "=================================="
-echo -e "${BLUE}📊 Monitor completed at $(date)${NC}"
