@@ -58,7 +58,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://192.168.254.181:3000", "https://yapplr.com", "https://www.yapplr.com", "https://app.yapplr.com") // Common frontend ports
+        policy.WithOrigins(
+                "http://localhost:3000", "http://localhost:5173", "http://192.168.254.181:3000", // Development
+                "https://yapplr.com", "https://www.yapplr.com", "https://app.yapplr.com", // Production
+                "https://stg.yapplr.com", "https://stg-api.yapplr.com", // Staging HTTPS
+                "http://stg.yapplr.com", "http://stg-api.yapplr.com" // Staging HTTP
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -67,7 +72,12 @@ builder.Services.AddCors(options =>
     // SignalR-specific CORS policy with credentials support
     options.AddPolicy("AllowSignalR", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://192.168.254.181:3000", "https://yapplr.com", "https://www.yapplr.com", "https://app.yapplr.com")
+        policy.WithOrigins(
+                "http://localhost:3000", "http://localhost:5173", "http://192.168.254.181:3000", // Development
+                "https://yapplr.com", "https://www.yapplr.com", "https://app.yapplr.com", // Production
+                "https://stg.yapplr.com", "https://stg-api.yapplr.com", // Staging HTTPS
+                "http://stg.yapplr.com", "http://stg-api.yapplr.com" // Staging HTTP
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
