@@ -134,8 +134,8 @@ STAGING_SENDGRID_FROM_EMAIL=staging@yapplr.com
 STAGING_SENDGRID_FROM_NAME=Yapplr Staging
 
 # Domains
-STAGING_API_BASE_URL=http://staging.yapplr.com
-STAGING_WS_BASE_URL=ws://staging.yapplr.com
+STAGING_API_BASE_URL=http://stg-api.yapplr.com
+STAGING_WS_BASE_URL=ws://stg.yapplr.com
 
 # Firebase
 STAGING_FIREBASE_PROJECT_ID=yapplr-staging
