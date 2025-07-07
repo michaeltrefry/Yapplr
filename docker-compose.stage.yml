@@ -43,7 +43,7 @@ services:
       context: yapplr-frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=https://${STAGE_API_DOMAIN_NAME}
+        - NEXT_PUBLIC_API_URL=https://${STAGE_API_DOMAIN_NAME:-stg-api.yapplr.com}
         # Notification provider configuration (SignalR-only for production web)
         - NEXT_PUBLIC_ENABLE_SIGNALR=true
         # Force rebuild by passing current timestamp
@@ -59,13 +59,20 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.stage.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /var/www/certbot:/var/www/certbot
     # No dependencies - nginx can start independently and handle service availability gracefully
     restart: unless-stopped
     networks:
       - yapplr-network
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+    command: certbot certonly --manual --preferred-challenges=dns --email ${STAGE_CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${STAGE_CERTBOT_DOMAIN}
 
   postgres:
     image: postgres:16-alpine

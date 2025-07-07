@@ -33,6 +33,8 @@ set +a  # turn off automatic export
 
 # Validate required environment variables (database connection is hardcoded for staging to use local postgres container)
 required_vars=("STAGE_JWT_SECRET_KEY" "STAGE_API_DOMAIN_NAME" "STAGE_FIREBASE_PROJECT_ID" "STAGE_FIREBASE_SERVICE_ACCOUNT_KEY")
+# Optional variables for SSL certificates (if using HTTPS)
+optional_vars=("STAGE_CERTBOT_EMAIL" "STAGE_CERTBOT_DOMAIN")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         echo -e "${RED}❌ Error: $var is not set in .env file${NC}"
@@ -89,13 +91,34 @@ docker compose -f docker-compose.stage.yml up -d --build --force-recreate
 echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"
 sleep 30
 
+# Check container status first
+echo -e "${GREEN}🔍 Checking container status...${NC}"
+docker compose -f docker-compose.stage.yml ps
+
+# Check if nginx is running
+echo -e "${GREEN}🔍 Checking nginx status...${NC}"
+if docker compose -f docker-compose.stage.yml ps nginx | grep -q "Up"; then
+    echo -e "${GREEN}✅ Nginx is running${NC}"
+else
+    echo -e "${RED}❌ Nginx is not running${NC}"
+    echo -e "${YELLOW}Checking nginx logs...${NC}"
+    docker compose -f docker-compose.stage.yml logs nginx
+    exit 1
+fi
+
 # Check if API is responding through nginx
 echo -e "${GREEN}🔍 Checking API health...${NC}"
-if curl -f http://localhost/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ API is healthy and responding${NC}"
+# Try HTTPS first, fallback to HTTP
+if curl -f -k https://localhost/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ API is healthy and responding via HTTPS${NC}"
+elif curl -f http://localhost/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ API is healthy and responding via HTTP${NC}"
 else
     echo -e "${RED}❌ API health check failed${NC}"
     echo -e "${YELLOW}Checking logs...${NC}"
+    echo -e "${YELLOW}=== Nginx logs ===${NC}"
+    docker compose -f docker-compose.stage.yml logs nginx
+    echo -e "${YELLOW}=== API logs ===${NC}"
     docker compose -f docker-compose.stage.yml logs yapplr-api
     exit 1
 fi
