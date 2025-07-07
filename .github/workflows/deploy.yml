@@ -32,19 +32,19 @@ jobs:
         
     - name: Debug secrets
       run: |
-        echo "LINODE_HOST is set: ${{ secrets.LINODE_HOST != '' }}"
-        echo "LINODE_USER is set: ${{ secrets.LINODE_USER != '' }}"
-        echo "LINODE_SSH_KEY is set: ${{ secrets.LINODE_SSH_KEY != '' }}"
+        echo "PROD_SERVER_HOST is set: ${{ secrets.PROD_SERVER_HOST != '' }}"
+        echo "PROD_SERVER_USER is set: ${{ secrets.PROD_SERVER_USER != '' }}"
+        echo "PROD_SERVER_SSH_KEY is set: ${{ secrets.PROD_SERVER_SSH_KEY != '' }}"
 
     - name: Deploy to Linode
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.LINODE_HOST }}
-        username: ${{ secrets.LINODE_USER }}
-        key: ${{ secrets.LINODE_SSH_KEY }}
+        host: ${{ secrets.PROD_SERVER_HOST }}
+        username: ${{ secrets.PROD_SERVER_USER }}
+        key: ${{ secrets.PROD_SERVER_SSH_KEY }}
         port: 22
         timeout: 60s
-        envs: DATABASE_CONNECTION_STRING,JWT_SECRET_KEY,SENDGRID_API_KEY,SENDGRID_FROM_EMAIL,SENDGRID_FROM_NAME,EMAIL_PROVIDER,FIREBASE_PROJECT_ID,FIREBASE_SERVICE_ACCOUNT_KEY,API_DOMAIN_NAME,CERTBOT_EMAIL,CERTBOT_DOMAIN
+        envs: PROD_DATABASE_CONNECTION_STRING,PROD_JWT_SECRET_KEY,PROD_SENDGRID_API_KEY,PROD_SENDGRID_FROM_EMAIL,PROD_SENDGRID_FROM_NAME,PROD_EMAIL_PROVIDER,PROD_FIREBASE_PROJECT_ID,PROD_FIREBASE_SERVICE_ACCOUNT_KEY,PROD_API_DOMAIN_NAME,PROD_CERTBOT_EMAIL,PROD_CERTBOT_DOMAIN
         script: |
           # Navigate to existing repository directory
           cd /opt/Yapplr
@@ -56,47 +56,39 @@ jobs:
 
           # Create .env file with all secrets (using printf to handle special characters)
           cat > .env << 'EOF'
-          DATABASE_CONNECTION_STRING=$DATABASE_CONNECTION_STRING
-          JWT_SECRET_KEY=$JWT_SECRET_KEY
-          AWS_SES_REGION=$AWS_SES_REGION
-          AWS_SES_FROM_EMAIL=$AWS_SES_FROM_EMAIL
-          AWS_SES_ACCESS_KEY=$AWS_SES_ACCESS_KEY
-          AWS_SES_SECRET_KEY=$AWS_SES_SECRET_KEY
-          SENDGRID_API_KEY=$SENDGRID_API_KEY
-          SENDGRID_FROM_EMAIL=$SENDGRID_FROM_EMAIL
-          SENDGRID_FROM_NAME=$SENDGRID_FROM_NAME
-          EMAIL_PROVIDER=$EMAIL_PROVIDER
-          FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID
-          API_DOMAIN_NAME=$API_DOMAIN_NAME
-          CERTBOT_EMAIL=$CERTBOT_EMAIL
-          CERTBOT_DOMAIN=$CERTBOT_DOMAIN
+          PROD_DATABASE_CONNECTION_STRING=$PROD_DATABASE_CONNECTION_STRING
+          PROD_JWT_SECRET_KEY=$PROD_JWT_SECRET_KEY
+          PROD_SENDGRID_API_KEY=$PROD_SENDGRID_API_KEY
+          PROD_SENDGRID_FROM_EMAIL=$PROD_SENDGRID_FROM_EMAIL
+          PROD_SENDGRID_FROM_NAME=$PROD_SENDGRID_FROM_NAME
+          PROD_EMAIL_PROVIDER=$PROD_EMAIL_PROVIDER
+          PROD_FIREBASE_PROJECT_ID=$PROD_FIREBASE_PROJECT_ID
+          PROD_API_DOMAIN_NAME=$PROD_API_DOMAIN_NAME
+          PROD_CERTBOT_EMAIL=$PROD_CERTBOT_EMAIL
+          PROD_CERTBOT_DOMAIN=$PROD_CERTBOT_DOMAIN
           EOF
 
           # Create Firebase Service Account Key as a file (more reliable than env var)
-          echo '$FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
-          echo 'FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> .env
+          echo '$PROD_FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
+          echo 'PROD_FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> .env
 
           # Run API-only deployment
           chmod +x deploy.sh
           ./deploy.sh
       env:
-        DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
-        JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-        AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
-        AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
-        AWS_SES_ACCESS_KEY: ${{ secrets.AWS_SES_ACCESS_KEY }}
-        AWS_SES_SECRET_KEY: ${{ secrets.AWS_SES_SECRET_KEY }}
-        SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-        SENDGRID_FROM_EMAIL: ${{ secrets.SENDGRID_FROM_EMAIL }}
-        SENDGRID_FROM_NAME: ${{ secrets.SENDGRID_FROM_NAME }}
-        EMAIL_PROVIDER: ${{ secrets.EMAIL_PROVIDER }}
-        FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-        FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-        API_DOMAIN_NAME: ${{ secrets.API_DOMAIN_NAME }}
-        CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
-        CERTBOT_DOMAIN: ${{ secrets.CERTBOT_DOMAIN }}
+        PROD_DATABASE_CONNECTION_STRING: ${{ secrets.PROD_DATABASE_CONNECTION_STRING }}
+        PROD_JWT_SECRET_KEY: ${{ secrets.PROD_JWT_SECRET_KEY }}
+        PROD_SENDGRID_API_KEY: ${{ secrets.PROD_SENDGRID_API_KEY }}
+        PROD_SENDGRID_FROM_EMAIL: ${{ secrets.PROD_SENDGRID_FROM_EMAIL }}
+        PROD_SENDGRID_FROM_NAME: ${{ secrets.PROD_SENDGRID_FROM_NAME }}
+        PROD_EMAIL_PROVIDER: ${{ secrets.PROD_EMAIL_PROVIDER }}
+        PROD_FIREBASE_PROJECT_ID: ${{ secrets.PROD_FIREBASE_PROJECT_ID }}
+        PROD_FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.PROD_FIREBASE_SERVICE_ACCOUNT_KEY }}
+        PROD_API_DOMAIN_NAME: ${{ secrets.PROD_API_DOMAIN_NAME }}
+        PROD_CERTBOT_EMAIL: ${{ secrets.PROD_CERTBOT_EMAIL }}
+        PROD_CERTBOT_DOMAIN: ${{ secrets.PROD_CERTBOT_DOMAIN }}
 
     - name: API Health Check
       run: |
         sleep 30
-        curl -f https://${{ secrets.API_DOMAIN_NAME }}/health || exit 1
+        curl -f https://${{ secrets.PROD_API_DOMAIN_NAME }}/health || exit 1

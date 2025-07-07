@@ -14,37 +14,37 @@ Go to your GitHub repository → **Settings** → **Secrets and variables** → 
 
 **SSH Access Secrets:**
 ```
-LINODE_HOST=your-linode-server-ip
-LINODE_USER=root
-LINODE_SSH_KEY=your-private-ssh-key-content
+PROD_SERVER_HOST=your-linode-server-ip
+PROD_SERVER_USER=root
+PROD_SERVER_SSH_KEY=your-private-ssh-key-content
 ```
 
 **Database & Core Secrets:**
 ```
-DATABASE_CONNECTION_STRING=Host=your-db-host;Database=yapplr;Username=yapplr_user;Password=your-password
-JWT_SECRET_KEY=your-production-jwt-secret-key-minimum-32-characters
-API_DOMAIN_NAME=api.yapplr.com
+PROD_DATABASE_CONNECTION_STRING=Host=your-db-host;Database=yapplr;Username=yapplr_user;Password=your-password
+PROD_JWT_SECRET_KEY=your-production-jwt-secret-key-minimum-32-characters
+PROD_API_DOMAIN_NAME=api.yapplr.com
 ```
 
-**AWS SES Secrets:**
+**Email Provider Secrets (SendGrid):**
 ```
-AWS_SES_REGION=us-east-1
-AWS_SES_FROM_EMAIL=noreply@yapplr.com
-AWS_SES_ACCESS_KEY=your-aws-access-key
-AWS_SES_SECRET_KEY=your-aws-secret-key
+PROD_SENDGRID_API_KEY=your-sendgrid-api-key
+PROD_SENDGRID_FROM_EMAIL=noreply@yapplr.com
+PROD_SENDGRID_FROM_NAME=Yapplr
+PROD_EMAIL_PROVIDER=SendGrid
 ```
 
 **Firebase Secrets (REQUIRED for notifications):**
 ```
-FIREBASE_PROJECT_ID=your-firebase-project-id
-FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"your-project-id",...}
+PROD_FIREBASE_PROJECT_ID=your-firebase-project-id
+PROD_FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"your-project-id",...}
 FIREBASE_API_KEY=your-firebase-api-key
 FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
 FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 FIREBASE_APP_ID=your-app-id
 FIREBASE_VAPID_KEY=your-vapid-key
-CERTBOT_EMAIL=your-email@domain.com
+PROD_CERTBOT_EMAIL=your-email@domain.com
 ```
 
 ### 2. Get Your SSH Key
@@ -121,7 +121,7 @@ After deployment, the workflow automatically checks:
 ### Common Issues
 
 **"SSH connection failed"**
-- Check `LINODE_HOST` and `LINODE_USER` secrets
+- Check `PROD_SERVER_HOST` and `PROD_SERVER_USER` secrets
 - Verify SSH key is correct and has access
 - Ensure server is running and accessible
 
@@ -131,13 +131,13 @@ After deployment, the workflow automatically checks:
 - Check server has enough disk space
 
 **"Database migration failed"**
-- Verify `DATABASE_CONNECTION_STRING` is correct
+- Verify `PROD_DATABASE_CONNECTION_STRING` is correct
 - Check database server is running
 - Ensure database user has migration permissions
 
 **"Firebase initialization failed"**
-- Verify `FIREBASE_SERVICE_ACCOUNT_KEY` is valid JSON
-- Check `FIREBASE_PROJECT_ID` matches your project
+- Verify `PROD_FIREBASE_SERVICE_ACCOUNT_KEY` is valid JSON
+- Check `PROD_FIREBASE_PROJECT_ID` matches your project
 - Ensure service account has correct permissions
 
 **"Health check failed"**
@@ -184,9 +184,9 @@ Your automatic deployment will then work on every push to main! 🚀
 
 ## 📋 Quick Setup Checklist
 
-- [ ] Add SSH secrets (`LINODE_HOST`, `LINODE_USER`, `LINODE_SSH_KEY`)
-- [ ] Add database secret (`DATABASE_CONNECTION_STRING`)
-- [ ] Add JWT secret (`JWT_SECRET_KEY`)
+- [ ] Add SSH secrets (`PROD_SERVER_HOST`, `PROD_SERVER_USER`, `PROD_SERVER_SSH_KEY`)
+- [ ] Add database secret (`PROD_DATABASE_CONNECTION_STRING`)
+- [ ] Add JWT secret (`PROD_JWT_SECRET_KEY`)
 - [ ] Add AWS SES secrets (4 variables)
 - [ ] Add Firebase secrets (8 variables)
 - [ ] Add domain and email secrets

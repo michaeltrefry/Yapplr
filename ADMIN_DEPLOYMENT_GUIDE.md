@@ -29,10 +29,10 @@ Create a `.env.production` file with the following variables:
 
 ```bash
 # Database
-DATABASE_CONNECTION_STRING="Server=your-db-server;Database=yapplr_prod;User Id=yapplr_admin;Password=secure_admin_password;"
+PROD_DATABASE_CONNECTION_STRING="Server=your-db-server;Database=yapplr_prod;User Id=yapplr_admin;Password=secure_admin_password;"
 
 # JWT Configuration
-JWT_SECRET_KEY="your-super-secure-jwt-key-min-256-bits"
+PROD_JWT_SECRET_KEY="your-super-secure-jwt-key-min-256-bits"
 JWT_ISSUER="https://api.yapplr.com"
 JWT_AUDIENCE="https://yapplr.com"
 JWT_EXPIRY_HOURS=24
@@ -47,7 +47,7 @@ ADMIN_RATE_LIMIT_REQUESTS=100
 ADMIN_RATE_LIMIT_WINDOW_MINUTES=1
 
 # Notifications
-FIREBASE_PROJECT_ID="your-firebase-project"
+PROD_FIREBASE_PROJECT_ID="your-firebase-project"
 FIREBASE_PRIVATE_KEY="your-firebase-private-key"
 SIGNALR_CONNECTION_STRING="your-signalr-connection"
 

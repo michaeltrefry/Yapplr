@@ -90,15 +90,17 @@ nano .env
 
 Configure your `.env` file with:
 ```env
-DATABASE_CONNECTION_STRING=Host=your-db-host;Port=5432;Database=yapplr_db;Username=your-username;Password=your-password
-JWT_SECRET_KEY=your-super-secret-jwt-key-that-should-be-at-least-32-characters-long
-AWS_SES_REGION=us-east-1
-AWS_SES_FROM_EMAIL=noreply@yourdomain.com
-AWS_SES_ACCESS_KEY=your-aws-access-key
-AWS_SES_SECRET_KEY=your-aws-secret-key
-API_DOMAIN_NAME=yourdomain.com
-CERTBOT_DOMAIN=yourdomain.com
-CERTBOT_EMAIL=admin@yourdomain.com
+PROD_DATABASE_CONNECTION_STRING=Host=your-db-host;Port=5432;Database=yapplr_db;Username=your-username;Password=your-password
+PROD_JWT_SECRET_KEY=your-super-secret-jwt-key-that-should-be-at-least-32-characters-long
+PROD_SENDGRID_API_KEY=your-sendgrid-api-key
+PROD_SENDGRID_FROM_EMAIL=noreply@yourdomain.com
+PROD_SENDGRID_FROM_NAME=Your Name
+PROD_EMAIL_PROVIDER=SendGrid
+PROD_FIREBASE_PROJECT_ID=your-firebase-project-id
+PROD_FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"your-project-id",...}
+PROD_API_DOMAIN_NAME=yourdomain.com
+PROD_CERTBOT_DOMAIN=yourdomain.com
+PROD_CERTBOT_EMAIL=admin@yourdomain.com
 ```
 
 Update nginx.conf with your domain:

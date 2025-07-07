@@ -32,7 +32,7 @@ source .env
 set +a  # turn off automatic export
 
 # Validate required environment variables
-required_vars=("DATABASE_CONNECTION_STRING" "JWT_SECRET_KEY" "API_DOMAIN_NAME" "FIREBASE_PROJECT_ID" "FIREBASE_SERVICE_ACCOUNT_KEY")
+required_vars=("PROD_DATABASE_CONNECTION_STRING" "PROD_JWT_SECRET_KEY" "PROD_API_DOMAIN_NAME" "PROD_FIREBASE_PROJECT_ID" "PROD_FIREBASE_SERVICE_ACCOUNT_KEY")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         echo -e "${RED}❌ Error: $var is not set in .env file${NC}"
@@ -109,7 +109,7 @@ echo -e "${GREEN}🗄️ Database migrations will run automatically when the API
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
 echo -e "${GREEN}Your application is now running at:${NC}"
 echo -e "${GREEN}  Frontend: https://yapplr.com${NC}"
-echo -e "${GREEN}  API: https://$API_DOMAIN_NAME${NC}"
+echo -e "${GREEN}  API: https://$PROD_API_DOMAIN_NAME${NC}"
 
 # Clean up old images
 echo -e "${GREEN}🧹 Cleaning up old Docker images...${NC}"

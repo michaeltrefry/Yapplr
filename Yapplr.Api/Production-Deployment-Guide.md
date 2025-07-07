@@ -162,8 +162,8 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       # Firebase configuration (REQUIRED)
-      - Firebase__ProjectId=${FIREBASE_PROJECT_ID}
-      - Firebase__ServiceAccountKey=${FIREBASE_SERVICE_ACCOUNT_KEY}
+      - Firebase__ProjectId=${PROD_FIREBASE_PROJECT_ID}
+      - Firebase__ServiceAccountKey=${PROD_FIREBASE_SERVICE_ACCOUNT_KEY}
     depends_on:
       - db
 

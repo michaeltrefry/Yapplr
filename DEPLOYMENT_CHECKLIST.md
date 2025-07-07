@@ -113,14 +113,17 @@ crontab -e
 ## Environment Variables Checklist
 
 Required in `.env` file:
-- [ ] `DATABASE_CONNECTION_STRING` - PostgreSQL connection
-- [ ] `JWT_SECRET_KEY` - 32+ character secret key
-- [ ] `AWS_SES_REGION` - AWS region (e.g., us-east-1)
-- [ ] `AWS_SES_FROM_EMAIL` - Verified sender email
-- [ ] `AWS_SES_ACCESS_KEY` - AWS access key
-- [ ] `AWS_SES_SECRET_KEY` - AWS secret key
-- [ ] `API_DOMAIN_NAME` - Your domain name
-- [ ] `CERTBOT_EMAIL` - Email for SSL notifications
+- [ ] `PROD_DATABASE_CONNECTION_STRING` - PostgreSQL connection
+- [ ] `PROD_JWT_SECRET_KEY` - 32+ character secret key
+- [ ] `PROD_SENDGRID_API_KEY` - SendGrid API key
+- [ ] `PROD_SENDGRID_FROM_EMAIL` - Verified sender email
+- [ ] `PROD_SENDGRID_FROM_NAME` - Sender name
+- [ ] `PROD_EMAIL_PROVIDER` - Set to `SendGrid`
+- [ ] `PROD_FIREBASE_PROJECT_ID` - Firebase project
+- [ ] `PROD_FIREBASE_SERVICE_ACCOUNT_KEY` - Firebase service account key
+- [ ] `PROD_API_DOMAIN_NAME` - Your domain name
+- [ ] `PROD_CERTBOT_DOMAIN` - Your domain name
+- [ ] `PROD_CERTBOT_EMAIL` - Email for SSL notifications
 
 ## Useful Commands
 

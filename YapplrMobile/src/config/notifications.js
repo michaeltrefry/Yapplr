@@ -17,7 +17,7 @@ export const NOTIFICATION_CONFIG = {
   // Firebase configuration for mobile
   FIREBASE_CONFIG: {
     // These should match your Firebase project
-    projectId: process.env.FIREBASE_PROJECT_ID || 'yapplr-bd41a',
+    projectId: process.env.PROD_FIREBASE_PROJECT_ID || 'yapplr-bd41a',
     appId: process.env.FIREBASE_APP_ID || '1:320574424098:android:your-android-app-id',
     messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '320574424098',
     apiKey: process.env.FIREBASE_API_KEY || 'your-api-key-here',

@@ -337,10 +337,10 @@ Add to `Yapplr.Api/appsettings.Development.json`:
 
 #### Production Deployment
 For production, use GitHub secrets:
-- `SENDGRID_API_KEY`: Your SendGrid API key
-- `SENDGRID_FROM_EMAIL`: Your verified sender email
-- `SENDGRID_FROM_NAME`: Your app name
-- `EMAIL_PROVIDER`: `SendGrid`
+- `PROD_SENDGRID_API_KEY`: Your SendGrid API key
+- `PROD_SENDGRID_FROM_EMAIL`: Your verified sender email
+- `PROD_SENDGRID_FROM_NAME`: Your app name
+- `PROD_EMAIL_PROVIDER`: `SendGrid`
 
 #### Features
 - **Dual Authentication**: Automatic fallback from Service Account Key to Application Default Credentials

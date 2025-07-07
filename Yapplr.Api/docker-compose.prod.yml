@@ -8,25 +8,20 @@ services:
     image: yapplr-api:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}
-      - JwtSettings__SecretKey=${JWT_SECRET_KEY}
+      - ConnectionStrings__DefaultConnection=${PROD_DATABASE_CONNECTION_STRING}
+      - JwtSettings__SecretKey=${PROD_JWT_SECRET_KEY}
       - JwtSettings__Issuer=Yapplr.Api
       - JwtSettings__Audience=Yapplr.Client
       - JwtSettings__ExpirationInMinutes=60
-      - AwsSesSettings__Region=${AWS_SES_REGION}
-      - AwsSesSettings__FromEmail=${AWS_SES_FROM_EMAIL}
-      - AwsSesSettings__FromName=Yapplr
-      - AwsSesSettings__AccessKey=${AWS_SES_ACCESS_KEY}
-      - AwsSesSettings__SecretKey=${AWS_SES_SECRET_KEY}
       # SendGrid configuration
-      - SendGridSettings__ApiKey=${SENDGRID_API_KEY}
-      - SendGridSettings__FromEmail=${SENDGRID_FROM_EMAIL}
-      - SendGridSettings__FromName=${SENDGRID_FROM_NAME}
+      - SendGridSettings__ApiKey=${PROD_SENDGRID_API_KEY}
+      - SendGridSettings__FromEmail=${PROD_SENDGRID_FROM_EMAIL}
+      - SendGridSettings__FromName=${PROD_SENDGRID_FROM_NAME}
       # Email provider selection
-      - EmailProvider=${EMAIL_PROVIDER}
+      - EmailProvider=${PROD_EMAIL_PROVIDER}
       # Firebase configuration (REQUIRED for notifications)
-      - Firebase__ProjectId=${FIREBASE_PROJECT_ID}
-      - Firebase__ServiceAccountKey=${FIREBASE_SERVICE_ACCOUNT_KEY}
+      - Firebase__ProjectId=${PROD_FIREBASE_PROJECT_ID}
+      - Firebase__ServiceAccountKey=${PROD_FIREBASE_SERVICE_ACCOUNT_KEY}
     volumes:
       - yapplr_uploads:/app/uploads
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -74,7 +69,7 @@ services:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
       - /var/www/certbot:/var/www/certbot
-    command: certbot certonly --manual --preferred-challenges=dns --email ${CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${CERTBOT_DOMAIN} -d yapplr.com
+    command: certbot certonly --manual --preferred-challenges=dns --email ${PROD_CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${PROD_CERTBOT_DOMAIN} -d yapplr.com
 
 volumes:
   yapplr_uploads:

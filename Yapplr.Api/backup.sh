@@ -28,15 +28,15 @@ else
 fi
 
 # Backup database (if using external database)
-if [ ! -z "$DATABASE_CONNECTION_STRING" ]; then
+if [ ! -z "$PROD_DATABASE_CONNECTION_STRING" ]; then
     echo -e "${GREEN}📊 Backing up database...${NC}"
     
     # Extract database details from connection string
     # This is a simplified parser - adjust based on your connection string format
-    DB_HOST=$(echo $DATABASE_CONNECTION_STRING | grep -oP 'Host=\K[^;]+')
-    DB_NAME=$(echo $DATABASE_CONNECTION_STRING | grep -oP 'Database=\K[^;]+')
-    DB_USER=$(echo $DATABASE_CONNECTION_STRING | grep -oP 'Username=\K[^;]+')
-    DB_PASS=$(echo $DATABASE_CONNECTION_STRING | grep -oP 'Password=\K[^;]+')
+    DB_HOST=$(echo $PROD_DATABASE_CONNECTION_STRING | grep -oP 'Host=\K[^;]+')
+    DB_NAME=$(echo $PROD_DATABASE_CONNECTION_STRING | grep -oP 'Database=\K[^;]+')
+    DB_USER=$(echo $PROD_DATABASE_CONNECTION_STRING | grep -oP 'Username=\K[^;]+')
+    DB_PASS=$(echo $PROD_DATABASE_CONNECTION_STRING | grep -oP 'Password=\K[^;]+')
     
     # Create database backup
     PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME > $BACKUP_DIR/database_$DATE.sql
