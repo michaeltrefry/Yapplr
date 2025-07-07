@@ -49,7 +49,6 @@ jobs:
           # Navigate to existing repository directory
           cd /opt/Yapplr
           git pull origin main
-          cd Yapplr.Api
 
           # This deployment only handles the backend API
           # Frontend deployment is handled separately by deploy-frontend.yml
@@ -68,11 +67,12 @@ jobs:
           PROD_CERTBOT_DOMAIN=$PROD_CERTBOT_DOMAIN
           EOF
 
+          CD /opt/Yapplr/Yapplr.Api
           # Create Firebase Service Account Key as a file (more reliable than env var)
           echo '$PROD_FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
           echo 'PROD_FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> .env
 
-          cd /opt/Yapplr/Scripts
+          cd /opt/Yapplr
           
           # Run API-only deployment
           chmod +x deploy-prod.sh
