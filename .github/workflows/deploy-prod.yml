@@ -72,6 +72,8 @@ jobs:
           echo '$PROD_FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
           echo 'PROD_FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> .env
 
+          cd /opt/Yapplr/Scripts
+          
           # Run API-only deployment
           chmod +x deploy-prod.sh
           ./deploy-prod.sh
