@@ -29,9 +29,10 @@ services:
     networks:
       - yapplr-network
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -79,6 +80,12 @@ services:
     restart: unless-stopped
     networks:
       - yapplr-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d yapplr_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   yapplr_uploads:

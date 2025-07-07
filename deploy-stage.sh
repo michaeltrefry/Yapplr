@@ -31,8 +31,8 @@ set -a  # automatically export all variables
 source .env
 set +a  # turn off automatic export
 
-# Validate required environment variables
-required_vars=("STAGE_DATABASE_CONNECTION_STRING" "STAGE_JWT_SECRET_KEY" "STAGE_API_DOMAIN_NAME" "STAGE_FIREBASE_PROJECT_ID" "STAGE_FIREBASE_SERVICE_ACCOUNT_KEY")
+# Validate required environment variables (database connection is hardcoded for staging to use local postgres container)
+required_vars=("STAGE_JWT_SECRET_KEY" "STAGE_API_DOMAIN_NAME" "STAGE_FIREBASE_PROJECT_ID" "STAGE_FIREBASE_SERVICE_ACCOUNT_KEY")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         echo -e "${RED}❌ Error: $var is not set in .env file${NC}"

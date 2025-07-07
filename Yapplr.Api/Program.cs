@@ -263,28 +263,47 @@ if (args.Length > 0 && args[0] == "promote-user")
     return;
 }
 
-// Run database migrations at startup
+// Run database migrations at startup with retry logic
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<YapplrDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    try
-    {
-        logger.LogInformation("🗄️ Running database migrations at startup...");
-        await context.Database.MigrateAsync();
-        logger.LogInformation("✅ Database migrations completed successfully");
+    const int maxRetries = 5;
+    const int delayMs = 2000;
 
-        // Seed default system tags
-        logger.LogInformation("🏷️ Seeding default system tags...");
-        var systemTagSeedService = scope.ServiceProvider.GetRequiredService<SystemTagSeedService>();
-        await systemTagSeedService.SeedDefaultSystemTagsAsync();
-        logger.LogInformation("✅ System tags seeding completed successfully");
-    }
-    catch (Exception ex)
+    for (int attempt = 1; attempt <= maxRetries; attempt++)
     {
-        logger.LogError(ex, "❌ Failed to run database migrations or seeding at startup");
-        throw; // This will prevent the application from starting if migrations fail
+        try
+        {
+            logger.LogInformation("🗄️ Running database migrations at startup... (attempt {Attempt}/{MaxRetries})", attempt, maxRetries);
+
+            // Test database connection first
+            await context.Database.CanConnectAsync();
+
+            // Run migrations
+            await context.Database.MigrateAsync();
+            logger.LogInformation("✅ Database migrations completed successfully");
+
+            // Seed default system tags
+            logger.LogInformation("🏷️ Seeding default system tags...");
+            var systemTagSeedService = scope.ServiceProvider.GetRequiredService<SystemTagSeedService>();
+            await systemTagSeedService.SeedDefaultSystemTagsAsync();
+            logger.LogInformation("✅ System tags seeding completed successfully");
+
+            break; // Success, exit retry loop
+        }
+        catch (Exception ex) when (attempt < maxRetries)
+        {
+            logger.LogWarning(ex, "❌ Failed to run database migrations or seeding at startup (attempt {Attempt}/{MaxRetries}). Retrying in {Delay}ms...",
+                attempt, maxRetries, delayMs);
+            await Task.Delay(delayMs);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "❌ Failed to run database migrations or seeding at startup after {MaxRetries} attempts", maxRetries);
+            throw; // This will prevent the application from starting if migrations fail
+        }
     }
 }
 
