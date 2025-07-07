@@ -49,7 +49,7 @@ echo -e "${GREEN}✅ Environment variables validated${NC}"
 
 # Stop existing containers
 echo -e "${GREEN}🛑 Stopping existing containers...${NC}"
-docker-compose -f ../docker-compose.stage.yml down --volumes --remove-orphans || true
+docker-compose -f docker-compose.stage.yml down --volumes --remove-orphans || true
 
 # Force remove specific containers that might be stuck
 echo -e "${GREEN}🧹 Force removing any stuck containers...${NC}"
@@ -86,7 +86,7 @@ echo -e "${GREEN}🔄 Cache bust value: $CACHE_BUST${NC}"
 
 # Start new containers (both API and frontend) with forced rebuild
 echo -e "${GREEN}🚀 Starting all services (API + Frontend + nginx)...${NC}"
-docker-compose -f ../docker-compose.stage.yml up -d --build --force-recreate
+docker-compose -f docker-compose.stage.yml up -d --build --force-recreate
 
 # Wait for services to be ready
 echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"
@@ -99,7 +99,7 @@ if curl -f http://localhost/health > /dev/null 2>&1; then
 else
     echo -e "${RED}❌ API health check failed${NC}"
     echo -e "${YELLOW}Checking logs...${NC}"
-    docker-compose -f ../docker-compose.stage.yml logs yapplr-api
+    docker-compose -f docker-compose.stage.yml logs yapplr-api
     exit 1
 fi
 
