@@ -90,7 +90,7 @@ jobs:
         username: ${{ secrets.STAGING_USERNAME }}
         key: ${{ secrets.STAGING_SSH_KEY }}
         port: ${{ secrets.STAGING_PORT }}
-        envs: POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,JWT_SECRET_KEY,JWT_ISSUER,JWT_AUDIENCE,SENDGRID_API_KEY,SENDGRID_FROM_EMAIL,SENDGRID_FROM_NAME,EMAIL_PROVIDER,API_BASE_URL,WS_BASE_URL,FIREBASE_PROJECT_ID,FIREBASE_SERVICE_ACCOUNT_KEY
+        envs: STAGING_POSTGRES_DB,STAGING_POSTGRES_USER,STAGING_POSTGRES_PASSWORD,STAGING_JWT_SECRET_KEY,STAGING_JWT_ISSUER,STAGING_JWT_AUDIENCE,STAGING_SENDGRID_API_KEY,STAGING_SENDGRID_FROM_EMAIL,STAGING_SENDGRID_FROM_NAME,STAGING_EMAIL_PROVIDER,STAGING_API_BASE_URL,STAGING_WS_BASE_URL,STAGING_FIREBASE_PROJECT_ID,STAGING_FIREBASE_SERVICE_ACCOUNT_KEY
         script: |
           # Navigate to existing repository directory
           cd /opt/Yapplr
@@ -101,27 +101,27 @@ jobs:
           # Create .env.staging file with all secrets
           cat > .env.staging << 'EOF'
           # Database Configuration (Local PostgreSQL)
-          POSTGRES_DB=$POSTGRES_DB
-          POSTGRES_USER=$POSTGRES_USER
-          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
-          
+          POSTGRES_DB=$STAGING_POSTGRES_DB
+          POSTGRES_USER=$STAGING_POSTGRES_USER
+          POSTGRES_PASSWORD=$STAGING_POSTGRES_PASSWORD
+
           # JWT Configuration
-          JWT_SECRET_KEY=$JWT_SECRET_KEY
-          JWT_ISSUER=$JWT_ISSUER
-          JWT_AUDIENCE=$JWT_AUDIENCE
-          
+          JWT_SECRET_KEY=$STAGING_JWT_SECRET_KEY
+          JWT_ISSUER=$STAGING_JWT_ISSUER
+          JWT_AUDIENCE=$STAGING_JWT_AUDIENCE
+
           # Email Configuration (SendGrid)
-          EMAIL_PROVIDER=$EMAIL_PROVIDER
-          SENDGRID_API_KEY=$SENDGRID_API_KEY
-          SENDGRID_FROM_EMAIL=$SENDGRID_FROM_EMAIL
-          SENDGRID_FROM_NAME=$SENDGRID_FROM_NAME
-          
+          EMAIL_PROVIDER=$STAGING_EMAIL_PROVIDER
+          SENDGRID_API_KEY=$STAGING_SENDGRID_API_KEY
+          SENDGRID_FROM_EMAIL=$STAGING_SENDGRID_FROM_EMAIL
+          SENDGRID_FROM_NAME=$STAGING_SENDGRID_FROM_NAME
+
           # API Configuration
-          API_BASE_URL=$API_BASE_URL
-          WS_BASE_URL=$WS_BASE_URL
-          
+          API_BASE_URL=$STAGING_API_BASE_URL
+          WS_BASE_URL=$STAGING_WS_BASE_URL
+
           # Firebase Configuration
-          FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID
+          FIREBASE_PROJECT_ID=$STAGING_FIREBASE_PROJECT_ID
           
           # Video Processing Configuration (Staging limits)
           VIDEO_MAX_CONCURRENT_JOBS=1
@@ -135,26 +135,26 @@ jobs:
           EOF
 
           # Create Firebase Service Account Key as a file
-          echo '$FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
+          echo '$STAGING_FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
 
           # Run staging deployment using the staging script
           chmod +x scripts/deploy-staging.sh
           ./scripts/deploy-staging.sh deploy
       env:
-        POSTGRES_DB: ${{ secrets.STAGING_POSTGRES_DB }}
-        POSTGRES_USER: ${{ secrets.STAGING_POSTGRES_USER }}
-        POSTGRES_PASSWORD: ${{ secrets.STAGING_POSTGRES_PASSWORD }}
-        JWT_SECRET_KEY: ${{ secrets.STAGING_JWT_SECRET_KEY }}
-        JWT_ISSUER: ${{ secrets.STAGING_JWT_ISSUER }}
-        JWT_AUDIENCE: ${{ secrets.STAGING_JWT_AUDIENCE }}
-        EMAIL_PROVIDER: ${{ secrets.STAGING_EMAIL_PROVIDER }}
-        SENDGRID_API_KEY: ${{ secrets.STAGING_SENDGRID_API_KEY }}
-        SENDGRID_FROM_EMAIL: ${{ secrets.STAGING_SENDGRID_FROM_EMAIL }}
-        SENDGRID_FROM_NAME: ${{ secrets.STAGING_SENDGRID_FROM_NAME }}
-        API_BASE_URL: ${{ secrets.STAGING_API_BASE_URL }}
-        WS_BASE_URL: ${{ secrets.STAGING_WS_BASE_URL }}
-        FIREBASE_PROJECT_ID: ${{ secrets.STAGING_FIREBASE_PROJECT_ID }}
-        FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.STAGING_FIREBASE_SERVICE_ACCOUNT_KEY }}
+        STAGING_POSTGRES_DB: ${{ secrets.STAGING_POSTGRES_DB }}
+        STAGING_POSTGRES_USER: ${{ secrets.STAGING_POSTGRES_USER }}
+        STAGING_POSTGRES_PASSWORD: ${{ secrets.STAGING_POSTGRES_PASSWORD }}
+        STAGING_JWT_SECRET_KEY: ${{ secrets.STAGING_JWT_SECRET_KEY }}
+        STAGING_JWT_ISSUER: ${{ secrets.STAGING_JWT_ISSUER }}
+        STAGING_JWT_AUDIENCE: ${{ secrets.STAGING_JWT_AUDIENCE }}
+        STAGING_EMAIL_PROVIDER: ${{ secrets.STAGING_EMAIL_PROVIDER }}
+        STAGING_SENDGRID_API_KEY: ${{ secrets.STAGING_SENDGRID_API_KEY }}
+        STAGING_SENDGRID_FROM_EMAIL: ${{ secrets.STAGING_SENDGRID_FROM_EMAIL }}
+        STAGING_SENDGRID_FROM_NAME: ${{ secrets.STAGING_SENDGRID_FROM_NAME }}
+        STAGING_API_BASE_URL: ${{ secrets.STAGING_API_BASE_URL }}
+        STAGING_WS_BASE_URL: ${{ secrets.STAGING_WS_BASE_URL }}
+        STAGING_FIREBASE_PROJECT_ID: ${{ secrets.STAGING_FIREBASE_PROJECT_ID }}
+        STAGING_FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.STAGING_FIREBASE_SERVICE_ACCOUNT_KEY }}
 
     - name: API Health Check
       run: |
