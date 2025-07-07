@@ -10,7 +10,69 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: yapplr_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: yapplr-frontend/package-lock.json
+
+    - name: Restore .NET dependencies
+      run: |
+        dotnet restore Yapplr.Api
+        dotnet restore Yapplr.Api.Tests
+        dotnet restore Yapplr.VideoProcessor
+
+    - name: Build .NET projects
+      run: |
+        dotnet build Yapplr.Api --no-restore
+        dotnet build Yapplr.Api.Tests --no-restore
+        dotnet build Yapplr.VideoProcessor --no-restore
+
+    - name: Run .NET tests
+      run: |
+        dotnet test Yapplr.Api.Tests --no-build --verbosity normal
+      env:
+        ConnectionStrings__DefaultConnection: Host=localhost;Database=yapplr_test;Username=postgres;Password=postgres
+
+    - name: Install frontend dependencies
+      run: |
+        cd yapplr-frontend
+        npm ci
+
+    - name: Build frontend
+      run: |
+        cd yapplr-frontend
+        npm run build
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     
     steps:
