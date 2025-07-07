@@ -199,13 +199,25 @@ public class LinkPreviewService : ILinkPreviewService
         
         // Trim and limit lengths
         if (!string.IsNullOrEmpty(linkPreview.Title))
-            linkPreview.Title = linkPreview.Title.Trim().Substring(0, Math.Min(linkPreview.Title.Length, 500));
-        
+        {
+            linkPreview.Title = linkPreview.Title.Trim();
+            if (linkPreview.Title.Length > 500)
+                linkPreview.Title = linkPreview.Title.Substring(0, 500);
+        }
+
         if (!string.IsNullOrEmpty(linkPreview.Description))
-            linkPreview.Description = linkPreview.Description.Trim().Substring(0, Math.Min(linkPreview.Description.Length, 1000));
-        
+        {
+            linkPreview.Description = linkPreview.Description.Trim();
+            if (linkPreview.Description.Length > 1000)
+                linkPreview.Description = linkPreview.Description.Substring(0, 1000);
+        }
+
         if (!string.IsNullOrEmpty(linkPreview.SiteName))
-            linkPreview.SiteName = linkPreview.SiteName.Trim().Substring(0, Math.Min(linkPreview.SiteName.Length, 100));
+        {
+            linkPreview.SiteName = linkPreview.SiteName.Trim();
+            if (linkPreview.SiteName.Length > 100)
+                linkPreview.SiteName = linkPreview.SiteName.Substring(0, 100);
+        }
     }
     
     private static string? GetMetaContent(HtmlDocument doc, string property)
