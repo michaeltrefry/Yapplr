@@ -11,9 +11,8 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./uploads:/var/www/uploads:ro
-    depends_on:
-      - yapplr-api
-      - yapplr-frontend
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot
     networks:
       - yapplr-network
     restart: unless-stopped
@@ -28,24 +27,32 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}
       - JwtSettings__SecretKey=${JWT_SECRET_KEY}
-      - JwtSettings__Issuer=${JWT_ISSUER}
-      - JwtSettings__Audience=${JWT_AUDIENCE}
-      - EmailSettings__SmtpServer=${SMTP_SERVER}
-      - EmailSettings__SmtpPort=${SMTP_PORT}
-      - EmailSettings__Username=${SMTP_USERNAME}
-      - EmailSettings__Password=${SMTP_PASSWORD}
-      - EmailSettings__FromEmail=${FROM_EMAIL}
-      - EmailSettings__FromName=${FROM_NAME}
+      - JwtSettings__Issuer=Yapplr.Api
+      - JwtSettings__Audience=Yapplr.Client
+      - JwtSettings__ExpirationInMinutes=60
+      # AWS SES configuration
+      - AwsSesSettings__Region=${AWS_SES_REGION}
+      - AwsSesSettings__FromEmail=${AWS_SES_FROM_EMAIL}
+      - AwsSesSettings__FromName=Yapplr
+      - AwsSesSettings__AccessKey=${AWS_SES_ACCESS_KEY}
+      - AwsSesSettings__SecretKey=${AWS_SES_SECRET_KEY}
+      # SendGrid configuration
+      - SendGridSettings__ApiKey=${SENDGRID_API_KEY}
+      - SendGridSettings__FromEmail=${SENDGRID_FROM_EMAIL}
+      - SendGridSettings__FromName=${SENDGRID_FROM_NAME}
+      # Email provider selection
+      - EmailProvider=${EMAIL_PROVIDER}
+      # Firebase configuration (REQUIRED for notifications)
+      - Firebase__ProjectId=${FIREBASE_PROJECT_ID}
+      - Firebase__ServiceAccountKey=${FIREBASE_SERVICE_ACCOUNT_KEY}
+      # Storage configuration
       - StorageSettings__Type=Local
       - StorageSettings__LocalPath=/app/uploads
       - StorageSettings__BaseUrl=${API_BASE_URL}/uploads
       - VideoProcessing__Enabled=true
-    depends_on:
-      - postgres
-      - redis
     volumes:
       - ./uploads:/app/uploads
-      - ./logs/api:/app/logs
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     networks:
       - yapplr-network
     restart: unless-stopped
@@ -83,7 +90,6 @@ services:
       - yapplr-api
     volumes:
       - ./uploads:/app/uploads
-      - ./logs/video-processor:/app/logs
     networks:
       - yapplr-network
     restart: unless-stopped
@@ -100,129 +106,30 @@ services:
       context: ./yapplr-frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=${API_BASE_URL}
-        - NEXT_PUBLIC_WS_URL=${WS_BASE_URL}
+        - NEXT_PUBLIC_API_URL=https://api.yapplr.com
+        - NEXT_PUBLIC_WS_URL=wss://api.yapplr.com
+        # Notification provider configuration (SignalR-only for production web)
+        - NEXT_PUBLIC_ENABLE_SIGNALR=true
+        # Force rebuild by passing current timestamp
+        - CACHE_BUST=${CACHE_BUST:-$(date +%s)}
     environment:
       - NODE_ENV=production
     networks:
       - yapplr-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "https://api.yapplr.com/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+certbot:
+    image: certbot/certbot
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
-    networks:
-      - yapplr-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-    volumes:
-      - redis_data:/data
-    networks:
-      - yapplr-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Monitoring - Prometheus
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    networks:
-      - yapplr-network
-    restart: unless-stopped
-
-  # Monitoring - Grafana
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-    networks:
-      - yapplr-network
-    restart: unless-stopped
-
-  # Log Management - Loki
-  loki:
-    image: grafana/loki:latest
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./monitoring/loki.yml:/etc/loki/local-config.yaml:ro
-      - loki_data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - yapplr-network
-    restart: unless-stopped
-
-  # Log Collection - Promtail
-  promtail:
-    image: grafana/promtail:latest
-    volumes:
-      - ./logs:/var/log/yapplr:ro
-      - ./monitoring/promtail.yml:/etc/promtail/config.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: -config.file=/etc/promtail/config.yml
-    networks:
-      - yapplr-network
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  prometheus_data:
-    driver: local
-  grafana_data:
-    driver: local
-  loki_data:
-    driver: local
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+    command: certbot certonly --manual --preferred-challenges=dns --email ${CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${CERTBOT_DOMAIN} -d yapplr.com
 
 networks:
   yapplr-network:
