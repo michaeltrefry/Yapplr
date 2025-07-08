@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
+using Yapplr.Api.DTOs;
 using BCrypt.Net;
 
 namespace Yapplr.Api.Services;
@@ -9,11 +10,13 @@ public class StagingSeedService
 {
     private readonly YapplrDbContext _context;
     private readonly ILogger<StagingSeedService> _logger;
+    private readonly IPostService _postService;
 
-    public StagingSeedService(YapplrDbContext context, ILogger<StagingSeedService> logger)
+    public StagingSeedService(YapplrDbContext context, ILogger<StagingSeedService> logger, IPostService postService)
     {
         _context = context;
         _logger = logger;
+        _postService = postService;
     }
 
     public async Task SeedStagingDataAsync()
@@ -21,6 +24,13 @@ public class StagingSeedService
         try
         {
             _logger.LogInformation("🌱 Starting staging data seeding (fresh database expected)...");
+
+            // Check if data already exists (should not happen in staging with fresh database)
+            if (await _context.Users.AnyAsync())
+            {
+                _logger.LogInformation("⚠️ Users already exist in database, skipping seeding");
+                return;
+            }
 
             // Create admin user
             await CreateAdminUserAsync();
@@ -129,7 +139,7 @@ public class StagingSeedService
 
     private async Task CreateSampleContentAsync()
     {
-        _logger.LogInformation("📝 Creating sample posts and interactions (including moderation test content)...");
+        _logger.LogInformation("📝 Creating sample posts using PostService (with full content moderation)...");
 
         // Get all users for creating content
         var users = await _context.Users.ToListAsync();
@@ -188,73 +198,94 @@ public class StagingSeedService
             ("Follow me follow me follow me! Like and subscribe! Check my profile!", "Spam - Attention seeking")
         };
 
-        // Create regular posts (15 posts)
+        // Create regular posts (15 posts) using PostService
+        _logger.LogInformation("📝 Creating 15 regular posts...");
         for (int i = 0; i < 15; i++)
         {
             var randomUser = users[random.Next(users.Count)];
             var randomContent = regularPosts[random.Next(regularPosts.Count)];
 
-            var post = new Post
-            {
-                Content = randomContent,
-                UserId = randomUser.Id,
-                Privacy = (PostPrivacy)random.Next(0, 3), // Random privacy level
-                CreatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 7)).AddHours(-random.Next(0, 24)),
-                UpdatedAt = DateTime.UtcNow
-            };
+            var createPostDto = new CreatePostDto(
+                randomContent,
+                null, // No image
+                (PostPrivacy)random.Next(0, 3) // Random privacy level
+            );
 
-            _context.Posts.Add(post);
+            try
+            {
+                var createdPost = await _postService.CreatePostAsync(randomUser.Id, createPostDto);
+                if (createdPost != null)
+                {
+                    _logger.LogInformation("✅ Created regular post by {Username}: {Content}",
+                        randomUser.Username, randomContent.Substring(0, Math.Min(50, randomContent.Length)) + "...");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ Failed to create regular post for user {Username}", randomUser.Username);
+            }
         }
 
-        // Create moderation test posts (10-15 posts from specific users)
+        // Create moderation test posts (10-15 posts from specific users) using PostService
         var moderationTestUsers = users.Take(8).ToList(); // Use first 8 users for moderation tests
+        _logger.LogInformation("📝 Creating 15 moderation test posts (will trigger AI analysis)...");
 
         for (int i = 0; i < Math.Min(15, moderationTestPosts.Count); i++)
         {
             var testUser = moderationTestUsers[i % moderationTestUsers.Count];
             var (content, description) = moderationTestPosts[i];
 
-            var post = new Post
+            var createPostDto = new CreatePostDto(
+                content,
+                null, // No image
+                PostPrivacy.Public // Make moderation test posts public for visibility
+            );
+
+            try
             {
-                Content = content,
-                UserId = testUser.Id,
-                Privacy = PostPrivacy.Public, // Make moderation test posts public for visibility
-                CreatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 3)).AddHours(-random.Next(0, 12)), // Recent posts
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            _context.Posts.Add(post);
-
-            _logger.LogInformation("📝 Created moderation test post: {Description}", description);
+                var createdPost = await _postService.CreatePostAsync(testUser.Id, createPostDto);
+                if (createdPost != null)
+                {
+                    _logger.LogInformation("📝 Created moderation test post by {Username}: {Description}",
+                        testUser.Username, description);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ Failed to create moderation test post for user {Username}: {Description}",
+                    testUser.Username, description);
+            }
         }
-
-        await _context.SaveChangesAsync();
 
         // Create some follow relationships
         await CreateSampleFollowsAsync(users);
 
-        // Create some likes and comments
-        await CreateSampleInteractionsAsync();
+        // Create some comments using PostService
+        await CreateSampleCommentsAsync();
 
-        _logger.LogInformation("✅ Sample content created successfully (15 regular posts + 15 moderation test posts)");
+        _logger.LogInformation("✅ Sample content created successfully (15 regular posts + 15 moderation test posts + comments)");
     }
 
     private async Task CreateSampleFollowsAsync(List<User> users)
     {
         var random = new Random();
-        var followsToCreate = new List<Follow>();
+        var followsToCreate = new HashSet<(int FollowerId, int FollowingId)>();
 
         // Create some random follow relationships (avoid duplicates)
-        for (int i = 0; i < 30; i++)
+        var attempts = 0;
+        while (followsToCreate.Count < 30 && attempts < 100) // Limit attempts to avoid infinite loop
         {
+            attempts++;
             var follower = users[random.Next(users.Count)];
             var following = users[random.Next(users.Count)];
 
             // Don't follow yourself and avoid duplicates
-            if (follower.Id != following.Id && 
-                !followsToCreate.Any(f => f.FollowerId == follower.Id && f.FollowingId == following.Id))
+            if (follower.Id != following.Id &&
+                !followsToCreate.Contains((follower.Id, following.Id)) &&
+                !await _context.Follows.AnyAsync(f => f.FollowerId == follower.Id && f.FollowingId == following.Id))
             {
-                followsToCreate.Add(new Follow
+                followsToCreate.Add((follower.Id, following.Id));
+                _context.Follows.Add(new Follow
                 {
                     FollowerId = follower.Id,
                     FollowingId = following.Id,
@@ -263,37 +294,19 @@ public class StagingSeedService
             }
         }
 
-        _context.Follows.AddRange(followsToCreate);
         await _context.SaveChangesAsync();
     }
 
-    private async Task CreateSampleInteractionsAsync()
+    private async Task CreateSampleCommentsAsync()
     {
+        _logger.LogInformation("💬 Creating sample comments using PostService (with content moderation)...");
+
         var posts = await _context.Posts.Include(p => p.User).ToListAsync();
         var users = await _context.Users.ToListAsync();
         var random = new Random();
 
-        // Create some likes
-        for (int i = 0; i < 40; i++)
-        {
-            var randomPost = posts[random.Next(posts.Count)];
-            var randomUser = users[random.Next(users.Count)];
-
-            // Don't like your own post and avoid duplicates
-            if (randomPost.UserId != randomUser.Id && 
-                !await _context.Likes.AnyAsync(l => l.PostId == randomPost.Id && l.UserId == randomUser.Id))
-            {
-                _context.Likes.Add(new Like
-                {
-                    PostId = randomPost.Id,
-                    UserId = randomUser.Id,
-                    CreatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 5))
-                });
-            }
-        }
-
-        // Create some comments
-        var commentTexts = new[]
+        // Regular comment texts (safe content)
+        var regularCommentTexts = new[]
         {
             "Great post! Thanks for sharing 👍",
             "I totally agree with this",
@@ -307,21 +320,70 @@ public class StagingSeedService
             "Awesome work!"
         };
 
-        for (int i = 0; i < 20; i++)
+        // Problematic comment texts (for moderation testing)
+        var moderationTestComments = new[]
+        {
+            "This is stupid and you're an idiot for posting it",
+            "Nobody cares about your opinion, shut up",
+            "This contains some really inappropriate adult content",
+            "I hate people like you, you should disappear",
+            "This is fake news and misinformation"
+        };
+
+        // Create regular comments (15 comments)
+        for (int i = 0; i < 15; i++)
         {
             var randomPost = posts[random.Next(posts.Count)];
             var randomUser = users[random.Next(users.Count)];
-            var randomComment = commentTexts[random.Next(commentTexts.Length)];
+            var randomComment = regularCommentTexts[random.Next(regularCommentTexts.Length)];
 
-            _context.Comments.Add(new Comment
+            // Don't comment on your own post
+            if (randomPost.UserId != randomUser.Id)
             {
-                Content = randomComment,
-                PostId = randomPost.Id,
-                UserId = randomUser.Id,
-                CreatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 3))
-            });
+                var createCommentDto = new CreateCommentDto(randomComment);
+
+                try
+                {
+                    var createdComment = await _postService.AddCommentAsync(randomPost.Id, randomUser.Id, createCommentDto);
+                    if (createdComment != null)
+                    {
+                        _logger.LogInformation("💬 Created regular comment by {Username} on post by {PostAuthor}",
+                            randomUser.Username, randomPost.User.Username);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "⚠️ Failed to create regular comment for user {Username}", randomUser.Username);
+                }
+            }
         }
 
-        await _context.SaveChangesAsync();
+        // Create moderation test comments (5 comments)
+        for (int i = 0; i < 5; i++)
+        {
+            var randomPost = posts[random.Next(posts.Count)];
+            var randomUser = users[random.Next(users.Count)];
+            var testComment = moderationTestComments[random.Next(moderationTestComments.Length)];
+
+            // Don't comment on your own post
+            if (randomPost.UserId != randomUser.Id)
+            {
+                var createCommentDto = new CreateCommentDto(testComment);
+
+                try
+                {
+                    var createdComment = await _postService.AddCommentAsync(randomPost.Id, randomUser.Id, createCommentDto);
+                    if (createdComment != null)
+                    {
+                        _logger.LogInformation("💬 Created moderation test comment by {Username}: {Content}",
+                            randomUser.Username, testComment.Substring(0, Math.Min(30, testComment.Length)) + "...");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "⚠️ Failed to create moderation test comment for user {Username}", randomUser.Username);
+                }
+            }
+        }
     }
 }
