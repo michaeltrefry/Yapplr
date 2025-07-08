@@ -68,11 +68,13 @@ if (builder.Environment.IsEnvironment("Staging"))
 ```
 
 ### Seeding Process
-1. **Check Existing Data**: Skips seeding if users already exist
-2. **Create Admin User**: Single admin with full permissions
-3. **Create Test Users**: 20 users with realistic profiles
-4. **Generate Content**: Posts, follows, likes, and comments
-5. **Save Changes**: Commits all data to database
+1. **Fresh Database**: Each deployment starts with an empty database
+2. **Run Migrations**: Database schema is created from scratch
+3. **Seed System Tags**: Default system tags are created
+4. **Create Admin User**: Single admin with full permissions
+5. **Create Test Users**: 20 users with realistic profiles
+6. **Generate Content**: Posts, follows, likes, and comments
+7. **Save Changes**: Commits all data to database
 
 ### Password Hashing
 All passwords are properly hashed using BCrypt before storage:
@@ -88,8 +90,10 @@ All users are created with `EmailVerified = true` to skip the email verification
 ### Automatic Seeding
 Seeding happens automatically when:
 1. The application starts in Staging environment
-2. The database is empty (no existing users)
-3. Database migrations complete successfully
+2. Database migrations complete successfully
+3. Fresh database is created (no data persistence in staging)
+
+**Note**: The staging environment uses an ephemeral database with no data persistence between deployments. This ensures every deployment starts with fresh seed data.
 
 ### Manual Testing
 After deployment, you can immediately:
@@ -112,9 +116,10 @@ The seeding is integrated into the staging deployment process:
 - No risk of test data appearing in production
 
 ### Fresh Deployments
-- Each staging deployment can start with fresh data
-- Existing data prevents duplicate seeding
-- Database can be reset for clean testing
+- Each staging deployment starts with a completely fresh database
+- No data persistence between deployments
+- Automatic seed data creation on every deployment
+- Perfect for clean testing scenarios
 
 ## Security Considerations
 
