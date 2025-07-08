@@ -12,18 +12,21 @@ public class ContentModerationService : IContentModerationService
     private readonly YapplrDbContext _context;
     private readonly ILogger<ContentModerationService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly IAuditService _auditService;
     private readonly string _moderationServiceUrl;
 
     public ContentModerationService(
         HttpClient httpClient,
         YapplrDbContext context,
         ILogger<ContentModerationService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IAuditService auditService)
     {
         _httpClient = httpClient;
         _context = context;
         _logger = logger;
         _configuration = configuration;
+        _auditService = auditService;
         _moderationServiceUrl = _configuration.GetValue<string>("ContentModeration:ServiceUrl") ?? "http://localhost:8000";
         
         // Configure HttpClient
@@ -133,7 +136,10 @@ public class ContentModerationService : IContentModerationService
         {
             var post = await _context.Posts.FindAsync(postId);
             if (post == null)
+            {
+                _logger.LogWarning("Cannot apply suggested tags: Post {PostId} not found", postId);
                 return false;
+            }
 
             var appliedTags = new List<PostSystemTag>();
 
@@ -170,8 +176,38 @@ public class ContentModerationService : IContentModerationService
 
             if (appliedTags.Any())
             {
+                // Save the system tags first
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Applied {Count} AI-suggested system tags to post {PostId}", appliedTags.Count, postId);
+
+                // Create audit logs for each applied tag (with error handling)
+                foreach (var appliedTag in appliedTags)
+                {
+                    try
+                    {
+                        // Verify the post still exists before creating audit log
+                        var postStillExists = await _context.Posts.AnyAsync(p => p.Id == postId);
+                        if (postStillExists)
+                        {
+                            await _auditService.LogPostSystemTagAddedAsync(
+                                postId,
+                                appliedTag.SystemTagId,
+                                appliedByUserId,
+                                appliedTag.Reason
+                            );
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Skipping audit log for post {PostId} - post was deleted", postId);
+                        }
+                    }
+                    catch (Exception auditEx)
+                    {
+                        _logger.LogError(auditEx, "Failed to create audit log for system tag {SystemTagId} on post {PostId}",
+                            appliedTag.SystemTagId, postId);
+                        // Don't fail the entire operation if audit logging fails
+                    }
+                }
             }
 
             return true;
@@ -226,8 +262,38 @@ public class ContentModerationService : IContentModerationService
 
             if (appliedTags.Any())
             {
+                // Save the system tags first
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Applied {Count} AI-suggested system tags to comment {CommentId}", appliedTags.Count, commentId);
+
+                // Create audit logs for each applied tag (with error handling)
+                foreach (var appliedTag in appliedTags)
+                {
+                    try
+                    {
+                        // Verify the comment still exists before creating audit log
+                        var commentStillExists = await _context.Comments.AnyAsync(c => c.Id == commentId);
+                        if (commentStillExists)
+                        {
+                            await _auditService.LogCommentSystemTagAddedAsync(
+                                commentId,
+                                appliedTag.SystemTagId,
+                                appliedByUserId,
+                                appliedTag.Reason
+                            );
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Skipping audit log for comment {CommentId} - comment was deleted", commentId);
+                        }
+                    }
+                    catch (Exception auditEx)
+                    {
+                        _logger.LogError(auditEx, "Failed to create audit log for system tag {SystemTagId} on comment {CommentId}",
+                            appliedTag.SystemTagId, commentId);
+                        // Don't fail the entire operation if audit logging fails
+                    }
+                }
             }
 
             return true;

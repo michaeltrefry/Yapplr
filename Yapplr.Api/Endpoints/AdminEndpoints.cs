@@ -10,6 +10,18 @@ namespace Yapplr.Api.Endpoints;
 
 public static class AdminEndpoints
 {
+    private static int? GetCurrentUserId(ClaimsPrincipal user)
+    {
+        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
+            return null;
+
+        if (int.TryParse(userIdClaim.Value, out var userId))
+            return userId;
+
+        return null;
+    }
+
     public static void MapAdminEndpoints(this WebApplication app)
     {
         var admin = app.MapGroup("/api/admin").WithTags("Admin");
@@ -85,12 +97,15 @@ public static class AdminEndpoints
 
         admin.MapPost("/users/{id:int}/suspend", [RequireModerator] async (int id, [FromBody] SuspendUserDto suspendDto, ClaimsPrincipal user, IUserService userService, IAuditService auditService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await userService.SuspendUserAsync(id, currentUserId, suspendDto.Reason, suspendDto.SuspendedUntil);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var success = await userService.SuspendUserAsync(id, currentUserId.Value, suspendDto.Reason, suspendDto.SuspendedUntil);
             
             if (success)
             {
-                await auditService.LogUserSuspendedAsync(id, currentUserId, suspendDto.Reason, suspendDto.SuspendedUntil);
+                await auditService.LogUserSuspendedAsync(id, currentUserId.Value, suspendDto.Reason, suspendDto.SuspendedUntil);
             }
             
             return success ? Results.Ok(new { message = "User suspended successfully" }) : Results.BadRequest(new { message = "Failed to suspend user" });
@@ -102,12 +117,15 @@ public static class AdminEndpoints
 
         admin.MapPost("/users/{id:int}/unsuspend", [RequireModerator] async (int id, ClaimsPrincipal user, IUserService userService, IAuditService auditService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
             var success = await userService.UnsuspendUserAsync(id);
-            
+
             if (success)
             {
-                await auditService.LogUserUnsuspendedAsync(id, currentUserId);
+                await auditService.LogUserUnsuspendedAsync(id, currentUserId.Value);
             }
             
             return success ? Results.Ok(new { message = "User unsuspended successfully" }) : Results.BadRequest(new { message = "Failed to unsuspend user" });
@@ -119,12 +137,15 @@ public static class AdminEndpoints
 
         admin.MapPost("/users/{id:int}/ban", [RequireModerator] async (int id, [FromBody] BanUserDto banDto, ClaimsPrincipal user, IUserService userService, IAuditService auditService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await userService.BanUserAsync(id, currentUserId, banDto.Reason, banDto.IsShadowBan);
-            
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var success = await userService.BanUserAsync(id, currentUserId.Value, banDto.Reason, banDto.IsShadowBan);
+
             if (success)
             {
-                await auditService.LogUserBannedAsync(id, currentUserId, banDto.Reason, banDto.IsShadowBan);
+                await auditService.LogUserBannedAsync(id, currentUserId.Value, banDto.Reason, banDto.IsShadowBan);
             }
             
             return success ? Results.Ok(new { message = banDto.IsShadowBan ? "User shadow banned successfully" : "User banned successfully" }) : Results.BadRequest(new { message = "Failed to ban user" });
@@ -136,12 +157,15 @@ public static class AdminEndpoints
 
         admin.MapPost("/users/{id:int}/unban", [RequireModerator] async (int id, ClaimsPrincipal user, IUserService userService, IAuditService auditService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
             var success = await userService.UnbanUserAsync(id);
-            
+
             if (success)
             {
-                await auditService.LogUserUnbannedAsync(id, currentUserId);
+                await auditService.LogUserUnbannedAsync(id, currentUserId.Value);
             }
             
             return success ? Results.Ok(new { message = "User unbanned successfully" }) : Results.BadRequest(new { message = "Failed to unban user" });
@@ -153,7 +177,9 @@ public static class AdminEndpoints
 
         admin.MapPost("/users/{id:int}/change-role", [RequireAdmin] async (int id, [FromBody] ChangeUserRoleDto roleDto, ClaimsPrincipal user, IUserService userService, IAuditService auditService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
             
             // Get current user role for audit log
             var targetUser = await userService.GetUserEntityByIdAsync(id);
@@ -163,11 +189,11 @@ public static class AdminEndpoints
             }
             
             var oldRole = targetUser.Role;
-            var success = await userService.ChangeUserRoleAsync(id, currentUserId, roleDto.Role, roleDto.Reason);
-            
+            var success = await userService.ChangeUserRoleAsync(id, currentUserId.Value, roleDto.Role, roleDto.Reason);
+
             if (success)
             {
-                await auditService.LogUserRoleChangedAsync(id, currentUserId, oldRole, roleDto.Role, roleDto.Reason);
+                await auditService.LogUserRoleChangedAsync(id, currentUserId.Value, oldRole, roleDto.Role, roleDto.Reason);
             }
             
             return success ? Results.Ok(new { message = "User role changed successfully" }) : Results.BadRequest(new { message = "Failed to change user role" });
@@ -200,7 +226,13 @@ public static class AdminEndpoints
 
         admin.MapPost("/posts/{id:int}/hide", [RequireModerator] async (int id, [FromBody] HideContentDto hideDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
+            {
+                return Results.Unauthorized();
+            }
+
+            var currentUserId = int.Parse(userIdClaim.Value);
             var success = await adminService.HidePostAsync(id, currentUserId, hideDto.Reason);
             return success ? Results.Ok(new { message = "Post hidden successfully" }) : Results.BadRequest(new { message = "Failed to hide post" });
         })
@@ -221,8 +253,11 @@ public static class AdminEndpoints
 
         admin.MapDelete("/posts/{id:int}", [RequireModerator] async (int id, [FromBody] HideContentDto deleteDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await adminService.DeletePostAsync(id, currentUserId, deleteDto.Reason);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var success = await adminService.DeletePostAsync(id, currentUserId.Value, deleteDto.Reason);
             return success ? Results.NoContent() : Results.BadRequest(new { message = "Failed to delete post" });
         })
         .WithName("AdminDeletePost")
@@ -232,8 +267,11 @@ public static class AdminEndpoints
 
         admin.MapPost("/posts/{id:int}/system-tags", [RequireModerator] async (int id, [FromBody] ApplySystemTagDto tagDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await adminService.ApplySystemTagToPostAsync(id, tagDto.SystemTagId, currentUserId, tagDto.Reason);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var success = await adminService.ApplySystemTagToPostAsync(id, tagDto.SystemTagId, currentUserId.Value, tagDto.Reason);
             return success ? Results.Ok(new { message = "System tag applied successfully" }) : Results.BadRequest(new { message = "Failed to apply system tag" });
         })
         .WithName("ApplySystemTagToPost")
@@ -243,8 +281,11 @@ public static class AdminEndpoints
 
         admin.MapDelete("/posts/{id:int}/system-tags/{tagId:int}", [RequireModerator] async (int id, int tagId, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await adminService.RemoveSystemTagFromPostAsync(id, tagId, currentUserId);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var success = await adminService.RemoveSystemTagFromPostAsync(id, tagId, currentUserId.Value);
             return success ? Results.Ok(new { message = "System tag removed successfully" }) : Results.BadRequest(new { message = "Failed to remove system tag" });
         })
         .WithName("RemoveSystemTagFromPost")
@@ -274,8 +315,11 @@ public static class AdminEndpoints
 
         admin.MapPost("/comments/{id:int}/hide", [RequireModerator] async (int id, [FromBody] HideContentDto hideDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await adminService.HideCommentAsync(id, currentUserId, hideDto.Reason);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var success = await adminService.HideCommentAsync(id, currentUserId.Value, hideDto.Reason);
             return success ? Results.Ok(new { message = "Comment hidden successfully" }) : Results.BadRequest(new { message = "Failed to hide comment" });
         })
         .WithName("HideComment")
@@ -295,8 +339,11 @@ public static class AdminEndpoints
 
         admin.MapDelete("/comments/{id:int}", [RequireModerator] async (int id, [FromBody] HideContentDto deleteDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await adminService.DeleteCommentAsync(id, currentUserId, deleteDto.Reason);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var success = await adminService.DeleteCommentAsync(id, currentUserId.Value, deleteDto.Reason);
             return success ? Results.NoContent() : Results.BadRequest(new { message = "Failed to delete comment" });
         })
         .WithName("AdminDeleteComment")
@@ -354,8 +401,11 @@ public static class AdminEndpoints
 
         admin.MapPost("/appeals/{id:int}/review", [RequireModerator] async (int id, [FromBody] ReviewAppealDto reviewDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var appeal = await adminService.ReviewUserAppealAsync(id, currentUserId, reviewDto);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var appeal = await adminService.ReviewUserAppealAsync(id, currentUserId.Value, reviewDto);
             return appeal == null ? Results.NotFound() : Results.Ok(appeal);
         })
         .WithName("ReviewUserAppeal")
@@ -366,8 +416,11 @@ public static class AdminEndpoints
         // Bulk Actions
         admin.MapPost("/bulk/hide-posts", [RequireModerator] async ([FromBody] BulkActionDto bulkDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var count = await adminService.BulkHidePostsAsync(bulkDto.PostIds, currentUserId, bulkDto.Reason);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var count = await adminService.BulkHidePostsAsync(bulkDto.PostIds, currentUserId.Value, bulkDto.Reason);
             return Results.Ok(new { message = $"{count} posts hidden successfully", count });
         })
         .WithName("BulkHidePosts")
@@ -376,8 +429,11 @@ public static class AdminEndpoints
 
         admin.MapPost("/bulk/delete-posts", [RequireModerator] async ([FromBody] BulkActionDto bulkDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var count = await adminService.BulkDeletePostsAsync(bulkDto.PostIds, currentUserId, bulkDto.Reason);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var count = await adminService.BulkDeletePostsAsync(bulkDto.PostIds, currentUserId.Value, bulkDto.Reason);
             return Results.Ok(new { message = $"{count} posts deleted successfully", count });
         })
         .WithName("BulkDeletePosts")
@@ -386,8 +442,11 @@ public static class AdminEndpoints
 
         admin.MapPost("/bulk/apply-system-tag", [RequireModerator] async ([FromBody] BulkSystemTagDto bulkTagDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var count = await adminService.BulkApplySystemTagAsync(bulkTagDto.PostIds, bulkTagDto.SystemTagId, currentUserId, bulkTagDto.Reason);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var count = await adminService.BulkApplySystemTagAsync(bulkTagDto.PostIds, bulkTagDto.SystemTagId, currentUserId.Value, bulkTagDto.Reason);
             return Results.Ok(new { message = $"System tag applied to {count} posts successfully", count });
         })
         .WithName("BulkApplySystemTag")
@@ -397,8 +456,11 @@ public static class AdminEndpoints
         // User Appeals (accessible to all authenticated users)
         admin.MapPost("/appeals", async ([FromBody] CreateAppealDto createDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var appeal = await adminService.CreateUserAppealAsync(currentUserId, createDto);
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var appeal = await adminService.CreateUserAppealAsync(currentUserId.Value, createDto);
             return Results.Created($"/api/admin/appeals/{appeal.Id}", appeal);
         })
         .WithName("CreateUserAppeal")
@@ -482,8 +544,11 @@ public static class AdminEndpoints
 
         admin.MapPost("/ai-suggestions/{id:int}/approve", [RequireModerator] async (int id, [FromBody] ApprovalDto approvalDto, IAdminService adminService, ClaimsPrincipal user) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await adminService.ApproveAiSuggestedTagAsync(id, userId, approvalDto.Reason);
+            var userId = GetCurrentUserId(user);
+            if (userId == null)
+                return Results.Unauthorized();
+
+            var success = await adminService.ApproveAiSuggestedTagAsync(id, userId.Value, approvalDto.Reason);
             return success ? Results.Ok() : Results.NotFound();
         })
         .WithName("ApproveAiSuggestedTag")
@@ -493,8 +558,11 @@ public static class AdminEndpoints
 
         admin.MapPost("/ai-suggestions/{id:int}/reject", [RequireModerator] async (int id, [FromBody] ApprovalDto approvalDto, IAdminService adminService, ClaimsPrincipal user) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await adminService.RejectAiSuggestedTagAsync(id, userId, approvalDto.Reason);
+            var userId = GetCurrentUserId(user);
+            if (userId == null)
+                return Results.Unauthorized();
+
+            var success = await adminService.RejectAiSuggestedTagAsync(id, userId.Value, approvalDto.Reason);
             return success ? Results.Ok() : Results.NotFound();
         })
         .WithName("RejectAiSuggestedTag")
@@ -504,8 +572,11 @@ public static class AdminEndpoints
 
         admin.MapPost("/ai-suggestions/bulk-approve", [RequireModerator] async ([FromBody] BulkApprovalDto bulkApprovalDto, IAdminService adminService, ClaimsPrincipal user) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await adminService.BulkApproveAiSuggestedTagsAsync(bulkApprovalDto.SuggestedTagIds, userId, bulkApprovalDto.Reason);
+            var userId = GetCurrentUserId(user);
+            if (userId == null)
+                return Results.Unauthorized();
+
+            var success = await adminService.BulkApproveAiSuggestedTagsAsync(bulkApprovalDto.SuggestedTagIds, userId.Value, bulkApprovalDto.Reason);
             return success ? Results.Ok() : Results.BadRequest();
         })
         .WithName("BulkApproveAiSuggestedTags")
@@ -515,8 +586,11 @@ public static class AdminEndpoints
 
         admin.MapPost("/ai-suggestions/bulk-reject", [RequireModerator] async ([FromBody] BulkApprovalDto bulkApprovalDto, IAdminService adminService, ClaimsPrincipal user) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var success = await adminService.BulkRejectAiSuggestedTagsAsync(bulkApprovalDto.SuggestedTagIds, userId, bulkApprovalDto.Reason);
+            var userId = GetCurrentUserId(user);
+            if (userId == null)
+                return Results.Unauthorized();
+
+            var success = await adminService.BulkRejectAiSuggestedTagsAsync(bulkApprovalDto.SuggestedTagIds, userId.Value, bulkApprovalDto.Reason);
             return success ? Results.Ok() : Results.BadRequest();
         })
         .WithName("BulkRejectAiSuggestedTags")
