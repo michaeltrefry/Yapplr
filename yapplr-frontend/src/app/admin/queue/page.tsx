@@ -23,6 +23,12 @@ export default function ContentQueuePage() {
   const [activeTab, setActiveTab] = useState<'posts' | 'comments' | 'appeals'>('posts');
   const [systemTags, setSystemTags] = useState<SystemTag[]>([]);
   const [expandedAiSuggestions, setExpandedAiSuggestions] = useState<Set<number>>(new Set());
+  const [activeAction, setActiveAction] = useState<{
+    type: 'hide' | 'delete';
+    contentType: 'post' | 'comment';
+    contentId: number;
+    reason: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,73 +49,54 @@ export default function ContentQueuePage() {
     fetchData();
   }, []);
 
-  const handleHidePost = async (postId: number) => {
-    const reason = prompt('Enter reason for hiding this post:');
-    if (!reason) return;
+  const handleShowActionForm = (type: 'hide' | 'delete', contentType: 'post' | 'comment', contentId: number) => {
+    setActiveAction({
+      type,
+      contentType,
+      contentId,
+      reason: ''
+    });
+  };
+
+  const handleCancelAction = () => {
+    setActiveAction(null);
+  };
+
+  const handleSaveAction = async () => {
+    if (!activeAction || !activeAction.reason.trim()) return;
 
     try {
-      await adminApi.hidePost(postId, { reason });
+      if (activeAction.contentType === 'post') {
+        if (activeAction.type === 'hide') {
+          await adminApi.hidePost(activeAction.contentId, { reason: activeAction.reason });
+        } else {
+          await adminApi.deletePost(activeAction.contentId, { reason: activeAction.reason });
+        }
+      } else {
+        if (activeAction.type === 'hide') {
+          await adminApi.hideComment(activeAction.contentId, { reason: activeAction.reason });
+        } else {
+          await adminApi.deleteComment(activeAction.contentId, { reason: activeAction.reason });
+        }
+      }
+
       // Refresh queue
       const queueData = await adminApi.getContentQueue();
       setQueue(queueData);
+      setActiveAction(null);
     } catch (error) {
-      console.error('Failed to hide post:', error);
-      alert('Failed to hide post');
+      console.error(`Failed to ${activeAction.type} ${activeAction.contentType}:`, error);
+      alert(`Failed to ${activeAction.type} ${activeAction.contentType}`);
     }
   };
 
-  const handleDeletePost = async (postId: number) => {
-    const reason = prompt('Enter reason for deleting this post:');
-    if (!reason) return;
-
-    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await adminApi.deletePost(postId, { reason });
-      // Refresh queue
-      const queueData = await adminApi.getContentQueue();
-      setQueue(queueData);
-    } catch (error) {
-      console.error('Failed to delete post:', error);
-      alert('Failed to delete post');
+  const handleReasonChange = (reason: string) => {
+    if (activeAction) {
+      setActiveAction({ ...activeAction, reason });
     }
   };
 
-  const handleHideComment = async (commentId: number) => {
-    const reason = prompt('Enter reason for hiding this comment:');
-    if (!reason) return;
 
-    try {
-      await adminApi.hideComment(commentId, { reason });
-      // Refresh queue
-      const queueData = await adminApi.getContentQueue();
-      setQueue(queueData);
-    } catch (error) {
-      console.error('Failed to hide comment:', error);
-      alert('Failed to hide comment');
-    }
-  };
-
-  const handleDeleteComment = async (commentId: number) => {
-    const reason = prompt('Enter reason for deleting this comment:');
-    if (!reason) return;
-
-    if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await adminApi.deleteComment(commentId, { reason });
-      // Refresh queue
-      const queueData = await adminApi.getContentQueue();
-      setQueue(queueData);
-    } catch (error) {
-      console.error('Failed to delete comment:', error);
-      alert('Failed to delete comment');
-    }
-  };
 
   const handleApproveAiSuggestion = async (tagId: number, reason?: string) => {
     try {
@@ -244,14 +231,14 @@ export default function ContentQueuePage() {
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => handleHidePost(post.id)}
+                        onClick={() => handleShowActionForm('hide', 'post', post.id)}
                         className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
                       >
                         <EyeOff className="h-4 w-4 mr-1" />
                         Hide
                       </button>
                       <button
-                        onClick={() => handleDeletePost(post.id)}
+                        onClick={() => handleShowActionForm('delete', 'post', post.id)}
                         className="flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
@@ -325,6 +312,52 @@ export default function ContentQueuePage() {
                       </span>
                     )}
                   </div>
+
+                  {/* Inline Action Form */}
+                  {activeAction && activeAction.contentType === 'post' && activeAction.contentId === post.id && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border-t">
+                      <div className="mb-3">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">
+                          {activeAction.type === 'hide' ? 'Hide Post' : 'Delete Post'}
+                          {activeAction.type === 'delete' && (
+                            <span className="text-red-600 text-xs ml-2">(This action cannot be undone)</span>
+                          )}
+                        </h4>
+                        <label htmlFor="reason" className="block text-sm text-gray-700 mb-1">
+                          Reason for {activeAction.type === 'hide' ? 'hiding' : 'deleting'} this post:
+                        </label>
+                        <textarea
+                          id="reason"
+                          value={activeAction.reason}
+                          onChange={(e) => handleReasonChange(e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter your reason..."
+                        />
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={handleSaveAction}
+                          disabled={!activeAction.reason.trim()}
+                          className={`px-4 py-2 rounded-md text-sm font-medium ${
+                            activeAction.reason.trim()
+                              ? activeAction.type === 'hide'
+                                ? 'bg-yellow-600 text-white hover:bg-yellow-700'
+                                : 'bg-red-600 text-white hover:bg-red-700'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          } transition-colors`}
+                        >
+                          {activeAction.type === 'hide' ? 'Hide Post' : 'Delete Post'}
+                        </button>
+                        <button
+                          onClick={handleCancelAction}
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -354,14 +387,14 @@ export default function ContentQueuePage() {
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => handleHideComment(comment.id)}
+                        onClick={() => handleShowActionForm('hide', 'comment', comment.id)}
                         className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
                       >
                         <EyeOff className="h-4 w-4 mr-1" />
                         Hide
                       </button>
                       <button
-                        onClick={() => handleDeleteComment(comment.id)}
+                        onClick={() => handleShowActionForm('delete', 'comment', comment.id)}
                         className="flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
@@ -393,6 +426,52 @@ export default function ContentQueuePage() {
                     <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
                       Hidden
                     </span>
+                  )}
+
+                  {/* Inline Action Form */}
+                  {activeAction && activeAction.contentType === 'comment' && activeAction.contentId === comment.id && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border-t">
+                      <div className="mb-3">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">
+                          {activeAction.type === 'hide' ? 'Hide Comment' : 'Delete Comment'}
+                          {activeAction.type === 'delete' && (
+                            <span className="text-red-600 text-xs ml-2">(This action cannot be undone)</span>
+                          )}
+                        </h4>
+                        <label htmlFor="reason" className="block text-sm text-gray-700 mb-1">
+                          Reason for {activeAction.type === 'hide' ? 'hiding' : 'deleting'} this comment:
+                        </label>
+                        <textarea
+                          id="reason"
+                          value={activeAction.reason}
+                          onChange={(e) => handleReasonChange(e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter your reason..."
+                        />
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={handleSaveAction}
+                          disabled={!activeAction.reason.trim()}
+                          className={`px-4 py-2 rounded-md text-sm font-medium ${
+                            activeAction.reason.trim()
+                              ? activeAction.type === 'hide'
+                                ? 'bg-yellow-600 text-white hover:bg-yellow-700'
+                                : 'bg-red-600 text-white hover:bg-red-700'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          } transition-colors`}
+                        >
+                          {activeAction.type === 'hide' ? 'Hide Comment' : 'Delete Comment'}
+                        </button>
+                        <button
+                          onClick={handleCancelAction}
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))
