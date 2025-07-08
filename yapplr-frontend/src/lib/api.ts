@@ -588,9 +588,7 @@ export const adminApi = {
     await api.post(`/admin/comments/${id}/unhide`);
   },
 
-  deleteComment: async (id: number, data: HideContentDto): Promise<void> => {
-    await api.delete(`/admin/comments/${id}`, { data });
-  },
+
 
   // Analytics and Reporting
   getStats: async (): Promise<ModerationStats> => {

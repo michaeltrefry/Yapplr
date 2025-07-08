@@ -86,14 +86,15 @@ public class TagService : ITagService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments)
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
             .AsSplitQuery()
             .Where(p => p.PostTags.Any(pt => pt.Tag.Name == normalizedTagName) &&
+                       !p.IsDeletedByUser && // Filter out user-deleted posts
                        !blockedUserIds.Contains(p.UserId) &&
-                       (p.Privacy == PostPrivacy.Public || 
+                       (p.Privacy == PostPrivacy.Public ||
                         (currentUserId.HasValue && p.UserId == currentUserId.Value)))
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)

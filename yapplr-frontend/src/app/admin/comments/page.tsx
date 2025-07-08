@@ -6,7 +6,6 @@ import { AdminComment } from '@/types';
 import {
   Eye,
   EyeOff,
-  Trash2,
   Tag,
   User,
   Search,
@@ -66,17 +65,7 @@ export default function AdminCommentsPage() {
     }
   };
 
-  const handleDeleteComment = async (commentId: number, reason: string) => {
-    try {
-      setActionLoading(commentId);
-      await adminApi.deleteComment(commentId, { reason });
-      await fetchComments();
-    } catch (error) {
-      console.error('Failed to delete comment:', error);
-    } finally {
-      setActionLoading(null);
-    }
-  };
+
 
   const toggleCommentSelection = (commentId: number) => {
     setSelectedComments(prev => 
@@ -286,18 +275,7 @@ export default function AdminCommentsPage() {
                           <EyeOff className="h-4 w-4" />
                         </button>
                       )}
-                      <button
-                        onClick={() => {
-                          const reason = prompt('Enter reason for deleting this comment:');
-                          if (reason && confirm('Are you sure? This action cannot be undone.')) {
-                            handleDeleteComment(comment.id, reason);
-                          }
-                        }}
-                        disabled={actionLoading === comment.id}
-                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+
                     </div>
                   </td>
                 </tr>

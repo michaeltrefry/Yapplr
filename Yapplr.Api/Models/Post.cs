@@ -24,6 +24,10 @@ public class Post
     public User? HiddenByUser { get; set; }
     public DateTime? HiddenAt { get; set; }
     public string? HiddenReason { get; set; }
+
+    // User deletion fields (soft delete)
+    public bool IsDeletedByUser { get; set; } = false;
+    public DateTime? DeletedByUserAt { get; set; }
     
     // Foreign key
     public int UserId { get; set; }

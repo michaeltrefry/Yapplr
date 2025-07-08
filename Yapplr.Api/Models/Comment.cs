@@ -21,6 +21,10 @@ public class Comment
     public DateTime? HiddenAt { get; set; }
     public string? HiddenReason { get; set; }
 
+    // User deletion fields (soft delete)
+    public bool IsDeletedByUser { get; set; } = false;
+    public DateTime? DeletedByUserAt { get; set; }
+
     // Foreign keys
     public int UserId { get; set; }
     public int PostId { get; set; }

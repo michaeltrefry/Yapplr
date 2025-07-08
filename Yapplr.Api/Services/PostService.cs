@@ -86,14 +86,14 @@ public class PostService : IPostService
         var post = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments)
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
             .Include(p => p.PostLinkPreviews)
                 .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
-            .FirstOrDefaultAsync(p => p.Id == postId);
+            .FirstOrDefaultAsync(p => p.Id == postId && !p.IsDeletedByUser); // Filter out user-deleted posts
 
         return post == null ? null : MapToPostDto(post, currentUserId);
     }
@@ -112,13 +112,14 @@ public class PostService : IPostService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments)
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
             .Include(p => p.PostLinkPreviews)
                 .ThenInclude(plp => plp.LinkPreview)
             .Where(p =>
+                !p.IsDeletedByUser && // Filter out user-deleted posts
                 !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                 p.UserId == userId || // User's own posts are always visible
@@ -149,7 +150,7 @@ public class PostService : IPostService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments)
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -157,6 +158,7 @@ public class PostService : IPostService
                 .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
             .Where(p =>
+                !p.IsDeletedByUser && // Filter out user-deleted posts
                 !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                 p.UserId == userId || // User's own posts are always visible
@@ -173,11 +175,12 @@ public class PostService : IPostService
             .Include(r => r.Post)
             .ThenInclude(p => p.Likes)
             .Include(r => r.Post)
-            .ThenInclude(p => p.Comments)
+            .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
             .AsSplitQuery()
             .Where(r =>
+                !r.Post.IsDeletedByUser && // Filter out reposts of user-deleted posts
                 !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
                 !blockedUserIds.Contains(r.Post.UserId) && // Filter out reposts of posts from blocked users
                 (r.UserId == userId || followingIds.Contains(r.UserId))) // Reposts from self or followed users
@@ -232,7 +235,7 @@ public class PostService : IPostService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments)
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -240,6 +243,7 @@ public class PostService : IPostService
                 .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
             .Where(p =>
+                !p.IsDeletedByUser && // Filter out user-deleted posts
                 p.Privacy == PostPrivacy.Public && // Only public posts
                 !blockedUserIds.Contains(p.UserId)) // Filter out blocked users
             .OrderByDescending(p => p.CreatedAt)
@@ -254,11 +258,12 @@ public class PostService : IPostService
             .Include(r => r.Post)
             .ThenInclude(p => p.Likes)
             .Include(r => r.Post)
-            .ThenInclude(p => p.Comments)
+            .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
             .AsSplitQuery()
             .Where(r =>
+                !r.Post.IsDeletedByUser && // Filter out reposts of user-deleted posts
                 r.Post.Privacy == PostPrivacy.Public && // Only reposts of public posts
                 !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
                 !blockedUserIds.Contains(r.Post.UserId)) // Filter out reposts of posts from blocked users
@@ -316,7 +321,7 @@ public class PostService : IPostService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments)
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -324,6 +329,7 @@ public class PostService : IPostService
                 .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
             .Where(p => p.UserId == userId &&
+                !p.IsDeletedByUser && // Filter out user-deleted posts
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                  currentUserId == userId || // User's own posts are always visible
                  (p.Privacy == PostPrivacy.Followers && isFollowing))) // Followers-only posts visible if following
@@ -362,7 +368,7 @@ public class PostService : IPostService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments)
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -370,6 +376,7 @@ public class PostService : IPostService
                 .ThenInclude(plp => plp.LinkPreview)
             .AsSplitQuery()
             .Where(p => p.UserId == userId &&
+                !p.IsDeletedByUser && // Filter out user-deleted posts
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                  currentUserId == userId || // User's own posts are always visible
                  (p.Privacy == PostPrivacy.Followers && isFollowing))) // Followers-only posts visible if following
@@ -385,11 +392,11 @@ public class PostService : IPostService
             .Include(r => r.Post)
             .ThenInclude(p => p.Likes)
             .Include(r => r.Post)
-            .ThenInclude(p => p.Comments)
+            .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
             .AsSplitQuery()
-            .Where(r => r.UserId == userId) // Reposts by this user
+            .Where(r => r.UserId == userId && !r.Post.IsDeletedByUser) // Reposts by this user, filter out deleted posts
             .Where(r =>
                 r.Post.Privacy == PostPrivacy.Public || // Public posts can be seen
                 r.Post.UserId == currentUserId || // Current user's own posts
@@ -443,11 +450,14 @@ public class PostService : IPostService
     public async Task<bool> DeletePostAsync(int postId, int userId)
     {
         var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postId && p.UserId == userId);
-        
+
         if (post == null)
             return false;
 
-        _context.Posts.Remove(post);
+        // Soft delete: mark as deleted by user instead of removing from database
+        post.IsDeletedByUser = true;
+        post.DeletedByUserAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
         return true;
     }
@@ -567,7 +577,7 @@ public class PostService : IPostService
     {
         var comments = await _context.Comments
             .Include(c => c.User)
-            .Where(c => c.PostId == postId)
+            .Where(c => c.PostId == postId && !c.IsDeletedByUser) // Filter out user-deleted comments
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
@@ -595,11 +605,14 @@ public class PostService : IPostService
     public async Task<bool> DeleteCommentAsync(int commentId, int userId)
     {
         var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == userId);
-        
+
         if (comment == null)
             return false;
 
-        _context.Comments.Remove(comment);
+        // Soft delete: mark as deleted by user instead of removing from database
+        comment.IsDeletedByUser = true;
+        comment.DeletedByUserAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
         return true;
     }

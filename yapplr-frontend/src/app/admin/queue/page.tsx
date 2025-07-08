@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
-  Trash2,
   Tag,
   User,
   Calendar,
@@ -24,7 +23,7 @@ export default function ContentQueuePage() {
   const [systemTags, setSystemTags] = useState<SystemTag[]>([]);
   const [expandedAiSuggestions, setExpandedAiSuggestions] = useState<Set<number>>(new Set());
   const [activeAction, setActiveAction] = useState<{
-    type: 'hide' | 'delete';
+    type: 'hide';
     contentType: 'post' | 'comment';
     contentId: number;
     reason: string;
@@ -49,7 +48,7 @@ export default function ContentQueuePage() {
     fetchData();
   }, []);
 
-  const handleShowActionForm = (type: 'hide' | 'delete', contentType: 'post' | 'comment', contentId: number) => {
+  const handleShowActionForm = (type: 'hide', contentType: 'post' | 'comment', contentId: number) => {
     setActiveAction({
       type,
       contentType,
@@ -69,15 +68,13 @@ export default function ContentQueuePage() {
       if (activeAction.contentType === 'post') {
         if (activeAction.type === 'hide') {
           await adminApi.hidePost(activeAction.contentId, { reason: activeAction.reason });
-        } else {
-          await adminApi.deletePost(activeAction.contentId, { reason: activeAction.reason });
         }
+        // Delete functionality removed - only hide is available
       } else {
         if (activeAction.type === 'hide') {
           await adminApi.hideComment(activeAction.contentId, { reason: activeAction.reason });
-        } else {
-          await adminApi.deleteComment(activeAction.contentId, { reason: activeAction.reason });
         }
+        // Delete functionality removed - only hide is available
       }
 
       // Refresh queue
@@ -237,13 +234,7 @@ export default function ContentQueuePage() {
                         <EyeOff className="h-4 w-4 mr-1" />
                         Hide
                       </button>
-                      <button
-                        onClick={() => handleShowActionForm('delete', 'post', post.id)}
-                        className="flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </button>
+
                     </div>
                   </div>
 
@@ -318,13 +309,10 @@ export default function ContentQueuePage() {
                     <div className="mt-4 p-4 bg-gray-50 rounded-lg border-t">
                       <div className="mb-3">
                         <h4 className="text-sm font-medium text-gray-900 mb-2">
-                          {activeAction.type === 'hide' ? 'Hide Post' : 'Delete Post'}
-                          {activeAction.type === 'delete' && (
-                            <span className="text-red-600 text-xs ml-2">(This action cannot be undone)</span>
-                          )}
+                          Hide Post
                         </h4>
                         <label htmlFor="reason" className="block text-sm text-gray-700 mb-1">
-                          Reason for {activeAction.type === 'hide' ? 'hiding' : 'deleting'} this post:
+                          Reason for hiding this post:
                         </label>
                         <textarea
                           id="reason"
@@ -341,13 +329,11 @@ export default function ContentQueuePage() {
                           disabled={!activeAction.reason.trim()}
                           className={`px-4 py-2 rounded-md text-sm font-medium ${
                             activeAction.reason.trim()
-                              ? activeAction.type === 'hide'
-                                ? 'bg-yellow-600 text-white hover:bg-yellow-700'
-                                : 'bg-red-600 text-white hover:bg-red-700'
+                              ? 'bg-yellow-600 text-white hover:bg-yellow-700'
                               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           } transition-colors`}
                         >
-                          {activeAction.type === 'hide' ? 'Hide Post' : 'Delete Post'}
+                          Hide Post
                         </button>
                         <button
                           onClick={handleCancelAction}
@@ -393,13 +379,7 @@ export default function ContentQueuePage() {
                         <EyeOff className="h-4 w-4 mr-1" />
                         Hide
                       </button>
-                      <button
-                        onClick={() => handleShowActionForm('delete', 'comment', comment.id)}
-                        className="flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </button>
+
                     </div>
                   </div>
 
@@ -433,13 +413,10 @@ export default function ContentQueuePage() {
                     <div className="mt-4 p-4 bg-gray-50 rounded-lg border-t">
                       <div className="mb-3">
                         <h4 className="text-sm font-medium text-gray-900 mb-2">
-                          {activeAction.type === 'hide' ? 'Hide Comment' : 'Delete Comment'}
-                          {activeAction.type === 'delete' && (
-                            <span className="text-red-600 text-xs ml-2">(This action cannot be undone)</span>
-                          )}
+                          Hide Comment
                         </h4>
                         <label htmlFor="reason" className="block text-sm text-gray-700 mb-1">
-                          Reason for {activeAction.type === 'hide' ? 'hiding' : 'deleting'} this comment:
+                          Reason for hiding this comment:
                         </label>
                         <textarea
                           id="reason"
@@ -456,13 +433,11 @@ export default function ContentQueuePage() {
                           disabled={!activeAction.reason.trim()}
                           className={`px-4 py-2 rounded-md text-sm font-medium ${
                             activeAction.reason.trim()
-                              ? activeAction.type === 'hide'
-                                ? 'bg-yellow-600 text-white hover:bg-yellow-700'
-                                : 'bg-red-600 text-white hover:bg-red-700'
+                              ? 'bg-yellow-600 text-white hover:bg-yellow-700'
                               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           } transition-colors`}
                         >
-                          {activeAction.type === 'hide' ? 'Hide Comment' : 'Delete Comment'}
+                          Hide Comment
                         </button>
                         <button
                           onClick={handleCancelAction}
