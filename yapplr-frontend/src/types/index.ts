@@ -496,6 +496,7 @@ export interface ContentQueue {
   flaggedPosts: AdminPost[];
   flaggedComments: AdminComment[];
   pendingAppeals: UserAppeal[];
+  userReports: UserReport[];
   totalFlaggedContent: number;
 }
 
@@ -661,4 +662,38 @@ export interface CreateAppealDto {
   additionalInfo?: string;
   targetPostId?: number;
   targetCommentId?: number;
+}
+
+// User Report Types
+export enum UserReportStatus {
+  Pending = 0,
+  Reviewed = 1,
+  Dismissed = 2,
+  ActionTaken = 3,
+}
+
+export interface UserReport {
+  id: number;
+  reportedByUsername: string;
+  status: UserReportStatus;
+  reason: string;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedByUsername?: string;
+  reviewNotes?: string;
+  post?: AdminPost;
+  comment?: AdminComment;
+  systemTags: SystemTag[];
+}
+
+export interface CreateUserReportDto {
+  postId?: number;
+  commentId?: number;
+  reason: string;
+  systemTagIds: number[];
+}
+
+export interface ReviewUserReportDto {
+  status: UserReportStatus;
+  reviewNotes: string;
 }

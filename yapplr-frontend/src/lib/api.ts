@@ -58,6 +58,9 @@ import type {
   TopModerators,
   ContentTrends,
   UserEngagementStats,
+  UserReport,
+  CreateUserReportDto,
+  ReviewUserReportDto,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -462,6 +465,19 @@ export const tagApi = {
   },
 };
 
+// User Report API
+export const userReportApi = {
+  createReport: async (data: CreateUserReportDto): Promise<UserReport> => {
+    const response = await api.post('/reports', data);
+    return response.data;
+  },
+
+  getMyReports: async (page: number = 1, pageSize: number = 25): Promise<UserReport[]> => {
+    const response = await api.get(`/reports/my-reports?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+};
+
 // Admin API
 export const adminApi = {
   // System Tags
@@ -638,6 +654,22 @@ export const adminApi = {
 
   createUserAppeal: async (userId: number, data: CreateAppealDto): Promise<UserAppeal> => {
     const response = await api.post('/admin/appeals', data);
+    return response.data;
+  },
+
+  // User Reports
+  getAllUserReports: async (page: number = 1, pageSize: number = 50): Promise<UserReport[]> => {
+    const response = await api.get(`/admin/reports?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  getUserReport: async (id: number): Promise<UserReport> => {
+    const response = await api.get(`/admin/reports/${id}`);
+    return response.data;
+  },
+
+  reviewUserReport: async (id: number, data: ReviewUserReportDto): Promise<UserReport> => {
+    const response = await api.post(`/admin/reports/${id}/review`, data);
     return response.data;
   },
 

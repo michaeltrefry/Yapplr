@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Post, PostPrivacy } from '@/types';
 import { formatDate, formatNumber } from '@/lib/utils';
-import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag } from 'lucide-react';
 import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import Image from 'next/image';
 import CommentList from './CommentList';
 import UserAvatar from './UserAvatar';
 import ShareModal from './ShareModal';
+import ReportModal from './ReportModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentHighlight } from '@/utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
@@ -25,6 +26,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const [showComments, setShowComments] = useState(showCommentsDefault);
   const [commentText, setCommentText] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
@@ -410,6 +412,19 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 <Share className="w-5 h-5" />
               </div>
             </button>
+
+            {/* Report button - only show for other users' posts */}
+            {!isOwner && (
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors group"
+                title="Report this post"
+              >
+                <div className="p-2 rounded-full group-hover:bg-red-50">
+                  <Flag className="w-5 h-5" />
+                </div>
+              </button>
+            )}
           </div>
 
           {/* Comments Section */}
@@ -478,6 +493,15 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         post={post}
+      />
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        postId={post.id}
+        contentType="post"
+        contentPreview={post.content}
       />
 
       {/* Delete Confirmation Modal */}

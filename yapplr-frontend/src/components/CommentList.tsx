@@ -7,9 +7,10 @@ import { Comment } from '@/types';
 import Link from 'next/link';
 import UserAvatar from './UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trash2, Edit3, Reply } from 'lucide-react';
+import { Trash2, Edit3, Reply, Flag } from 'lucide-react';
 import { useState } from 'react';
 import { MentionHighlight } from '@/utils/mentionUtils';
+import ReportModal from './ReportModal';
 
 interface CommentListProps {
   postId: number;
@@ -61,6 +62,7 @@ interface CommentItemProps {
 
 function CommentItem({ comment, postId, onReply }: CommentItemProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const { user } = useAuth();
@@ -131,6 +133,16 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
                 title="Reply to comment"
               >
                 <Reply className="w-3 h-3" />
+              </button>
+            )}
+            {/* Report button for other users' comments */}
+            {!isOwner && (
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                title="Report comment"
+              >
+                <Flag className="w-3 h-3" />
               </button>
             )}
             {/* Edit and delete buttons only for owner */}
@@ -221,6 +233,15 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
           </div>
         </div>
       )}
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        commentId={comment.id}
+        contentType="comment"
+        contentPreview={comment.content}
+      />
     </div>
   );
 }
