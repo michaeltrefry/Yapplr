@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { postApi, imageApi, tagApi } from '@/lib/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { Image as ImageIcon, X, Hash } from 'lucide-react';
+import { Image as ImageIcon, X, Hash, Globe, Users, Lock, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import { PostPrivacy } from '@/types';
 
@@ -14,10 +14,72 @@ export default function CreatePost() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [privacy, setPrivacy] = useState<PostPrivacy>(PostPrivacy.Public);
+  const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false);
   const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const privacyDropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  // Privacy helper functions
+  const getPrivacyIcon = (privacyLevel: PostPrivacy) => {
+    switch (privacyLevel) {
+      case PostPrivacy.Public:
+        return Globe;
+      case PostPrivacy.Followers:
+        return Users;
+      case PostPrivacy.Private:
+        return Lock;
+      default:
+        return Globe;
+    }
+  };
+
+  const getPrivacyLabel = (privacyLevel: PostPrivacy) => {
+    switch (privacyLevel) {
+      case PostPrivacy.Public:
+        return 'Public';
+      case PostPrivacy.Followers:
+        return 'Followers';
+      case PostPrivacy.Private:
+        return 'Private';
+      default:
+        return 'Public';
+    }
+  };
+
+  const getPrivacyDescription = (privacyLevel: PostPrivacy) => {
+    switch (privacyLevel) {
+      case PostPrivacy.Public:
+        return 'Anyone can see this post';
+      case PostPrivacy.Followers:
+        return 'Only your followers can see this post';
+      case PostPrivacy.Private:
+        return 'Only you can see this post';
+      default:
+        return 'Anyone can see this post';
+    }
+  };
+
+  const privacyOptions = [
+    { value: PostPrivacy.Public, label: 'Public', description: 'Anyone can see this post' },
+    { value: PostPrivacy.Followers, label: 'Followers', description: 'Only your followers can see this post' },
+    { value: PostPrivacy.Private, label: 'Private', description: 'Only you can see this post' },
+  ];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (privacyDropdownRef.current && !privacyDropdownRef.current.contains(event.target as Node)) {
+        setShowPrivacyDropdown(false);
+      }
+    };
+
+    if (showPrivacyDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showPrivacyDropdown]);
 
   // Get trending hashtags for suggestions
   const { data: trendingTags } = useQuery({
@@ -211,16 +273,46 @@ export default function CreatePost() {
                 </button>
 
                 {/* Privacy Selector */}
-                <div className="relative">
-                  <select
-                    value={privacy}
-                    onChange={(e) => setPrivacy(Number(e.target.value) as PostPrivacy)}
-                    className="appearance-none bg-transparent border border-gray-300 rounded-full px-3 py-1 pr-8 text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                <div className="relative" ref={privacyDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrivacyDropdown(!showPrivacyDropdown)}
+                    className="flex items-center space-x-2 bg-transparent border border-gray-300 rounded-full px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
-                    <option value={PostPrivacy.Public}>🌍 Public</option>
-                    <option value={PostPrivacy.Followers}>👥 Followers</option>
-                    <option value={PostPrivacy.Private}>🔒 Private</option>
-                  </select>
+                    {(() => {
+                      const IconComponent = getPrivacyIcon(privacy);
+                      return <IconComponent className="w-4 h-4" />;
+                    })()}
+                    <span>{getPrivacyLabel(privacy)}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+
+                  {showPrivacyDropdown && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                      {privacyOptions.map((option) => {
+                        const IconComponent = getPrivacyIcon(option.value);
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setPrivacy(option.value);
+                              setShowPrivacyDropdown(false);
+                            }}
+                            className={`w-full flex items-start space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+                              privacy === option.value ? 'bg-blue-50 border-l-2 border-blue-500' : ''
+                            }`}
+                          >
+                            <IconComponent className="w-4 h-4 mt-0.5 text-gray-600" />
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">{option.label}</div>
+                              <div className="text-sm text-gray-500">{option.description}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 

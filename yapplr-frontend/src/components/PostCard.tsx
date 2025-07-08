@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Post, PostPrivacy } from '@/types';
 import { formatDate, formatNumber } from '@/lib/utils';
-import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3 } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown } from 'lucide-react';
 import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -29,6 +29,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
   const [editPrivacy, setEditPrivacy] = useState(post.privacy);
+  const [showEditPrivacyDropdown, setShowEditPrivacyDropdown] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -167,6 +168,39 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
 
   const isOwner = user && user.id === post.user.id;
 
+  // Privacy helper functions
+  const getPrivacyIcon = (privacyLevel: PostPrivacy) => {
+    switch (privacyLevel) {
+      case PostPrivacy.Public:
+        return Globe;
+      case PostPrivacy.Followers:
+        return Users;
+      case PostPrivacy.Private:
+        return Lock;
+      default:
+        return Globe;
+    }
+  };
+
+  const getPrivacyLabel = (privacyLevel: PostPrivacy) => {
+    switch (privacyLevel) {
+      case PostPrivacy.Public:
+        return 'Public';
+      case PostPrivacy.Followers:
+        return 'Followers';
+      case PostPrivacy.Private:
+        return 'Private';
+      default:
+        return 'Public';
+    }
+  };
+
+  const privacyOptions = [
+    { value: PostPrivacy.Public, label: 'Public', description: 'Anyone can see this post' },
+    { value: PostPrivacy.Followers, label: 'Followers', description: 'Only your followers can see this post' },
+    { value: PostPrivacy.Private, label: 'Private', description: 'Only you can see this post' },
+  ];
+
   return (
     <>
       <article className={`p-4 hover:bg-gray-50/50 transition-colors bg-white ${showBorder ? 'border-b border-gray-200' : ''}`}>
@@ -237,15 +271,47 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                   maxLength={256}
                 />
                 <div className="flex items-center justify-between">
-                  <select
-                    value={editPrivacy}
-                    onChange={(e) => setEditPrivacy(Number(e.target.value) as PostPrivacy)}
-                    className="text-sm border border-gray-200 bg-white text-gray-900 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value={PostPrivacy.Public}>Public</option>
-                    <option value={PostPrivacy.Followers}>Followers</option>
-                    <option value={PostPrivacy.Private}>Private</option>
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPrivacyDropdown(!showEditPrivacyDropdown)}
+                      className="flex items-center space-x-2 text-sm border border-gray-200 bg-white text-gray-900 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-gray-50 transition-colors"
+                    >
+                      {(() => {
+                        const IconComponent = getPrivacyIcon(editPrivacy);
+                        return <IconComponent className="w-3 h-3" />;
+                      })()}
+                      <span>{getPrivacyLabel(editPrivacy)}</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+
+                    {showEditPrivacyDropdown && (
+                      <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        {privacyOptions.map((option) => {
+                          const IconComponent = getPrivacyIcon(option.value);
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setEditPrivacy(option.value);
+                                setShowEditPrivacyDropdown(false);
+                              }}
+                              className={`w-full flex items-start space-x-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors text-sm ${
+                                editPrivacy === option.value ? 'bg-blue-50 border-l-2 border-blue-500' : ''
+                              }`}
+                            >
+                              <IconComponent className="w-3 h-3 mt-0.5 text-gray-600" />
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900">{option.label}</div>
+                                <div className="text-xs text-gray-500">{option.description}</div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex space-x-2">
                     <button
                       type="button"
