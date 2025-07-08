@@ -3,6 +3,8 @@ import logging
 import os
 import re
 from typing import Dict, List, Tuple
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from textblob import TextBlob
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -10,11 +12,33 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Initialize the sentiment analysis pipeline (disabled for now due to compatibility issues)
-# This uses DistilBERT fine-tuned for sentiment analysis (~250MB)
+# Initialize lightweight sentiment analysis tools
 logger.info("Content moderation service starting...")
-sentiment_pipeline = None  # Disabled for now
-logger.info("Pattern-based content moderation ready!")
+logger.info("Loading sentiment analysis models...")
+
+try:
+    # Initialize VADER sentiment analyzer (rule-based, very fast and stable)
+    vader_analyzer = SentimentIntensityAnalyzer()
+
+    # Test VADER
+    test_vader = vader_analyzer.polarity_scores("This is a test.")
+    logger.info(f"VADER test successful: {test_vader}")
+
+    # Initialize TextBlob (uses Naive Bayes, also lightweight)
+    test_blob = TextBlob("This is a test.")
+    test_textblob = test_blob.sentiment
+    logger.info(f"TextBlob test successful: polarity={test_textblob.polarity}, subjectivity={test_textblob.subjectivity}")
+
+    logger.info("Successfully loaded lightweight sentiment analysis models")
+    sentiment_models_available = True
+
+except Exception as e:
+    logger.error(f"Failed to load sentiment models: {str(e)}")
+    logger.info("Falling back to pattern-based sentiment analysis only")
+    vader_analyzer = None
+    sentiment_models_available = False
+
+logger.info("Content moderation service ready!")
 
 # System tag categories and their keywords/patterns
 SYSTEM_TAG_PATTERNS = {
@@ -77,6 +101,96 @@ SYSTEM_TAG_PATTERNS = {
     }
 }
 
+def analyze_sentiment_with_ai(text: str) -> Dict[str, any]:
+    """
+    Analyze sentiment using lightweight AI models with fallback to pattern-based analysis
+    Returns sentiment result with label and confidence
+    """
+    if sentiment_models_available and vader_analyzer is not None:
+        try:
+            # Validate input text
+            if not text or len(text.strip()) == 0:
+                return {'label': 'NEUTRAL', 'score': 0.5, 'confidence': 0.5, 'source': 'empty_text'}
+
+            # Clean and prepare text
+            clean_text = text.strip()
+
+            # Use VADER for primary analysis (great for social media text)
+            vader_scores = vader_analyzer.polarity_scores(clean_text)
+
+            # Use TextBlob as secondary analysis
+            blob = TextBlob(clean_text)
+            textblob_polarity = blob.sentiment.polarity
+
+            # Combine both analyses for better accuracy
+            # VADER gives us compound score (-1 to 1)
+            # TextBlob gives us polarity (-1 to 1)
+
+            vader_compound = vader_scores['compound']
+
+            # Weight VADER more heavily as it's better for social media
+            combined_score = (vader_compound * 0.7) + (textblob_polarity * 0.3)
+
+            # Determine sentiment label
+            if combined_score >= 0.1:
+                label = 'POSITIVE'
+                confidence = min(abs(combined_score) + 0.5, 0.95)
+            elif combined_score <= -0.1:
+                label = 'NEGATIVE'
+                confidence = min(abs(combined_score) + 0.5, 0.95)
+            else:
+                label = 'NEUTRAL'
+                confidence = 0.5 + (0.3 * (1 - abs(combined_score)))
+
+            return {
+                'label': label,
+                'score': confidence,
+                'confidence': confidence,
+                'source': 'vader_textblob',
+                'details': {
+                    'vader_compound': vader_compound,
+                    'textblob_polarity': textblob_polarity,
+                    'combined_score': combined_score
+                }
+            }
+
+        except Exception as e:
+            logger.warning(f"Lightweight AI sentiment analysis failed: {str(e)}, falling back to pattern-based")
+
+    # Fallback to simple pattern-based sentiment analysis
+    return analyze_sentiment_patterns(text)
+
+def analyze_sentiment_patterns(text: str) -> Dict[str, any]:
+    """
+    Simple pattern-based sentiment analysis as fallback
+    """
+    text_lower = text.lower()
+
+    # Simple positive/negative word lists
+    positive_words = [
+        'good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'awesome',
+        'love', 'like', 'enjoy', 'happy', 'pleased', 'satisfied', 'perfect', 'best',
+        'brilliant', 'outstanding', 'superb', 'magnificent', 'incredible', 'beautiful'
+    ]
+
+    negative_words = [
+        'bad', 'terrible', 'awful', 'horrible', 'disgusting', 'hate', 'dislike',
+        'angry', 'frustrated', 'disappointed', 'worst', 'pathetic', 'useless',
+        'stupid', 'ridiculous', 'annoying', 'irritating', 'boring', 'ugly'
+    ]
+
+    positive_count = sum(1 for word in positive_words if word in text_lower)
+    negative_count = sum(1 for word in negative_words if word in text_lower)
+
+    if positive_count > negative_count:
+        confidence = min(0.6 + (positive_count - negative_count) * 0.1, 0.9)
+        return {'label': 'POSITIVE', 'score': confidence, 'confidence': confidence, 'source': 'pattern_based'}
+    elif negative_count > positive_count:
+        confidence = min(0.6 + (negative_count - positive_count) * 0.1, 0.9)
+        return {'label': 'NEGATIVE', 'score': confidence, 'confidence': confidence, 'source': 'pattern_based'}
+    else:
+        return {'label': 'NEUTRAL', 'score': 0.5, 'confidence': 0.5, 'source': 'pattern_based'}
+
 def analyze_content_patterns(text: str) -> Dict[str, List[str]]:
     """
     Analyze text for patterns that match system tag categories
@@ -105,9 +219,15 @@ def get_content_risk_score(sentiment_result: Dict, pattern_matches: Dict[str, Li
     """
     base_score = 0.0
 
-    # Sentiment contribution
+    # Sentiment contribution (enhanced with AI confidence)
     if sentiment_result['label'] == 'NEGATIVE':
-        base_score += sentiment_result['score'] * 0.3  # Max 0.3 from sentiment
+        # Use the actual confidence from AI model or pattern analysis
+        confidence_multiplier = sentiment_result.get('confidence', sentiment_result.get('score', 0.5))
+        base_score += confidence_multiplier * 0.4  # Max 0.4 from negative sentiment
+    elif sentiment_result['label'] == 'POSITIVE':
+        # Positive sentiment slightly reduces risk
+        confidence_multiplier = sentiment_result.get('confidence', sentiment_result.get('score', 0.5))
+        base_score -= confidence_multiplier * 0.1  # Slight risk reduction
 
     # Pattern match contributions
     risk_weights = {
@@ -139,7 +259,23 @@ def get_content_risk_score(sentiment_result: Dict, pattern_matches: Dict[str, Li
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    return jsonify({"status": "healthy", "model": "distilbert-content-moderation"}), 200
+    if sentiment_models_available:
+        model_status = "lightweight-ai-enabled"
+        model_name = "VADER + TextBlob"
+    else:
+        model_status = "pattern-based-fallback"
+        model_name = "pattern-based"
+
+    return jsonify({
+        "status": "healthy",
+        "model": model_name,
+        "sentiment_analysis": model_status,
+        "ai_enabled": sentiment_models_available,
+        "models": {
+            "vader": vader_analyzer is not None,
+            "textblob": True  # TextBlob is always available if imported
+        }
+    }), 200
 
 @app.route('/analyze', methods=['POST'])
 def analyze_sentiment():
@@ -168,13 +304,14 @@ def analyze_sentiment():
         if not text.strip():
             return jsonify({"error": "Text cannot be empty"}), 400
 
-        # Analyze sentiment
-        result = sentiment_pipeline(text)[0]
+        # Analyze sentiment using AI
+        sentiment_result = analyze_sentiment_with_ai(text)
 
         return jsonify({
             "text": text,
-            "sentiment": result['label'],
-            "confidence": round(result['score'], 4)
+            "sentiment": sentiment_result['label'],
+            "confidence": round(sentiment_result['confidence'], 4),
+            "source": sentiment_result.get('source', 'unknown')
         })
 
     except Exception as e:
@@ -212,9 +349,12 @@ def moderate_content():
         # Analyze content patterns
         pattern_matches = analyze_content_patterns(text)
 
-        # Calculate risk score based on patterns
+        # Analyze sentiment with AI
+        sentiment_result = analyze_sentiment_with_ai(text) if include_sentiment else {'label': 'NEUTRAL', 'score': 0.5, 'confidence': 0.5}
+
+        # Calculate risk score based on patterns and sentiment
         risk_score, risk_level = get_content_risk_score(
-            {'label': 'NEUTRAL', 'score': 0.5},
+            sentiment_result,
             pattern_matches
         )
 
@@ -229,12 +369,12 @@ def moderate_content():
             any(category in ['Violation', 'Safety'] for category in pattern_matches.keys())
         )
 
-        # Add sentiment placeholder (ML model disabled for now)
+        # Add real sentiment analysis
         if include_sentiment:
             response["sentiment"] = {
-                "label": "NEUTRAL",
-                "confidence": 0.5,
-                "note": "ML sentiment analysis temporarily disabled"
+                "label": sentiment_result['label'],
+                "confidence": round(sentiment_result['confidence'], 4),
+                "source": sentiment_result.get('source', 'unknown')
             }
 
         return jsonify(response)
@@ -294,10 +434,11 @@ def batch_moderate_content():
                     "requires_review": False
                 }
                 if include_sentiment:
+                    empty_sentiment = analyze_sentiment_with_ai("") if include_sentiment else {'label': 'NEUTRAL', 'score': 0.5, 'confidence': 0.5}
                     result["sentiment"] = {
-                        "label": "NEUTRAL",
-                        "confidence": 0.5,
-                        "note": "ML sentiment analysis temporarily disabled"
+                        "label": empty_sentiment['label'],
+                        "confidence": round(empty_sentiment['confidence'], 4),
+                        "source": empty_sentiment.get('source', 'unknown')
                     }
                 results.append(result)
                 continue
@@ -305,9 +446,12 @@ def batch_moderate_content():
             # Analyze content patterns
             pattern_matches = analyze_content_patterns(text)
 
-            # Calculate risk score based on patterns
+            # Analyze sentiment with AI
+            sentiment_result = analyze_sentiment_with_ai(text) if include_sentiment else {'label': 'NEUTRAL', 'score': 0.5, 'confidence': 0.5}
+
+            # Calculate risk score based on patterns and sentiment
             risk_score, risk_level = get_content_risk_score(
-                {'label': 'NEUTRAL', 'score': 0.5},
+                sentiment_result,
                 pattern_matches
             )
 
@@ -325,12 +469,12 @@ def batch_moderate_content():
                 )
             }
 
-            # Add sentiment placeholder (ML model disabled for now)
+            # Add real sentiment analysis
             if include_sentiment:
                 result["sentiment"] = {
-                    "label": "NEUTRAL",
-                    "confidence": 0.5,
-                    "note": "ML sentiment analysis temporarily disabled"
+                    "label": sentiment_result['label'],
+                    "confidence": round(sentiment_result['confidence'], 4),
+                    "source": sentiment_result.get('source', 'unknown')
                 }
 
             results.append(result)
@@ -361,15 +505,15 @@ def batch_analyze_sentiment():
         if not isinstance(texts, list) or len(texts) == 0:
             return jsonify({"error": "texts must be a non-empty list"}), 400
 
-        # Analyze all texts
-        results = sentiment_pipeline(texts)
-
+        # Analyze all texts with AI
         response = []
-        for i, result in enumerate(results):
+        for text in texts:
+            sentiment_result = analyze_sentiment_with_ai(text)
             response.append({
-                "text": texts[i],
-                "sentiment": result['label'],
-                "confidence": round(result['score'], 4)
+                "text": text,
+                "sentiment": sentiment_result['label'],
+                "confidence": round(sentiment_result['confidence'], 4),
+                "source": sentiment_result.get('source', 'unknown')
             })
 
         return jsonify({"results": response})
