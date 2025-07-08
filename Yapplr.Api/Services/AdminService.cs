@@ -126,7 +126,7 @@ public class AdminService : IAdminService
 
         var aiSuggestedTagsByPostId = aiSuggestedTagsLookup
             .Where(ast => ast.PostId.HasValue)
-            .GroupBy(ast => ast.PostId.Value)
+            .GroupBy(ast => ast.PostId!.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         return posts.Select(p => MapToAdminPostDtoWithTags(p, aiSuggestedTagsByPostId.GetValueOrDefault(p.Id, new List<AiSuggestedTag>()))).ToList();
@@ -529,7 +529,7 @@ public class AdminService : IAdminService
 
         var aiSuggestedTagsByPostId = aiSuggestedTagsLookup
             .Where(ast => ast.PostId.HasValue)
-            .GroupBy(ast => ast.PostId.Value)
+            .GroupBy(ast => ast.PostId!.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         return new ContentQueueDto

@@ -190,6 +190,12 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<SystemTagSeedService>();
 
+// Add staging seed service (only for staging environment)
+if (builder.Environment.IsEnvironment("Staging"))
+{
+    builder.Services.AddScoped<StagingSeedService>();
+}
+
 // Add HttpClient for LinkPreviewService
 builder.Services.AddHttpClient<LinkPreviewService>();
 
@@ -334,6 +340,15 @@ using (var scope = app.Services.CreateScope())
             var systemTagSeedService = scope.ServiceProvider.GetRequiredService<SystemTagSeedService>();
             await systemTagSeedService.SeedDefaultSystemTagsAsync();
             logger.LogInformation("✅ System tags seeding completed successfully");
+
+            // Seed staging test data (only in staging environment)
+            if (app.Environment.IsEnvironment("Staging"))
+            {
+                logger.LogInformation("🌱 Seeding staging test data...");
+                var stagingSeedService = scope.ServiceProvider.GetRequiredService<StagingSeedService>();
+                await stagingSeedService.SeedStagingDataAsync();
+                logger.LogInformation("✅ Staging test data seeding completed successfully");
+            }
 
             break; // Success, exit retry loop
         }
