@@ -380,6 +380,22 @@ export interface SystemTag {
   updatedAt: string;
 }
 
+export interface AiSuggestedTag {
+  id: number;
+  tagName: string;
+  category: string;
+  confidence: number;
+  riskLevel: string;
+  requiresReview: boolean;
+  suggestedAt: string;
+  isApproved: boolean;
+  isRejected: boolean;
+  approvedByUserId?: number;
+  approvedByUsername?: string;
+  approvedAt?: string;
+  approvalReason?: string;
+}
+
 export interface AdminUser {
   id: number;
   username: string;
@@ -414,6 +430,7 @@ export interface AdminPost {
   commentCount: number;
   repostCount: number;
   systemTags: SystemTag[];
+  aiSuggestedTags: AiSuggestedTag[];
 }
 
 export interface AdminComment {
@@ -428,6 +445,7 @@ export interface AdminComment {
   user: User;
   postId: number;
   systemTags: SystemTag[];
+  aiSuggestedTags: AiSuggestedTag[];
 }
 
 export interface AuditLog {

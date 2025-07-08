@@ -13,13 +13,16 @@ import {
   Calendar,
   MessageSquare,
   FileText,
+  Brain,
 } from 'lucide-react';
+import AiSuggestedTags from '@/components/admin/AiSuggestedTags';
 
 export default function ContentQueuePage() {
   const [queue, setQueue] = useState<ContentQueue | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'posts' | 'comments' | 'appeals'>('posts');
   const [systemTags, setSystemTags] = useState<SystemTag[]>([]);
+  const [expandedAiSuggestions, setExpandedAiSuggestions] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -106,6 +109,64 @@ export default function ContentQueuePage() {
       console.error('Failed to delete comment:', error);
       alert('Failed to delete comment');
     }
+  };
+
+  const handleApproveAiSuggestion = async (tagId: number, reason?: string) => {
+    try {
+      await adminApi.approveAiSuggestedTag(tagId, reason);
+      // Refresh the queue data
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to approve AI suggestion:', error);
+      alert('Failed to approve AI suggestion');
+    }
+  };
+
+  const handleRejectAiSuggestion = async (tagId: number, reason?: string) => {
+    try {
+      await adminApi.rejectAiSuggestedTag(tagId, reason);
+      // Refresh the queue data
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to reject AI suggestion:', error);
+      alert('Failed to reject AI suggestion');
+    }
+  };
+
+  const handleBulkApproveAiSuggestions = async (tagIds: number[], reason?: string) => {
+    try {
+      await adminApi.bulkApproveAiSuggestedTags(tagIds, reason);
+      // Refresh the queue data
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to bulk approve AI suggestions:', error);
+      alert('Failed to bulk approve AI suggestions');
+    }
+  };
+
+  const handleBulkRejectAiSuggestions = async (tagIds: number[], reason?: string) => {
+    try {
+      await adminApi.bulkRejectAiSuggestedTags(tagIds, reason);
+      // Refresh the queue data
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to bulk reject AI suggestions:', error);
+      alert('Failed to bulk reject AI suggestions');
+    }
+  };
+
+  const toggleAiSuggestions = (postId: number) => {
+    const newExpanded = new Set(expandedAiSuggestions);
+    if (newExpanded.has(postId)) {
+      newExpanded.delete(postId);
+    } else {
+      newExpanded.add(postId);
+    }
+    setExpandedAiSuggestions(newExpanded);
   };
 
   if (loading) {
@@ -224,6 +285,31 @@ export default function ContentQueuePage() {
                           {tag.name}
                         </span>
                       ))}
+                    </div>
+                  )}
+
+                  {/* AI Suggested Tags */}
+                  {post.aiSuggestedTags && post.aiSuggestedTags.length > 0 && (
+                    <div className="mb-4">
+                      <button
+                        onClick={() => toggleAiSuggestions(post.id)}
+                        className="flex items-center text-sm text-blue-600 hover:text-blue-800 mb-2"
+                      >
+                        <Brain className="h-4 w-4 mr-1" />
+                        AI Suggestions ({post.aiSuggestedTags.filter(tag => !tag.isApproved && !tag.isRejected).length} pending)
+                        <span className="ml-1">
+                          {expandedAiSuggestions.has(post.id) ? '▼' : '▶'}
+                        </span>
+                      </button>
+                      {expandedAiSuggestions.has(post.id) && (
+                        <AiSuggestedTags
+                          tags={post.aiSuggestedTags}
+                          onApprove={handleApproveAiSuggestion}
+                          onReject={handleRejectAiSuggestion}
+                          onBulkApprove={handleBulkApproveAiSuggestions}
+                          onBulkReject={handleBulkRejectAiSuggestions}
+                        />
+                      )}
                     </div>
                   )}
 

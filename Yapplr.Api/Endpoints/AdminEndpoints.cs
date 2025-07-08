@@ -469,6 +469,60 @@ public static class AdminEndpoints
         .WithName("GetUserEngagement")
         .WithSummary("Get user engagement analytics")
         .Produces<UserEngagementStatsDto>();
+
+        // AI Suggested Tags Management
+        admin.MapGet("/ai-suggestions", [RequireModerator] async ([FromQuery] int? postId, [FromQuery] int? commentId, [FromQuery] int page, [FromQuery] int pageSize, IAdminService adminService) =>
+        {
+            var suggestions = await adminService.GetPendingAiSuggestionsAsync(postId, commentId, page, pageSize);
+            return Results.Ok(suggestions);
+        })
+        .WithName("GetPendingAiSuggestions")
+        .WithSummary("Get pending AI suggested tags")
+        .Produces<IEnumerable<AiSuggestedTagDto>>();
+
+        admin.MapPost("/ai-suggestions/{id:int}/approve", [RequireModerator] async (int id, [FromBody] ApprovalDto approvalDto, IAdminService adminService, ClaimsPrincipal user) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var success = await adminService.ApproveAiSuggestedTagAsync(id, userId, approvalDto.Reason);
+            return success ? Results.Ok() : Results.NotFound();
+        })
+        .WithName("ApproveAiSuggestedTag")
+        .WithSummary("Approve an AI suggested tag")
+        .Produces(200)
+        .Produces(404);
+
+        admin.MapPost("/ai-suggestions/{id:int}/reject", [RequireModerator] async (int id, [FromBody] ApprovalDto approvalDto, IAdminService adminService, ClaimsPrincipal user) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var success = await adminService.RejectAiSuggestedTagAsync(id, userId, approvalDto.Reason);
+            return success ? Results.Ok() : Results.NotFound();
+        })
+        .WithName("RejectAiSuggestedTag")
+        .WithSummary("Reject an AI suggested tag")
+        .Produces(200)
+        .Produces(404);
+
+        admin.MapPost("/ai-suggestions/bulk-approve", [RequireModerator] async ([FromBody] BulkApprovalDto bulkApprovalDto, IAdminService adminService, ClaimsPrincipal user) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var success = await adminService.BulkApproveAiSuggestedTagsAsync(bulkApprovalDto.SuggestedTagIds, userId, bulkApprovalDto.Reason);
+            return success ? Results.Ok() : Results.BadRequest();
+        })
+        .WithName("BulkApproveAiSuggestedTags")
+        .WithSummary("Bulk approve AI suggested tags")
+        .Produces(200)
+        .Produces(400);
+
+        admin.MapPost("/ai-suggestions/bulk-reject", [RequireModerator] async ([FromBody] BulkApprovalDto bulkApprovalDto, IAdminService adminService, ClaimsPrincipal user) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var success = await adminService.BulkRejectAiSuggestedTagsAsync(bulkApprovalDto.SuggestedTagIds, userId, bulkApprovalDto.Reason);
+            return success ? Results.Ok() : Results.BadRequest();
+        })
+        .WithName("BulkRejectAiSuggestedTags")
+        .WithSummary("Bulk reject AI suggested tags")
+        .Produces(200)
+        .Produces(400);
     }
 
     // Additional DTOs for bulk actions
@@ -482,6 +536,17 @@ public static class AdminEndpoints
     {
         public IEnumerable<int> PostIds { get; set; } = new List<int>();
         public int SystemTagId { get; set; }
+        public string? Reason { get; set; }
+    }
+
+    public class ApprovalDto
+    {
+        public string? Reason { get; set; }
+    }
+
+    public class BulkApprovalDto
+    {
+        public IEnumerable<int> SuggestedTagIds { get; set; } = new List<int>();
         public string? Reason { get; set; }
     }
 }

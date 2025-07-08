@@ -47,6 +47,16 @@ A complete Twitter-like social media platform built with modern web technologies
   - **Admin Roles**: Support for Admin and Moderator roles with different permission levels
   - **Real-time Statistics**: Live dashboard with user counts, content metrics, and moderation activity
   - **Quick Actions**: Fast access to common moderation tasks and system management
+- **AI-Powered Content Moderation**: Intelligent automated content analysis and moderation
+  - **Real-time Content Analysis**: Automatic analysis of all posts and comments using AI sentiment analysis
+  - **Pattern-Based Detection**: Advanced pattern matching for NSFW content, violence, harassment, hate speech, and misinformation
+  - **Risk Assessment**: Automated risk scoring with configurable thresholds for review and auto-hiding
+  - **Smart Tag Suggestions**: AI-generated system tag recommendations with confidence scores
+  - **Content Warning Detection**: Automatic detection of sensitive content requiring warnings (NSFW, violence, spoilers)
+  - **Violation Classification**: Intelligent categorization of policy violations (harassment, hate speech, misinformation)
+  - **Sentiment Analysis**: Real-time sentiment scoring for content tone and emotional context
+  - **Moderation Queue Integration**: Flagged content automatically appears in admin moderation queue
+  - **Configurable Automation**: Adjustable settings for auto-apply tags, review thresholds, and auto-hiding
 - **User Management**: Complete user administration and moderation tools
   - **User Overview**: Paginated user list with filtering by status (Active, Suspended, Banned, Shadow Banned) and role
   - **User Actions**: Suspend, ban, shadow ban, and unban users with reason tracking
@@ -55,17 +65,20 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Content Moderation**: Advanced content management and moderation capabilities
   - **Post Management**: View, hide, unhide, and delete posts with reason tracking and bulk actions
   - **Comment Management**: Moderate comments with hide/unhide/delete functionality and bulk operations
+  - **AI-Suggested Tags**: Review and approve AI-generated system tag recommendations
   - **System Tags**: Apply and manage system tags for content categorization and violation tracking
-  - **Content Queue**: Review flagged content with priority-based moderation workflow
+  - **Content Queue**: Review flagged content with priority-based moderation workflow and AI insights
   - **Bulk Actions**: Efficiently moderate multiple posts or comments simultaneously
 - **System Tags**: Flexible content labeling and violation tracking system
   - **Tag Categories**: Organize tags by type (Violation, Warning, Information, etc.)
   - **Content Tagging**: Apply system tags to posts and comments for tracking and filtering
   - **Tag Management**: Create, edit, and manage system tags with descriptions and visibility settings
+  - **AI Integration**: Automatic tag suggestions based on content analysis
 - **Audit Logging**: Comprehensive activity tracking and accountability
   - **Action Logging**: Track all admin and moderator actions with timestamps and reasons
   - **User Activity**: Monitor user behavior and moderation history
   - **System Events**: Log important system events and administrative changes
+  - **AI Moderation Logs**: Track AI analysis results and tag application history
 - **Appeals System**: User appeal workflow for moderation decisions
   - **Appeal Submission**: Users can appeal suspensions, bans, and content removals
   - **Appeal Review**: Admins and moderators can review and respond to user appeals
@@ -74,6 +87,7 @@ A complete Twitter-like social media platform built with modern web technologies
   - **User Growth**: Track user registration, activity, and retention metrics
   - **Content Trends**: Monitor post and comment creation, engagement, and moderation patterns
   - **Moderation Stats**: Analyze moderation activity, response times, and effectiveness
+  - **AI Performance**: Monitor AI moderation accuracy and effectiveness metrics
   - **System Health**: Monitor platform performance and identify potential issues
 
 ### Privacy & Security
@@ -121,6 +135,15 @@ A complete Twitter-like social media platform built with modern web technologies
 - **BCrypt** - Password hashing
 - **SendGrid** - Email service for verification and password reset (with AWS SES fallback)
 - **File System Storage** - Image upload and serving
+- **AI Content Moderation** - Python-based sentiment analysis and content moderation service
+
+### Content Moderation Service (Python)
+- **Python 3.11** - Modern Python runtime
+- **Flask** - Lightweight web framework for API endpoints
+- **Gunicorn** - Production WSGI server with worker processes
+- **Pattern Matching** - Advanced regex-based content analysis
+- **Docker** - Containerized deployment with health checks
+- **RESTful API** - HTTP-based communication with main API
 
 ### Frontend (Next.js 15)
 - **Next.js 15** - React framework with App Router
@@ -182,12 +205,69 @@ Yapplr features a comprehensive hashtag system that enables content discovery an
 - `GET /api/tags/tag/{tagName}/posts` - Get posts by hashtag
 - Analytics endpoints for detailed hashtag metrics
 
+## 🤖 AI Content Moderation System
+
+Yapplr features an advanced AI-powered content moderation system that automatically analyzes all posts and comments for policy violations, inappropriate content, and safety concerns.
+
+### Core Features
+- **Real-time Analysis**: Every post and comment is automatically analyzed upon creation
+- **Pattern-Based Detection**: Advanced regex patterns detect NSFW content, violence, harassment, hate speech, misinformation, and sensitive topics
+- **Risk Assessment**: Automated risk scoring (MINIMAL, LOW, MEDIUM, HIGH) with configurable thresholds
+- **Smart Tag Suggestions**: AI generates system tag recommendations with confidence scores
+- **Content Classification**: Automatic categorization into Content Warnings and Violations
+
+### Content Categories
+#### Content Warnings
+- **NSFW**: Adult content, explicit material, mature themes
+- **Violence**: Violent content, weapons, gore, threats
+- **Sensitive**: Mental health topics, trauma, self-harm discussions
+- **Spoiler**: Plot spoilers, ending reveals, surprise content
+
+#### Violations
+- **Harassment**: Bullying, intimidation, personal attacks
+- **Hate Speech**: Discriminatory language, slurs, prejudice
+- **Misinformation**: False information, conspiracy theories, hoaxes
+- **Spam**: Repetitive content, promotional spam, bot behavior
+
+### Technical Implementation
+- **Microservice Architecture**: Dedicated Python service for content analysis
+- **Docker Deployment**: Containerized sentiment analysis service with health checks
+- **Scalable Design**: Independent scaling of moderation service with resource limits
+- **Fallback System**: Graceful degradation when moderation service is unavailable
+- **Performance Optimized**: Efficient pattern matching with minimal latency impact
+
+### Configuration Options
+```json
+{
+  "ContentModeration": {
+    "ServiceUrl": "http://content-moderation:8000",
+    "Enabled": true,
+    "AutoApplyTags": false,
+    "RequireReviewThreshold": 0.5,
+    "AutoHideThreshold": 0.8
+  }
+}
+```
+
+### Admin Integration
+- **Moderation Queue**: Flagged content automatically appears in admin dashboard
+- **AI Tag Review**: Admins can approve or reject AI-suggested tags
+- **Bulk Operations**: Efficient review of multiple flagged items
+- **Analytics**: Track AI performance and moderation effectiveness
+- **Manual Override**: Admins can always override AI decisions
+
+### API Endpoints
+- `POST /moderate` - Analyze content for moderation (internal service)
+- `GET /health` - Content moderation service health check
+- Admin endpoints for reviewing AI-suggested tags and moderation decisions
+
 ## 🏃‍♂️ Quick Start
 
 ### Prerequisites
 - .NET 9 SDK
 - Node.js 18+
 - PostgreSQL 12+
+- Docker (for content moderation service)
 
 ### 1. Backend Setup
 
@@ -227,7 +307,25 @@ npm run dev
 
 The frontend will be available at `http://localhost:3000`
 
-### 3. Mobile App Setup (Optional)
+### 3. Content Moderation Service Setup
+
+```bash
+# Navigate to sentiment analysis directory
+cd sentiment-analysis
+
+# Build and run the Docker container
+docker build -t sentiment-analysis .
+docker run -d -p 8000:8000 --name sentiment-analysis-container sentiment-analysis
+
+# Verify the service is running
+curl http://localhost:8000/health
+```
+
+The content moderation service will be available at `http://localhost:8000`
+
+**Note**: The API automatically connects to the content moderation service. If the service is unavailable, content moderation will be disabled gracefully without affecting other functionality.
+
+### 4. Mobile App Setup (Optional)
 
 ```bash
 # Navigate to mobile app directory
@@ -270,7 +368,7 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **Password Recovery**: Complete password reset flow with 6-digit email codes and automatic navigation
 - **Dark Mode**: Complete dark theme with toggle in Settings, synchronized with web app preferences
 
-### 4. Firebase Setup (Required for Real-time Notifications)
+### 5. Firebase Setup (Required for Real-time Notifications)
 
 Firebase provides real-time push notifications for all social interactions. The system supports both development and production environments with automatic fallback.
 
@@ -304,7 +402,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 NEXT_PUBLIC_ENABLE_SIGNALR=true
 ```
 
-### 5. SendGrid Setup (Required for Email Verification & Password Reset)
+### 6. SendGrid Setup (Required for Email Verification & Password Reset)
 
 SendGrid provides reliable email delivery for email verification and password reset functionality.
 
@@ -350,7 +448,7 @@ For production, use GitHub secrets:
 - **Cross-Platform**: Works on web browsers with push notification support
 - **Background Notifications**: Notifications work even when the app is closed
 
-### 6. Admin Setup (Creating Admin Users)
+### 7. Admin Setup (Creating Admin Users)
 
 The platform includes comprehensive admin and moderation tools. To access the admin interface, you need to create admin users using command-line tools.
 
@@ -805,9 +903,40 @@ For detailed configuration options, see [PLATFORM_SPECIFIC_NOTIFICATIONS.md](PLA
 
 ## 🚀 Deployment
 
+The platform includes automated deployment scripts that handle all services including the AI content moderation system.
+
+### Staging Deployment
+```bash
+# Deploy to staging environment
+./deploy-stage.sh
+```
+
+### Production Deployment
+```bash
+# Deploy to production environment
+./deploy-prod.sh
+```
+
+Both deployment scripts automatically:
+- Build and deploy the .NET API
+- Build and deploy the Next.js frontend
+- Build and deploy the AI content moderation service
+- Set up nginx with SSL termination
+- Configure PostgreSQL database
+- Run database migrations
+- Perform health checks on all services
+
+### Service Architecture
+The deployment includes these containerized services:
+- **yapplr-api**: Main .NET API service
+- **yapplr-frontend**: Next.js web application
+- **content-moderation**: Python AI moderation service
+- **postgres**: PostgreSQL database
+- **nginx**: Reverse proxy with SSL termination
+
 See individual README files for detailed deployment instructions:
 - [Backend Deployment Guide](Yapplr.Api/Production-Deployment-Guide.md)
-- [SendGrid Email Setup](#5-sendgrid-setup-required-for-email-verification--password-reset)
+- [SendGrid Email Setup](#6-sendgrid-setup-required-for-email-verification--password-reset)
 
 ## 📄 License
 

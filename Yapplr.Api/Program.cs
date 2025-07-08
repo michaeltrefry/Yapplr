@@ -14,6 +14,7 @@ using Yapplr.Api.Configuration;
 using SendGrid;
 using Yapplr.Api.Models;
 
+
 // Auto-detect environment based on Git branch ONLY in development scenarios
 // This prevents auto-detection from running in staging/production deployments
 if (IsLocalDevelopment())
@@ -33,6 +34,8 @@ if (IsLocalDevelopment())
 
 var builder = WebApplication.CreateBuilder(args);
 
+Console.WriteLine(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
+
 // Load notification providers configuration early
 var notificationConfig = builder.Configuration
     .GetSection(NotificationProvidersConfiguration.SectionName)
@@ -44,7 +47,17 @@ builder.Services.AddSwaggerGen();
 
 // Add Entity Framework
 builder.Services.AddDbContext<YapplrDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions => npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+
+    // Configure warnings
+    options.ConfigureWarnings(warnings =>
+    {
+        // Suppress the multiple collection include warning since we're using split queries
+        warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.MultipleCollectionIncludeWarning);
+    });
+});
 
 // Add JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -179,6 +192,10 @@ builder.Services.AddScoped<SystemTagSeedService>();
 
 // Add HttpClient for LinkPreviewService
 builder.Services.AddHttpClient<LinkPreviewService>();
+
+// Add HttpClient for ContentModerationService
+builder.Services.AddHttpClient<ContentModerationService>();
+builder.Services.AddScoped<IContentModerationService, ContentModerationService>();
 
 // Register performance and monitoring services
 builder.Services.AddSingleton<ISignalRConnectionPool, SignalRConnectionPool>();

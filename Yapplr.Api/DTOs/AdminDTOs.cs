@@ -103,6 +103,7 @@ public class AdminPostDto
     public int CommentCount { get; set; }
     public int RepostCount { get; set; }
     public List<SystemTagDto> SystemTags { get; set; } = new();
+    public List<AiSuggestedTagDto> AiSuggestedTags { get; set; } = new();
 }
 
 public class AdminCommentDto
@@ -118,6 +119,24 @@ public class AdminCommentDto
     public UserDto User { get; set; } = null!;
     public int PostId { get; set; }
     public List<SystemTagDto> SystemTags { get; set; } = new();
+    public List<AiSuggestedTagDto> AiSuggestedTags { get; set; } = new();
+}
+
+public class AiSuggestedTagDto
+{
+    public int Id { get; set; }
+    public string TagName { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public double Confidence { get; set; }
+    public string RiskLevel { get; set; } = string.Empty;
+    public bool RequiresReview { get; set; }
+    public DateTime SuggestedAt { get; set; }
+    public bool IsApproved { get; set; }
+    public bool IsRejected { get; set; }
+    public int? ApprovedByUserId { get; set; }
+    public string? ApprovedByUsername { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public string? ApprovalReason { get; set; }
 }
 
 public class HideContentDto

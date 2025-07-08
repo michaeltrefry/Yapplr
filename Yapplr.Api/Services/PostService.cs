@@ -14,14 +14,28 @@ public class PostService : IPostService
     private readonly IBlockService _blockService;
     private readonly INotificationService _notificationService;
     private readonly ILinkPreviewService _linkPreviewService;
+    private readonly IContentModerationService _contentModerationService;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<PostService> _logger;
 
-    public PostService(YapplrDbContext context, IHttpContextAccessor httpContextAccessor, IBlockService blockService, INotificationService notificationService, ILinkPreviewService linkPreviewService)
+    public PostService(
+        YapplrDbContext context,
+        IHttpContextAccessor httpContextAccessor,
+        IBlockService blockService,
+        INotificationService notificationService,
+        ILinkPreviewService linkPreviewService,
+        IContentModerationService contentModerationService,
+        IConfiguration configuration,
+        ILogger<PostService> logger)
     {
         _context = context;
         _httpContextAccessor = httpContextAccessor;
         _blockService = blockService;
         _notificationService = notificationService;
         _linkPreviewService = linkPreviewService;
+        _contentModerationService = contentModerationService;
+        _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
@@ -47,6 +61,9 @@ public class PostService : IPostService
 
         // Create mention notifications for users mentioned in the post
         await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, post.Id);
+
+        // Perform content moderation analysis
+        await ProcessContentModerationAsync(post.Id, createDto.Content, userId);
 
         // Load the post with user data
         var createdPost = await _context.Posts
@@ -535,6 +552,9 @@ public class PostService : IPostService
         // Create mention notifications for users mentioned in the comment
         await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, postId, comment.Id);
 
+        // Perform content moderation analysis on comment
+        await ProcessCommentModerationAsync(comment.Id, createDto.Content, userId);
+
         // Load the comment with user data
         var createdComment = await _context.Comments
             .Include(c => c.User)
@@ -664,6 +684,9 @@ public class PostService : IPostService
         // Create mention notifications for new mentions in the updated post
         await _notificationService.CreateMentionNotificationsAsync(updateDto.Content, userId, post.Id);
 
+        // Perform content moderation analysis on updated content
+        await ProcessContentModerationAsync(post.Id, updateDto.Content, userId);
+
         return MapToPostDto(post, userId);
     }
 
@@ -683,6 +706,9 @@ public class PostService : IPostService
 
         // Create mention notifications for new mentions in the updated comment
         await _notificationService.CreateMentionNotificationsAsync(updateDto.Content, userId, comment.PostId, comment.Id);
+
+        // Perform content moderation analysis on updated comment
+        await ProcessCommentModerationAsync(comment.Id, updateDto.Content, userId);
 
         return MapToCommentDto(comment);
     }
@@ -900,6 +926,116 @@ public class PostService : IPostService
         {
             // Log error but don't fail post update if link preview processing fails
             Console.WriteLine($"Failed to update link previews for post {postId}: {ex.Message}");
+        }
+    }
+
+    private async Task ProcessContentModerationAsync(int postId, string content, int userId)
+    {
+        try
+        {
+            var moderationEnabled = _configuration.GetValue<bool>("ContentModeration:Enabled", true);
+            if (!moderationEnabled)
+                return;
+
+            // Check if the content moderation service is available
+            var isServiceAvailable = await _contentModerationService.IsServiceAvailableAsync();
+            if (!isServiceAvailable)
+            {
+                _logger.LogWarning("Content moderation service is not available for post {PostId}", postId);
+                return;
+            }
+
+            // Analyze the content
+            var moderationResult = await _contentModerationService.AnalyzeContentAsync(content);
+
+            // Log the analysis result
+            _logger.LogInformation("Content moderation analysis for post {PostId}: Risk Level {RiskLevel}, Requires Review: {RequiresReview}",
+                postId, moderationResult.RiskAssessment.Level, moderationResult.RequiresReview);
+
+            // Apply suggested tags if any were found
+            if (moderationResult.SuggestedTags.Any())
+            {
+                var autoApplyTags = _configuration.GetValue<bool>("ContentModeration:AutoApplyTags", false);
+                await _contentModerationService.ApplySuggestedTagsAsync(postId, moderationResult, userId, autoApplyTags);
+            }
+
+            // Auto-hide content if risk is very high
+            var autoHideThreshold = _configuration.GetValue<double>("ContentModeration:AutoHideThreshold", 0.8);
+            if (moderationResult.RiskAssessment.Score >= autoHideThreshold)
+            {
+                var post = await _context.Posts.FindAsync(postId);
+                if (post != null)
+                {
+                    post.IsHidden = true;
+                    post.HiddenByUserId = userId; // System user ID would be better
+                    post.HiddenAt = DateTime.UtcNow;
+                    post.HiddenReason = $"Auto-hidden due to high risk content (Score: {moderationResult.RiskAssessment.Score:F2})";
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogWarning("Auto-hidden post {PostId} due to high risk score {RiskScore}",
+                        postId, moderationResult.RiskAssessment.Score);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing content moderation for post {PostId}", postId);
+            // Don't fail post creation/update if moderation fails
+        }
+    }
+
+    private async Task ProcessCommentModerationAsync(int commentId, string content, int userId)
+    {
+        try
+        {
+            var moderationEnabled = _configuration.GetValue<bool>("ContentModeration:Enabled", true);
+            if (!moderationEnabled)
+                return;
+
+            // Check if the content moderation service is available
+            var isServiceAvailable = await _contentModerationService.IsServiceAvailableAsync();
+            if (!isServiceAvailable)
+            {
+                _logger.LogWarning("Content moderation service is not available for comment {CommentId}", commentId);
+                return;
+            }
+
+            // Analyze the content
+            var moderationResult = await _contentModerationService.AnalyzeContentAsync(content);
+
+            // Log the analysis result
+            _logger.LogInformation("Content moderation analysis for comment {CommentId}: Risk Level {RiskLevel}, Requires Review: {RequiresReview}",
+                commentId, moderationResult.RiskAssessment.Level, moderationResult.RequiresReview);
+
+            // Apply suggested tags if any were found
+            if (moderationResult.SuggestedTags.Any())
+            {
+                var autoApplyTags = _configuration.GetValue<bool>("ContentModeration:AutoApplyTags", false);
+                await _contentModerationService.ApplySuggestedTagsAsync(commentId, moderationResult, userId, autoApplyTags, isComment: true);
+            }
+
+            // Auto-hide content if risk is very high
+            var autoHideThreshold = _configuration.GetValue<double>("ContentModeration:AutoHideThreshold", 0.8);
+            if (moderationResult.RiskAssessment.Score >= autoHideThreshold)
+            {
+                var comment = await _context.Comments.FindAsync(commentId);
+                if (comment != null)
+                {
+                    comment.IsHidden = true;
+                    comment.HiddenByUserId = userId; // System user ID would be better
+                    comment.HiddenAt = DateTime.UtcNow;
+                    comment.HiddenReason = $"Auto-hidden due to high risk content (Score: {moderationResult.RiskAssessment.Score:F2})";
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogWarning("Auto-hidden comment {CommentId} due to high risk score {RiskScore}",
+                        commentId, moderationResult.RiskAssessment.Score);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing content moderation for comment {CommentId}", commentId);
+            // Don't fail comment creation/update if moderation fails
         }
     }
 }

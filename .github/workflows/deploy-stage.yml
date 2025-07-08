@@ -5,8 +5,8 @@ name: Deploy Yapplr to Stage
 
 on:
   push:
-    branches: [ main ]
-    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', '.github/workflows/**']
+    branches-ignore: [ main ]
+    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', 'sentiment-analysis/**', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:
@@ -69,7 +69,9 @@ jobs:
         script: |
           # Navigate to existing repository directory
           cd /opt/Yapplr
-          git pull origin main
+          git fetch origin
+          git checkout ${{ github.ref_name }}
+          git pull origin ${{ github.ref_name }}
 
           # This deployment only handles the backend API
           # Frontend deployment is handled separately by deploy-frontend.yml

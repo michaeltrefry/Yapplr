@@ -42,6 +42,7 @@ public class YapplrDbContext : DbContext
     public DbSet<CommentSystemTag> CommentSystemTags { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<UserAppeal> UserAppeals { get; set; }
+    public DbSet<AiSuggestedTag> AiSuggestedTags { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -507,6 +508,37 @@ public class YapplrDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.TargetCommentId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure AiSuggestedTag
+        modelBuilder.Entity<AiSuggestedTag>(entity =>
+        {
+            entity.HasOne(ast => ast.Post)
+                .WithMany()
+                .HasForeignKey(ast => ast.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ast => ast.Comment)
+                .WithMany()
+                .HasForeignKey(ast => ast.CommentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ast => ast.ApprovedByUser)
+                .WithMany()
+                .HasForeignKey(ast => ast.ApprovedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(ast => new { ast.PostId, ast.TagName })
+                .HasDatabaseName("IX_AiSuggestedTags_PostId_TagName");
+
+            entity.HasIndex(ast => new { ast.CommentId, ast.TagName })
+                .HasDatabaseName("IX_AiSuggestedTags_CommentId_TagName");
+
+            entity.HasIndex(ast => ast.SuggestedAt)
+                .HasDatabaseName("IX_AiSuggestedTags_SuggestedAt");
+
+            entity.HasIndex(ast => new { ast.IsApproved, ast.IsRejected })
+                .HasDatabaseName("IX_AiSuggestedTags_ApprovalStatus");
         });
     }
 }

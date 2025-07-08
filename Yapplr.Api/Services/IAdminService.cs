@@ -56,6 +56,13 @@ public interface IAdminService
     Task<UserAppealDto> CreateUserAppealAsync(int userId, CreateAppealDto createDto);
     Task<UserAppealDto?> ReviewUserAppealAsync(int appealId, int reviewedByUserId, ReviewAppealDto reviewDto);
     
+    // AI Suggested Tags Management
+    Task<IEnumerable<AiSuggestedTagDto>> GetPendingAiSuggestionsAsync(int? postId = null, int? commentId = null, int page = 1, int pageSize = 25);
+    Task<bool> ApproveAiSuggestedTagAsync(int suggestedTagId, int approvedByUserId, string? reason = null);
+    Task<bool> RejectAiSuggestedTagAsync(int suggestedTagId, int approvedByUserId, string? reason = null);
+    Task<bool> BulkApproveAiSuggestedTagsAsync(IEnumerable<int> suggestedTagIds, int approvedByUserId, string? reason = null);
+    Task<bool> BulkRejectAiSuggestedTagsAsync(IEnumerable<int> suggestedTagIds, int approvedByUserId, string? reason = null);
+
     // System Administration
     Task<bool> CreateSystemAnnouncementAsync(string title, string content, int createdByUserId, DateTime? expiresAt = null);
     Task<bool> ToggleFeatureFlagAsync(string featureName, bool isEnabled, int changedByUserId);

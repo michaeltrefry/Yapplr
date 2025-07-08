@@ -6,7 +6,7 @@ name: Deploy Yapplr to Production
 on:
   push:
     branches: [ main ]
-    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', '.github/workflows/**']
+    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', 'sentiment-analysis/**', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:
@@ -88,7 +88,7 @@ jobs:
           PROD_CERTBOT_DOMAIN=$PROD_CERTBOT_DOMAIN
           EOF
 
-          CD /opt/Yapplr/Yapplr.Api
+          cd /opt/Yapplr/Yapplr.Api
           # Create Firebase Service Account Key as a file (more reliable than env var)
           echo '$PROD_FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
           echo 'PROD_FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> .env

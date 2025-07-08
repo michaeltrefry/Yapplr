@@ -11,12 +11,14 @@ public class AdminService : IAdminService
     private readonly YapplrDbContext _context;
     private readonly IAuditService _auditService;
     private readonly INotificationService _notificationService;
+    private readonly ILogger<AdminService> _logger;
 
-    public AdminService(YapplrDbContext context, IAuditService auditService, INotificationService notificationService)
+    public AdminService(YapplrDbContext context, IAuditService auditService, INotificationService notificationService, ILogger<AdminService> logger)
     {
         _context = context;
         _auditService = auditService;
         _notificationService = notificationService;
+        _logger = logger;
     }
 
     // System Tags
@@ -114,7 +116,20 @@ public class AdminService : IAdminService
             .Take(pageSize)
             .ToListAsync();
 
-        return posts.Select(MapToAdminPostDto);
+        // Get all AI suggested tags for the posts in a single query to avoid concurrency issues
+        var postIds = posts.Select(p => p.Id).ToList();
+        var aiSuggestedTagsLookup = await _context.AiSuggestedTags
+            .Include(ast => ast.ApprovedByUser)
+            .Where(ast => ast.PostId.HasValue && postIds.Contains(ast.PostId.Value))
+            .OrderByDescending(ast => ast.SuggestedAt)
+            .ToListAsync();
+
+        var aiSuggestedTagsByPostId = aiSuggestedTagsLookup
+            .Where(ast => ast.PostId.HasValue)
+            .GroupBy(ast => ast.PostId.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        return posts.Select(p => MapToAdminPostDtoWithTags(p, aiSuggestedTagsByPostId.GetValueOrDefault(p.Id, new List<AiSuggestedTag>()))).ToList();
     }
 
     public async Task<IEnumerable<AdminCommentDto>> GetCommentsForModerationAsync(int page = 1, int pageSize = 25, bool? isHidden = null)
@@ -150,7 +165,16 @@ public class AdminService : IAdminService
             .Include(p => p.Reposts)
             .FirstOrDefaultAsync(p => p.Id == postId);
 
-        return post == null ? null : MapToAdminPostDto(post);
+        if (post == null) return null;
+
+        // Get AI suggested tags for this post
+        var aiSuggestedTags = await _context.AiSuggestedTags
+            .Include(ast => ast.ApprovedByUser)
+            .Where(ast => ast.PostId == post.Id)
+            .OrderByDescending(ast => ast.SuggestedAt)
+            .ToListAsync();
+
+        return MapToAdminPostDtoWithTags(post, aiSuggestedTags);
     }
 
     public async Task<AdminCommentDto?> GetCommentForModerationAsync(int commentId)
@@ -495,9 +519,22 @@ public class AdminService : IAdminService
             .Take(25)
             .ToListAsync();
 
+        // Get all AI suggested tags for the flagged posts in a single query to avoid concurrency issues
+        var postIds = flaggedPosts.Select(p => p.Id).ToList();
+        var aiSuggestedTagsLookup = await _context.AiSuggestedTags
+            .Include(ast => ast.ApprovedByUser)
+            .Where(ast => ast.PostId.HasValue && postIds.Contains(ast.PostId.Value))
+            .OrderByDescending(ast => ast.SuggestedAt)
+            .ToListAsync();
+
+        var aiSuggestedTagsByPostId = aiSuggestedTagsLookup
+            .Where(ast => ast.PostId.HasValue)
+            .GroupBy(ast => ast.PostId.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
         return new ContentQueueDto
         {
-            FlaggedPosts = flaggedPosts.Select(MapToAdminPostDto).ToList(),
+            FlaggedPosts = flaggedPosts.Select(p => MapToAdminPostDtoWithTags(p, aiSuggestedTagsByPostId.GetValueOrDefault(p.Id, new List<AiSuggestedTag>()))).ToList(),
             FlaggedComments = flaggedComments.Select(MapToAdminCommentDto).ToList(),
             PendingAppeals = pendingAppeals.Select(MapToUserAppealDto).ToList(),
             TotalFlaggedContent = flaggedPosts.Count + flaggedComments.Count
@@ -1017,6 +1054,35 @@ public class AdminService : IAdminService
         };
     }
 
+    private static AdminPostDto MapToAdminPostDtoWithTags(Post post, List<AiSuggestedTag> aiSuggestedTags)
+    {
+        var adminPostDto = MapToAdminPostDto(post);
+        adminPostDto.AiSuggestedTags = aiSuggestedTags.Select(MapToAiSuggestedTagDto).ToList();
+        return adminPostDto;
+    }
+
+
+
+    private static AiSuggestedTagDto MapToAiSuggestedTagDto(AiSuggestedTag aiSuggestedTag)
+    {
+        return new AiSuggestedTagDto
+        {
+            Id = aiSuggestedTag.Id,
+            TagName = aiSuggestedTag.TagName,
+            Category = aiSuggestedTag.Category,
+            Confidence = aiSuggestedTag.Confidence,
+            RiskLevel = aiSuggestedTag.RiskLevel,
+            RequiresReview = aiSuggestedTag.RequiresReview,
+            SuggestedAt = aiSuggestedTag.SuggestedAt,
+            IsApproved = aiSuggestedTag.IsApproved,
+            IsRejected = aiSuggestedTag.IsRejected,
+            ApprovedByUserId = aiSuggestedTag.ApprovedByUserId,
+            ApprovedByUsername = aiSuggestedTag.ApprovedByUser?.Username,
+            ApprovedAt = aiSuggestedTag.ApprovedAt,
+            ApprovalReason = aiSuggestedTag.ApprovalReason
+        };
+    }
+
     private static AdminCommentDto MapToAdminCommentDto(Comment comment)
     {
         return new AdminCommentDto
@@ -1052,5 +1118,175 @@ public class AdminService : IAdminService
             ReviewedAt = appeal.ReviewedAt,
             CreatedAt = appeal.CreatedAt
         };
+    }
+
+    // AI Suggested Tags Management
+    public async Task<IEnumerable<AiSuggestedTagDto>> GetPendingAiSuggestionsAsync(int? postId = null, int? commentId = null, int page = 1, int pageSize = 25)
+    {
+        var query = _context.AiSuggestedTags
+            .Include(ast => ast.Post)
+                .ThenInclude(p => p!.User)
+            .Include(ast => ast.Comment)
+                .ThenInclude(c => c!.User)
+            .Include(ast => ast.ApprovedByUser)
+            .Where(ast => !ast.IsApproved && !ast.IsRejected);
+
+        if (postId.HasValue)
+            query = query.Where(ast => ast.PostId == postId.Value);
+
+        if (commentId.HasValue)
+            query = query.Where(ast => ast.CommentId == commentId.Value);
+
+        var suggestions = await query
+            .OrderByDescending(ast => ast.SuggestedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return suggestions.Select(MapToAiSuggestedTagDto);
+    }
+
+    public async Task<bool> ApproveAiSuggestedTagAsync(int suggestedTagId, int approvedByUserId, string? reason = null)
+    {
+        try
+        {
+            var suggestedTag = await _context.AiSuggestedTags.FindAsync(suggestedTagId);
+            if (suggestedTag == null)
+                return false;
+
+            suggestedTag.IsApproved = true;
+            suggestedTag.IsRejected = false;
+            suggestedTag.ApprovedByUserId = approvedByUserId;
+            suggestedTag.ApprovedAt = DateTime.UtcNow;
+            suggestedTag.ApprovalReason = reason;
+
+            await _context.SaveChangesAsync();
+
+            // Log the action
+            await _auditService.LogActionAsync(
+                suggestedTag.PostId.HasValue ? AuditAction.PostSystemTagAdded : AuditAction.CommentSystemTagAdded,
+                approvedByUserId,
+                targetPostId: suggestedTag.PostId,
+                targetCommentId: suggestedTag.CommentId,
+                reason: $"Approved AI suggestion: {suggestedTag.TagName}",
+                details: reason
+            );
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error approving AI suggested tag {SuggestedTagId}", suggestedTagId);
+            return false;
+        }
+    }
+
+    public async Task<bool> RejectAiSuggestedTagAsync(int suggestedTagId, int approvedByUserId, string? reason = null)
+    {
+        try
+        {
+            var suggestedTag = await _context.AiSuggestedTags.FindAsync(suggestedTagId);
+            if (suggestedTag == null)
+                return false;
+
+            suggestedTag.IsApproved = false;
+            suggestedTag.IsRejected = true;
+            suggestedTag.ApprovedByUserId = approvedByUserId;
+            suggestedTag.ApprovedAt = DateTime.UtcNow;
+            suggestedTag.ApprovalReason = reason;
+
+            await _context.SaveChangesAsync();
+
+            // Log the action
+            await _auditService.LogActionAsync(
+                suggestedTag.PostId.HasValue ? AuditAction.PostSystemTagRemoved : AuditAction.CommentSystemTagRemoved,
+                approvedByUserId,
+                targetPostId: suggestedTag.PostId,
+                targetCommentId: suggestedTag.CommentId,
+                reason: $"Rejected AI suggestion: {suggestedTag.TagName}",
+                details: reason
+            );
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rejecting AI suggested tag {SuggestedTagId}", suggestedTagId);
+            return false;
+        }
+    }
+
+    public async Task<bool> BulkApproveAiSuggestedTagsAsync(IEnumerable<int> suggestedTagIds, int approvedByUserId, string? reason = null)
+    {
+        try
+        {
+            var tagIds = suggestedTagIds.ToList();
+            var suggestedTags = await _context.AiSuggestedTags
+                .Where(ast => tagIds.Contains(ast.Id))
+                .ToListAsync();
+
+            foreach (var suggestedTag in suggestedTags)
+            {
+                suggestedTag.IsApproved = true;
+                suggestedTag.IsRejected = false;
+                suggestedTag.ApprovedByUserId = approvedByUserId;
+                suggestedTag.ApprovedAt = DateTime.UtcNow;
+                suggestedTag.ApprovalReason = reason;
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Log the bulk action
+            await _auditService.LogActionAsync(
+                AuditAction.PostSystemTagAdded,
+                approvedByUserId,
+                reason: $"Bulk approved {suggestedTags.Count} AI suggestions",
+                details: reason
+            );
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk approving AI suggested tags");
+            return false;
+        }
+    }
+
+    public async Task<bool> BulkRejectAiSuggestedTagsAsync(IEnumerable<int> suggestedTagIds, int approvedByUserId, string? reason = null)
+    {
+        try
+        {
+            var tagIds = suggestedTagIds.ToList();
+            var suggestedTags = await _context.AiSuggestedTags
+                .Where(ast => tagIds.Contains(ast.Id))
+                .ToListAsync();
+
+            foreach (var suggestedTag in suggestedTags)
+            {
+                suggestedTag.IsApproved = false;
+                suggestedTag.IsRejected = true;
+                suggestedTag.ApprovedByUserId = approvedByUserId;
+                suggestedTag.ApprovedAt = DateTime.UtcNow;
+                suggestedTag.ApprovalReason = reason;
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Log the bulk action
+            await _auditService.LogActionAsync(
+                AuditAction.PostSystemTagRemoved,
+                approvedByUserId,
+                reason: $"Bulk rejected {suggestedTags.Count} AI suggestions",
+                details: reason
+            );
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk rejecting AI suggested tags");
+            return false;
+        }
     }
 }

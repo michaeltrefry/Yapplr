@@ -28,6 +28,7 @@ import type {
   NotificationList,
   Tag,
   SystemTag,
+  AiSuggestedTag,
   CreateSystemTagDto,
   UpdateSystemTagDto,
   AdminUser,
@@ -694,6 +695,34 @@ export const adminApi = {
   bulkApplySystemTag: async (postIds: number[], systemTagId: number, reason?: string): Promise<{ count: number }> => {
     const response = await api.post('/admin/bulk/apply-system-tag', { postIds, systemTagId, reason });
     return response.data;
+  },
+
+  // AI Suggested Tags
+  getPendingAiSuggestions: async (postId?: number, commentId?: number, page = 1, pageSize = 25): Promise<AiSuggestedTag[]> => {
+    const params = new URLSearchParams();
+    if (postId !== undefined) params.append('postId', postId.toString());
+    if (commentId !== undefined) params.append('commentId', commentId.toString());
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+
+    const response = await api.get(`/admin/ai-suggestions?${params}`);
+    return response.data;
+  },
+
+  approveAiSuggestedTag: async (tagId: number, reason?: string): Promise<void> => {
+    await api.post(`/admin/ai-suggestions/${tagId}/approve`, { reason });
+  },
+
+  rejectAiSuggestedTag: async (tagId: number, reason?: string): Promise<void> => {
+    await api.post(`/admin/ai-suggestions/${tagId}/reject`, { reason });
+  },
+
+  bulkApproveAiSuggestedTags: async (tagIds: number[], reason?: string): Promise<void> => {
+    await api.post('/admin/ai-suggestions/bulk-approve', { suggestedTagIds: tagIds, reason });
+  },
+
+  bulkRejectAiSuggestedTags: async (tagIds: number[], reason?: string): Promise<void> => {
+    await api.post('/admin/ai-suggestions/bulk-reject', { suggestedTagIds: tagIds, reason });
   },
 };
 

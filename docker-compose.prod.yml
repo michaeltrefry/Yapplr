@@ -22,12 +22,19 @@ services:
       # Firebase configuration (REQUIRED for notifications)
       - Firebase__ProjectId=${PROD_FIREBASE_PROJECT_ID}
       - Firebase__ServiceAccountKey=${PROD_FIREBASE_SERVICE_ACCOUNT_KEY}
+      # Content Moderation configuration
+      - ContentModeration__ServiceUrl=http://content-moderation:8000
+      - ContentModeration__Enabled=true
+      - ContentModeration__AutoApplyTags=false
     volumes:
       - yapplr_uploads:/app/uploads
       - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: unless-stopped
     networks:
       - yapplr-network
+    depends_on:
+      content-moderation:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -49,6 +56,29 @@ services:
     restart: unless-stopped
     networks:
       - yapplr-network
+
+  content-moderation:
+    build:
+      context: sentiment-analysis
+      dockerfile: Dockerfile
+    image: content-moderation:latest
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
 
   nginx:
     image: nginx:alpine
