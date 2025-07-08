@@ -290,15 +290,17 @@ export default function SystemTagsPage() {
                             <div className="flex justify-end space-x-2">
                               <button
                                 onClick={() => setEditingTag(null)}
-                                className="p-1 text-gray-400 hover:text-gray-600"
+                                className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-xs"
                               >
-                                <X className="h-4 w-4" />
+                                <X className="h-3 w-3 mr-1" />
+                                Cancel
                               </button>
                               <button
                                 onClick={() => handleUpdateTag(editingTag)}
-                                className="p-1 text-green-600 hover:text-green-800"
+                                className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 transition-colors text-xs"
                               >
-                                <Save className="h-4 w-4" />
+                                <Save className="h-3 w-3 mr-1" />
+                                Save
                               </button>
                             </div>
                           </div>
@@ -327,15 +329,17 @@ export default function SystemTagsPage() {
                             <div className="flex justify-end space-x-2">
                               <button
                                 onClick={() => setEditingTag(tag)}
-                                className="p-1 text-blue-600 hover:text-blue-800"
+                                className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors text-xs"
                               >
-                                <Edit className="h-4 w-4" />
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
                               </button>
                               <button
                                 onClick={() => handleDeleteTag(tag.id)}
-                                className="p-1 text-red-600 hover:text-red-800"
+                                className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors text-xs"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
                               </button>
                             </div>
                           </>

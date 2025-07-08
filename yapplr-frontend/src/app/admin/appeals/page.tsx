@@ -331,9 +331,10 @@ export default function AdminAppealsPage() {
               <h3 className="text-lg font-semibold text-gray-900">Review Appeal</h3>
               <button
                 onClick={() => setSelectedAppeal(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-xs"
               >
-                <X className="h-6 w-6" />
+                <X className="h-3 w-3 mr-1" />
+                Close
               </button>
             </div>
 

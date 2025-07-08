@@ -259,9 +259,10 @@ export default function AdminCommentsPage() {
                         <button
                           onClick={() => handleUnhideComment(comment.id)}
                           disabled={actionLoading === comment.id}
-                          className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                          className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 transition-colors text-xs disabled:opacity-50"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-3 w-3 mr-1" />
+                          Unhide
                         </button>
                       ) : (
                         <button
@@ -270,9 +271,10 @@ export default function AdminCommentsPage() {
                             if (reason) handleHideComment(comment.id, reason);
                           }}
                           disabled={actionLoading === comment.id}
-                          className="text-yellow-600 hover:text-yellow-900 disabled:opacity-50"
+                          className="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors text-xs disabled:opacity-50"
                         >
-                          <EyeOff className="h-4 w-4" />
+                          <EyeOff className="h-3 w-3 mr-1" />
+                          Hide
                         </button>
                       )}
 
