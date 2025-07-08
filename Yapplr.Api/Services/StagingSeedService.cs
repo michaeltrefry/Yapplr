@@ -118,13 +118,14 @@ public class StagingSeedService
 
     private async Task CreateSampleContentAsync()
     {
-        _logger.LogInformation("📝 Creating sample posts and interactions...");
+        _logger.LogInformation("📝 Creating sample posts and interactions (including moderation test content)...");
 
         // Get all users for creating content
         var users = await _context.Users.ToListAsync();
         var random = new Random();
 
-        var samplePosts = new List<string>
+        // Regular posts (safe content)
+        var regularPosts = new List<string>
         {
             "Welcome to Yapplr! Excited to be part of this community 🎉",
             "Just shipped a new feature at work. The feeling never gets old! #coding #webdev",
@@ -143,12 +144,45 @@ public class StagingSeedService
             "Attending a tech meetup tonight. Love connecting with the community 🤝"
         };
 
-        // Create posts for random users
-        for (int i = 0; i < 25; i++)
+        // Content that should trigger moderation (for testing AI moderation)
+        var moderationTestPosts = new List<(string content, string description)>
+        {
+            // NSFW Content
+            ("This adult content is definitely not safe for work and contains explicit material", "NSFW - Adult content"),
+            ("Check out this sexy photo I took last night 🔥", "NSFW - Sexual content"),
+
+            // Violence
+            ("I'm so angry I could punch someone right now. Violence is the answer!", "Violence - Aggressive language"),
+            ("That movie had so much blood and gore, loved the brutal fight scenes", "Violence - Graphic content"),
+            ("Someone should beat some sense into these idiots", "Violence - Threatening language"),
+
+            // Harassment
+            ("You're such an idiot, nobody likes you and you should just disappear", "Harassment - Personal attack"),
+            ("Stop posting stupid content, you're ruining this platform for everyone", "Harassment - Bullying"),
+
+            // Hate Speech
+            ("I hate all people from that country, they're all the same", "Hate Speech - Discrimination"),
+            ("Those people don't belong here and should go back where they came from", "Hate Speech - Xenophobia"),
+
+            // Misinformation
+            ("The earth is flat and the government is hiding the truth from us all", "Misinformation - Conspiracy theory"),
+            ("Vaccines contain microchips to track and control the population", "Misinformation - Health misinformation"),
+
+            // Sensitive Content
+            ("I've been struggling with depression and having thoughts of self-harm lately", "Sensitive - Mental health"),
+            ("Spoiler alert: The main character dies at the end of the movie!", "Spoiler - Entertainment spoiler"),
+
+            // Spam-like content
+            ("Buy now! Amazing deal! Click here! Limited time offer! Don't miss out!", "Spam - Promotional content"),
+            ("Follow me follow me follow me! Like and subscribe! Check my profile!", "Spam - Attention seeking")
+        };
+
+        // Create regular posts (15 posts)
+        for (int i = 0; i < 15; i++)
         {
             var randomUser = users[random.Next(users.Count)];
-            var randomContent = samplePosts[random.Next(samplePosts.Count)];
-            
+            var randomContent = regularPosts[random.Next(regularPosts.Count)];
+
             var post = new Post
             {
                 Content = randomContent,
@@ -161,6 +195,28 @@ public class StagingSeedService
             _context.Posts.Add(post);
         }
 
+        // Create moderation test posts (10-15 posts from specific users)
+        var moderationTestUsers = users.Take(8).ToList(); // Use first 8 users for moderation tests
+
+        for (int i = 0; i < Math.Min(15, moderationTestPosts.Count); i++)
+        {
+            var testUser = moderationTestUsers[i % moderationTestUsers.Count];
+            var (content, description) = moderationTestPosts[i];
+
+            var post = new Post
+            {
+                Content = content,
+                UserId = testUser.Id,
+                Privacy = PostPrivacy.Public, // Make moderation test posts public for visibility
+                CreatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 3)).AddHours(-random.Next(0, 12)), // Recent posts
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Posts.Add(post);
+
+            _logger.LogInformation("📝 Created moderation test post: {Description}", description);
+        }
+
         await _context.SaveChangesAsync();
 
         // Create some follow relationships
@@ -169,7 +225,7 @@ public class StagingSeedService
         // Create some likes and comments
         await CreateSampleInteractionsAsync();
 
-        _logger.LogInformation("✅ Sample content created successfully");
+        _logger.LogInformation("✅ Sample content created successfully (15 regular posts + 15 moderation test posts)");
     }
 
     private async Task CreateSampleFollowsAsync(List<User> users)

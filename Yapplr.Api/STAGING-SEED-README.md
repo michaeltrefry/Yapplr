@@ -47,10 +47,22 @@ All test users have:
 | tara_w | tara_w@example.com | Tara Williams | she/her |
 
 ### 3. Sample Content
-- **25 Posts**: Realistic posts with varied content and creation dates
+- **30 Posts Total**: Mix of regular and moderation test content
+  - **15 Regular Posts**: Safe, realistic content for normal testing
+  - **15 Moderation Test Posts**: Content designed to trigger AI moderation
 - **30 Follow Relationships**: Random follow connections between users
 - **40 Likes**: Distributed across posts from different users
 - **20 Comments**: Engaging comments on various posts
+
+#### Moderation Test Content Categories
+The seeding includes posts that test various moderation scenarios:
+- **NSFW Content**: Adult and sexual content detection
+- **Violence**: Aggressive language and violent content
+- **Harassment**: Personal attacks and bullying behavior
+- **Hate Speech**: Discriminatory and xenophobic content
+- **Misinformation**: Conspiracy theories and false health claims
+- **Sensitive Content**: Mental health discussions and spoilers
+- **Spam**: Promotional and attention-seeking content
 
 ## Technical Implementation
 
@@ -101,6 +113,30 @@ After deployment, you can immediately:
 2. **Test User Features**: Login as any test user with `P@$$w0rd!`
 3. **Explore Content**: View posts, likes, comments, and follows
 4. **Test Moderation**: Use admin account to moderate content
+
+### AI Moderation Testing
+The seeded content includes specific posts designed to test the AI moderation system:
+
+#### **Admin Dashboard Testing**
+1. **Login as Admin**: `admin@yapplr.com` / `P@$$w0rd!`
+2. **Navigate to Content Queue**: Check for flagged posts
+3. **Review AI Suggestions**: See AI-generated tag recommendations
+4. **Test Approval Workflow**: Approve or reject AI suggestions
+5. **Monitor System Performance**: Check moderation effectiveness
+
+#### **Expected Moderation Results**
+The test posts should trigger various AI responses:
+- **High Risk Posts**: NSFW, violence, hate speech content
+- **Medium Risk Posts**: Harassment, misinformation content
+- **Low Risk Posts**: Sensitive topics, spoilers
+- **Tag Suggestions**: ContentWarning and Violation tags
+- **Risk Scores**: Range from MINIMAL to HIGH
+
+#### **Testing Scenarios**
+- **Auto-flagging**: Posts should appear in moderation queue
+- **Tag Application**: AI should suggest appropriate system tags
+- **Risk Assessment**: Different risk levels for different content types
+- **Admin Override**: Test manual approval/rejection of AI decisions
 
 ### Deployment Integration
 The seeding is integrated into the staging deployment process:
