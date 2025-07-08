@@ -12,6 +12,7 @@ import {
   Calendar,
   MessageSquare,
   FileText,
+  ExternalLink,
   Brain,
 } from 'lucide-react';
 import AiSuggestedTags from '@/components/admin/AiSuggestedTags';
@@ -219,7 +220,15 @@ export default function ContentQueuePage() {
                     <div className="flex items-center space-x-3">
                       <User className="h-8 w-8 text-gray-400" />
                       <div>
-                        <p className="font-medium text-gray-900">@{post.user.username}</p>
+                        <a
+                          href={`/profile/${post.user.username}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                          @{post.user.username}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
                         <p className="text-sm text-gray-500 flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
                           {new Date(post.createdAt).toLocaleDateString()}
@@ -239,7 +248,17 @@ export default function ContentQueuePage() {
                   </div>
 
                   <div className="mb-4">
-                    <p className="text-gray-900">{post.content}</p>
+                    <a
+                      href={`/yap/${post.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-900 hover:text-blue-600 block group"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="flex-1">{post.content}</span>
+                        <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 mt-0.5" />
+                      </div>
+                    </a>
                     {post.imageFileName && (
                       <div className="mt-2">
                         <img
@@ -364,7 +383,15 @@ export default function ContentQueuePage() {
                     <div className="flex items-center space-x-3">
                       <User className="h-8 w-8 text-gray-400" />
                       <div>
-                        <p className="font-medium text-gray-900">@{comment.user.username}</p>
+                        <a
+                          href={`/profile/${comment.user.username}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                          @{comment.user.username}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
                         <p className="text-sm text-gray-500 flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
                           {new Date(comment.createdAt).toLocaleDateString()}
@@ -384,7 +411,20 @@ export default function ContentQueuePage() {
                   </div>
 
                   <div className="mb-4">
-                    <p className="text-gray-900">{comment.content}</p>
+                    <a
+                      href={`/yap/${comment.postId}#comment-${comment.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-900 hover:text-blue-600 block group"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="flex-1">{comment.content}</span>
+                        <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 mt-0.5" />
+                      </div>
+                    </a>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Comment on post #{comment.postId}
+                    </p>
                   </div>
 
                   {comment.systemTags.length > 0 && (
