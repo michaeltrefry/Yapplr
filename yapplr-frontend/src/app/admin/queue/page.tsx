@@ -29,6 +29,7 @@ export default function ContentQueuePage() {
     contentType: 'post' | 'comment';
     contentId: number;
     reason: string;
+    reportId?: number;
   } | null>(null);
 
   useEffect(() => {
@@ -50,12 +51,13 @@ export default function ContentQueuePage() {
     fetchData();
   }, []);
 
-  const handleShowActionForm = (type: 'hide', contentType: 'post' | 'comment', contentId: number) => {
+  const handleShowActionForm = (type: 'hide', contentType: 'post' | 'comment', contentId: number, reportId?: number) => {
     setActiveAction({
       type,
       contentType,
       contentId,
-      reason: ''
+      reason: '',
+      reportId
     });
   };
 
@@ -82,6 +84,19 @@ export default function ContentQueuePage() {
       // Refresh queue
       const queueData = await adminApi.getContentQueue();
       setQueue(queueData);
+
+      // If this was from a user report, mark it as action taken
+      if (activeAction.reportId) {
+        try {
+          await adminApi.reviewUserReport(activeAction.reportId, {
+            status: 3, // ActionTaken
+            reviewNotes: `Content hidden: ${activeAction.reason}`
+          });
+        } catch (error) {
+          console.error('Failed to update report status:', error);
+        }
+      }
+
       setActiveAction(null);
     } catch (error) {
       console.error(`Failed to ${activeAction.type} ${activeAction.contentType}:`, error);
@@ -627,6 +642,47 @@ export default function ContentQueuePage() {
                           Reviewed by @{report.reviewedByUsername} on{' '}
                           {report.reviewedAt && new Date(report.reviewedAt).toLocaleDateString()}
                         </p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons - only show for pending reports */}
+                    {report.status === 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex space-x-3">
+                          {report.post && !report.post.isHidden && (
+                            <button
+                              onClick={() => handleShowActionForm('hide', 'post', report.post!.id, report.id)}
+                              className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                            >
+                              <EyeOff className="w-4 h-4 mr-2" />
+                              Hide Post
+                            </button>
+                          )}
+                          {report.comment && !report.comment.isHidden && (
+                            <button
+                              onClick={() => handleShowActionForm('hide', 'comment', report.comment!.id, report.id)}
+                              className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                            >
+                              <EyeOff className="w-4 h-4 mr-2" />
+                              Hide Comment
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              // Mark as reviewed without action
+                              adminApi.reviewUserReport(report.id, {
+                                status: 2, // Dismissed
+                                reviewNotes: 'No action needed'
+                              }).then(() => {
+                                // Refresh queue
+                                adminApi.getContentQueue().then(setQueue);
+                              });
+                            }}
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          >
+                            Dismiss Report
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

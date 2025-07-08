@@ -25,6 +25,7 @@ export default function ReportModal({
 }: ReportModalProps) {
   const [reason, setReason] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   // Get system tags for reporting
   const { data: systemTags = [] } = useQuery({
@@ -34,26 +35,23 @@ export default function ReportModal({
   });
 
   // Filter tags that are appropriate for user reporting
-  const reportingTags = systemTags.filter(tag => 
+  const reportingTags = systemTags.filter(tag =>
     tag.isActive && (
       tag.category === 1 || // Violation
       tag.category === 5 || // Safety
-      tag.category === 0    // ContentWarning
+      tag.category === 0 || // ContentWarning
+      tag.category === 3    // Quality (includes Spam)
     )
   );
 
   const createReportMutation = useMutation({
     mutationFn: (data: CreateUserReportDto) => userReportApi.createReport(data),
     onSuccess: () => {
-      onClose();
-      setReason('');
-      setSelectedTagIds([]);
-      // Show success message
-      alert('Report submitted successfully. Thank you for helping keep our community safe.');
+      setIsSubmitted(true);
     },
     onError: (error: any) => {
       console.error('Failed to submit report:', error);
-      alert('Failed to submit report. Please try again.');
+      // Could add error state here if needed
     },
   });
 
@@ -88,6 +86,7 @@ export default function ReportModal({
       onClose();
       setReason('');
       setSelectedTagIds([]);
+      setIsSubmitted(false);
     }
   };
 
@@ -113,14 +112,34 @@ export default function ReportModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {/* Content Preview */}
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Reporting this {contentType}:</p>
-            <p className="text-sm text-gray-900 line-clamp-3">
-              {contentPreview}
+        {isSubmitted ? (
+          /* Success Message */
+          <div className="p-6 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Report Submitted Successfully</h3>
+            <p className="text-gray-600 mb-6">
+              Thank you for helping keep our community safe. Our moderation team will review this report.
             </p>
+            <button
+              onClick={handleClose}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Close
+            </button>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            {/* Content Preview */}
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">Reporting this {contentType}:</p>
+              <p className="text-sm text-gray-900 line-clamp-3">
+                {contentPreview}
+              </p>
+            </div>
 
           {/* System Tags Selection */}
           <div>
@@ -200,6 +219,7 @@ export default function ReportModal({
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
