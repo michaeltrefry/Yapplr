@@ -28,9 +28,14 @@ public class StagingSeedService
             // Create 20 test users
             CreateTestUsers();
 
+            // Save users to database before creating content
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("✅ Users created and saved to database");
+
             // Create some sample content
             await CreateSampleContentAsync();
 
+            // Save content to database
             await _context.SaveChangesAsync();
             _logger.LogInformation("✅ Staging data seeding completed successfully!");
         }
