@@ -5,6 +5,7 @@ import re
 from typing import Dict, List, Tuple
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from textblob import TextBlob
+import spacy
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,14 +30,27 @@ try:
     test_textblob = test_blob.sentiment
     logger.info(f"TextBlob test successful: polarity={test_textblob.polarity}, subjectivity={test_textblob.subjectivity}")
 
-    logger.info("Successfully loaded lightweight sentiment analysis models")
+    # Initialize spaCy for advanced NLP (context understanding, negation detection)
+    try:
+        nlp = spacy.load("en_core_web_sm")
+        test_doc = nlp("I don't hate you")
+        logger.info(f"spaCy test successful: {len(test_doc)} tokens processed")
+        spacy_available = True
+    except Exception as spacy_error:
+        logger.warning(f"spaCy model not available: {spacy_error}")
+        nlp = None
+        spacy_available = False
+
+    logger.info("Successfully loaded sentiment analysis models")
     sentiment_models_available = True
 
 except Exception as e:
     logger.error(f"Failed to load sentiment models: {str(e)}")
     logger.info("Falling back to pattern-based sentiment analysis only")
     vader_analyzer = None
+    nlp = None
     sentiment_models_available = False
+    spacy_available = False
 
 logger.info("Content moderation service ready!")
 
@@ -191,6 +205,71 @@ def analyze_sentiment_patterns(text: str) -> Dict[str, any]:
     else:
         return {'label': 'NEUTRAL', 'score': 0.5, 'confidence': 0.5, 'source': 'pattern_based'}
 
+def analyze_intent_with_context(text: str) -> Dict[str, any]:
+    """
+    Advanced intent analysis that understands context, negation, and actual meaning
+    """
+    if not spacy_available or nlp is None:
+        return {"intent_analysis_available": False, "reason": "spaCy not available"}
+
+    try:
+        doc = nlp(text)
+
+        # Analyze for problematic intent patterns with context awareness
+        intent_flags = {
+            "violence": {"detected": False, "confidence": 0.0, "context": ""},
+            "harassment": {"detected": False, "confidence": 0.0, "context": ""},
+            "hate": {"detected": False, "confidence": 0.0, "context": ""},
+            "threat": {"detected": False, "confidence": 0.0, "context": ""}
+        }
+
+        # Define problematic terms with their categories
+        problematic_terms = {
+            "violence": ["kill", "murder", "attack", "violence", "hurt", "harm", "beat", "fight"],
+            "harassment": ["harass", "bully", "stalk", "intimidate", "threaten"],
+            "hate": ["hate", "despise", "loathe", "detest"],
+            "threat": ["will kill", "going to hurt", "watch out", "you're dead"]
+        }
+
+        # Check each sentence for context
+        for sent in doc.sents:
+            sent_text = sent.text.lower()
+
+            # Look for negation patterns
+            negation_words = ["not", "never", "don't", "won't", "wouldn't", "can't", "cannot", "no"]
+            has_negation = any(neg in sent_text for neg in negation_words)
+
+            # Check for problematic terms in context
+            for category, terms in problematic_terms.items():
+                for term in terms:
+                    if term in sent_text:
+                        # If negated, this is actually GOOD (expressing non-violence)
+                        if has_negation:
+                            intent_flags[category]["confidence"] = max(0, intent_flags[category]["confidence"] - 0.3)
+                            intent_flags[category]["context"] = f"Negated: '{sent.text.strip()}'"
+                        else:
+                            # Positive assertion of problematic intent
+                            intent_flags[category]["detected"] = True
+                            intent_flags[category]["confidence"] = min(1.0, intent_flags[category]["confidence"] + 0.7)
+                            intent_flags[category]["context"] = f"Asserted: '{sent.text.strip()}'"
+
+        # Determine overall intent
+        max_confidence = max(flag["confidence"] for flag in intent_flags.values())
+        detected_intents = [category for category, flag in intent_flags.items() if flag["detected"]]
+
+        return {
+            "intent_analysis_available": True,
+            "overall_risk": "HIGH" if max_confidence > 0.6 else "MEDIUM" if max_confidence > 0.3 else "LOW",
+            "confidence": max_confidence,
+            "detected_intents": detected_intents,
+            "intent_details": intent_flags,
+            "summary": f"Detected {len(detected_intents)} concerning intent(s)" if detected_intents else "No concerning intent detected"
+        }
+
+    except Exception as e:
+        logger.warning(f"Intent analysis failed: {str(e)}")
+        return {"intent_analysis_available": False, "reason": str(e)}
+
 def analyze_content_patterns(text: str) -> Dict[str, List[str]]:
     """
     Analyze text for patterns that match system tag categories
@@ -273,7 +352,16 @@ def health_check():
         "ai_enabled": sentiment_models_available,
         "models": {
             "vader": vader_analyzer is not None,
-            "textblob": True  # TextBlob is always available if imported
+            "textblob": True,  # TextBlob is always available if imported
+            "spacy": spacy_available,
+            "intent_analysis": spacy_available
+        },
+        "capabilities": {
+            "sentiment_analysis": True,
+            "pattern_matching": True,
+            "intent_analysis": spacy_available,
+            "context_understanding": spacy_available,
+            "negation_detection": spacy_available
         }
     }), 200
 
@@ -346,8 +434,11 @@ def moderate_content():
             "requires_review": False
         }
 
-        # Analyze content patterns
+        # Analyze content patterns (basic keyword matching)
         pattern_matches = analyze_content_patterns(text)
+
+        # Analyze intent with context (advanced NLP)
+        intent_analysis = analyze_intent_with_context(text)
 
         # Analyze sentiment with AI
         sentiment_result = analyze_sentiment_with_ai(text) if include_sentiment else {'label': 'NEUTRAL', 'score': 0.5, 'confidence': 0.5}
@@ -358,16 +449,33 @@ def moderate_content():
             pattern_matches
         )
 
-        # Update response with actual analysis
+        # Combine pattern matching with intent analysis for better accuracy
+        final_risk_score = risk_score
+        requires_review = risk_score >= 0.5
+
+        # If intent analysis is available, use it to override pattern matching
+        if intent_analysis.get("intent_analysis_available", False):
+            intent_risk = intent_analysis.get("confidence", 0)
+            detected_intents = intent_analysis.get("detected_intents", [])
+
+            # Intent analysis takes precedence over pattern matching
+            if intent_risk > 0.3:  # Intent analysis detected concerning content
+                final_risk_score = max(final_risk_score, intent_risk)
+                requires_review = True
+            elif intent_risk == 0 and detected_intents == []:  # Intent analysis says it's safe
+                # Reduce risk score from pattern matching if intent analysis says it's safe
+                final_risk_score = min(final_risk_score, 0.3)
+
+        # Update response with comprehensive analysis
         response["suggested_tags"] = pattern_matches
+        response["intent_analysis"] = intent_analysis
         response["risk_assessment"] = {
-            "score": round(risk_score, 4),
-            "level": risk_level
+            "score": round(final_risk_score, 4),
+            "level": "HIGH" if final_risk_score >= 0.7 else "MEDIUM" if final_risk_score >= 0.4 else "LOW" if final_risk_score >= 0.2 else "MINIMAL",
+            "pattern_score": round(risk_score, 4),
+            "intent_score": round(intent_analysis.get("confidence", 0), 4) if intent_analysis.get("intent_analysis_available") else None
         }
-        response["requires_review"] = (
-            risk_score >= 0.5 or  # Medium+ risk
-            any(category in ['Violation', 'Safety'] for category in pattern_matches.keys())
-        )
+        response["requires_review"] = requires_review
 
         # Add real sentiment analysis
         if include_sentiment:
