@@ -81,22 +81,20 @@ export default function ContentQueuePage() {
         // Delete functionality removed - only hide is available
       }
 
-      // Refresh queue
-      const queueData = await adminApi.getContentQueue();
-      setQueue(queueData);
-
-      // If this was from a user report, mark it as action taken
+      // If this was from a user report, use the special endpoint that handles both hiding and messaging
       if (activeAction.reportId) {
         try {
-          await adminApi.reviewUserReport(activeAction.reportId, {
-            status: 3, // ActionTaken
-            reviewNotes: `Content hidden: ${activeAction.reason}`
+          await adminApi.hideContentFromReport(activeAction.reportId, {
+            reason: activeAction.reason
           });
         } catch (error) {
-          console.error('Failed to update report status:', error);
+          console.error('Failed to hide content from report:', error);
         }
       }
 
+      // Refresh queue
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
       setActiveAction(null);
     } catch (error) {
       console.error(`Failed to ${activeAction.type} ${activeAction.contentType}:`, error);

@@ -697,3 +697,7 @@ export interface ReviewUserReportDto {
   status: UserReportStatus;
   reviewNotes: string;
 }
+
+export interface HideContentFromReportDto {
+  reason: string;
+}

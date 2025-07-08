@@ -61,6 +61,7 @@ import type {
   UserReport,
   CreateUserReportDto,
   ReviewUserReportDto,
+  HideContentFromReportDto,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -671,6 +672,10 @@ export const adminApi = {
   reviewUserReport: async (id: number, data: ReviewUserReportDto): Promise<UserReport> => {
     const response = await api.post(`/admin/reports/${id}/review`, data);
     return response.data;
+  },
+
+  hideContentFromReport: async (id: number, data: HideContentFromReportDto): Promise<void> => {
+    await api.post(`/admin/reports/${id}/hide-content`, data);
   },
 
   // Enhanced Analytics
