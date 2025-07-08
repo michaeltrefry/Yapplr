@@ -493,3 +493,4 @@ Thumbs.db
 *.tmp
 *.temp
 firebase-service-account.json
+appsettings.*.json
