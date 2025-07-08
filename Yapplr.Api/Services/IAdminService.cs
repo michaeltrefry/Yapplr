@@ -20,11 +20,11 @@ public interface IAdminService
     
     Task<bool> HidePostAsync(int postId, int hiddenByUserId, string reason);
     Task<bool> UnhidePostAsync(int postId);
-    Task<bool> DeletePostAsync(int postId, int deletedByUserId, string reason);
+
     
     Task<bool> HideCommentAsync(int commentId, int hiddenByUserId, string reason);
     Task<bool> UnhideCommentAsync(int commentId);
-    Task<bool> DeleteCommentAsync(int commentId, int deletedByUserId, string reason);
+
     
     Task<bool> ApplySystemTagToPostAsync(int postId, int systemTagId, int appliedByUserId, string? reason = null);
     Task<bool> RemoveSystemTagFromPostAsync(int postId, int systemTagId, int removedByUserId);
@@ -33,7 +33,7 @@ public interface IAdminService
     
     // Bulk Actions
     Task<int> BulkHidePostsAsync(IEnumerable<int> postIds, int hiddenByUserId, string reason);
-    Task<int> BulkDeletePostsAsync(IEnumerable<int> postIds, int deletedByUserId, string reason);
+
     Task<int> BulkApplySystemTagAsync(IEnumerable<int> postIds, int systemTagId, int appliedByUserId, string? reason = null);
     
     // Analytics and Reporting

@@ -6,7 +6,6 @@ import { AdminPost, SystemTag, HideContentDto } from '@/types';
 import {
   Eye,
   EyeOff,
-  Trash2,
   Tag,
   Calendar,
   User,
@@ -71,17 +70,7 @@ export default function AdminPostsPage() {
     }
   };
 
-  const handleDeletePost = async (postId: number, reason: string) => {
-    try {
-      setActionLoading(postId);
-      await adminApi.deletePost(postId, { reason });
-      await fetchPosts();
-    } catch (error) {
-      console.error('Failed to delete post:', error);
-    } finally {
-      setActionLoading(null);
-    }
-  };
+
 
   const handleBulkHide = async () => {
     const reason = prompt('Enter reason for hiding posts:');
@@ -97,23 +86,7 @@ export default function AdminPostsPage() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    const reason = prompt('Enter reason for deleting posts:');
-    if (!reason) return;
 
-    if (!confirm(`Are you sure you want to delete ${selectedPosts.length} posts? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      await adminApi.bulkDeletePosts(selectedPosts, reason);
-      setSelectedPosts([]);
-      setShowBulkActions(false);
-      await fetchPosts();
-    } catch (error) {
-      console.error('Failed to bulk delete posts:', error);
-    }
-  };
 
   const togglePostSelection = (postId: number) => {
     setSelectedPosts(prev => 
@@ -196,12 +169,7 @@ export default function AdminPostsPage() {
               >
                 Bulk Hide
               </button>
-              <button
-                onClick={handleBulkDelete}
-                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-              >
-                Bulk Delete
-              </button>
+
               <button
                 onClick={() => {
                   setSelectedPosts([]);
@@ -346,18 +314,7 @@ export default function AdminPostsPage() {
                           <EyeOff className="h-4 w-4" />
                         </button>
                       )}
-                      <button
-                        onClick={() => {
-                          const reason = prompt('Enter reason for deleting this post:');
-                          if (reason && confirm('Are you sure? This action cannot be undone.')) {
-                            handleDeletePost(post.id, reason);
-                          }
-                        }}
-                        disabled={actionLoading === post.id}
-                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+
                     </div>
                   </td>
                 </tr>

@@ -251,19 +251,7 @@ public static class AdminEndpoints
         .Produces(200)
         .Produces(400);
 
-        admin.MapDelete("/posts/{id:int}", [RequireModerator] async (int id, [FromBody] HideContentDto deleteDto, ClaimsPrincipal user, IAdminService adminService) =>
-        {
-            var currentUserId = GetCurrentUserId(user);
-            if (currentUserId == null)
-                return Results.Unauthorized();
 
-            var success = await adminService.DeletePostAsync(id, currentUserId.Value, deleteDto.Reason);
-            return success ? Results.NoContent() : Results.BadRequest(new { message = "Failed to delete post" });
-        })
-        .WithName("AdminDeletePost")
-        .WithSummary("Admin delete a post")
-        .Produces(204)
-        .Produces(400);
 
         admin.MapPost("/posts/{id:int}/system-tags", [RequireModerator] async (int id, [FromBody] ApplySystemTagDto tagDto, ClaimsPrincipal user, IAdminService adminService) =>
         {
@@ -337,19 +325,7 @@ public static class AdminEndpoints
         .Produces(200)
         .Produces(400);
 
-        admin.MapDelete("/comments/{id:int}", [RequireModerator] async (int id, [FromBody] HideContentDto deleteDto, ClaimsPrincipal user, IAdminService adminService) =>
-        {
-            var currentUserId = GetCurrentUserId(user);
-            if (currentUserId == null)
-                return Results.Unauthorized();
 
-            var success = await adminService.DeleteCommentAsync(id, currentUserId.Value, deleteDto.Reason);
-            return success ? Results.NoContent() : Results.BadRequest(new { message = "Failed to delete comment" });
-        })
-        .WithName("AdminDeleteComment")
-        .WithSummary("Admin delete a comment")
-        .Produces(204)
-        .Produces(400);
 
         // Analytics and Reporting
         admin.MapGet("/stats", [RequireModerator] async (IAdminService adminService) =>
@@ -427,18 +403,7 @@ public static class AdminEndpoints
         .WithSummary("Bulk hide posts")
         .Produces(200);
 
-        admin.MapPost("/bulk/delete-posts", [RequireModerator] async ([FromBody] BulkActionDto bulkDto, ClaimsPrincipal user, IAdminService adminService) =>
-        {
-            var currentUserId = GetCurrentUserId(user);
-            if (currentUserId == null)
-                return Results.Unauthorized();
 
-            var count = await adminService.BulkDeletePostsAsync(bulkDto.PostIds, currentUserId.Value, bulkDto.Reason);
-            return Results.Ok(new { message = $"{count} posts deleted successfully", count });
-        })
-        .WithName("BulkDeletePosts")
-        .WithSummary("Bulk delete posts")
-        .Produces(200);
 
         admin.MapPost("/bulk/apply-system-tag", [RequireModerator] async ([FromBody] BulkSystemTagDto bulkTagDto, ClaimsPrincipal user, IAdminService adminService) =>
         {

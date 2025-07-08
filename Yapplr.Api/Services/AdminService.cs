@@ -229,25 +229,7 @@ public class AdminService : IAdminService
         return true;
     }
 
-    public async Task<bool> DeletePostAsync(int postId, int deletedByUserId, string reason)
-    {
-        var post = await _context.Posts.Include(p => p.User).FirstOrDefaultAsync(p => p.Id == postId);
-        if (post == null) return false;
 
-        var moderator = await _context.Users.FindAsync(deletedByUserId);
-        if (moderator == null) return false;
-
-        var postUserId = post.UserId; // Store before deletion
-
-        _context.Posts.Remove(post);
-        await _context.SaveChangesAsync();
-        await _auditService.LogPostDeletedAsync(postId, deletedByUserId, reason);
-
-        // Send notification to the post owner
-        await _notificationService.CreateContentDeletedNotificationAsync(postUserId, "post", postId, reason, moderator.Username);
-
-        return true;
-    }
 
     public async Task<bool> HideCommentAsync(int commentId, int hiddenByUserId, string reason)
     {
@@ -289,25 +271,7 @@ public class AdminService : IAdminService
         return true;
     }
 
-    public async Task<bool> DeleteCommentAsync(int commentId, int deletedByUserId, string reason)
-    {
-        var comment = await _context.Comments.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == commentId);
-        if (comment == null) return false;
 
-        var moderator = await _context.Users.FindAsync(deletedByUserId);
-        if (moderator == null) return false;
-
-        var commentUserId = comment.UserId; // Store before deletion
-
-        _context.Comments.Remove(comment);
-        await _context.SaveChangesAsync();
-        await _auditService.LogCommentDeletedAsync(commentId, deletedByUserId, reason);
-
-        // Send notification to the comment owner
-        await _notificationService.CreateContentDeletedNotificationAsync(commentUserId, "comment", commentId, reason, moderator.Username);
-
-        return true;
-    }
 
     public async Task<bool> ApplySystemTagToPostAsync(int postId, int systemTagId, int appliedByUserId, string? reason = null)
     {
@@ -401,17 +365,7 @@ public class AdminService : IAdminService
         return posts.Count;
     }
 
-    public async Task<int> BulkDeletePostsAsync(IEnumerable<int> postIds, int deletedByUserId, string reason)
-    {
-        var posts = await _context.Posts
-            .Where(p => postIds.Contains(p.Id))
-            .ToListAsync();
 
-        _context.Posts.RemoveRange(posts);
-        await _context.SaveChangesAsync();
-        await _auditService.LogBulkContentDeletedAsync(postIds, deletedByUserId, reason);
-        return posts.Count;
-    }
 
     public async Task<int> BulkApplySystemTagAsync(IEnumerable<int> postIds, int systemTagId, int appliedByUserId, string? reason = null)
     {

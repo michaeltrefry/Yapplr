@@ -554,9 +554,7 @@ export const adminApi = {
     await api.post(`/admin/posts/${id}/unhide`);
   },
 
-  deletePost: async (id: number, data: HideContentDto): Promise<void> => {
-    await api.delete(`/admin/posts/${id}`, { data });
-  },
+
 
   applySystemTagToPost: async (id: number, data: ApplySystemTagDto): Promise<void> => {
     await api.post(`/admin/posts/${id}/system-tags`, data);
@@ -687,10 +685,7 @@ export const adminApi = {
     return response.data;
   },
 
-  bulkDeletePosts: async (postIds: number[], reason: string): Promise<{ count: number }> => {
-    const response = await api.post('/admin/bulk/delete-posts', { postIds, reason });
-    return response.data;
-  },
+
 
   bulkApplySystemTag: async (postIds: number[], systemTagId: number, reason?: string): Promise<{ count: number }> => {
     const response = await api.post('/admin/bulk/apply-system-tag', { postIds, systemTagId, reason });
