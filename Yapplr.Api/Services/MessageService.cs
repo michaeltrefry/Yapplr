@@ -33,6 +33,52 @@ public class MessageService : IMessageService
         return !isBlocked;
     }
 
+    public async Task<MessageDto?> SendSystemMessageAsync(int recipientId, string content)
+    {
+        // Create a system message without a sender (system messages)
+        // Find or create a system conversation for this user
+        var systemConversation = await GetOrCreateSystemConversationAsync(recipientId);
+        if (systemConversation == null)
+            return null;
+
+        // Create the system message
+        var message = new Message
+        {
+            ConversationId = systemConversation.Id,
+            SenderId = 0, // System sender (no actual user)
+            Content = content.Trim(),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Messages.Add(message);
+
+        // Update conversation timestamp
+        systemConversation.UpdatedAt = DateTime.UtcNow;
+
+        // Create message status for recipient (delivered)
+        var recipientStatus = new MessageStatus
+        {
+            MessageId = message.Id,
+            UserId = recipientId,
+            Status = MessageStatusType.Delivered,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.MessageStatuses.Add(recipientStatus);
+
+        await _context.SaveChangesAsync();
+
+        // Send notification to recipient
+        await _notificationService.SendMessageNotificationAsync(
+            recipientId,
+            "Yapplr Moderation",
+            content,
+            systemConversation.Id
+        );
+
+        return await GetMessageDtoAsync(message.Id, recipientId);
+    }
+
     public async Task<MessageDto?> SendMessageAsync(int senderId, CreateMessageDto createDto)
     {
         // Check if sender can message the recipient
@@ -224,6 +270,41 @@ public class MessageService : IMessageService
         return await MapToConversationDto(newConversation, userId1);
     }
 
+    private async Task<Conversation?> GetOrCreateSystemConversationAsync(int userId)
+    {
+        // Check if system conversation already exists for this user
+        var existingConversation = await _context.Conversations
+            .Where(c => c.Participants.Count == 1 &&
+                       c.Participants.Any(p => p.UserId == userId))
+            .FirstOrDefaultAsync();
+
+        if (existingConversation != null)
+            return existingConversation;
+
+        // Create new system conversation
+        var newConversation = new Conversation
+        {
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Conversations.Add(newConversation);
+        await _context.SaveChangesAsync();
+
+        // Add user as participant (system conversations only have one participant)
+        var participant = new ConversationParticipant
+        {
+            ConversationId = newConversation.Id,
+            UserId = userId,
+            JoinedAt = DateTime.UtcNow
+        };
+
+        _context.ConversationParticipants.Add(participant);
+        await _context.SaveChangesAsync();
+
+        return newConversation;
+    }
+
     public async Task<ConversationDto?> GetConversationAsync(int conversationId, int userId)
     {
         var conversation = await _context.Conversations
@@ -369,6 +450,32 @@ public class MessageService : IMessageService
             .Select(ms => ms.Status)
             .FirstOrDefaultAsync();
 
+        // Handle system messages (SenderId = 0)
+        UserDto senderDto;
+        if (message.SenderId == 0 || message.Sender == null)
+        {
+            // Create a system user DTO for system messages
+            senderDto = new UserDto(
+                0,
+                "system@yapplr.com",
+                "Yapplr Moderation",
+                "Official moderation team",
+                null!, // birthday
+                null!, // pronouns
+                "Keeping Yapplr safe and friendly",
+                null!, // profile image
+                DateTime.UtcNow,
+                null!, // fcm token
+                true, // email verified
+                UserRole.Admin,
+                UserStatus.Active
+            );
+        }
+        else
+        {
+            senderDto = MapToUserDto(message.Sender);
+        }
+
         return new MessageDto(
             message.Id,
             message.Content,
@@ -378,7 +485,7 @@ public class MessageService : IMessageService
             message.IsEdited,
             message.IsDeleted,
             message.ConversationId,
-            MapToUserDto(message.Sender),
+            senderDto,
             status
         );
     }

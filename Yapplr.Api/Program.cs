@@ -189,6 +189,7 @@ builder.Services.AddScoped<ILinkPreviewService, LinkPreviewService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IUserReportService, UserReportService>();
+builder.Services.AddScoped<IModerationMessageService, ModerationMessageService>();
 builder.Services.AddScoped<SystemTagSeedService>();
 
 // Add staging seed service (only for staging environment)

@@ -5,6 +5,7 @@ namespace Yapplr.Api.Services;
 public interface IMessageService
 {
     Task<MessageDto?> SendMessageAsync(int senderId, CreateMessageDto createDto);
+    Task<MessageDto?> SendSystemMessageAsync(int recipientId, string content);
     Task<MessageDto?> SendMessageToConversationAsync(int senderId, SendMessageDto sendDto);
     Task<ConversationDto?> GetConversationAsync(int conversationId, int userId);
     Task<IEnumerable<ConversationListDto>> GetConversationsAsync(int userId, int page = 1, int pageSize = 25);
