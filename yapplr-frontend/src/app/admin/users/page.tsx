@@ -305,50 +305,50 @@ export default function UsersPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
+                      <div className="flex flex-wrap gap-2">
                         {user.status === UserStatus.Active && (
                           <>
                             <button
                               onClick={() => handleSuspendUser(user.id)}
-                              className="text-yellow-600 hover:text-yellow-900"
-                              title="Suspend User"
+                              className="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors text-xs"
                             >
-                              <Clock className="h-4 w-4" />
+                              <Clock className="h-3 w-3 mr-1" />
+                              Suspend
                             </button>
                             <button
                               onClick={() => handleBanUser(user.id)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Ban User"
+                              className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors text-xs"
                             >
-                              <Ban className="h-4 w-4" />
+                              <Ban className="h-3 w-3 mr-1" />
+                              Ban
                             </button>
                           </>
                         )}
                         {user.status === UserStatus.Suspended && (
                           <button
                             onClick={() => handleUnsuspendUser(user.id)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Unsuspend User"
+                            className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 transition-colors text-xs"
                           >
-                            <UserCheck className="h-4 w-4" />
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            Unsuspend
                           </button>
                         )}
                         {(user.status === UserStatus.Banned || user.status === UserStatus.ShadowBanned) && (
                           <button
                             onClick={() => handleUnbanUser(user.id)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Unban User"
+                            className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 transition-colors text-xs"
                           >
-                            <UserCheck className="h-4 w-4" />
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            Unban
                           </button>
                         )}
                         {user.role !== UserRole.Admin && (
                           <button
                             onClick={() => handleChangeRole(user.id, UserRole.Moderator)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Make Moderator"
+                            className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors text-xs"
                           >
-                            <Shield className="h-4 w-4" />
+                            <Shield className="h-3 w-3 mr-1" />
+                            Make Moderator
                           </button>
                         )}
                       </div>
