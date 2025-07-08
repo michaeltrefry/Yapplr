@@ -113,8 +113,6 @@ services:
       - POSTGRES_DB=yapplr_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     restart: unless-stopped
