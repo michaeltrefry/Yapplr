@@ -20,13 +20,13 @@ public class StagingSeedService
     {
         try
         {
-            _logger.LogInformation("🌱 Starting staging data seeding...");
+            _logger.LogInformation("🌱 Starting staging data seeding (fresh database expected)...");
 
             // Create admin user
-            CreateAdminUser();
+            await CreateAdminUserAsync();
 
             // Create 20 test users
-            CreateTestUsers();
+            await CreateTestUsersAsync();
 
             // Save users to database before creating content
             await _context.SaveChangesAsync();
@@ -46,7 +46,7 @@ public class StagingSeedService
         }
     }
 
-    private void CreateAdminUser()
+    private async Task CreateAdminUserAsync()
     {
         _logger.LogInformation("👑 Creating admin user...");
 
@@ -67,9 +67,12 @@ public class StagingSeedService
 
         _context.Users.Add(adminUser);
         _logger.LogInformation("✅ Admin user created: {Username} ({Email})", adminUser.Username, adminUser.Email);
+
+        // Suppress async warning since we're not actually using await in this method
+        await Task.CompletedTask;
     }
 
-    private void CreateTestUsers()
+    private async Task CreateTestUsersAsync()
     {
         _logger.LogInformation("👥 Creating 20 test users...");
 
@@ -119,6 +122,9 @@ public class StagingSeedService
         }
 
         _logger.LogInformation("✅ Created 20 test users with pre-verified emails");
+
+        // Suppress async warning since we're not actually using await in this method
+        await Task.CompletedTask;
     }
 
     private async Task CreateSampleContentAsync()

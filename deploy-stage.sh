@@ -49,9 +49,9 @@ echo -e "${GREEN}✅ Environment variables validated${NC}"
 
 # Note: Docker images will be built by docker compose with --build flag
 
-# Stop existing containers (preserving volumes to keep database data)
-echo -e "${GREEN}🛑 Stopping existing containers...${NC}"
-docker compose -f docker-compose.stage.yml down --remove-orphans || true
+# Stop existing containers and remove ALL volumes for fresh database
+echo -e "${GREEN}🛑 Stopping existing containers and removing volumes for fresh database...${NC}"
+docker compose -f docker-compose.stage.yml down --remove-orphans --volumes || true
 
 # Force remove specific containers that might be stuck
 echo -e "${GREEN}🧹 Force removing any stuck containers...${NC}"
@@ -72,6 +72,12 @@ docker container prune -f || true
 echo -e "${GREEN}🌐 Cleaning up networks...${NC}"
 docker network rm yapplrapi_yapplr-network || true
 docker network rm yapplr-network || true
+
+# Clean up any leftover postgres volumes to ensure fresh database
+echo -e "${GREEN}🗄️ Ensuring fresh database by removing any postgres volumes...${NC}"
+docker volume rm postgres_data || true
+docker volume rm yapplrapi_postgres_data || true
+docker volume ls -q | grep postgres | xargs -r docker volume rm || true
 
 # Remove old images to force complete rebuild
 echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"
