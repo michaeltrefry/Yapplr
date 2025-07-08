@@ -36,7 +36,11 @@ public enum AuditAction
     IpBlocked = 400,
     IpUnblocked = 401,
     SecurityIncidentReported = 402,
-    
+
+    // User Report actions
+    UserReportCreated = 450,
+    UserReportReviewed = 451,
+
     // Bulk actions
     BulkContentDeleted = 500,
     BulkContentHidden = 501,

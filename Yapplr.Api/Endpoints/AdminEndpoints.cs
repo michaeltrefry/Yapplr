@@ -433,6 +433,37 @@ public static class AdminEndpoints
         .Produces<UserAppealDto>(201)
         .RequireAuthorization(); // Only require authentication, not admin role
 
+        // User Report Management
+        admin.MapGet("/reports", [RequireModerator] async (IUserReportService userReportService, int page = 1, int pageSize = 50) =>
+        {
+            var reports = await userReportService.GetAllReportsAsync(page, pageSize);
+            return Results.Ok(reports);
+        })
+        .WithName("GetAllUserReports")
+        .WithSummary("Get all user reports")
+        .Produces<IEnumerable<UserReportDto>>(200);
+
+        admin.MapGet("/reports/{id:int}", [RequireModerator] async (int id, IUserReportService userReportService) =>
+        {
+            var report = await userReportService.GetReportByIdAsync(id);
+            return report == null ? Results.NotFound() : Results.Ok(report);
+        })
+        .WithName("GetUserReport")
+        .WithSummary("Get a specific user report")
+        .Produces<UserReportDto>(200)
+        .Produces(404);
+
+        admin.MapPost("/reports/{id:int}/review", [RequireModerator] async (int id, ReviewUserReportDto dto, ClaimsPrincipal user, IUserReportService userReportService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var report = await userReportService.ReviewReportAsync(id, userId, dto);
+            return report == null ? Results.NotFound() : Results.Ok(report);
+        })
+        .WithName("ReviewUserReport")
+        .WithSummary("Review a user report")
+        .Produces<UserReportDto>(200)
+        .Produces(404);
+
         // Enhanced Analytics Endpoints
         admin.MapGet("/analytics/user-growth", [RequireModerator] async ([FromQuery] int days, IAdminService adminService) =>
         {

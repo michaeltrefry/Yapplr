@@ -188,6 +188,7 @@ builder.Services.AddScoped<ILinkPreviewService, LinkPreviewService>();
 // Add admin services
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IUserReportService, UserReportService>();
 builder.Services.AddScoped<SystemTagSeedService>();
 
 // Add staging seed service (only for staging environment)
@@ -397,6 +398,7 @@ app.MapSecurityEndpoints();
 app.MapMetricsEndpoints();
 app.MapNotificationConfigurationEndpoints();
 app.MapTagEndpoints();
+app.MapUserReportEndpoints();
 app.MapAdminEndpoints();
 
 // Map SignalR hub (if enabled)

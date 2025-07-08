@@ -473,6 +473,27 @@ public class AdminService : IAdminService
             .Take(25)
             .ToListAsync();
 
+        // Get user reports
+        var userReports = await _context.UserReports
+            .Include(ur => ur.ReportedByUser)
+            .Include(ur => ur.ReviewedByUser)
+            .Include(ur => ur.Post)
+                .ThenInclude(p => p!.User)
+            .Include(ur => ur.Post)
+                .ThenInclude(p => p!.Likes)
+            .Include(ur => ur.Post)
+                .ThenInclude(p => p!.Comments)
+            .Include(ur => ur.Post)
+                .ThenInclude(p => p!.Reposts)
+            .Include(ur => ur.Comment)
+                .ThenInclude(c => c!.User)
+            .Include(ur => ur.UserReportSystemTags)
+                .ThenInclude(urst => urst.SystemTag)
+            .Where(ur => ur.Status == UserReportStatus.Pending)
+            .OrderByDescending(ur => ur.CreatedAt)
+            .Take(50)
+            .ToListAsync();
+
         // Get all AI suggested tags for the flagged posts in a single query to avoid concurrency issues
         var postIds = flaggedPosts.Select(p => p.Id).ToList();
         var aiSuggestedTagsLookup = await _context.AiSuggestedTags
@@ -491,7 +512,8 @@ public class AdminService : IAdminService
             FlaggedPosts = flaggedPosts.Select(p => MapToAdminPostDtoWithTags(p, aiSuggestedTagsByPostId.GetValueOrDefault(p.Id, new List<AiSuggestedTag>()))).ToList(),
             FlaggedComments = flaggedComments.Select(MapToAdminCommentDto).ToList(),
             PendingAppeals = pendingAppeals.Select(MapToUserAppealDto).ToList(),
-            TotalFlaggedContent = flaggedPosts.Count + flaggedComments.Count
+            UserReports = userReports.Select(MapToUserReportDto).ToList(),
+            TotalFlaggedContent = flaggedPosts.Count + flaggedComments.Count + userReports.Count
         };
     }
 
@@ -1071,6 +1093,24 @@ public class AdminService : IAdminService
             ReviewNotes = appeal.ReviewNotes,
             ReviewedAt = appeal.ReviewedAt,
             CreatedAt = appeal.CreatedAt
+        };
+    }
+
+    private static UserReportDto MapToUserReportDto(UserReport report)
+    {
+        return new UserReportDto
+        {
+            Id = report.Id,
+            ReportedByUsername = report.ReportedByUser.Username,
+            Status = report.Status,
+            Reason = report.Reason,
+            CreatedAt = report.CreatedAt,
+            ReviewedAt = report.ReviewedAt,
+            ReviewedByUsername = report.ReviewedByUser?.Username,
+            ReviewNotes = report.ReviewNotes,
+            Post = report.Post != null ? MapToAdminPostDto(report.Post) : null,
+            Comment = report.Comment != null ? MapToAdminCommentDto(report.Comment) : null,
+            SystemTags = report.UserReportSystemTags?.Select(urst => MapToSystemTagDto(urst.SystemTag)).ToList() ?? new List<SystemTagDto>()
         };
     }
 

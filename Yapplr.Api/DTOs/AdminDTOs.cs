@@ -214,6 +214,7 @@ public class ContentQueueDto
     public List<AdminPostDto> FlaggedPosts { get; set; } = new();
     public List<AdminCommentDto> FlaggedComments { get; set; } = new();
     public List<UserAppealDto> PendingAppeals { get; set; } = new();
+    public List<UserReportDto> UserReports { get; set; } = new();
     public int TotalFlaggedContent { get; set; }
 }
 
@@ -333,4 +334,38 @@ public class EngagementTypeStatsDto
     public string Type { get; set; } = string.Empty;
     public int Count { get; set; }
     public double Percentage { get; set; }
+}
+
+// User Report DTOs
+public class UserReportDto
+{
+    public int Id { get; set; }
+    public string ReportedByUsername { get; set; } = string.Empty;
+    public UserReportStatus Status { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime? ReviewedAt { get; set; }
+    public string? ReviewedByUsername { get; set; }
+    public string? ReviewNotes { get; set; }
+
+    // Content being reported
+    public AdminPostDto? Post { get; set; }
+    public AdminCommentDto? Comment { get; set; }
+
+    // Selected system tags
+    public List<SystemTagDto> SystemTags { get; set; } = new();
+}
+
+public class CreateUserReportDto
+{
+    public int? PostId { get; set; }
+    public int? CommentId { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public List<int> SystemTagIds { get; set; } = new();
+}
+
+public class ReviewUserReportDto
+{
+    public UserReportStatus Status { get; set; }
+    public string ReviewNotes { get; set; } = string.Empty;
 }

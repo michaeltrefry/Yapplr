@@ -43,6 +43,8 @@ public class YapplrDbContext : DbContext
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<UserAppeal> UserAppeals { get; set; }
     public DbSet<AiSuggestedTag> AiSuggestedTags { get; set; }
+    public DbSet<UserReport> UserReports { get; set; }
+    public DbSet<UserReportSystemTag> UserReportSystemTags { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -539,6 +541,50 @@ public class YapplrDbContext : DbContext
 
             entity.HasIndex(ast => new { ast.IsApproved, ast.IsRejected })
                 .HasDatabaseName("IX_AiSuggestedTags_ApprovalStatus");
+        });
+
+        // UserReport configuration
+        modelBuilder.Entity<UserReport>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.ReportedByUserId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.PostId);
+            entity.HasIndex(e => e.CommentId);
+
+            entity.HasOne(e => e.ReportedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.ReportedByUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ReviewedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.ReviewedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Post)
+                  .WithMany()
+                  .HasForeignKey(e => e.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Comment)
+                  .WithMany()
+                  .HasForeignKey(e => e.CommentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserReportSystemTag configuration
+        modelBuilder.Entity<UserReportSystemTag>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserReportId, e.SystemTagId }).IsUnique();
+
+            entity.HasOne(e => e.UserReport)
+                  .WithMany(e => e.UserReportSystemTags)
+                  .HasForeignKey(e => e.UserReportId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.SystemTag)
+                  .WithMany()
+                  .HasForeignKey(e => e.SystemTagId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
