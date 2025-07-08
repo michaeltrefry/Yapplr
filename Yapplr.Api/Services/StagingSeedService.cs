@@ -22,14 +22,6 @@ public class StagingSeedService
         {
             _logger.LogInformation("🌱 Starting staging data seeding...");
 
-            // Check if we already have users (avoid duplicate seeding)
-            var existingUserCount = await _context.Users.CountAsync();
-            if (existingUserCount > 0)
-            {
-                _logger.LogInformation("⏭️ Staging data already exists ({UserCount} users found). Skipping seed.", existingUserCount);
-                return;
-            }
-
             // Create admin user
             CreateAdminUser();
 
