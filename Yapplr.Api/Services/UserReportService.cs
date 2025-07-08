@@ -253,15 +253,21 @@ public class UserReportService : IUserReportService
             HiddenByUsername = post.HiddenByUser?.Username,
             CreatedAt = post.CreatedAt,
             UpdatedAt = post.UpdatedAt,
-            User = new UserDto
-            {
-                Id = post.User.Id,
-                Username = post.User.Username,
-                Email = post.User.Email,
-                Bio = post.User.Bio,
-                ProfileImageFileName = post.User.ProfileImageFileName,
-                CreatedAt = post.User.CreatedAt
-            },
+            User = new UserDto(
+                post.User.Id,
+                post.User.Email,
+                post.User.Username,
+                post.User.Bio,
+                post.User.Birthday,
+                post.User.Pronouns,
+                post.User.Tagline,
+                post.User.ProfileImageFileName,
+                post.User.CreatedAt,
+                post.User.FcmToken,
+                post.User.EmailVerified,
+                post.User.Role,
+                post.User.Status
+            ),
             LikeCount = post.Likes?.Count ?? 0,
             CommentCount = post.Comments?.Count ?? 0,
             RepostCount = post.Reposts?.Count ?? 0
@@ -280,15 +286,21 @@ public class UserReportService : IUserReportService
             HiddenByUsername = comment.HiddenByUser?.Username,
             CreatedAt = comment.CreatedAt,
             UpdatedAt = comment.UpdatedAt,
-            User = new UserDto
-            {
-                Id = comment.User.Id,
-                Username = comment.User.Username,
-                Email = comment.User.Email,
-                Bio = comment.User.Bio,
-                ProfileImageFileName = comment.User.ProfileImageFileName,
-                CreatedAt = comment.User.CreatedAt
-            },
+            User = new UserDto(
+                comment.User.Id,
+                comment.User.Email,
+                comment.User.Username,
+                comment.User.Bio,
+                comment.User.Birthday,
+                comment.User.Pronouns,
+                comment.User.Tagline,
+                comment.User.ProfileImageFileName,
+                comment.User.CreatedAt,
+                comment.User.FcmToken,
+                comment.User.EmailVerified,
+                comment.User.Role,
+                comment.User.Status
+            ),
             PostId = comment.PostId
         };
     }
