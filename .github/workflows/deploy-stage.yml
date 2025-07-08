@@ -116,5 +116,5 @@ jobs:
 
     - name: API Health Check
       run: |
-        sleep 30
+        sleep 120
         curl -f https://${{ secrets.STAGE_API_DOMAIN_NAME }}/health || exit 1
