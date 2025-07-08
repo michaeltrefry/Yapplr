@@ -10,15 +10,21 @@ public class UserReportService : IUserReportService
     private readonly YapplrDbContext _context;
     private readonly ILogger<UserReportService> _logger;
     private readonly IAuditService _auditService;
+    private readonly IAdminService _adminService;
+    private readonly IModerationMessageService _moderationMessageService;
 
     public UserReportService(
         YapplrDbContext context,
         ILogger<UserReportService> logger,
-        IAuditService auditService)
+        IAuditService auditService,
+        IAdminService adminService,
+        IModerationMessageService moderationMessageService)
     {
         _context = context;
         _logger = logger;
         _auditService = auditService;
+        _adminService = adminService;
+        _moderationMessageService = moderationMessageService;
     }
 
     public async Task<UserReportDto?> CreateReportAsync(int reportedByUserId, CreateUserReportDto dto)
@@ -160,8 +166,18 @@ public class UserReportService : IUserReportService
     {
         try
         {
-            var report = await _context.UserReports.FindAsync(reportId);
+            // Get the report with related data for messaging
+            var report = await _context.UserReports
+                .Include(ur => ur.ReportedByUser)
+                .Include(ur => ur.Post)
+                .Include(ur => ur.Comment)
+                .FirstOrDefaultAsync(ur => ur.Id == reportId);
+
             if (report == null)
+                return null;
+
+            var moderator = await _context.Users.FindAsync(reviewedByUserId);
+            if (moderator == null)
                 return null;
 
             report.Status = dto.Status;
@@ -171,6 +187,22 @@ public class UserReportService : IUserReportService
             report.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            // Send message to reporting user if report was dismissed
+            if (dto.Status == UserReportStatus.Dismissed)
+            {
+                string contentType = report.PostId.HasValue ? "post" : "comment";
+                int contentId = report.PostId ?? report.CommentId ?? 0;
+                string contentPreview = report.Post?.Content ?? report.Comment?.Content ?? "";
+
+                await _moderationMessageService.SendReportDismissedMessageAsync(
+                    report.ReportedByUserId,
+                    contentType,
+                    contentId,
+                    contentPreview,
+                    moderator.Username
+                );
+            }
 
             // Log the action
             await _auditService.LogActionAsync(
@@ -303,5 +335,100 @@ public class UserReportService : IUserReportService
             ),
             PostId = comment.PostId
         };
+    }
+
+    public async Task<bool> HideContentFromReportAsync(int reportId, int moderatorUserId, string reason)
+    {
+        try
+        {
+            // Get the report with all related data
+            var report = await _context.UserReports
+                .Include(ur => ur.ReportedByUser)
+                .Include(ur => ur.Post)
+                    .ThenInclude(p => p!.User)
+                .Include(ur => ur.Comment)
+                    .ThenInclude(c => c!.User)
+                .FirstOrDefaultAsync(ur => ur.Id == reportId);
+
+            if (report == null)
+            {
+                _logger.LogWarning("Report {ReportId} not found", reportId);
+                return false;
+            }
+
+            var moderator = await _context.Users.FindAsync(moderatorUserId);
+            if (moderator == null)
+            {
+                _logger.LogWarning("Moderator {ModeratorId} not found", moderatorUserId);
+                return false;
+            }
+
+            bool contentHidden = false;
+            string contentType = "";
+            int contentId = 0;
+            string contentPreview = "";
+            int contentOwnerId = 0;
+
+            // Hide the content using AdminService
+            if (report.PostId.HasValue && report.Post != null)
+            {
+                contentHidden = await _adminService.HidePostAsync(report.PostId.Value, moderatorUserId, reason);
+                contentType = "post";
+                contentId = report.PostId.Value;
+                contentPreview = report.Post.Content;
+                contentOwnerId = report.Post.UserId;
+            }
+            else if (report.CommentId.HasValue && report.Comment != null)
+            {
+                contentHidden = await _adminService.HideCommentAsync(report.CommentId.Value, moderatorUserId, reason);
+                contentType = "comment";
+                contentId = report.CommentId.Value;
+                contentPreview = report.Comment.Content;
+                contentOwnerId = report.Comment.UserId;
+            }
+
+            if (!contentHidden)
+            {
+                _logger.LogWarning("Failed to hide {ContentType} {ContentId} from report {ReportId}", contentType, contentId, reportId);
+                return false;
+            }
+
+            // Update the report status to ActionTaken
+            report.Status = UserReportStatus.ActionTaken;
+            report.ReviewedByUserId = moderatorUserId;
+            report.ReviewNotes = $"Content hidden: {reason}";
+            report.ReviewedAt = DateTime.UtcNow;
+            report.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            // Send message to the reporting user
+            await _moderationMessageService.SendReportActionTakenMessageAsync(
+                report.ReportedByUserId,
+                contentType,
+                contentId,
+                contentPreview,
+                reason,
+                moderator.Username
+            );
+
+            // Log the action
+            await _auditService.LogActionAsync(
+                AuditAction.UserReportReviewed,
+                moderatorUserId,
+                $"Hid {contentType} {contentId} from user report {reportId}",
+                $"Reason: {reason}, Reporting user notified"
+            );
+
+            _logger.LogInformation("Successfully hid {ContentType} {ContentId} from report {ReportId} and notified users",
+                contentType, contentId, reportId);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error hiding content from report {ReportId}", reportId);
+            return false;
+        }
     }
 }

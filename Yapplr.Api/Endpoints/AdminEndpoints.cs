@@ -464,6 +464,17 @@ public static class AdminEndpoints
         .Produces<UserReportDto>(200)
         .Produces(404);
 
+        admin.MapPost("/reports/{id:int}/hide-content", [RequireModerator] async (int id, HideContentFromReportDto dto, ClaimsPrincipal user, IUserReportService userReportService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await userReportService.HideContentFromReportAsync(id, userId, dto.Reason);
+            return result ? Results.Ok(new { message = "Content hidden and users notified" }) : Results.BadRequest(new { message = "Failed to hide content" });
+        })
+        .WithName("HideContentFromReport")
+        .WithSummary("Hide content from a user report and notify both users")
+        .Produces(200)
+        .Produces(400);
+
         // Enhanced Analytics Endpoints
         admin.MapGet("/analytics/user-growth", [RequireModerator] async ([FromQuery] int days, IAdminService adminService) =>
         {

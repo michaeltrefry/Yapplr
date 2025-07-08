@@ -369,3 +369,8 @@ public class ReviewUserReportDto
     public UserReportStatus Status { get; set; }
     public string ReviewNotes { get; set; } = string.Empty;
 }
+
+public class HideContentFromReportDto
+{
+    public string Reason { get; set; } = string.Empty;
+}

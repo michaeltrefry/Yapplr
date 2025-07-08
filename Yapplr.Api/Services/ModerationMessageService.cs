@@ -8,6 +8,8 @@ public interface IModerationMessageService
     Task SendContentDeletedMessageAsync(int userId, string contentType, int contentId, string content, string reason, string moderatorUsername);
     Task SendUserSuspensionMessageAsync(int userId, string reason, DateTime? suspendedUntil, string moderatorUsername);
     Task SendUserBanMessageAsync(int userId, string reason, string moderatorUsername);
+    Task SendReportActionTakenMessageAsync(int reportingUserId, string contentType, int contentId, string contentPreview, string reason, string moderatorUsername);
+    Task SendReportDismissedMessageAsync(int reportingUserId, string contentType, int contentId, string contentPreview, string moderatorUsername);
 }
 
 public class ModerationMessageService : IModerationMessageService
@@ -180,6 +182,84 @@ The Yapplr Moderation Team";
             return content;
 
         return content.Substring(0, maxLength) + "...";
+    }
+
+    public async Task SendReportActionTakenMessageAsync(int reportingUserId, string contentType, int contentId, string contentPreview, string reason, string moderatorUsername)
+    {
+        var message = $@"Hello,
+
+Thank you for reporting content that violated our community guidelines. We've taken action on the {contentType} you reported.
+
+**Reported Content:** {TruncateContent(contentPreview, 100)}
+
+**Action Taken:** Content has been hidden from the community
+
+**Reason:** {reason}
+
+**Reviewed by:** @{moderatorUsername}
+
+**What this means:**
+• The content is no longer visible to other users
+• The content creator has been notified of the action
+• Your report helped keep our community safe
+
+Thank you for staying vigilant and helping us maintain a positive environment for everyone. Reports like yours are essential for keeping Yapplr a safe and welcoming space.
+
+If you see other content that violates our guidelines, please don't hesitate to report it.
+
+Best regards,
+The Yapplr Moderation Team";
+
+        try
+        {
+            await _messageService.SendSystemMessageAsync(reportingUserId, message);
+            _logger.LogInformation("Sent report action taken message to user {UserId} for {ContentType} {ContentId}", reportingUserId, contentType, contentId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send report action taken message to user {UserId}", reportingUserId);
+        }
+    }
+
+    public async Task SendReportDismissedMessageAsync(int reportingUserId, string contentType, int contentId, string contentPreview, string moderatorUsername)
+    {
+        var message = $@"Hello,
+
+Thank you for reporting content to our moderation team. We've reviewed the {contentType} you reported.
+
+**Reported Content:** {TruncateContent(contentPreview, 100)}
+
+**Review Result:** No violation found
+
+**Reviewed by:** @{moderatorUsername}
+
+**What this means:**
+• After careful review, the content does not violate our community guidelines
+• The content remains visible to the community
+• No action has been taken against the content creator
+
+We appreciate your vigilance in helping keep our community safe. While this particular report didn't result in action, your efforts to maintain community standards are valuable.
+
+**Keep reporting when you see:**
+• Harassment or bullying
+• Spam or misleading content
+• Hate speech or discrimination
+• Content that violates our terms of service
+
+Thank you for being an active part of keeping Yapplr a positive space for everyone.
+
+Best regards,
+The Yapplr Moderation Team";
+
+        try
+        {
+            await _messageService.SendSystemMessageAsync(reportingUserId, message);
+            _logger.LogInformation("Sent report dismissed message to user {UserId} for {ContentType} {ContentId}", reportingUserId, contentType, contentId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send report dismissed message to user {UserId}", reportingUserId);
+        }
     }
 
     private static string GetAppealInformation(string contentType, int contentId)
