@@ -159,6 +159,39 @@ public class AuditService : IAuditService
         await LogActionAsync(action, performedByUserId, reason, details, ipAddress: ipAddress);
     }
 
+    public async Task LogAppealCreatedAsync(int appealId, int userId, string appealType, int? targetPostId = null, int? targetCommentId = null, string? ipAddress = null)
+    {
+        var details = $"Appeal ID: {appealId}, Type: {appealType}";
+        if (targetPostId.HasValue)
+            details += $", Target Post ID: {targetPostId}";
+        if (targetCommentId.HasValue)
+            details += $", Target Comment ID: {targetCommentId}";
+
+        await LogActionAsync(AuditAction.AppealCreated, userId, details: details,
+            targetPostId: targetPostId, targetCommentId: targetCommentId, ipAddress: ipAddress);
+    }
+
+    public async Task LogAppealApprovedAsync(int appealId, int reviewedByUserId, int appealUserId, int? targetPostId = null, int? targetCommentId = null, string? ipAddress = null)
+    {
+        var details = $"Appeal ID: {appealId}, Appeal by User ID: {appealUserId}";
+        await LogActionAsync(AuditAction.AppealApproved, reviewedByUserId, details: details,
+            targetUserId: appealUserId, targetPostId: targetPostId, targetCommentId: targetCommentId, ipAddress: ipAddress);
+    }
+
+    public async Task LogAppealDeniedAsync(int appealId, int reviewedByUserId, int appealUserId, int? targetPostId = null, int? targetCommentId = null, string? ipAddress = null)
+    {
+        var details = $"Appeal ID: {appealId}, Appeal by User ID: {appealUserId}";
+        await LogActionAsync(AuditAction.AppealDenied, reviewedByUserId, details: details,
+            targetUserId: appealUserId, targetPostId: targetPostId, targetCommentId: targetCommentId, ipAddress: ipAddress);
+    }
+
+    public async Task LogAppealEscalatedAsync(int appealId, int escalatedByUserId, int appealUserId, int? targetPostId = null, int? targetCommentId = null, string? ipAddress = null)
+    {
+        var details = $"Appeal ID: {appealId}, Appeal by User ID: {appealUserId}";
+        await LogActionAsync(AuditAction.AppealEscalated, escalatedByUserId, details: details,
+            targetUserId: appealUserId, targetPostId: targetPostId, targetCommentId: targetCommentId, ipAddress: ipAddress);
+    }
+
     public async Task LogIpBlockedAsync(string ipAddress, int blockedByUserId, string reason, string? userAgent = null)
     {
         var details = $"IP: {ipAddress}";

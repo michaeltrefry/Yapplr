@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Eye,
   Search,
+  MessageSquare,
 } from 'lucide-react';
 
 export default function AuditLogsPage() {
@@ -49,8 +50,10 @@ export default function AuditLogsPage() {
       return <FileSearch className="h-4 w-4 text-orange-500" />;
     } else if (action >= 300 && action < 400) {
       return <Shield className="h-4 w-4 text-purple-500" />;
-    } else if (action >= 400 && action < 500) {
+    } else if (action >= 400 && action < 450) {
       return <AlertTriangle className="h-4 w-4 text-red-500" />;
+    } else if (action >= 450 && action < 470) {
+      return <MessageSquare className="h-4 w-4 text-green-500" />;
     } else {
       return <Eye className="h-4 w-4 text-gray-500" />;
     }
@@ -60,7 +63,8 @@ export default function AuditLogsPage() {
     if (action >= 100 && action < 200) return 'User Action';
     if (action >= 200 && action < 300) return 'Content Action';
     if (action >= 300 && action < 400) return 'System Action';
-    if (action >= 400 && action < 500) return 'Security Action';
+    if (action >= 400 && action < 450) return 'Security Action';
+    if (action >= 450 && action < 470) return 'Report/Appeal Action';
     if (action >= 500) return 'Bulk Action';
     return 'Unknown';
   };
@@ -91,6 +95,12 @@ export default function AuditLogsPage() {
       case AuditAction.IpBlocked: return 'IP Blocked';
       case AuditAction.IpUnblocked: return 'IP Unblocked';
       case AuditAction.SecurityIncidentReported: return 'Security Incident Reported';
+      case AuditAction.UserReportCreated: return 'User Report Created';
+      case AuditAction.UserReportReviewed: return 'User Report Reviewed';
+      case AuditAction.AppealCreated: return 'Appeal Created';
+      case AuditAction.AppealApproved: return 'Appeal Approved';
+      case AuditAction.AppealDenied: return 'Appeal Denied';
+      case AuditAction.AppealEscalated: return 'Appeal Escalated';
       case AuditAction.BulkContentDeleted: return 'Bulk Content Deleted';
       case AuditAction.BulkContentHidden: return 'Bulk Content Hidden';
       case AuditAction.BulkUsersActioned: return 'Bulk Users Actioned';
@@ -102,7 +112,8 @@ export default function AuditLogsPage() {
     if (action >= 100 && action < 200) return 'bg-blue-100 text-blue-800';
     if (action >= 200 && action < 300) return 'bg-orange-100 text-orange-800';
     if (action >= 300 && action < 400) return 'bg-purple-100 text-purple-800';
-    if (action >= 400 && action < 500) return 'bg-red-100 text-red-800';
+    if (action >= 400 && action < 450) return 'bg-red-100 text-red-800';
+    if (action >= 450 && action < 470) return 'bg-green-100 text-green-800';
     if (action >= 500) return 'bg-gray-100 text-gray-800';
     return 'bg-gray-100 text-gray-800';
   };
@@ -161,6 +172,14 @@ export default function AuditLogsPage() {
                 <option value={AuditAction.SystemTagCreated}>System Tag Created</option>
                 <option value={AuditAction.SystemTagUpdated}>System Tag Updated</option>
                 <option value={AuditAction.SystemTagDeleted}>System Tag Deleted</option>
+              </optgroup>
+              <optgroup label="Report/Appeal Actions">
+                <option value={AuditAction.UserReportCreated}>User Report Created</option>
+                <option value={AuditAction.UserReportReviewed}>User Report Reviewed</option>
+                <option value={AuditAction.AppealCreated}>Appeal Created</option>
+                <option value={AuditAction.AppealApproved}>Appeal Approved</option>
+                <option value={AuditAction.AppealDenied}>Appeal Denied</option>
+                <option value={AuditAction.AppealEscalated}>Appeal Escalated</option>
               </optgroup>
             </select>
           </div>

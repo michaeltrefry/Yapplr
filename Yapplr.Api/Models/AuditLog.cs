@@ -41,6 +41,12 @@ public enum AuditAction
     UserReportCreated = 450,
     UserReportReviewed = 451,
 
+    // Appeal actions
+    AppealCreated = 460,
+    AppealApproved = 461,
+    AppealDenied = 462,
+    AppealEscalated = 463,
+
     // Bulk actions
     BulkContentDeleted = 500,
     BulkContentHidden = 501,

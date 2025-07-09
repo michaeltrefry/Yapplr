@@ -593,6 +593,15 @@ public class AdminService : IAdminService
             .Include(a => a.User)
             .FirstAsync(a => a.Id == appeal.Id);
 
+        // Log the appeal creation
+        await _auditService.LogAppealCreatedAsync(
+            appeal.Id,
+            userId,
+            appeal.Type.ToString(),
+            appeal.TargetPostId,
+            appeal.TargetCommentId
+        );
+
         return MapToUserAppealDto(appealWithUser);
     }
 
@@ -615,17 +624,144 @@ public class AdminService : IAdminService
 
         await _context.SaveChangesAsync();
 
-        // Send notification to the user about the appeal decision
+        // Handle approved appeals - restore content
         if (reviewDto.Status == AppealStatus.Approved)
         {
+            await HandleApprovedAppealAsync(appeal, reviewedByUserId);
             await _notificationService.CreateAppealApprovedNotificationAsync(appeal.UserId, appealId, reviewDto.ReviewNotes, moderator.Username);
+
+            // Log appeal approval
+            await _auditService.LogAppealApprovedAsync(
+                appealId,
+                reviewedByUserId,
+                appeal.UserId,
+                appeal.TargetPostId,
+                appeal.TargetCommentId
+            );
         }
         else if (reviewDto.Status == AppealStatus.Denied)
         {
             await _notificationService.CreateAppealDeniedNotificationAsync(appeal.UserId, appealId, reviewDto.ReviewNotes, moderator.Username);
+
+            // Log appeal denial
+            await _auditService.LogAppealDeniedAsync(
+                appealId,
+                reviewedByUserId,
+                appeal.UserId,
+                appeal.TargetPostId,
+                appeal.TargetCommentId
+            );
+        }
+        else if (reviewDto.Status == AppealStatus.Escalated)
+        {
+            // Log appeal escalation
+            await _auditService.LogAppealEscalatedAsync(
+                appealId,
+                reviewedByUserId,
+                appeal.UserId,
+                appeal.TargetPostId,
+                appeal.TargetCommentId
+            );
         }
 
         return MapToUserAppealDto(appeal);
+    }
+
+    private async Task HandleApprovedAppealAsync(UserAppeal appeal, int reviewedByUserId)
+    {
+        try
+        {
+            if (appeal.Type == AppealType.ContentRemoval)
+            {
+                // Handle post appeals
+                if (appeal.TargetPostId.HasValue)
+                {
+                    var post = await _context.Posts
+                        .Include(p => p.PostSystemTags)
+                        .FirstOrDefaultAsync(p => p.Id == appeal.TargetPostId.Value);
+
+                    if (post != null && post.IsHidden)
+                    {
+                        // Unhide the post
+                        post.IsHidden = false;
+                        post.HiddenByUserId = null;
+                        post.HiddenAt = null;
+                        post.HiddenReason = null;
+
+                        // Remove all system tags applied to this post
+                        var systemTags = post.PostSystemTags.ToList();
+                        _context.PostSystemTags.RemoveRange(systemTags);
+
+                        await _context.SaveChangesAsync();
+
+                        // Log the restoration
+                        await _auditService.LogActionAsync(
+                            AuditAction.PostRestored,
+                            reviewedByUserId,
+                            targetPostId: post.Id,
+                            reason: $"Appeal approved - content restored",
+                            details: $"Appeal ID: {appeal.Id}, Removed {systemTags.Count} system tags"
+                        );
+
+                        // Send notification to the post owner
+                        await _notificationService.CreateContentRestoredNotificationAsync(
+                            post.UserId,
+                            "post",
+                            post.Id,
+                            "Appeal Approved"
+                        );
+
+                        _logger.LogInformation("Post {PostId} restored due to approved appeal {AppealId}", post.Id, appeal.Id);
+                    }
+                }
+                // Handle comment appeals
+                else if (appeal.TargetCommentId.HasValue)
+                {
+                    var comment = await _context.Comments
+                        .Include(c => c.CommentSystemTags)
+                        .FirstOrDefaultAsync(c => c.Id == appeal.TargetCommentId.Value);
+
+                    if (comment != null && comment.IsHidden)
+                    {
+                        // Unhide the comment
+                        comment.IsHidden = false;
+                        comment.HiddenByUserId = null;
+                        comment.HiddenAt = null;
+                        comment.HiddenReason = null;
+
+                        // Remove all system tags applied to this comment
+                        var systemTags = comment.CommentSystemTags.ToList();
+                        _context.CommentSystemTags.RemoveRange(systemTags);
+
+                        await _context.SaveChangesAsync();
+
+                        // Log the restoration
+                        await _auditService.LogActionAsync(
+                            AuditAction.CommentRestored,
+                            reviewedByUserId,
+                            targetCommentId: comment.Id,
+                            reason: $"Appeal approved - content restored",
+                            details: $"Appeal ID: {appeal.Id}, Removed {systemTags.Count} system tags"
+                        );
+
+                        // Send notification to the comment owner
+                        await _notificationService.CreateContentRestoredNotificationAsync(
+                            comment.UserId,
+                            "comment",
+                            comment.Id,
+                            "Appeal Approved"
+                        );
+
+                        _logger.LogInformation("Comment {CommentId} restored due to approved appeal {AppealId}", comment.Id, appeal.Id);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling approved appeal {AppealId}", appeal.Id);
+            throw;
+        }
     }
 
     // System Administration - placeholder implementations

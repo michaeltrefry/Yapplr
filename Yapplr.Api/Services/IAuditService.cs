@@ -40,6 +40,12 @@ public interface IAuditService
     Task LogBulkContentDeletedAsync(IEnumerable<int> postIds, int deletedByUserId, string reason, string? ipAddress = null);
     Task LogBulkContentHiddenAsync(IEnumerable<int> postIds, int hiddenByUserId, string reason, string? ipAddress = null);
     Task LogBulkUsersActionedAsync(IEnumerable<int> userIds, AuditAction action, int performedByUserId, string reason, string? ipAddress = null);
+
+    // Appeal action logging
+    Task LogAppealCreatedAsync(int appealId, int userId, string appealType, int? targetPostId = null, int? targetCommentId = null, string? ipAddress = null);
+    Task LogAppealApprovedAsync(int appealId, int reviewedByUserId, int appealUserId, int? targetPostId = null, int? targetCommentId = null, string? ipAddress = null);
+    Task LogAppealDeniedAsync(int appealId, int reviewedByUserId, int appealUserId, int? targetPostId = null, int? targetCommentId = null, string? ipAddress = null);
+    Task LogAppealEscalatedAsync(int appealId, int escalatedByUserId, int appealUserId, int? targetPostId = null, int? targetCommentId = null, string? ipAddress = null);
     
     // Security action logging
     Task LogIpBlockedAsync(string ipAddress, int blockedByUserId, string reason, string? userAgent = null);
