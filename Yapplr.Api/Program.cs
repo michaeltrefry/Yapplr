@@ -192,8 +192,8 @@ builder.Services.AddScoped<IUserReportService, UserReportService>();
 builder.Services.AddScoped<IModerationMessageService, ModerationMessageService>();
 builder.Services.AddScoped<SystemTagSeedService>();
 
-// Add staging seed service (only for staging environment)
-if (builder.Environment.IsEnvironment("Staging"))
+// Add test data seed service (for all environments except production)
+if (!builder.Environment.IsProduction())
 {
     builder.Services.AddScoped<StagingSeedService>();
 }
@@ -343,13 +343,13 @@ using (var scope = app.Services.CreateScope())
             await systemTagSeedService.SeedDefaultSystemTagsAsync();
             logger.LogInformation("✅ System tags seeding completed successfully");
 
-            // Seed staging test data (only in staging environment)
-            if (app.Environment.IsEnvironment("Staging"))
+            // Seed test data (all environments except production)
+            if (!app.Environment.IsProduction())
             {
-                logger.LogInformation("🌱 Seeding staging test data...");
+                logger.LogInformation("🌱 Seeding test data for {Environment} environment...", app.Environment.EnvironmentName);
                 var stagingSeedService = scope.ServiceProvider.GetRequiredService<StagingSeedService>();
                 await stagingSeedService.SeedStagingDataAsync();
-                logger.LogInformation("✅ Staging test data seeding completed successfully");
+                logger.LogInformation("✅ Test data seeding completed successfully for {Environment} environment", app.Environment.EnvironmentName);
             }
 
             break; // Success, exit retry loop

@@ -1,10 +1,12 @@
-# Staging Environment Test Data Seeding
+# Test Data Seeding for Non-Production Environments
 
-This document explains the automatic test data seeding that occurs in the staging environment.
+This document explains the automatic test data seeding that occurs in non-production environments.
 
 ## Overview
 
-When the Yapplr API starts in the **Staging** environment, it automatically creates test data to provide a realistic dataset for testing and demonstration purposes. This eliminates the need to manually create users and content for every staging deployment.
+When the Yapplr API starts in any **non-production** environment (Development, Test, Staging, etc.), it automatically creates test data to provide a realistic dataset for testing and demonstration purposes. This eliminates the need to manually create users and content for testing environments.
+
+**Note**: Seeding is **disabled in Production** for security reasons.
 
 ## What Gets Created
 
@@ -80,13 +82,14 @@ if (builder.Environment.IsEnvironment("Staging"))
 ```
 
 ### Seeding Process
-1. **Fresh Database**: Each deployment starts with an empty database
-2. **Run Migrations**: Database schema is created from scratch
-3. **Seed System Tags**: Default system tags are created
-4. **Create Admin User**: Single admin with full permissions
-5. **Create Test Users**: 20 users with realistic profiles
-6. **Generate Content**: Posts, follows, likes, and comments
-7. **Save Changes**: Commits all data to database
+1. **Check Admin User**: If admin user exists, skip all seeding
+2. **Check Existing Data**: If any users exist, skip seeding
+3. **Run Migrations**: Database schema is created/updated
+4. **Seed System Tags**: Default system tags are created
+5. **Create Admin User**: Single admin with full permissions
+6. **Create Test Users**: 20 users with realistic profiles
+7. **Generate Content**: Posts, follows, likes, and comments
+8. **Save Changes**: Commits all data to database
 
 ### Password Hashing
 All passwords are properly hashed using BCrypt before storage:
@@ -101,11 +104,12 @@ All users are created with `EmailVerified = true` to skip the email verification
 
 ### Automatic Seeding
 Seeding happens automatically when:
-1. The application starts in Staging environment
+1. The application starts in any non-production environment (Development, Test, Staging, etc.)
 2. Database migrations complete successfully
-3. Fresh database is created (no data persistence in staging)
+3. No admin user exists in the database
+4. No other users exist in the database
 
-**Note**: The staging environment uses an ephemeral database with no data persistence between deployments. This ensures every deployment starts with fresh seed data.
+**Note**: If an admin user already exists, seeding is completely skipped to avoid conflicts.
 
 ### Manual Testing
 After deployment, you can immediately:
@@ -146,16 +150,16 @@ The seeding is integrated into the staging deployment process:
 
 ## Environment Isolation
 
-### Staging Only
-- Seeding **ONLY** runs in Staging environment
-- Production and Development environments are unaffected
+### Non-Production Only
+- Seeding **ONLY** runs in non-production environments (Development, Test, Staging, etc.)
+- Production environment is completely protected
 - No risk of test data appearing in production
 
-### Fresh Deployments
-- Each staging deployment starts with a completely fresh database
-- No data persistence between deployments
-- Automatic seed data creation on every deployment
-- Perfect for clean testing scenarios
+### Smart Seeding
+- Checks for existing admin user before seeding
+- Skips seeding if data already exists
+- Safe to run multiple times without conflicts
+- Perfect for development and testing scenarios
 
 ## Security Considerations
 

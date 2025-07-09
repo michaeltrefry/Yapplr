@@ -23,12 +23,20 @@ public class StagingSeedService
     {
         try
         {
-            _logger.LogInformation("🌱 Starting staging data seeding (fresh database expected)...");
+            _logger.LogInformation("🌱 Starting test data seeding...");
 
-            // Check if data already exists (should not happen in staging with fresh database)
+            // Check if admin user already exists - if so, skip seeding entirely
+            var adminExists = await _context.Users.AnyAsync(u => u.Username == "admin" || u.Email == "admin@yapplr.com");
+            if (adminExists)
+            {
+                _logger.LogInformation("⚠️ Admin user already exists in database, skipping all seeding");
+                return;
+            }
+
+            // Check if any other users exist
             if (await _context.Users.AnyAsync())
             {
-                _logger.LogInformation("⚠️ Users already exist in database, skipping seeding");
+                _logger.LogInformation("⚠️ Other users already exist in database, skipping seeding");
                 return;
             }
 
@@ -47,11 +55,11 @@ public class StagingSeedService
 
             // Save content to database
             await _context.SaveChangesAsync();
-            _logger.LogInformation("✅ Staging data seeding completed successfully!");
+            _logger.LogInformation("✅ Test data seeding completed successfully!");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Error during staging data seeding");
+            _logger.LogError(ex, "❌ Error during test data seeding");
             throw;
         }
     }
@@ -69,7 +77,7 @@ public class StagingSeedService
             Pronouns = "they/them",
             Tagline = "Keeping Yapplr running smoothly",
             Role = UserRole.Admin,
-            EmailVerified = true, // Pre-verified for staging
+            EmailVerified = true, // Pre-verified for testing
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             LastSeenAt = DateTime.UtcNow
@@ -122,7 +130,7 @@ public class StagingSeedService
                 Pronouns = pronouns,
                 Tagline = tagline,
                 Role = UserRole.User,
-                EmailVerified = true, // Pre-verified for staging
+                EmailVerified = true, // Pre-verified for testing
                 CreatedAt = DateTime.UtcNow.AddDays(-Random.Shared.Next(1, 30)), // Spread creation dates
                 UpdatedAt = DateTime.UtcNow,
                 LastSeenAt = DateTime.UtcNow.AddMinutes(-Random.Shared.Next(1, 1440)) // Random last seen within 24 hours
