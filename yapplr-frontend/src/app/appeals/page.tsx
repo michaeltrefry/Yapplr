@@ -33,7 +33,7 @@ export default function AppealsPage() {
 
     try {
       setLoading(true);
-      await adminApi.createUserAppeal(user.id, formData);
+      await adminApi.createUserAppeal(formData);
       setSubmitted(true);
     } catch (error) {
       console.error('Failed to submit appeal:', error);
