@@ -588,7 +588,12 @@ public class AdminService : IAdminService
         _context.UserAppeals.Add(appeal);
         await _context.SaveChangesAsync();
 
-        return MapToUserAppealDto(appeal);
+        // Reload the appeal with User navigation property
+        var appealWithUser = await _context.UserAppeals
+            .Include(a => a.User)
+            .FirstAsync(a => a.Id == appeal.Id);
+
+        return MapToUserAppealDto(appealWithUser);
     }
 
     public async Task<UserAppealDto?> ReviewUserAppealAsync(int appealId, int reviewedByUserId, ReviewAppealDto reviewDto)
