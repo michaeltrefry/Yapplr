@@ -132,9 +132,9 @@ export default function ContentQueuePage() {
 
 
 
-  const handleApproveAiSuggestion = async (tagId: number, reason?: string) => {
+  const handleApproveAiSuggestion = async (postId: number, tagId: number) => {
     try {
-      await adminApi.approveAiSuggestedTag(tagId, reason);
+      await adminApi.approveAiSuggestedTag(tagId);
       // Refresh the queue data
       const queueData = await adminApi.getContentQueue();
       setQueue(queueData);
@@ -144,9 +144,9 @@ export default function ContentQueuePage() {
     }
   };
 
-  const handleRejectAiSuggestion = async (tagId: number, reason?: string) => {
+  const handleRejectAiSuggestion = async (postId: number, tagId: number) => {
     try {
-      await adminApi.rejectAiSuggestedTag(tagId, reason);
+      await adminApi.rejectAiSuggestedTag(tagId);
       // Refresh the queue data
       const queueData = await adminApi.getContentQueue();
       setQueue(queueData);
@@ -156,9 +156,9 @@ export default function ContentQueuePage() {
     }
   };
 
-  const handleBulkApproveAiSuggestions = async (tagIds: number[], reason?: string) => {
+  const handleBulkApproveAiSuggestions = async (postId: number, tagIds: number[]) => {
     try {
-      await adminApi.bulkApproveAiSuggestedTags(tagIds, reason);
+      await adminApi.bulkApproveAiSuggestedTags(tagIds);
       // Refresh the queue data
       const queueData = await adminApi.getContentQueue();
       setQueue(queueData);
@@ -168,9 +168,9 @@ export default function ContentQueuePage() {
     }
   };
 
-  const handleBulkRejectAiSuggestions = async (tagIds: number[], reason?: string) => {
+  const handleBulkRejectAiSuggestions = async (postId: number, tagIds: number[]) => {
     try {
-      await adminApi.bulkRejectAiSuggestedTags(tagIds, reason);
+      await adminApi.bulkRejectAiSuggestedTags(tagIds);
       // Refresh the queue data
       const queueData = await adminApi.getContentQueue();
       setQueue(queueData);

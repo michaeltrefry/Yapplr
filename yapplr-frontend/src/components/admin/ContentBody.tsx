@@ -99,7 +99,7 @@ export function ContentBody({
                 }`}
               >
                 <Tag className="h-3 w-3 mr-1" />
-                {tag.name}
+                {tag.tagName}
               </span>
             ))}
           </div>

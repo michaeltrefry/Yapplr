@@ -74,7 +74,9 @@ export default function AdminCommentsPage() {
 
   const handleBulkHide = async (commentIds: number[], reason: string) => {
     try {
-      await adminApi.bulkHideComments(commentIds, reason);
+      // Note: Bulk hide for comments not yet implemented in API
+      // For now, hide comments individually
+      await Promise.all(commentIds.map(id => adminApi.hideComment(id, { reason })));
       await fetchComments();
     } catch (error) {
       console.error('Failed to bulk hide comments:', error);
@@ -83,7 +85,9 @@ export default function AdminCommentsPage() {
 
   const handleBulkUnhide = async (commentIds: number[]) => {
     try {
-      await adminApi.bulkUnhideComments(commentIds);
+      // Note: Bulk unhide for comments not yet implemented in API
+      // For now, unhide comments individually
+      await Promise.all(commentIds.map(id => adminApi.unhideComment(id)));
       await fetchComments();
     } catch (error) {
       console.error('Failed to bulk unhide comments:', error);

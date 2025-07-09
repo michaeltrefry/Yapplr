@@ -83,7 +83,9 @@ export default function AdminPostsPage() {
 
   const handleBulkUnhide = async (postIds: number[]) => {
     try {
-      await adminApi.bulkUnhidePosts(postIds);
+      // Note: Bulk unhide for posts not yet implemented in API
+      // For now, unhide posts individually
+      await Promise.all(postIds.map(id => adminApi.unhidePost(id)));
       await fetchPosts();
     } catch (error) {
       console.error('Failed to bulk unhide posts:', error);

@@ -132,7 +132,7 @@ export function AdminQueueCard({
                         }`}
                       >
                         <Tag className="h-3 w-3 mr-1" />
-                        {tag.name}
+                        {tag.tagName}
                       </span>
                       {!tag.isApproved && !tag.isRejected && (
                         <div className="flex space-x-1">
