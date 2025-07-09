@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PostModerationInfo } from '@/types';
-import { AlertTriangle, Eye, EyeOff, Flag, MessageSquare, Shield, Tag, Clock, User } from 'lucide-react';
+import { PostModerationInfo, AppealStatus } from '@/types';
+import { AlertTriangle, Eye, EyeOff, Flag, MessageSquare, Shield, Tag, Clock, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import AppealModal from './AppealModal';
 
@@ -10,9 +10,10 @@ interface HiddenPostBannerProps {
   moderationInfo: PostModerationInfo;
   postId: number;
   className?: string;
+  onAppealSubmitted?: () => void;
 }
 
-export default function HiddenPostBanner({ moderationInfo, postId, className = '' }: HiddenPostBannerProps) {
+export default function HiddenPostBanner({ moderationInfo, postId, className = '', onAppealSubmitted }: HiddenPostBannerProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [showAppealModal, setShowAppealModal] = useState(false);
 
@@ -62,6 +63,57 @@ export default function HiddenPostBanner({ moderationInfo, postId, className = '
         return 'text-purple-700 bg-purple-100';
       default:
         return 'text-gray-700 bg-gray-100';
+    }
+  };
+
+  const getAppealStatusIcon = (status: AppealStatus) => {
+    switch (status) {
+      case AppealStatus.Pending:
+        return <Clock className="h-4 w-4 text-yellow-600" />;
+      case AppealStatus.UnderReview:
+        return <AlertCircle className="h-4 w-4 text-blue-600" />;
+      case AppealStatus.Approved:
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case AppealStatus.Denied:
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case AppealStatus.Escalated:
+        return <AlertTriangle className="h-4 w-4 text-orange-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getAppealStatusColor = (status: AppealStatus) => {
+    switch (status) {
+      case AppealStatus.Pending:
+        return 'text-yellow-800 bg-yellow-100 border-yellow-200';
+      case AppealStatus.UnderReview:
+        return 'text-blue-800 bg-blue-100 border-blue-200';
+      case AppealStatus.Approved:
+        return 'text-green-800 bg-green-100 border-green-200';
+      case AppealStatus.Denied:
+        return 'text-red-800 bg-red-100 border-red-200';
+      case AppealStatus.Escalated:
+        return 'text-orange-800 bg-orange-100 border-orange-200';
+      default:
+        return 'text-gray-800 bg-gray-100 border-gray-200';
+    }
+  };
+
+  const getAppealStatusText = (status: AppealStatus) => {
+    switch (status) {
+      case AppealStatus.Pending:
+        return 'Pending Review';
+      case AppealStatus.UnderReview:
+        return 'Under Review';
+      case AppealStatus.Approved:
+        return 'Approved';
+      case AppealStatus.Denied:
+        return 'Denied';
+      case AppealStatus.Escalated:
+        return 'Escalated';
+      default:
+        return 'Unknown';
     }
   };
 
@@ -174,22 +226,71 @@ export default function HiddenPostBanner({ moderationInfo, postId, className = '
                 </div>
               )}
 
-              {/* Appeal Option */}
-              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                <h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center">
-                  <MessageSquare className="h-4 w-4 mr-1" />
-                  Disagree with this decision?
-                </h4>
-                <p className="text-sm text-blue-700 mb-3">
-                  If you believe this content was hidden in error, you can submit an appeal for review.
-                </p>
-                <button
-                  onClick={() => setShowAppealModal(true)}
-                  className="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Submit Appeal
-                </button>
-              </div>
+              {/* Appeal Status or Submit Appeal */}
+              {moderationInfo.appealInfo ? (
+                <div className={`rounded-lg p-3 border ${getAppealStatusColor(moderationInfo.appealInfo.status)}`}>
+                  <h4 className="text-sm font-medium mb-2 flex items-center">
+                    {getAppealStatusIcon(moderationInfo.appealInfo.status)}
+                    <span className="ml-2">Appeal Status: {getAppealStatusText(moderationInfo.appealInfo.status)}</span>
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium">Submitted:</span> {formatDate(moderationInfo.appealInfo.createdAt)}
+                    </div>
+                    {moderationInfo.appealInfo.reviewedAt && (
+                      <div>
+                        <span className="font-medium">Reviewed:</span> {formatDate(moderationInfo.appealInfo.reviewedAt)}
+                        {moderationInfo.appealInfo.reviewedByUsername && (
+                          <span className="ml-1">by @{moderationInfo.appealInfo.reviewedByUsername}</span>
+                        )}
+                      </div>
+                    )}
+                    {moderationInfo.appealInfo.status === AppealStatus.Pending && (
+                      <p className="text-sm opacity-75">
+                        Your appeal is being reviewed by our moderation team. You will receive a notification when a decision is made.
+                      </p>
+                    )}
+                    {moderationInfo.appealInfo.status === AppealStatus.UnderReview && (
+                      <p className="text-sm opacity-75">
+                        Your appeal is currently under review by our moderation team.
+                      </p>
+                    )}
+                    {moderationInfo.appealInfo.status === AppealStatus.Approved && (
+                      <p className="text-sm opacity-75">
+                        Your appeal has been approved. The moderation action should be reversed shortly.
+                      </p>
+                    )}
+                    {moderationInfo.appealInfo.status === AppealStatus.Denied && (
+                      <>
+                        <p className="text-sm opacity-75">
+                          Your appeal has been reviewed and denied. The original moderation action remains in place.
+                        </p>
+                        {moderationInfo.appealInfo.reviewNotes && (
+                          <div className="mt-2 p-2 bg-white bg-opacity-50 rounded text-sm">
+                            <span className="font-medium">Review Notes:</span> {moderationInfo.appealInfo.reviewNotes}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center">
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    Disagree with this decision?
+                  </h4>
+                  <p className="text-sm text-blue-700 mb-3">
+                    If you believe this content was hidden in error, you can submit an appeal for review.
+                  </p>
+                  <button
+                    onClick={() => setShowAppealModal(true)}
+                    className="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Submit Appeal
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -202,6 +303,10 @@ export default function HiddenPostBanner({ moderationInfo, postId, className = '
         postId={postId}
         contentType="post"
         hiddenReason={moderationInfo.hiddenReason}
+        onSuccess={() => {
+          onAppealSubmitted?.();
+          setShowAppealModal(false);
+        }}
       />
     </div>
   );

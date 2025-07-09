@@ -13,15 +13,17 @@ interface AppealModalProps {
   commentId?: number;
   contentType: 'post' | 'comment';
   hiddenReason?: string;
+  onSuccess?: () => void;
 }
 
-export default function AppealModal({ 
-  isOpen, 
-  onClose, 
-  postId, 
-  commentId, 
+export default function AppealModal({
+  isOpen,
+  onClose,
+  postId,
+  commentId,
   contentType,
-  hiddenReason 
+  hiddenReason,
+  onSuccess
 }: AppealModalProps) {
   const [reason, setReason] = useState('');
   const [additionalInfo, setAdditionalInfo] = useState('');
@@ -31,6 +33,7 @@ export default function AppealModal({
     mutationFn: (data: CreateAppealDto) => adminApi.createUserAppeal(data),
     onSuccess: () => {
       setIsSubmitted(true);
+      onSuccess?.(); // Call the success callback to refresh the post data
     },
     onError: (error: any) => {
       console.error('Failed to submit appeal:', error);

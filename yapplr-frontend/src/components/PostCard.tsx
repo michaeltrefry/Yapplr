@@ -265,7 +265,14 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
           {/* Hidden Post Banner */}
           {post.moderationInfo?.isHidden && user?.id === post.user.id && (
             <div className="mt-3">
-              <HiddenPostBanner moderationInfo={post.moderationInfo} postId={post.id} />
+              <HiddenPostBanner
+                moderationInfo={post.moderationInfo}
+                postId={post.id}
+                onAppealSubmitted={() => {
+                  // Refresh the page to show updated appeal status
+                  window.location.reload();
+                }}
+              />
             </div>
           )}
 

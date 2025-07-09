@@ -122,6 +122,7 @@ export interface PostModerationInfo {
   systemTags: PostSystemTag[];
   riskScore?: number;
   riskLevel?: string;
+  appealInfo?: PostAppealInfo;
 }
 
 export interface PostSystemTag {
@@ -135,6 +136,17 @@ export interface PostSystemTag {
   reason?: string;
   appliedAt: string;
   appliedByUser: User;
+}
+
+export interface PostAppealInfo {
+  id: number;
+  status: AppealStatus;
+  reason: string;
+  additionalInfo?: string;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedByUsername?: string;
+  reviewNotes?: string;
 }
 
 export interface Comment {

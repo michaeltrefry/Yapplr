@@ -718,6 +718,33 @@ public class PostService : IPostService
                     pst.AppliedByUser.ToDto()
                 )).ToList();
 
+                // Get appeal information for this post
+                PostAppealInfoDto? appealInfo = null;
+                if (currentUserId.HasValue)
+                {
+                    var appeal = _context.UserAppeals
+                        .Include(ua => ua.ReviewedByUser)
+                        .Where(ua => ua.TargetPostId == post.Id &&
+                                   ua.UserId == currentUserId.Value &&
+                                   ua.Type == AppealType.ContentRemoval)
+                        .OrderByDescending(ua => ua.CreatedAt)
+                        .FirstOrDefault();
+
+                    if (appeal != null)
+                    {
+                        appealInfo = new PostAppealInfoDto(
+                            appeal.Id,
+                            appeal.Status,
+                            appeal.Reason,
+                            appeal.AdditionalInfo,
+                            appeal.CreatedAt,
+                            appeal.ReviewedAt,
+                            appeal.ReviewedByUser?.Username,
+                            appeal.ReviewNotes
+                        );
+                    }
+                }
+
                 moderationInfo = new PostModerationInfoDto(
                     post.IsHidden,
                     post.HiddenReason,
@@ -725,7 +752,8 @@ public class PostService : IPostService
                     post.HiddenByUser?.ToDto(),
                     systemTags,
                     null, // Risk score - we'd need to store this separately
-                    null  // Risk level - we'd need to store this separately
+                    null, // Risk level - we'd need to store this separately
+                    appealInfo
                 );
             }
         }

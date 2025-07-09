@@ -40,7 +40,8 @@ public record PostModerationInfoDto(
     UserDto? HiddenByUser,
     IEnumerable<PostSystemTagDto> SystemTags,
     double? RiskScore,
-    string? RiskLevel
+    string? RiskLevel,
+    PostAppealInfoDto? AppealInfo
 );
 
 public record PostSystemTagDto(
@@ -54,6 +55,17 @@ public record PostSystemTagDto(
     string? Reason,
     DateTime AppliedAt,
     UserDto AppliedByUser
+);
+
+public record PostAppealInfoDto(
+    int Id,
+    AppealStatus Status,
+    string Reason,
+    string? AdditionalInfo,
+    DateTime CreatedAt,
+    DateTime? ReviewedAt,
+    string? ReviewedByUsername,
+    string? ReviewNotes
 );
 
 public record CreateCommentDto(
