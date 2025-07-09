@@ -4,7 +4,7 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yapplr.Api", "Yapplr.Api\Yapplr.Api.csproj", "{3ED8928E-AD39-1B54-46F8-B773DA061435}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yapplr.Api.Tests", "Yapplr.Api.Tests\Yapplr.Api.Tests.csproj", "{B8F2E8A1-9C3D-4E5F-8A7B-1D2E3F4G5H6I}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yapplr.Api.Tests", "Yapplr.Api.Tests\Yapplr.Api.Tests.csproj", "{00000000-0000-0000-0000-000000000000}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -16,10 +16,8 @@ Global
 		{3ED8928E-AD39-1B54-46F8-B773DA061435}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3ED8928E-AD39-1B54-46F8-B773DA061435}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3ED8928E-AD39-1B54-46F8-B773DA061435}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B8F2E8A1-9C3D-4E5F-8A7B-1D2E3F4G5H6I}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B8F2E8A1-9C3D-4E5F-8A7B-1D2E3F4G5H6I}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B8F2E8A1-9C3D-4E5F-8A7B-1D2E3F4G5H6I}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B8F2E8A1-9C3D-4E5F-8A7B-1D2E3F4G5H6I}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00000000-0000-0000-0000-000000000000}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00000000-0000-0000-0000-000000000000}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
