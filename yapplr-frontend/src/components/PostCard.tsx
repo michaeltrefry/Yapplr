@@ -15,6 +15,7 @@ import ReportModal from './ReportModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentHighlight } from '@/utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
+import HiddenPostBanner from './HiddenPostBanner';
 
 interface PostCardProps {
   post: Post;
@@ -260,6 +261,13 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               </div>
             )}
           </div>
+
+          {/* Hidden Post Banner */}
+          {post.moderationInfo?.isHidden && user?.id === post.user.id && (
+            <div className="mt-3">
+              <HiddenPostBanner moderationInfo={post.moderationInfo} />
+            </div>
+          )}
 
           {/* Post Content */}
           <div className="mt-1">

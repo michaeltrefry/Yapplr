@@ -92,10 +92,40 @@ public class PostService : IPostService
                 .ThenInclude(pt => pt.Tag)
             .Include(p => p.PostLinkPreviews)
                 .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.HiddenByUser) // Include moderation info
+            .Include(p => p.PostSystemTags)
+                .ThenInclude(pst => pst.SystemTag)
+            .Include(p => p.PostSystemTags)
+                .ThenInclude(pst => pst.AppliedByUser)
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == postId && !p.IsDeletedByUser); // Filter out user-deleted posts
 
-        return post == null ? null : MapToPostDto(post, currentUserId);
+        if (post == null) return null;
+
+        // Check if user can view this hidden post
+        if (post.IsHidden)
+        {
+            // Get current user to check role
+            User? currentUser = null;
+            if (currentUserId.HasValue)
+            {
+                currentUser = await _context.Users.FindAsync(currentUserId.Value);
+            }
+
+            // Allow viewing if:
+            // 1. User is the post author
+            // 2. User is admin or moderator
+            bool canViewHiddenPost = currentUserId.HasValue &&
+                (post.UserId == currentUserId.Value ||
+                 (currentUser != null && (currentUser.Role == UserRole.Admin || currentUser.Role == UserRole.Moderator)));
+
+            if (!canViewHiddenPost)
+            {
+                return null; // Hide the post from unauthorized users
+            }
+        }
+
+        return MapToPostDto(post, currentUserId);
     }
 
     public async Task<IEnumerable<PostDto>> GetTimelineAsync(int userId, int page = 1, int pageSize = 20)
@@ -657,8 +687,51 @@ public class PostService : IPostService
             plp.LinkPreview.CreatedAt
         )).ToList();
 
+        // Include moderation information if user is authorized to see it
+        PostModerationInfoDto? moderationInfo = null;
+        if (post.IsHidden && currentUserId.HasValue)
+        {
+            // Check if current user can see moderation info (post author or admin/moderator)
+            var canSeeModerationInfo = post.UserId == currentUserId.Value;
+
+            if (!canSeeModerationInfo && currentUserId.HasValue)
+            {
+                // Check if user is admin/moderator (we need to query this)
+                var currentUser = _context.Users.Find(currentUserId.Value);
+                canSeeModerationInfo = currentUser != null &&
+                    (currentUser.Role == UserRole.Admin || currentUser.Role == UserRole.Moderator);
+            }
+
+            if (canSeeModerationInfo)
+            {
+                // Map system tags
+                var systemTags = post.PostSystemTags.Select(pst => new PostSystemTagDto(
+                    pst.SystemTag.Id,
+                    pst.SystemTag.Name,
+                    pst.SystemTag.Description,
+                    pst.SystemTag.Category.ToString(),
+                    pst.SystemTag.IsVisibleToUsers,
+                    pst.SystemTag.Color,
+                    pst.SystemTag.Icon,
+                    pst.Reason,
+                    pst.AppliedAt,
+                    pst.AppliedByUser.ToDto()
+                )).ToList();
+
+                moderationInfo = new PostModerationInfoDto(
+                    post.IsHidden,
+                    post.HiddenReason,
+                    post.HiddenAt,
+                    post.HiddenByUser?.ToDto(),
+                    systemTags,
+                    null, // Risk score - we'd need to store this separately
+                    null  // Risk level - we'd need to store this separately
+                );
+            }
+        }
+
         return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
-                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, linkPreviews, isLiked, isReposted, isEdited);
+                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, linkPreviews, isLiked, isReposted, isEdited, moderationInfo);
     }
 
     private CommentDto MapToCommentDto(Comment comment)

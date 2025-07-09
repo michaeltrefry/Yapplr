@@ -29,7 +29,31 @@ public record PostDto(
     IEnumerable<LinkPreviewDto> LinkPreviews,
     bool IsLikedByCurrentUser = false,
     bool IsRepostedByCurrentUser = false,
-    bool IsEdited = false
+    bool IsEdited = false,
+    PostModerationInfoDto? ModerationInfo = null
+);
+
+public record PostModerationInfoDto(
+    bool IsHidden,
+    string? HiddenReason,
+    DateTime? HiddenAt,
+    UserDto? HiddenByUser,
+    IEnumerable<PostSystemTagDto> SystemTags,
+    double? RiskScore,
+    string? RiskLevel
+);
+
+public record PostSystemTagDto(
+    int Id,
+    string Name,
+    string Description,
+    string Category,
+    bool IsVisibleToUsers,
+    string Color,
+    string? Icon,
+    string? Reason,
+    DateTime AppliedAt,
+    UserDto AppliedByUser
 );
 
 public record CreateCommentDto(

@@ -111,6 +111,30 @@ export interface Post {
   isLikedByCurrentUser: boolean;
   isRepostedByCurrentUser: boolean;
   isEdited: boolean;
+  moderationInfo?: PostModerationInfo;
+}
+
+export interface PostModerationInfo {
+  isHidden: boolean;
+  hiddenReason?: string;
+  hiddenAt?: string;
+  hiddenByUser?: User;
+  systemTags: PostSystemTag[];
+  riskScore?: number;
+  riskLevel?: string;
+}
+
+export interface PostSystemTag {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  isVisibleToUsers: boolean;
+  color: string;
+  icon?: string;
+  reason?: string;
+  appliedAt: string;
+  appliedByUser: User;
 }
 
 export interface Comment {
