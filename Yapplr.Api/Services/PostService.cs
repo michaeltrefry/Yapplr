@@ -112,7 +112,7 @@ public class PostService : IPostService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -120,6 +120,7 @@ public class PostService : IPostService
                 .ThenInclude(plp => plp.LinkPreview)
             .Where(p =>
                 !p.IsDeletedByUser && // Filter out user-deleted posts
+                !p.IsHidden && // Filter out moderator-hidden posts
                 !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                 p.UserId == userId || // User's own posts are always visible
@@ -150,7 +151,7 @@ public class PostService : IPostService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -159,6 +160,7 @@ public class PostService : IPostService
             .AsSplitQuery()
             .Where(p =>
                 !p.IsDeletedByUser && // Filter out user-deleted posts
+                !p.IsHidden && // Filter out moderator-hidden posts
                 !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                 p.UserId == userId || // User's own posts are always visible
@@ -235,7 +237,7 @@ public class PostService : IPostService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -244,6 +246,7 @@ public class PostService : IPostService
             .AsSplitQuery()
             .Where(p =>
                 !p.IsDeletedByUser && // Filter out user-deleted posts
+                !p.IsHidden && // Filter out moderator-hidden posts
                 p.Privacy == PostPrivacy.Public && // Only public posts
                 !blockedUserIds.Contains(p.UserId)) // Filter out blocked users
             .OrderByDescending(p => p.CreatedAt)
@@ -258,12 +261,13 @@ public class PostService : IPostService
             .Include(r => r.Post)
             .ThenInclude(p => p.Likes)
             .Include(r => r.Post)
-            .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
+            .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
             .AsSplitQuery()
             .Where(r =>
                 !r.Post.IsDeletedByUser && // Filter out reposts of user-deleted posts
+                !r.Post.IsHidden && // Filter out reposts of moderator-hidden posts
                 r.Post.Privacy == PostPrivacy.Public && // Only reposts of public posts
                 !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
                 !blockedUserIds.Contains(r.Post.UserId)) // Filter out reposts of posts from blocked users
@@ -321,7 +325,7 @@ public class PostService : IPostService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -330,6 +334,7 @@ public class PostService : IPostService
             .AsSplitQuery()
             .Where(p => p.UserId == userId &&
                 !p.IsDeletedByUser && // Filter out user-deleted posts
+                !p.IsHidden && // Filter out moderator-hidden posts
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                  currentUserId == userId || // User's own posts are always visible
                  (p.Privacy == PostPrivacy.Followers && isFollowing))) // Followers-only posts visible if following
@@ -368,7 +373,7 @@ public class PostService : IPostService
         var posts = await _context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -377,6 +382,7 @@ public class PostService : IPostService
             .AsSplitQuery()
             .Where(p => p.UserId == userId &&
                 !p.IsDeletedByUser && // Filter out user-deleted posts
+                !p.IsHidden && // Filter out moderator-hidden posts
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                  currentUserId == userId || // User's own posts are always visible
                  (p.Privacy == PostPrivacy.Followers && isFollowing))) // Followers-only posts visible if following
@@ -392,11 +398,11 @@ public class PostService : IPostService
             .Include(r => r.Post)
             .ThenInclude(p => p.Likes)
             .Include(r => r.Post)
-            .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
+            .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
             .AsSplitQuery()
-            .Where(r => r.UserId == userId && !r.Post.IsDeletedByUser) // Reposts by this user, filter out deleted posts
+            .Where(r => r.UserId == userId && !r.Post.IsDeletedByUser && !r.Post.IsHidden) // Reposts by this user, filter out deleted and hidden posts
             .Where(r =>
                 r.Post.Privacy == PostPrivacy.Public || // Public posts can be seen
                 r.Post.UserId == currentUserId || // Current user's own posts
@@ -577,7 +583,7 @@ public class PostService : IPostService
     {
         var comments = await _context.Comments
             .Include(c => c.User)
-            .Where(c => c.PostId == postId && !c.IsDeletedByUser) // Filter out user-deleted comments
+            .Where(c => c.PostId == postId && !c.IsDeletedByUser && !c.IsHidden) // Filter out user-deleted and moderator-hidden comments
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
@@ -588,7 +594,7 @@ public class PostService : IPostService
     {
         var comments = await _context.Comments
             .Include(c => c.User)
-            .Where(c => c.PostId == postId)
+            .Where(c => c.PostId == postId && !c.IsDeletedByUser && !c.IsHidden) // Filter out user-deleted and moderator-hidden comments
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
