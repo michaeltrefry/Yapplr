@@ -8,7 +8,7 @@ import { Flag } from 'lucide-react';
 export interface AdminUserReportListProps {
   reports: UserReport[];
   loading?: boolean;
-  onHideContent?: (contentId: number, contentType: 'post' | 'comment', reason: string) => Promise<void>;
+  onHideContent?: (reportId: number, reason: string) => Promise<void>;
   onDismissReport?: (reportId: number, notes: string) => Promise<void>;
   actionLoading?: number | null;
   emptyMessage?: string;

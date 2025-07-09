@@ -131,13 +131,12 @@ export default function ContentQueuePage() {
   };
 
   // User Report handlers
-  const handleHideContentFromReport = async (contentId: number, contentType: 'post' | 'comment', reason: string) => {
+  const handleHideContentFromReport = async (reportId: number, reason: string) => {
     try {
-      if (contentType === 'post') {
-        await adminApi.hidePost(contentId, { reason });
-      } else {
-        await adminApi.hideComment(contentId, { reason });
-      }
+      // Use the specific API method for hiding content from reports
+      // This should both hide the content AND update the report status
+      await adminApi.hideContentFromReport(reportId, { reason });
+
       const queueData = await adminApi.getContentQueue();
       setQueue(queueData);
     } catch (error) {

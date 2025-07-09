@@ -17,7 +17,7 @@ import { InlineActionForm } from './InlineActionForm';
 
 export interface AdminUserReportCardProps {
   report: UserReport;
-  onHideContent?: (contentId: number, contentType: 'post' | 'comment', reason: string) => Promise<void>;
+  onHideContent?: (reportId: number, reason: string) => Promise<void>;
   onDismissReport?: (reportId: number, notes: string) => Promise<void>;
   actionLoading?: boolean;
   className?: string;
@@ -88,7 +88,7 @@ export function AdminUserReportCard({
   const handleHideSubmit = async (reason: string) => {
     try {
       if (onHideContent) {
-        await onHideContent(getContentId(), getContentType(), reason);
+        await onHideContent(report.id, reason);
       }
       setShowHideForm(false);
     } catch (error) {
