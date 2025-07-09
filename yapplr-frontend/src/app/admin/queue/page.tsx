@@ -133,13 +133,22 @@ export default function ContentQueuePage() {
   // User Report handlers
   const handleHideContentFromReport = async (contentId: number, contentType: 'post' | 'comment', reason: string) => {
     try {
+      console.log('Hiding content from report:', { contentId, contentType, reason });
+
       if (contentType === 'post') {
+        console.log('Calling hidePost API for post:', contentId);
         await adminApi.hidePost(contentId, { reason });
+        console.log('hidePost API call completed');
       } else {
+        console.log('Calling hideComment API for comment:', contentId);
         await adminApi.hideComment(contentId, { reason });
+        console.log('hideComment API call completed');
       }
+
+      console.log('Refreshing queue data...');
       const queueData = await adminApi.getContentQueue();
       setQueue(queueData);
+      console.log('Queue data refreshed');
     } catch (error) {
       console.error('Failed to hide content from report:', error);
     }
