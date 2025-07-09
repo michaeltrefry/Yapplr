@@ -22,12 +22,12 @@ public interface IContentModerationService
     /// <summary>
     /// Apply suggested system tags to a post
     /// </summary>
-    Task<bool> ApplySuggestedTagsAsync(int postId, ContentModerationResult moderationResult, int appliedByUserId, bool autoApprove = false);
+    Task<bool> ApplySuggestedTagsToPostAsync(int postId, ContentModerationResult moderationResult, int appliedByUserId);
     
     /// <summary>
     /// Apply suggested system tags to a comment
     /// </summary>
-    Task<bool> ApplySuggestedTagsAsync(int commentId, ContentModerationResult moderationResult, int appliedByUserId, bool autoApprove = false, bool isComment = true);
+    Task<bool> ApplySuggestedTagsToCommentAsync(int commentId, ContentModerationResult moderationResult, int appliedByUserId);
 }
 
 public class ContentModerationResult

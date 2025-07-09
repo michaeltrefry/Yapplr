@@ -130,7 +130,7 @@ public class ContentModerationService : IContentModerationService
         }
     }
 
-    public async Task<bool> ApplySuggestedTagsAsync(int postId, ContentModerationResult moderationResult, int appliedByUserId, bool autoApprove = false)
+    public async Task<bool> ApplySuggestedTagsToPostAsync(int postId, ContentModerationResult moderationResult, int appliedByUserId)
     {
         try
         {
@@ -219,7 +219,7 @@ public class ContentModerationService : IContentModerationService
         }
     }
 
-    public async Task<bool> ApplySuggestedTagsAsync(int commentId, ContentModerationResult moderationResult, int appliedByUserId, bool autoApprove = false, bool isComment = true)
+    public async Task<bool> ApplySuggestedTagsToCommentAsync(int commentId, ContentModerationResult moderationResult, int appliedByUserId)
     {
         try
         {

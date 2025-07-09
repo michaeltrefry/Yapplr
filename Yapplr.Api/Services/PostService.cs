@@ -200,7 +200,7 @@ public class PostService : IPostService
         // Add original posts
         foreach (var post in posts)
         {
-            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, MapToPostDto(post, userId), null));
+            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, MapToPostDto(post, userId)));
         }
 
         // Add reposts
@@ -432,7 +432,7 @@ public class PostService : IPostService
         // Add original posts
         foreach (var post in posts)
         {
-            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, MapToPostDto(post, currentUserId), null));
+            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, MapToPostDto(post, currentUserId)));
         }
 
         // Add reposts
@@ -590,7 +590,7 @@ public class PostService : IPostService
         return comments.Select(MapToCommentDto);
     }
 
-    public async Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId, int? currentUserId = null)
+    public async Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId, int currentUserId)
     {
         var comments = await _context.Comments
             .Include(c => c.User)
@@ -599,11 +599,9 @@ public class PostService : IPostService
             .ToListAsync();
 
         // Filter out comments from blocked users if user is authenticated
-        if (currentUserId.HasValue)
-        {
-            var blockedUserIds = await GetBlockedUserIdsAsync(currentUserId.Value);
-            comments = comments.Where(c => !blockedUserIds.Contains(c.UserId)).ToList();
-        }
+        var blockedUserIds = await GetBlockedUserIdsAsync(currentUserId);
+        comments = comments.Where(c => !blockedUserIds.Contains(c.UserId)).ToList();
+    
 
         return comments.Select(MapToCommentDto);
     }
@@ -806,7 +804,7 @@ public class PostService : IPostService
         try
         {
             // Extract and process link previews
-            var linkPreviews = await _linkPreviewService.ProcessPostLinksAsync(content);
+            var linkPreviews = (await _linkPreviewService.ProcessPostLinksAsync(content)).ToList();
 
             if (!linkPreviews.Any())
                 return;
@@ -925,7 +923,7 @@ public class PostService : IPostService
             }
 
             // Process new link previews
-            var linkPreviews = await _linkPreviewService.ProcessPostLinksAsync(content);
+            var linkPreviews = (await _linkPreviewService.ProcessPostLinksAsync(content)).ToList();
 
             if (linkPreviews.Any())
             {
@@ -952,7 +950,7 @@ public class PostService : IPostService
     {
         try
         {
-            var moderationEnabled = _configuration.GetValue<bool>("ContentModeration:Enabled", true);
+            var moderationEnabled = _configuration.GetValue("ContentModeration:Enabled", true);
             if (!moderationEnabled)
                 return;
 
@@ -974,12 +972,11 @@ public class PostService : IPostService
             // Apply suggested tags if any were found
             if (moderationResult.SuggestedTags.Any())
             {
-                var autoApplyTags = _configuration.GetValue<bool>("ContentModeration:AutoApplyTags", false);
-                await _contentModerationService.ApplySuggestedTagsAsync(postId, moderationResult, userId, autoApplyTags);
+                await _contentModerationService.ApplySuggestedTagsToPostAsync(postId, moderationResult, userId);
             }
 
             // Auto-hide content if risk is very high
-            var autoHideThreshold = _configuration.GetValue<double>("ContentModeration:AutoHideThreshold", 0.8);
+            var autoHideThreshold = _configuration.GetValue("ContentModeration:AutoHideThreshold", 0.8);
             if (moderationResult.RiskAssessment.Score >= autoHideThreshold)
             {
                 var post = await _context.Posts.FindAsync(postId);
@@ -1007,7 +1004,7 @@ public class PostService : IPostService
     {
         try
         {
-            var moderationEnabled = _configuration.GetValue<bool>("ContentModeration:Enabled", true);
+            var moderationEnabled = _configuration.GetValue("ContentModeration:Enabled", true);
             if (!moderationEnabled)
                 return;
 
@@ -1029,12 +1026,11 @@ public class PostService : IPostService
             // Apply suggested tags if any were found
             if (moderationResult.SuggestedTags.Any())
             {
-                var autoApplyTags = _configuration.GetValue<bool>("ContentModeration:AutoApplyTags", false);
-                await _contentModerationService.ApplySuggestedTagsAsync(commentId, moderationResult, userId, autoApplyTags, isComment: true);
+                await _contentModerationService.ApplySuggestedTagsToCommentAsync(commentId, moderationResult, userId);
             }
 
             // Auto-hide content if risk is very high
-            var autoHideThreshold = _configuration.GetValue<double>("ContentModeration:AutoHideThreshold", 0.8);
+            var autoHideThreshold = _configuration.GetValue("ContentModeration:AutoHideThreshold", 0.8);
             if (moderationResult.RiskAssessment.Score >= autoHideThreshold)
             {
                 var comment = await _context.Comments.FindAsync(commentId);
