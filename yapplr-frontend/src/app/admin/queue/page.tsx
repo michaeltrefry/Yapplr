@@ -16,6 +16,7 @@ import {
   Brain,
   Flag,
 } from 'lucide-react';
+import { AdminQueueList } from '@/components/admin';
 import AiSuggestedTags from '@/components/admin/AiSuggestedTags';
 
 export default function ContentQueuePage() {
@@ -105,6 +106,27 @@ export default function ContentQueuePage() {
   const handleReasonChange = (reason: string) => {
     if (activeAction) {
       setActiveAction({ ...activeAction, reason });
+    }
+  };
+
+  // Simplified handlers for the new components
+  const handleHidePost = async (postId: number, reason: string) => {
+    try {
+      await adminApi.hidePost(postId, { reason });
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to hide post:', error);
+    }
+  };
+
+  const handleHideComment = async (commentId: number, reason: string) => {
+    try {
+      await adminApi.hideComment(commentId, { reason });
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to hide comment:', error);
     }
   };
 
@@ -222,291 +244,27 @@ export default function ContentQueuePage() {
       {/* Content */}
       <div className="space-y-4">
         {activeTab === 'posts' && (
-          <div className="space-y-4">
-            {queue?.flaggedPosts.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No flagged posts to review</p>
-              </div>
-            ) : (
-              queue?.flaggedPosts.map((post) => (
-                <div key={post.id} className="bg-white rounded-lg shadow p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center space-x-3">
-                      <User className="h-8 w-8 text-gray-400" />
-                      <div>
-                        <a
-                          href={`/profile/${post.user.username}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                        >
-                          @{post.user.username}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                        <p className="text-sm text-gray-500 flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {new Date(post.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleShowActionForm('hide', 'post', post.id)}
-                        className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
-                      >
-                        <EyeOff className="h-4 w-4 mr-1" />
-                        Hide
-                      </button>
-
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <a
-                      href={`/yap/${post.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-900 hover:text-blue-600 block group"
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="flex-1">{post.content}</span>
-                        <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 mt-0.5" />
-                      </div>
-                    </a>
-                    {post.imageFileName && (
-                      <div className="mt-2">
-                        <img
-                          src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${post.imageFileName}`}
-                          alt="Post image"
-                          className="max-w-md rounded-lg"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {post.systemTags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {post.systemTags.map((tag) => (
-                        <span
-                          key={tag.id}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                          style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-                        >
-                          <Tag className="h-3 w-3 mr-1" />
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* AI Suggested Tags */}
-                  {post.aiSuggestedTags && post.aiSuggestedTags.length > 0 && (
-                    <div className="mb-4">
-                      <button
-                        onClick={() => toggleAiSuggestions(post.id)}
-                        className="flex items-center text-sm text-blue-600 hover:text-blue-800 mb-2"
-                      >
-                        <Brain className="h-4 w-4 mr-1" />
-                        AI Suggestions ({post.aiSuggestedTags.filter(tag => !tag.isApproved && !tag.isRejected).length} pending)
-                        <span className="ml-1">
-                          {expandedAiSuggestions.has(post.id) ? '▼' : '▶'}
-                        </span>
-                      </button>
-                      {expandedAiSuggestions.has(post.id) && (
-                        <AiSuggestedTags
-                          tags={post.aiSuggestedTags}
-                          onApprove={handleApproveAiSuggestion}
-                          onReject={handleRejectAiSuggestion}
-                          onBulkApprove={handleBulkApproveAiSuggestions}
-                          onBulkReject={handleBulkRejectAiSuggestions}
-                        />
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex space-x-4">
-                      <span>{post.likeCount} likes</span>
-                      <span>{post.commentCount} comments</span>
-                      <span>{post.repostCount} reposts</span>
-                    </div>
-                    {post.isHidden && (
-                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
-                        Hidden
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Inline Action Form */}
-                  {activeAction && activeAction.contentType === 'post' && activeAction.contentId === post.id && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border-t">
-                      <div className="mb-3">
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">
-                          Hide Post
-                        </h4>
-                        <label htmlFor="reason" className="block text-sm text-gray-700 mb-1">
-                          Reason for hiding this post:
-                        </label>
-                        <textarea
-                          id="reason"
-                          value={activeAction.reason}
-                          onChange={(e) => handleReasonChange(e.target.value)}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Enter your reason..."
-                        />
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={handleSaveAction}
-                          disabled={!activeAction.reason.trim()}
-                          className={`px-4 py-2 rounded-md text-sm font-medium ${
-                            activeAction.reason.trim()
-                              ? 'bg-yellow-600 text-white hover:bg-yellow-700'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          } transition-colors`}
-                        >
-                          Hide Post
-                        </button>
-                        <button
-                          onClick={handleCancelAction}
-                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+          <AdminQueueList
+            items={queue?.flaggedPosts || []}
+            contentType="post"
+            loading={loading}
+            onHide={handleHidePost}
+            onApproveAiSuggestion={handleApproveAiSuggestion}
+            onRejectAiSuggestion={handleRejectAiSuggestion}
+            onBulkApproveAiSuggestions={handleBulkApproveAiSuggestions}
+            onBulkRejectAiSuggestions={handleBulkRejectAiSuggestions}
+            showAiSuggestions={true}
+          />
         )}
 
         {activeTab === 'comments' && (
-          <div className="space-y-4">
-            {queue?.flaggedComments.length === 0 ? (
-              <div className="text-center py-12">
-                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No flagged comments to review</p>
-              </div>
-            ) : (
-              queue?.flaggedComments.map((comment) => (
-                <div key={comment.id} className="bg-white rounded-lg shadow p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center space-x-3">
-                      <User className="h-8 w-8 text-gray-400" />
-                      <div>
-                        <a
-                          href={`/profile/${comment.user.username}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                        >
-                          @{comment.user.username}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                        <p className="text-sm text-gray-500 flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {new Date(comment.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleShowActionForm('hide', 'comment', comment.id)}
-                        className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition-colors"
-                      >
-                        <EyeOff className="h-4 w-4 mr-1" />
-                        Hide
-                      </button>
-
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <a
-                      href={`/yap/${comment.postId}#comment-${comment.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-900 hover:text-blue-600 block group"
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="flex-1">{comment.content}</span>
-                        <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 mt-0.5" />
-                      </div>
-                    </a>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Comment on post #{comment.postId}
-                    </p>
-                  </div>
-
-                  {comment.systemTags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {comment.systemTags.map((tag) => (
-                        <span
-                          key={tag.id}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                          style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-                        >
-                          <Tag className="h-3 w-3 mr-1" />
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {comment.isHidden && (
-                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
-                      Hidden
-                    </span>
-                  )}
-
-                  {/* Inline Action Form */}
-                  {activeAction && activeAction.contentType === 'comment' && activeAction.contentId === comment.id && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border-t">
-                      <div className="mb-3">
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">
-                          Hide Comment
-                        </h4>
-                        <label htmlFor="reason" className="block text-sm text-gray-700 mb-1">
-                          Reason for hiding this comment:
-                        </label>
-                        <textarea
-                          id="reason"
-                          value={activeAction.reason}
-                          onChange={(e) => handleReasonChange(e.target.value)}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Enter your reason..."
-                        />
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={handleSaveAction}
-                          disabled={!activeAction.reason.trim()}
-                          className={`px-4 py-2 rounded-md text-sm font-medium ${
-                            activeAction.reason.trim()
-                              ? 'bg-yellow-600 text-white hover:bg-yellow-700'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          } transition-colors`}
-                        >
-                          Hide Comment
-                        </button>
-                        <button
-                          onClick={handleCancelAction}
-                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+          <AdminQueueList
+            items={queue?.flaggedComments || []}
+            contentType="comment"
+            loading={loading}
+            onHide={handleHideComment}
+            showAiSuggestions={false}
+          />
         )}
 
         {activeTab === 'appeals' && (
