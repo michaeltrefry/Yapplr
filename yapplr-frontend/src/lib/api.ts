@@ -653,7 +653,7 @@ export const adminApi = {
     return response.data;
   },
 
-  createUserAppeal: async (userId: number, data: CreateAppealDto): Promise<UserAppeal> => {
+  createUserAppeal: async (data: CreateAppealDto): Promise<UserAppeal> => {
     const response = await api.post('/admin/appeals', data);
     return response.data;
   },

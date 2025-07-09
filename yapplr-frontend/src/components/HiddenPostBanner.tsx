@@ -4,14 +4,17 @@ import React, { useState } from 'react';
 import { PostModerationInfo } from '@/types';
 import { AlertTriangle, Eye, EyeOff, Flag, MessageSquare, Shield, Tag, Clock, User } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import AppealModal from './AppealModal';
 
 interface HiddenPostBannerProps {
   moderationInfo: PostModerationInfo;
+  postId: number;
   className?: string;
 }
 
-export default function HiddenPostBanner({ moderationInfo, className = '' }: HiddenPostBannerProps) {
+export default function HiddenPostBanner({ moderationInfo, postId, className = '' }: HiddenPostBannerProps) {
   const [showDetails, setShowDetails] = useState(false);
+  const [showAppealModal, setShowAppealModal] = useState(false);
 
   const getRiskLevelColor = (riskLevel?: string) => {
     switch (riskLevel?.toLowerCase()) {
@@ -180,7 +183,10 @@ export default function HiddenPostBanner({ moderationInfo, className = '' }: Hid
                 <p className="text-sm text-blue-700 mb-3">
                   If you believe this content was hidden in error, you can submit an appeal for review.
                 </p>
-                <button className="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <button
+                  onClick={() => setShowAppealModal(true)}
+                  className="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
                   Submit Appeal
                 </button>
               </div>
@@ -188,6 +194,15 @@ export default function HiddenPostBanner({ moderationInfo, className = '' }: Hid
           )}
         </div>
       </div>
+
+      {/* Appeal Modal */}
+      <AppealModal
+        isOpen={showAppealModal}
+        onClose={() => setShowAppealModal(false)}
+        postId={postId}
+        contentType="post"
+        hiddenReason={moderationInfo.hiddenReason}
+      />
     </div>
   );
 }

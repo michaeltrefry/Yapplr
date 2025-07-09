@@ -265,7 +265,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
           {/* Hidden Post Banner */}
           {post.moderationInfo?.isHidden && user?.id === post.user.id && (
             <div className="mt-3">
-              <HiddenPostBanner moderationInfo={post.moderationInfo} />
+              <HiddenPostBanner moderationInfo={post.moderationInfo} postId={post.id} />
             </div>
           )}
 
