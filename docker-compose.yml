@@ -28,10 +28,11 @@ services:
       - POSTGRES_DB=yapplr_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      # Security: Only allow connections from Docker network
+      - POSTGRES_HOST_AUTH_METHOD=md5
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # No external ports exposed - only accessible from Docker network
     restart: unless-stopped
     networks:
       - yapplr-network

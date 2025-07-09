@@ -8,7 +8,7 @@ services:
     image: yapplr-api:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
-      - ConnectionStrings__DefaultConnection=Host=postgres;Database=yapplr_db;Username=postgres;Password=postgres
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=yapplr_db;Username=postgres;Password=${STAGE_POSTGRES_PASSWORD}
       - JwtSettings__SecretKey=${STAGE_JWT_SECRET_KEY}
       - JwtSettings__Issuer=Yapplr.Api
       - JwtSettings__Audience=Yapplr.Client
@@ -112,9 +112,10 @@ services:
     environment:
       - POSTGRES_DB=yapplr_db
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    ports:
-      - "5432:5432"
+      - POSTGRES_PASSWORD=${STAGE_POSTGRES_PASSWORD}
+      # Security: Only allow connections from Docker network
+      - POSTGRES_HOST_AUTH_METHOD=md5
+    # No external ports exposed - only accessible from Docker network
     restart: unless-stopped
     networks:
       - yapplr-network

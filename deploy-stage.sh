@@ -31,8 +31,8 @@ set -a  # automatically export all variables
 source .env
 set +a  # turn off automatic export
 
-# Validate required environment variables (database connection is hardcoded for staging to use local postgres container)
-required_vars=("STAGE_JWT_SECRET_KEY" "STAGE_API_DOMAIN_NAME" "STAGE_FIREBASE_PROJECT_ID" "STAGE_FIREBASE_SERVICE_ACCOUNT_KEY")
+# Validate required environment variables (database connection uses environment variable for security)
+required_vars=("STAGE_POSTGRES_PASSWORD" "STAGE_JWT_SECRET_KEY" "STAGE_API_DOMAIN_NAME" "STAGE_FIREBASE_PROJECT_ID" "STAGE_FIREBASE_SERVICE_ACCOUNT_KEY")
 # Optional variables for SSL certificates (if using HTTPS)
 optional_vars=("STAGE_CERTBOT_EMAIL" "STAGE_CERTBOT_DOMAIN")
 for var in "${required_vars[@]}"; do
