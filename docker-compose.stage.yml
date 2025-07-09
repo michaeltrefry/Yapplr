@@ -96,17 +96,6 @@ services:
     networks:
       - yapplr-network
 
-  # Certbot service for certificate generation (run manually when needed)
-  # To generate certificates: docker compose -f docker-compose.stage.yml run --rm certbot
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - /var/www/certbot:/var/www/certbot
-    command: certbot certonly --webroot --webroot-path=/var/www/certbot --email ${STAGE_CERTBOT_EMAIL:-admin@yapplr.com} --agree-tos --no-eff-email -d stg-api.yapplr.com -d stg.yapplr.com
-    profiles:
-      - tools
-
   postgres:
     image: postgres:16-alpine
     environment:
