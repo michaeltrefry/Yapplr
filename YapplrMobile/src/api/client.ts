@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -176,6 +176,16 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         return response.data;
       },
 
+      updateFcmToken: async (data: { token: string }): Promise<{ message: string }> => {
+        const response = await client.post('/api/users/me/fcm-token', data);
+        return response.data;
+      },
+
+      clearFcmToken: async (): Promise<{ message: string }> => {
+        const response = await client.delete('/api/users/me/fcm-token');
+        return response.data;
+      },
+
       getFollowing: async (): Promise<User[]> => {
         const response = await client.get('/api/users/me/following');
         return response.data;
@@ -336,6 +346,34 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
       deleteImage: async (fileName: string): Promise<void> => {
         await client.delete(`/api/images/${fileName}`);
+      },
+    },
+
+    notifications: {
+      getNotifications: async (page: number = 1, pageSize: number = 25): Promise<NotificationList> => {
+        const response = await client.get(`/api/notifications?page=${page}&pageSize=${pageSize}`);
+        return response.data;
+      },
+
+      getUnreadCount: async (): Promise<UnreadCountResponse> => {
+        const response = await client.get('/api/notifications/unread-count');
+        return response.data;
+      },
+
+      markAsRead: async (notificationId: number): Promise<{ message: string }> => {
+        const response = await client.put(`/api/notifications/${notificationId}/read`);
+        return response.data;
+      },
+
+      markAllAsRead: async (): Promise<{ message: string }> => {
+        const response = await client.put('/api/notifications/read-all');
+        return response.data;
+      },
+    },
+
+    appeals: {
+      submitAppeal: async (data: CreateAppealDto): Promise<void> => {
+        await client.post('/api/appeals', data);
       },
     },
   };

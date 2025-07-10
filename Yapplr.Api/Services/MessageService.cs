@@ -35,38 +35,63 @@ public class MessageService : IMessageService
 
     public async Task<MessageDto?> SendSystemMessageAsync(int recipientId, string content)
     {
-        // Create a system message without a sender (system messages)
+        // Create a system message using the system user as sender
         // Find or create a system conversation for this user
         var systemConversation = await GetOrCreateSystemConversationAsync(recipientId);
         if (systemConversation == null)
             return null;
 
+        // Find the system user to use as sender
+        var systemUser = await _context.Users.FirstOrDefaultAsync(u => u.Role == UserRole.System);
+        if (systemUser == null)
+        {
+            // If no system user exists, we can't send system messages
+            return null;
+        }
+
         // Create the system message
         var message = new Message
         {
             ConversationId = systemConversation.Id,
-            SenderId = 0, // System sender (no actual user)
+            SenderId = systemUser.Id, // Use system user as sender
             Content = content.Trim(),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
-        _context.Messages.Add(message);
-
-        // Update conversation timestamp
-        systemConversation.UpdatedAt = DateTime.UtcNow;
-
-        // Create message status for recipient (delivered)
-        var recipientStatus = new MessageStatus
+        // Use a transaction to ensure proper ordering
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
         {
-            MessageId = message.Id,
-            UserId = recipientId,
-            Status = MessageStatusType.Delivered,
-            CreatedAt = DateTime.UtcNow
-        };
-        _context.MessageStatuses.Add(recipientStatus);
+            _context.Messages.Add(message);
 
-        await _context.SaveChangesAsync();
+            // Update conversation timestamp
+            systemConversation.UpdatedAt = DateTime.UtcNow;
+
+            // Save the message first to get the ID
+            await _context.SaveChangesAsync();
+
+            // Create message status for recipient (delivered) - now we have the message ID
+            var recipientStatus = new MessageStatus
+            {
+                MessageId = message.Id,
+                UserId = recipientId,
+                Status = MessageStatusType.Delivered,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.MessageStatuses.Add(recipientStatus);
+
+            // Save the message status
+            await _context.SaveChangesAsync();
+
+            // Commit the transaction
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
 
         // Send notification to recipient
         await _notificationService.SendMessageNotificationAsync(
@@ -450,11 +475,30 @@ public class MessageService : IMessageService
             .Select(ms => ms.Status)
             .FirstOrDefaultAsync();
 
-        // Handle system messages (SenderId = 0)
+        // Handle system messages (check if sender is system user)
         UserDto senderDto;
-        if (message.SenderId == 0 || message.Sender == null)
+        if (message.Sender?.Role == UserRole.System)
         {
-            // Create a system user DTO for system messages
+            // Create a system user DTO for system messages with friendly display name
+            senderDto = new UserDto(
+                message.Sender.Id,
+                message.Sender.Email,
+                "Yapplr Moderation", // Friendly display name
+                message.Sender.Bio,
+                message.Sender.Birthday,
+                message.Sender.Pronouns,
+                message.Sender.Tagline,
+                null!, // profile image (system user has no profile image)
+                message.Sender.CreatedAt,
+                null!, // fcm token (system user doesn't need FCM)
+                message.Sender.EmailVerified,
+                UserRole.System,
+                message.Sender.Status
+            );
+        }
+        else if (message.Sender == null)
+        {
+            // Fallback for legacy messages or edge cases
             senderDto = new UserDto(
                 0,
                 "system@yapplr.com",
@@ -467,7 +511,7 @@ public class MessageService : IMessageService
                 DateTime.UtcNow,
                 null!, // fcm token
                 true, // email verified
-                UserRole.Admin,
+                UserRole.System,
                 UserStatus.Active
             );
         }

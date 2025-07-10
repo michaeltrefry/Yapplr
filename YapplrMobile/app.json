@@ -17,8 +17,10 @@
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
-      }
+        },
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.michaeljtrefry.yapplrmobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,6 +32,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c03a3065-e620-4a2a-88bf-0094e04b4712"
+      }
     }
   }
 }

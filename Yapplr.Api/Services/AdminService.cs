@@ -210,9 +210,6 @@ public class AdminService : IAdminService
         // Send notification to the post owner
         await _notificationService.CreateContentHiddenNotificationAsync(post.UserId, "post", postId, reason, moderator.Username);
 
-        // Send private message to user
-        await _moderationMessageService.SendContentHiddenMessageAsync(post.UserId, "post", postId, post.Content, reason, moderator.Username);
-
         return true;
     }
 
@@ -254,9 +251,6 @@ public class AdminService : IAdminService
 
         // Send notification to the comment owner
         await _notificationService.CreateContentHiddenNotificationAsync(comment.UserId, "comment", commentId, reason, moderator.Username);
-
-        // Send private message to user
-        await _moderationMessageService.SendContentHiddenMessageAsync(comment.UserId, "comment", commentId, comment.Content, reason, moderator.Username);
 
         return true;
     }

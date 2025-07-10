@@ -110,6 +110,7 @@ export interface Post {
   linkPreviews: LinkPreview[];
   isLikedByCurrentUser: boolean;
   isRepostedByCurrentUser: boolean;
+  moderationInfo?: PostModerationInfo;
 }
 
 export interface Comment {
@@ -194,6 +195,116 @@ export interface ImageUploadResponse {
   imageUrl: string;
 }
 
+// Moderation and Appeal Types
+export interface PostModerationInfo {
+  isHidden: boolean;
+  hiddenReason?: string;
+  hiddenAt?: string;
+  hiddenByUser?: User;
+  systemTags: PostSystemTag[];
+  riskScore?: number;
+  riskLevel?: string;
+  appealInfo?: PostAppealInfo;
+}
+
+export interface PostSystemTag {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  isVisibleToUsers: boolean;
+  appliedByUser: User;
+  reason?: string;
+  appliedAt: string;
+}
+
+export interface PostAppealInfo {
+  id: number;
+  status: AppealStatus;
+  reason: string;
+  additionalInfo?: string;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedByUsername?: string;
+  reviewNotes?: string;
+}
+
+export enum AppealType {
+  Suspension = 0,
+  Ban = 1,
+  ContentRemoval = 2,
+  SystemTag = 3,
+  Other = 4,
+}
+
+export enum AppealStatus {
+  Pending = 0,
+  UnderReview = 1,
+  Approved = 2,
+  Denied = 3,
+  Escalated = 4,
+}
+
+export interface CreateAppealDto {
+  type: AppealType;
+  reason: string;
+  additionalInfo?: string;
+  postId?: number;
+  commentId?: number;
+}
+
+// Notification Types
+export enum NotificationType {
+  Mention = 1,
+  Like = 2,
+  Repost = 3,
+  Follow = 4,
+  Comment = 5,
+  FollowRequest = 6,
+
+  // Moderation notifications
+  UserSuspended = 100,
+  UserBanned = 101,
+  UserUnsuspended = 102,
+  UserUnbanned = 103,
+  ContentHidden = 104,
+  ContentDeleted = 105,
+  ContentRestored = 106,
+  AppealApproved = 107,
+  AppealDenied = 108,
+  SystemMessage = 109,
+}
+
+export interface Notification {
+  id: number;
+  type: NotificationType;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  readAt?: string;
+  status?: string;
+  actorUser?: User;
+  post?: Post;
+  comment?: Comment;
+  mention?: {
+    id: number;
+    mentioningUserId: number;
+    postId?: number;
+    commentId?: number;
+  };
+}
+
+export interface NotificationList {
+  notifications: Notification[];
+  totalCount: number;
+  unreadCount: number;
+  hasMore: boolean;
+}
+
+export interface UnreadCountResponse {
+  unreadCount: number;
+}
+
 // API Client interface
 export interface YapplrApi {
   auth: {
@@ -250,5 +361,14 @@ export interface YapplrApi {
   preferences: {
     get: () => Promise<{ darkMode: boolean }>;
     update: (preferences: { darkMode?: boolean }) => Promise<{ darkMode: boolean }>;
+  };
+  notifications: {
+    getNotifications: (page: number, pageSize: number) => Promise<NotificationList>;
+    getUnreadCount: () => Promise<UnreadCountResponse>;
+    markAsRead: (notificationId: number) => Promise<{ message: string }>;
+    markAllAsRead: () => Promise<{ message: string }>;
+  };
+  appeals: {
+    submitAppeal: (data: CreateAppealDto) => Promise<void>;
   };
 }

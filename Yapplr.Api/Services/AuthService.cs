@@ -93,6 +93,12 @@ public class AuthService : IAuthService
             return null; // Invalid credentials
         }
 
+        // Prevent login as system user
+        if (user.Role == UserRole.System)
+        {
+            return null; // System user cannot login
+        }
+
         // Check if email is verified
         if (!user.EmailVerified)
         {

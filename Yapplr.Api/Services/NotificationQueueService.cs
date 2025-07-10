@@ -273,7 +273,7 @@ public class NotificationQueueService : INotificationQueueService
         try
         {
             var cutoffTime = DateTime.UtcNow - maxAge;
-            
+
             // Clean up memory
             var oldNotifications = _pendingNotifications.Values
                 .Where(n => n.CreatedAt < cutoffTime)
@@ -284,12 +284,11 @@ public class NotificationQueueService : INotificationQueueService
                 _pendingNotifications.TryRemove(notification.Id, out _);
             }
 
-            // Clean up database
-            var deletedCount = await _context.Database.ExecuteSqlRawAsync(
-                "DELETE FROM QueuedNotifications WHERE CreatedAt < {0}", cutoffTime);
+            // Note: Database persistence is not implemented yet, so we only clean up memory
+            // TODO: Implement QueuedNotifications table and migration if persistent queuing is needed
 
-            _logger.LogInformation("Cleaned up {MemoryCount} memory notifications and {DbCount} database notifications older than {MaxAge}",
-                oldNotifications.Count, deletedCount, maxAge);
+            _logger.LogInformation("Cleaned up {MemoryCount} memory notifications older than {MaxAge}",
+                oldNotifications.Count, maxAge);
         }
         catch (Exception ex)
         {
@@ -330,21 +329,26 @@ public class NotificationQueueService : INotificationQueueService
 
     private async Task PersistNotificationAsync(QueuedNotification notification)
     {
-        // Implementation would depend on your database schema
-        // For now, we'll skip database persistence to keep the example simple
+        // TODO: Implement database persistence for QueuedNotification
+        // This would require:
+        // 1. Adding DbSet<QueuedNotification> to YapplrDbContext
+        // 2. Creating a migration for the QueuedNotifications table
+        // 3. Implementing the actual persistence logic here
         await Task.CompletedTask;
     }
 
     private async Task<List<QueuedNotification>> GetPersistedNotificationsAsync(int userId)
     {
-        // Implementation would depend on your database schema
+        // TODO: Implement database retrieval for user's queued notifications
+        // This would query the QueuedNotifications table for the specific user
         await Task.CompletedTask;
         return new List<QueuedNotification>();
     }
 
     private async Task<List<QueuedNotification>> GetAllPersistedNotificationsAsync()
     {
-        // Implementation would depend on your database schema
+        // TODO: Implement database retrieval for all queued notifications
+        // This would query the QueuedNotifications table for all pending notifications
         await Task.CompletedTask;
         return new List<QueuedNotification>();
     }

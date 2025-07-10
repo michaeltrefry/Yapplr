@@ -24,7 +24,7 @@ public class StagingSeedService
         try
         {
             _logger.LogInformation("🌱 Starting test data seeding...");
-
+            
             // Check if admin user already exists - if so, skip seeding entirely
             var adminExists = await _context.Users.AnyAsync(u => u.Username == "admin" || u.Email == "admin@yapplr.com");
             if (adminExists)
@@ -39,7 +39,7 @@ public class StagingSeedService
                 _logger.LogInformation("⚠️ Other users already exist in database, skipping seeding");
                 return;
             }
-
+            
             // Create admin user
             await CreateAdminUserAsync();
 

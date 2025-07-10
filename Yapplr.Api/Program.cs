@@ -191,6 +191,7 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IUserReportService, UserReportService>();
 builder.Services.AddScoped<IModerationMessageService, ModerationMessageService>();
 builder.Services.AddScoped<SystemTagSeedService>();
+builder.Services.AddScoped<EssentialUserSeedService>();
 
 // Add test data seed service (for all environments except production)
 if (!builder.Environment.IsProduction())
@@ -336,6 +337,12 @@ using (var scope = app.Services.CreateScope())
             // Run migrations
             await context.Database.MigrateAsync();
             logger.LogInformation("✅ Database migrations completed successfully");
+
+            // Seed essential users (system user, etc.)
+            logger.LogInformation("👤 Seeding essential users...");
+            var essentialUserSeedService = scope.ServiceProvider.GetRequiredService<EssentialUserSeedService>();
+            await essentialUserSeedService.SeedEssentialUsersAsync();
+            logger.LogInformation("✅ Essential users seeding completed successfully");
 
             // Seed default system tags
             logger.LogInformation("🏷️ Seeding default system tags...");

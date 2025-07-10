@@ -111,6 +111,26 @@ public static class NotificationEndpoints
         .Produces(400)
         .Produces(401);
 
+        // Test Firebase service with mock token (for simulator testing)
+        notifications.MapPost("/test-firebase-mock", [Authorize] async (IFirebaseService firebaseService) =>
+        {
+            // Use a mock Expo push token format for testing
+            var mockToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
+
+            var success = await firebaseService.SendTestNotificationAsync(mockToken);
+
+            return Results.Ok(new {
+                success = success,
+                message = success ? "Firebase test with mock token sent successfully" : "Firebase test with mock token failed",
+                mockToken = mockToken,
+                note = "This tests Firebase service functionality with a mock token (will fail to deliver but tests the service)"
+            });
+        })
+        .WithName("TestFirebaseMock")
+        .WithSummary("Test Firebase service with mock token (for simulator testing)")
+        .Produces(200)
+        .Produces(401);
+
         // Test SignalR-specific notification endpoint
         notifications.MapPost("/test-signalr", [Authorize] async (ClaimsPrincipal user, SignalRNotificationService signalRService) =>
         {

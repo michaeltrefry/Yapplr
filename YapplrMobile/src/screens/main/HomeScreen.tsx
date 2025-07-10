@@ -60,6 +60,13 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     retry: 2,
   });
 
+  const { data: notificationUnreadCount } = useQuery({
+    queryKey: ['notificationUnreadCount'],
+    queryFn: () => api.notifications.getUnreadCount(),
+    enabled: !!user,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
   const onRefresh = async () => {
     setRefreshing(true);
     await refetch();
@@ -180,7 +187,23 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        <View style={styles.headerLeft} />
         <Text style={styles.headerTitle}>Yapplr</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={() => navigation.navigate('Notifications')}
+          >
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+            {notificationUnreadCount && notificationUnreadCount.unreadCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {notificationUnreadCount.unreadCount > 99 ? '99+' : notificationUnreadCount.unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -206,18 +229,47 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  headerLeft: {
+    width: 40,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.primary,
     textAlign: 'center',
+    flex: 1,
+  },
+  headerRight: {
+    width: 40,
+    alignItems: 'flex-end',
+  },
+  notificationButton: {
+    padding: 8,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: colors.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: colors.background,
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   loadingContainer: {
     flex: 1,
