@@ -194,9 +194,15 @@ builder.Services.AddScoped<SystemTagSeedService>();
 builder.Services.AddScoped<EssentialUserSeedService>();
 
 // Add test data seed service (for all environments except production)
+Console.WriteLine($"🔍 Environment detected: {builder.Environment.EnvironmentName} (IsProduction: {builder.Environment.IsProduction()})");
 if (!builder.Environment.IsProduction())
 {
+    Console.WriteLine("✅ Registering StagingSeedService for non-production environment");
     builder.Services.AddScoped<StagingSeedService>();
+}
+else
+{
+    Console.WriteLine("⚠️ Skipping StagingSeedService registration - Production environment detected");
 }
 
 // Add HttpClient for LinkPreviewService
@@ -351,12 +357,19 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("✅ System tags seeding completed successfully");
 
             // Seed test data (all environments except production)
+            logger.LogInformation("🔍 Environment check for seeding: {Environment} (IsProduction: {IsProduction})",
+                app.Environment.EnvironmentName, app.Environment.IsProduction());
+
             if (!app.Environment.IsProduction())
             {
                 logger.LogInformation("🌱 Seeding test data for {Environment} environment...", app.Environment.EnvironmentName);
                 var stagingSeedService = scope.ServiceProvider.GetRequiredService<StagingSeedService>();
                 await stagingSeedService.SeedStagingDataAsync();
                 logger.LogInformation("✅ Test data seeding completed successfully for {Environment} environment", app.Environment.EnvironmentName);
+            }
+            else
+            {
+                logger.LogInformation("⚠️ Skipping test data seeding - Production environment detected");
             }
 
             break; // Success, exit retry loop

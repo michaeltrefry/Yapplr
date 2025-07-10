@@ -37,7 +37,7 @@ RUN mkdir -p /app/uploads/images
 COPY --from=publish /app/publish .
 
 # Set environment variables
-ENV ASPNETCORE_ENVIRONMENT=Production
+# Note: ASPNETCORE_ENVIRONMENT should be set by docker-compose or deployment config
 ENV ASPNETCORE_URLS=http://+:8080
 
 # Create a non-root user
