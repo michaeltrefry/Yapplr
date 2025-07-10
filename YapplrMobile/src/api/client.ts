@@ -71,6 +71,8 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
   );
 
   return {
+    baseURL: config.baseURL,
+    getToken: config.getToken,
     auth: {
       login: async (data: LoginData): Promise<AuthResponse> => {
         const response = await client.post('/api/auth/login', data);
@@ -183,6 +185,16 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
       clearFcmToken: async (): Promise<{ message: string }> => {
         const response = await client.delete('/api/users/me/fcm-token');
+        return response.data;
+      },
+
+      updateExpoPushToken: async (data: { token: string }): Promise<{ message: string }> => {
+        const response = await client.post('/api/users/me/expo-push-token', data);
+        return response.data;
+      },
+
+      clearExpoPushToken: async (): Promise<{ message: string }> => {
+        const response = await client.delete('/api/users/me/expo-push-token');
         return response.data;
       },
 
@@ -374,6 +386,13 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
     appeals: {
       submitAppeal: async (data: CreateAppealDto): Promise<void> => {
         await client.post('/api/appeals', data);
+      },
+    },
+
+    tags: {
+      getTrendingTags: async (limit: number) => {
+        const response = await client.get(`/api/tags/trending?limit=${limit}`);
+        return response.data;
       },
     },
   };

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { AuthStackParamList } from '../../navigation/AppNavigator';
 
 type ResendVerificationScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'ResendVerification'>;
 
@@ -96,7 +96,7 @@ export default function ResendVerificationScreen({ navigation }: Props) {
           <View style={styles.linkContainer}>
             <TouchableOpacity
               style={styles.linkButton}
-              onPress={() => navigation.navigate('VerifyEmail')}
+              onPress={() => navigation.navigate('VerifyEmail', {})}
             >
               <Text style={styles.linkText}>Already have a code? Verify Email</Text>
             </TouchableOpacity>

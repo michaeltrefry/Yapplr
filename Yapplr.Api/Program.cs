@@ -249,6 +249,14 @@ if (notificationConfig.SignalR.Enabled)
     builder.Services.AddScoped<SignalRNotificationService>();
 }
 
+// Register Expo notification service
+var expoEnabled = builder.Configuration.GetValue<bool>("NotificationProviders:Expo:Enabled", false);
+if (expoEnabled)
+{
+    builder.Services.AddHttpClient<ExpoNotificationService>();
+    builder.Services.AddScoped<ExpoNotificationService>();
+}
+
 // Register provider collection for dependency injection
 builder.Services.AddScoped<IEnumerable<IRealtimeNotificationProvider>>(provider =>
 {
@@ -262,6 +270,11 @@ builder.Services.AddScoped<IEnumerable<IRealtimeNotificationProvider>>(provider 
     if (notificationConfig.SignalR.Enabled)
     {
         providers.Add(provider.GetRequiredService<SignalRNotificationService>());
+    }
+
+    if (expoEnabled)
+    {
+        providers.Add(provider.GetRequiredService<ExpoNotificationService>());
     }
 
     return providers;

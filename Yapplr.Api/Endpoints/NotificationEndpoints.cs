@@ -148,5 +148,31 @@ public static class NotificationEndpoints
         .Produces(200)
         .Produces(400)
         .Produces(401);
+
+        // Test Expo-specific notification endpoint
+        notifications.MapPost("/test-expo", [Authorize] async (ClaimsPrincipal user, ExpoNotificationService expoService, IUserService userService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var currentUser = await userService.GetUserByIdAsync(userId);
+
+            if (currentUser?.ExpoPushToken == null || string.IsNullOrEmpty(currentUser.ExpoPushToken))
+            {
+                return Results.BadRequest(new { error = "No Expo push token found for user" });
+            }
+
+            var success = await expoService.SendTestNotificationAsync(userId);
+
+            return Results.Ok(new {
+                success = success,
+                message = success ? "Expo test notification sent successfully" : "Failed to send Expo test notification",
+                expoPushTokenLength = currentUser.ExpoPushToken.Length,
+                expoPushTokenStart = currentUser.ExpoPushToken.Substring(0, Math.Min(30, currentUser.ExpoPushToken.Length)) + "..."
+            });
+        })
+        .WithName("TestExpoNotification")
+        .WithSummary("Send a test Expo notification directly (for debugging)")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
     }
 }

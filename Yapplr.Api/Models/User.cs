@@ -56,6 +56,9 @@ public class User
     [StringLength(500)]
     public string? FcmToken { get; set; }
 
+    [StringLength(500)]
+    public string? ExpoPushToken { get; set; }
+
     public bool EmailVerified { get; set; } = false;
 
     // Admin/Moderation fields

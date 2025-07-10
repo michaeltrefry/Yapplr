@@ -74,6 +74,22 @@ export default function SettingsScreen() {
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('NotificationTest')}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconContainer, styles.blueIconContainer]}>
+                <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.menuItemText}>
+                <Text style={styles.menuItemTitle}>Expo Push Test</Text>
+                <Text style={styles.menuItemSubtitle}>Test Expo push notifications</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>

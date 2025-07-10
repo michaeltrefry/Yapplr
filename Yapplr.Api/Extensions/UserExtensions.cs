@@ -18,6 +18,7 @@ public static class UserExtensions
             user.ProfileImageFileName,
             user.CreatedAt,
             user.FcmToken,
+            user.ExpoPushToken,
             user.EmailVerified,
             user.Role,
             user.Status

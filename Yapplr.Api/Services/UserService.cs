@@ -351,6 +351,29 @@ public class UserService : IUserService
         return true;
     }
 
+    public async Task<bool> UpdateExpoPushTokenAsync(int userId, string? expoPushToken)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            return false;
+
+        if (expoPushToken == null)
+        {
+            _logger.LogInformation("Clearing Expo push token for user {UserId}", userId);
+        }
+        else
+        {
+            _logger.LogInformation("Updating Expo push token for user {UserId}: {Token}", userId, expoPushToken.Substring(0, Math.Min(20, expoPushToken.Length)) + "...");
+        }
+
+        user.ExpoPushToken = expoPushToken;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Successfully updated Expo push token for user {UserId}", userId);
+        return true;
+    }
+
     public async Task<IEnumerable<FollowRequestDto>> GetPendingFollowRequestsAsync(int userId)
     {
         var requests = await _context.FollowRequests

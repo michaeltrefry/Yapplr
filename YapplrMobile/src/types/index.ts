@@ -307,6 +307,8 @@ export interface UnreadCountResponse {
 
 // API Client interface
 export interface YapplrApi {
+  baseURL: string;
+  getToken: () => string | null;
   auth: {
     login: (data: LoginData) => Promise<AuthResponse>;
     register: (data: RegisterData) => Promise<AuthResponse>;
@@ -344,6 +346,10 @@ export interface YapplrApi {
     unblockUser: (userId: number) => Promise<BlockResponse>;
     getBlockStatus: (userId: number) => Promise<BlockStatusResponse>;
     getBlockedUsers: () => Promise<User[]>;
+    updateFcmToken: (data: { token: string }) => Promise<{ message: string }>;
+    clearFcmToken: () => Promise<{ message: string }>;
+    updateExpoPushToken: (data: { token: string }) => Promise<{ message: string }>;
+    clearExpoPushToken: () => Promise<{ message: string }>;
   };
   messages: {
     getConversations: () => Promise<ConversationListItem[]>;
@@ -370,5 +376,8 @@ export interface YapplrApi {
   };
   appeals: {
     submitAppeal: (data: CreateAppealDto) => Promise<void>;
+  };
+  tags: {
+    getTrendingTags: (limit: number) => Promise<Tag[]>;
   };
 }

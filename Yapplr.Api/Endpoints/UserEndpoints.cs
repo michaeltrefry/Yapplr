@@ -199,6 +199,26 @@ public static class UserEndpoints
         .WithName("ClearFcmToken")
         .WithSummary("Clear user's FCM token");
 
+        users.MapPost("/me/expo-push-token", [Authorize] async ([FromBody] UpdateExpoPushTokenDto tokenDto, ClaimsPrincipal user, IUserService userService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var success = await userService.UpdateExpoPushTokenAsync(userId, tokenDto.Token);
+
+            return success ? Results.Ok() : Results.BadRequest("Failed to update Expo push token");
+        })
+        .WithName("UpdateExpoPushToken")
+        .WithSummary("Update user's Expo push token for push notifications");
+
+        users.MapDelete("/me/expo-push-token", [Authorize] async (ClaimsPrincipal user, IUserService userService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var success = await userService.UpdateExpoPushTokenAsync(userId, null);
+
+            return success ? Results.Ok(new { message = "Expo push token cleared successfully" }) : Results.BadRequest("Failed to clear Expo push token");
+        })
+        .WithName("ClearExpoPushToken")
+        .WithSummary("Clear user's Expo push token");
+
         users.MapGet("/me/follow-requests", [Authorize] async (ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);

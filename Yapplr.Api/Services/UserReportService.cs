@@ -296,6 +296,7 @@ public class UserReportService : IUserReportService
                 post.User.ProfileImageFileName,
                 post.User.CreatedAt,
                 post.User.FcmToken,
+                post.User.ExpoPushToken,
                 post.User.EmailVerified,
                 post.User.Role,
                 post.User.Status
@@ -329,6 +330,7 @@ public class UserReportService : IUserReportService
                 comment.User.ProfileImageFileName,
                 comment.User.CreatedAt,
                 comment.User.FcmToken,
+                comment.User.ExpoPushToken,
                 comment.User.EmailVerified,
                 comment.User.Role,
                 comment.User.Status

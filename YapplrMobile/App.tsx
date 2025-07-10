@@ -1,9 +1,10 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './src/contexts/AuthContext';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { NotificationProvider } from './src/contexts/NotificationContext';
+import NotificationBannerManager from './src/components/NotificationBannerManager';
 import AppNavigator from './src/navigation/AppNavigator';
 
 // Use your computer's IP address instead of localhost for mobile devices
@@ -18,16 +19,33 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppWithNotifications() {
+  const { api, isAuthenticated } = useAuth();
+
+  return (
+    <ThemeProvider>
+      {isAuthenticated ? (
+        <NotificationProvider baseURL={API_BASE_URL} apiClient={api}>
+          <NotificationBannerManager>
+            <AppNavigator />
+            <StatusBar style="auto" />
+          </NotificationBannerManager>
+        </NotificationProvider>
+      ) : (
+        <>
+          <AppNavigator />
+          <StatusBar style="auto" />
+        </>
+      )}
+    </ThemeProvider>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider>
-          <NotificationProvider baseURL={API_BASE_URL}>
-            <AppNavigator />
-            <StatusBar style="auto" />
-          </NotificationProvider>
-        </ThemeProvider>
+        <AppWithNotifications />
       </AuthProvider>
     </QueryClientProvider>
   );

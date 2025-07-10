@@ -134,7 +134,7 @@ export default function EditProfileScreen({ navigation }: EditProfileScreenProps
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', `Failed to pick image: ${error.message}`);
+      Alert.alert('Error', `Failed to pick image: ${(error as Error).message}`);
     }
   };
 
@@ -157,8 +157,8 @@ export default function EditProfileScreen({ navigation }: EditProfileScreenProps
       Alert.alert('Success', 'Profile image updated successfully!');
     } catch (error) {
       console.error('Error uploading profile image:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      Alert.alert('Error', `Failed to upload profile image: ${error.message}`);
+      console.error('Error details:', (error as any).response?.data || (error as Error).message);
+      Alert.alert('Error', `Failed to upload profile image: ${(error as Error).message}`);
     } finally {
       setIsUploadingImage(false);
     }

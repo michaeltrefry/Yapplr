@@ -11,18 +11,19 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { apiClient } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { Tag } from '../types';
 
 type TrendingPeriod = 'now' | 'today' | 'week';
 
 const TrendingScreen = () => {
   const navigation = useNavigation();
+  const { api } = useAuth();
   const [activePeriod, setActivePeriod] = useState<TrendingPeriod>('now');
 
   const { data: trendingTags, isLoading, error, refetch } = useQuery({
     queryKey: ['trending-tags', activePeriod],
-    queryFn: () => apiClient.tags.getTrendingTags(20),
+    queryFn: () => api.tags.getTrendingTags(20),
     refetchInterval: activePeriod === 'now' ? 30000 : 60000,
   });
 
@@ -31,7 +32,8 @@ const TrendingScreen = () => {
   };
 
   const navigateToHashtag = (tagName: string) => {
-    navigation.navigate('Hashtag' as never, { tag: tagName } as never);
+    // TODO: Implement hashtag navigation
+    console.log('Navigate to hashtag:', tagName);
   };
 
   const formatNumber = (num: number): string => {
@@ -171,7 +173,7 @@ const TrendingScreen = () => {
 
                 {/* Hashtag Icon */}
                 <View style={[styles.hashtagIcon, { backgroundColor: getGradientColors(index)[0] }]}>
-                  <Ionicons name="hash" size={20} color="#fff" />
+                  <Ionicons name="pricetag" size={20} color="#fff" />
                 </View>
 
                 {/* Hashtag Info */}

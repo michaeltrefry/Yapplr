@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { AuthStackParamList } from '../../navigation/AppNavigator';
 
 type VerifyEmailScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'VerifyEmail'>;
 

@@ -31,6 +31,7 @@ import BlockedUsersScreen from '../screens/main/BlockedUsersScreen';
 import CreatePostScreen from '../screens/main/CreatePostScreen';
 import NotificationDebugScreen from '../screens/main/NotificationDebugScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
+import NotificationTestScreen from '../screens/NotificationTestScreen';
 import { Post } from '../types';
 
 export type RootStackParamList = {
@@ -42,6 +43,7 @@ export type RootStackParamList = {
   Settings: undefined;
   BlockedUsers: undefined;
   NotificationDebug: undefined;
+  NotificationTest: undefined;
   Notifications: undefined;
   Conversation: {
     conversationId: number;
@@ -218,6 +220,11 @@ function MainStack() {
       <Stack.Screen
         name="NotificationDebug"
         component={NotificationDebugScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="NotificationTest"
+        component={NotificationTestScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

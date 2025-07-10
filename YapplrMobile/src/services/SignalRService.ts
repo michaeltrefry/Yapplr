@@ -50,7 +50,7 @@ class SignalRService {
     try {
       console.log('📱📡📡📡 STARTING MOBILE SIGNALR INITIALIZATION 📡📡📡');
       
-      const token = await AsyncStorage.getItem('token');
+      const token = await AsyncStorage.getItem('yapplr_token');
       if (!token) {
         console.warn('📱📡 No auth token available, cannot connect to SignalR');
         return false;

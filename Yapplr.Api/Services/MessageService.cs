@@ -491,6 +491,7 @@ public class MessageService : IMessageService
                 null!, // profile image (system user has no profile image)
                 message.Sender.CreatedAt,
                 null!, // fcm token (system user doesn't need FCM)
+                null!, // expo push token (system user doesn't need Expo)
                 message.Sender.EmailVerified,
                 UserRole.System,
                 message.Sender.Status
@@ -510,6 +511,7 @@ public class MessageService : IMessageService
                 null!, // profile image
                 DateTime.UtcNow,
                 null!, // fcm token
+                null!, // expo push token
                 true, // email verified
                 UserRole.System,
                 UserStatus.Active

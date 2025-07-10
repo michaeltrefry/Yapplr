@@ -36,6 +36,7 @@ public record UserDto(
     string ProfileImageFileName,
     DateTime CreatedAt,
     string? FcmToken,
+    string? ExpoPushToken,
     bool EmailVerified,
     UserRole Role,
     UserStatus Status
