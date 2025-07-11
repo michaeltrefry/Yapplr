@@ -253,6 +253,49 @@ export interface CreateAppealDto {
   commentId?: number;
 }
 
+// User Report Types
+export enum UserReportStatus {
+  Pending = 0,
+  Reviewed = 1,
+  Dismissed = 2,
+  ActionTaken = 3,
+}
+
+export interface SystemTag {
+  id: number;
+  name: string;
+  description: string;
+  category: number;
+  isVisibleToUsers: boolean;
+  isActive: boolean;
+  color: string;
+  icon?: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserReport {
+  id: number;
+  reportedByUsername: string;
+  status: UserReportStatus;
+  reason: string;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedByUsername?: string;
+  reviewNotes?: string;
+  post?: Post;
+  comment?: Comment;
+  systemTags: SystemTag[];
+}
+
+export interface CreateUserReportDto {
+  postId?: number;
+  commentId?: number;
+  reason: string;
+  systemTagIds: number[];
+}
+
 // Notification Types
 export enum NotificationType {
   Mention = 1,
@@ -379,5 +422,10 @@ export interface YapplrApi {
   };
   tags: {
     getTrendingTags: (limit: number) => Promise<Tag[]>;
+  };
+  userReports: {
+    createReport: (data: CreateUserReportDto) => Promise<UserReport>;
+    getMyReports: (page: number, pageSize: number) => Promise<UserReport[]>;
+    getSystemTags: () => Promise<SystemTag[]>;
   };
 }

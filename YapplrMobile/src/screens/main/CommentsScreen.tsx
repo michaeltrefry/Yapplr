@@ -19,6 +19,7 @@ import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Comment, Post } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import ReportModal from '../../components/ReportModal';
 
 type RootStackParamList = {
   Comments: {
@@ -40,6 +41,7 @@ interface CommentItemProps {
 function CommentItem({ comment, getImageUrl, onDelete }: CommentItemProps) {
   const { user, api } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isOwner = user && user.id === comment.user.id;
@@ -85,15 +87,28 @@ function CommentItem({ comment, getImageUrl, onDelete }: CommentItemProps) {
             {comment.isEdited && <Text style={commentStyles.editedText}> (edited)</Text>}
           </Text>
         </View>
-        {isOwner && (
-          <TouchableOpacity
-            style={commentStyles.deleteButton}
-            onPress={() => setShowDeleteConfirm(true)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="trash-outline" size={16} color="#EF4444" />
-          </TouchableOpacity>
-        )}
+        <View style={commentStyles.actionButtons}>
+          {/* Report button - only show for other users' comments */}
+          {!isOwner && (
+            <TouchableOpacity
+              style={commentStyles.actionButton}
+              onPress={() => setShowReportModal(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="flag-outline" size={16} color="#6B7280" />
+            </TouchableOpacity>
+          )}
+          {/* Delete button - only show for own comments */}
+          {isOwner && (
+            <TouchableOpacity
+              style={commentStyles.actionButton}
+              onPress={() => setShowDeleteConfirm(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash-outline" size={16} color="#EF4444" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       <Text style={commentStyles.commentContent}>{comment.content}</Text>
 
@@ -133,6 +148,15 @@ function CommentItem({ comment, getImageUrl, onDelete }: CommentItemProps) {
           </View>
         </View>
       </Modal>
+
+      {/* Report Modal */}
+      <ReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        commentId={comment.id}
+        contentType="comment"
+        contentPreview={comment.content}
+      />
     </View>
   );
 }
@@ -531,7 +555,11 @@ const commentStyles = StyleSheet.create({
     color: '#000',
     marginLeft: 44,
   },
-  deleteButton: {
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
     padding: 8,
     borderRadius: 16,
     backgroundColor: '#F9FAFB',

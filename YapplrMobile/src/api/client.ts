@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -392,6 +392,23 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
     tags: {
       getTrendingTags: async (limit: number) => {
         const response = await client.get(`/api/tags/trending?limit=${limit}`);
+        return response.data;
+      },
+    },
+
+    userReports: {
+      createReport: async (data: CreateUserReportDto): Promise<UserReport> => {
+        const response = await client.post('/api/reports', data);
+        return response.data;
+      },
+
+      getMyReports: async (page: number = 1, pageSize: number = 25): Promise<UserReport[]> => {
+        const response = await client.get(`/api/reports/my-reports?page=${page}&pageSize=${pageSize}`);
+        return response.data;
+      },
+
+      getSystemTags: async (): Promise<SystemTag[]> => {
+        const response = await client.get('/api/admin/system-tags');
         return response.data;
       },
     },

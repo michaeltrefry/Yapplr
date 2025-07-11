@@ -16,6 +16,7 @@ import { TimelineItem, Post } from '../types';
 import ImageViewer from './ImageViewer';
 import { ContentHighlight } from '../utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
+import ReportModal from './ReportModal';
 
 interface PostCardProps {
   item: TimelineItem;
@@ -36,6 +37,7 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
   const [imageError, setImageError] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const styles = createStyles(colors);
@@ -240,6 +242,16 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
           />
           <Text style={styles.actionText}>{item.post.repostCount}</Text>
         </TouchableOpacity>
+
+        {/* Report button - only show for other users' posts */}
+        {!isPostOwner && (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => setShowReportModal(true)}
+          >
+            <Ionicons name="flag-outline" size={20} color="#6B7280" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Full-Screen Image Viewer */}
@@ -294,6 +306,15 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
           </View>
         </View>
       </Modal>
+
+      {/* Report Modal */}
+      <ReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        postId={item.post.id}
+        contentType="post"
+        contentPreview={item.post.content}
+      />
     </View>
   );
 }

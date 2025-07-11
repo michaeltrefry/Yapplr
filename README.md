@@ -171,6 +171,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Comments System** - Full commenting functionality with dedicated screens, real-time updates, reply functionality, and optimized performance
 - **Mentions & Notifications**: @username mention system with comprehensive notification support and smart navigation
 - **Hashtag Support**: #hashtag tagging with search, trending topics, and clickable navigation
+- **Content Reporting**: Report objectionable posts and comments with system tag categorization and detailed reasons
 - **Dark Mode**: Complete dark theme support with toggle in Settings and persistent user preferences
 - **Shared Package** - 70-80% code reuse with web app
 
@@ -366,6 +367,7 @@ Use Expo Go app on your phone to scan the QR code, or press `i` for iOS simulato
 - **API Integration**: Full integration with backend API for profile updates and image uploads
 - **Image Fallbacks**: Graceful fallback to user initials when no profile image is available
 - **Password Recovery**: Complete password reset flow with 6-digit email codes and automatic navigation
+- **Content Reporting**: Report inappropriate posts and comments with system tag categorization (Violation, Safety, Content Warning, Quality/Spam) and detailed reason submission
 - **Dark Mode**: Complete dark theme with toggle in Settings, synchronized with web app preferences
 
 ### 5. Firebase Setup (Required for Real-time Notifications)
@@ -888,6 +890,11 @@ For detailed configuration options, see [PLATFORM_SPECIFIC_NOTIFICATIONS.md](PLA
 ### User Preferences
 - `GET /api/preferences` - Get current user's preferences (dark mode, etc.)
 - `PUT /api/preferences` - Update user preferences with partial updates
+
+### User Reporting System
+- `POST /api/reports` - Create user report for objectionable content (posts or comments)
+- `GET /api/reports/my-reports` - Get current user's submitted reports (paginated)
+- `GET /api/admin/system-tags` - Get system tags for report categorization
 
 ## 🔒 Security Features
 

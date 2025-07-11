@@ -19,5 +19,9 @@
     "react-native-reanimated": "^3.18.0",
     "react-native-url-polyfill": "^2.0.0",
     "recharts": "^3.0.2"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "@types/react": "~19.0.10"
   }
 }
