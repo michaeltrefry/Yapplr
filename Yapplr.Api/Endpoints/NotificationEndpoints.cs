@@ -30,12 +30,32 @@ public static class NotificationEndpoints
         {
             var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var unreadCount = await notificationService.GetUnreadNotificationCountAsync(userId);
-            
+
             return Results.Ok(new { unreadCount });
         })
         .WithName("GetUnreadNotificationCount")
         .WithSummary("Get count of unread notifications for user")
         .Produces(200)
+        .Produces(401);
+
+        // Get combined unread counts for notifications and messages
+        notifications.MapGet("/combined-unread-count", [Authorize] async (ClaimsPrincipal user, INotificationService notificationService, IMessageService messageService) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            // Execute queries sequentially to avoid DbContext concurrency issues
+            var notificationCount = await notificationService.GetUnreadNotificationCountAsync(userId);
+            var messageCount = await messageService.GetTotalUnreadMessageCountAsync(userId);
+
+            return Results.Ok(new CombinedUnreadCountDto
+            {
+                UnreadNotificationCount = notificationCount,
+                UnreadMessageCount = messageCount
+            });
+        })
+        .WithName("GetCombinedUnreadCount")
+        .WithSummary("Get combined count of unread notifications and messages for user")
+        .Produces<CombinedUnreadCountDto>(200)
         .Produces(401);
 
         // Mark notification as read

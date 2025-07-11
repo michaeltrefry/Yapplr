@@ -51,3 +51,9 @@ public class NotificationListDto
     public int UnreadCount { get; set; }
     public bool HasMore { get; set; }
 }
+
+public class CombinedUnreadCountDto
+{
+    public int UnreadNotificationCount { get; set; }
+    public int UnreadMessageCount { get; set; }
+}
