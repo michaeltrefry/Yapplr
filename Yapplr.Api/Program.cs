@@ -172,9 +172,13 @@ if (notificationConfig.SignalR.Enabled)
     });
 }
 
+// Add memory cache for caching services
+builder.Services.AddMemoryCache();
+
 // Add custom services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<IUserCacheService, UserCacheService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IBlockService, BlockService>();
 builder.Services.AddScoped<IImageService, ImageService>();

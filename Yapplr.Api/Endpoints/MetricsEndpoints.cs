@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Endpoints;
@@ -177,7 +178,7 @@ public static class MetricsEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var notifications = await queueService.GetPendingNotificationsAsync(userId);
             return Results.Ok(notifications);
         }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Yapplr.Api.Authorization;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
 
@@ -31,10 +32,10 @@ public static class LinkPreviewEndpoints
         .Produces(404);
 
         // Create/fetch link preview for URL
-        linkPreviews.MapPost("/", [Authorize] async ([FromBody] CreateLinkPreviewDto createDto, ILinkPreviewService linkPreviewService) =>
+        linkPreviews.MapPost("/", [RequireActiveUser] async ([FromBody] CreateLinkPreviewDto createDto, ILinkPreviewService linkPreviewService) =>
         {
             var linkPreview = await linkPreviewService.GetOrCreateLinkPreviewAsync(createDto.Url);
-            
+
             return linkPreview == null ? Results.BadRequest() : Results.Ok(linkPreview);
         })
         .WithName("CreateLinkPreview")
@@ -44,10 +45,10 @@ public static class LinkPreviewEndpoints
         .Produces(401);
 
         // Process multiple URLs from post content
-        linkPreviews.MapPost("/process", [Authorize] async ([FromBody] ProcessLinksDto processDto, ILinkPreviewService linkPreviewService) =>
+        linkPreviews.MapPost("/process", [RequireActiveUser] async ([FromBody] ProcessLinksDto processDto, ILinkPreviewService linkPreviewService) =>
         {
             var linkPreviews = await linkPreviewService.ProcessPostLinksAsync(processDto.Content);
-            
+
             return Results.Ok(linkPreviews);
         })
         .WithName("ProcessPostLinks")

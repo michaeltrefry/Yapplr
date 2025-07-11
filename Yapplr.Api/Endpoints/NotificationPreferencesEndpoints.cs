@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Yapplr.Api.Extensions;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 
@@ -87,7 +88,7 @@ public static class NotificationPreferencesEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var preferences = await preferencesService.GetUserPreferencesAsync(userId);
             return Results.Ok(preferences);
         }
@@ -104,7 +105,7 @@ public static class NotificationPreferencesEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var preferences = await preferencesService.UpdateUserPreferencesAsync(userId, updateDto);
             return Results.Ok(preferences);
         }
@@ -121,7 +122,7 @@ public static class NotificationPreferencesEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var status = await deliveryService.GetDeliveryStatusAsync(userId, count);
             return Results.Ok(status);
         }
@@ -138,7 +139,7 @@ public static class NotificationPreferencesEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var history = await deliveryService.GetNotificationHistoryAsync(userId, count);
             return Results.Ok(history);
         }
@@ -154,7 +155,7 @@ public static class NotificationPreferencesEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var undelivered = await deliveryService.GetUndeliveredNotificationsAsync(userId);
             return Results.Ok(undelivered);
         }
@@ -170,7 +171,7 @@ public static class NotificationPreferencesEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             await deliveryService.ReplayMissedNotificationsAsync(userId);
             return Results.Ok(new { message = "Missed notifications replayed successfully" });
         }
@@ -217,7 +218,7 @@ public static class NotificationPreferencesEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var timeWindow = timeWindowHours.HasValue ? TimeSpan.FromHours(timeWindowHours.Value) : (TimeSpan?)null;
             var stats = await deliveryService.GetDeliveryStatsAsync(userId, timeWindow);
             return Results.Ok(stats);

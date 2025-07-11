@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Endpoints;
@@ -102,7 +103,7 @@ public static class SecurityEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var violations = await rateLimitService.GetRecentViolationsAsync(userId);
             return Results.Ok(violations);
         }
@@ -132,7 +133,7 @@ public static class SecurityEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             await rateLimitService.ResetUserLimitsAsync(userId);
             return Results.Ok(new { message = "Rate limits reset successfully" });
         }
@@ -178,7 +179,7 @@ public static class SecurityEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var logs = await auditService.GetUserAuditLogsAsync(userId, count);
             return Results.Ok(logs);
         }

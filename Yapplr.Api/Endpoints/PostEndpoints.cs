@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Yapplr.Api.Authorization;
 using Yapplr.Api.DTOs;
+using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Endpoints;
@@ -13,11 +15,11 @@ public static class PostEndpoints
         var posts = app.MapGroup("/api/posts").WithTags("Posts");
 
         // Create post
-        posts.MapPost("/", [Authorize] async ([FromBody] CreatePostDto createDto, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPost("/", [RequireActiveUser] async ([FromBody] CreatePostDto createDto, ClaimsPrincipal user, IPostService postService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var post = await postService.CreatePostAsync(userId, createDto);
-            
+
             return post == null ? Results.BadRequest() : Results.Created($"/api/posts/{post.Id}", post);
         })
         .WithName("CreatePost")
@@ -43,9 +45,9 @@ public static class PostEndpoints
         .Produces(404);
 
         // Get timeline (authenticated)
-        posts.MapGet("/timeline", [Authorize] async (ClaimsPrincipal user, IPostService postService, int page = 1, int pageSize = 25) =>
+        posts.MapGet("/timeline", [RequireActiveUser] async (ClaimsPrincipal user, IPostService postService, int page = 1, int pageSize = 25) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var timeline = await postService.GetTimelineWithRepostsAsync(userId, page, pageSize);
 
             return Results.Ok(timeline);
@@ -101,9 +103,9 @@ public static class PostEndpoints
         .Produces<IEnumerable<TimelineItemDto>>(200);
 
         // Update post
-        posts.MapPut("/{id:int}", [Authorize] async (int id, [FromBody] UpdatePostDto updateDto, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPut("/{id:int}", [RequireActiveUser] async (int id, [FromBody] UpdatePostDto updateDto, ClaimsPrincipal user, IPostService postService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var post = await postService.UpdatePostAsync(id, userId, updateDto);
 
             return post == null ? Results.NotFound() : Results.Ok(post);
@@ -116,9 +118,9 @@ public static class PostEndpoints
         .Produces(404);
 
         // Delete post
-        posts.MapDelete("/{id:int}", [Authorize] async (int id, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapDelete("/{id:int}", [RequireActiveUser] async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var success = await postService.DeletePostAsync(id, userId);
 
             return success ? Results.NoContent() : Results.NotFound();
@@ -130,11 +132,11 @@ public static class PostEndpoints
         .Produces(404);
 
         // Like/Unlike post
-        posts.MapPost("/{id:int}/like", [Authorize] async (int id, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPost("/{id:int}/like", [RequireActiveUser] async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var success = await postService.LikePostAsync(id, userId);
-            
+
             return success ? Results.Ok() : Results.BadRequest(new { message = "Already liked" });
         })
         .WithName("LikePost")
@@ -143,9 +145,9 @@ public static class PostEndpoints
         .Produces(400)
         .Produces(401);
 
-        posts.MapDelete("/{id:int}/like", [Authorize] async (int id, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapDelete("/{id:int}/like", [RequireActiveUser] async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var success = await postService.UnlikePostAsync(id, userId);
             
             return success ? Results.Ok() : Results.BadRequest(new { message = "Not liked" });
@@ -157,11 +159,11 @@ public static class PostEndpoints
         .Produces(401);
 
         // Repost/Unrepost
-        posts.MapPost("/{id:int}/repost", [Authorize] async (int id, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPost("/{id:int}/repost", [RequireActiveUser] async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var success = await postService.RepostAsync(id, userId);
-            
+
             return success ? Results.Ok() : Results.BadRequest(new { message = "Already reposted" });
         })
         .WithName("RepostPost")
@@ -170,9 +172,9 @@ public static class PostEndpoints
         .Produces(400)
         .Produces(401);
 
-        posts.MapDelete("/{id:int}/repost", [Authorize] async (int id, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapDelete("/{id:int}/repost", [RequireActiveUser] async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var success = await postService.UnrepostAsync(id, userId);
             
             return success ? Results.Ok() : Results.BadRequest(new { message = "Not reposted" });
@@ -184,9 +186,9 @@ public static class PostEndpoints
         .Produces(401);
 
         // Comments
-        posts.MapPost("/{id:int}/comments", [Authorize] async (int id, [FromBody] CreateCommentDto createDto, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPost("/{id:int}/comments", [RequireActiveUser] async (int id, [FromBody] CreateCommentDto createDto, ClaimsPrincipal user, IPostService postService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var comment = await postService.AddCommentAsync(id, userId, createDto);
             
             return comment == null ? Results.BadRequest() : Results.Created($"/api/posts/{id}/comments/{comment.Id}", comment);
@@ -206,9 +208,9 @@ public static class PostEndpoints
         .WithSummary("Get post comments")
         .Produces<IEnumerable<CommentDto>>(200);
 
-        posts.MapPut("/comments/{commentId:int}", [Authorize] async (int commentId, [FromBody] UpdateCommentDto updateDto, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPut("/comments/{commentId:int}", [RequireActiveUser] async (int commentId, [FromBody] UpdateCommentDto updateDto, ClaimsPrincipal user, IPostService postService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var comment = await postService.UpdateCommentAsync(commentId, userId, updateDto);
 
             return comment == null ? Results.NotFound() : Results.Ok(comment);
@@ -220,9 +222,9 @@ public static class PostEndpoints
         .Produces(401)
         .Produces(404);
 
-        posts.MapDelete("/comments/{commentId:int}", [Authorize] async (int commentId, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapDelete("/comments/{commentId:int}", [RequireActiveUser] async (int commentId, ClaimsPrincipal user, IPostService postService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var success = await postService.DeleteCommentAsync(commentId, userId);
 
             return success ? Results.NoContent() : Results.NotFound();

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Endpoints;
@@ -87,7 +88,7 @@ public static class UXEnhancementEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var notifications = await offlineService.GetOfflineNotificationsAsync(userId);
             return Results.Ok(notifications);
         }
@@ -103,7 +104,7 @@ public static class UXEnhancementEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             await offlineService.ProcessOfflineNotificationsAsync(userId);
             return Results.Ok(new { message = "Offline notifications processed successfully" });
         }
@@ -119,7 +120,7 @@ public static class UXEnhancementEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var status = await offlineService.GetUserConnectivityStatusAsync(userId);
             return Results.Ok(status);
         }
@@ -136,7 +137,7 @@ public static class UXEnhancementEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             await offlineService.MarkUserOnlineAsync(userId, connectionType);
             return Results.Ok(new { message = "User marked as online" });
         }
@@ -152,7 +153,7 @@ public static class UXEnhancementEndpoints
     {
         try
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             await offlineService.MarkUserOfflineAsync(userId);
             return Results.Ok(new { message = "User marked as offline" });
         }

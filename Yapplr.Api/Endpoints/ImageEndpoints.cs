@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Yapplr.Api.Authorization;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Endpoints;
@@ -10,7 +11,7 @@ public static class ImageEndpoints
     {
         var images = app.MapGroup("/api/images").WithTags("Images");
 
-        images.MapPost("/upload", [Authorize] async (IFormFile file, IImageService imageService, HttpContext context) =>
+        images.MapPost("/upload", [RequireActiveUser] async (IFormFile file, IImageService imageService, HttpContext context) =>
         {
             try
             {
@@ -70,7 +71,7 @@ public static class ImageEndpoints
         .Produces(200)
         .Produces(404);
 
-        images.MapDelete("/{fileName}", [Authorize] (string fileName, IImageService imageService) =>
+        images.MapDelete("/{fileName}", [RequireActiveUser] (string fileName, IImageService imageService) =>
         {
             var success = imageService.DeleteImage(fileName);
             return success ? Results.NoContent() : Results.NotFound();

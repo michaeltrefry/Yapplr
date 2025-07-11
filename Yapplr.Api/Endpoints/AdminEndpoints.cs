@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Yapplr.Api.Authorization;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
+using Yapplr.Api.Extensions;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 
@@ -475,7 +476,7 @@ public static class AdminEndpoints
 
         admin.MapPost("/reports/{id:int}/review", [RequireModerator] async (int id, ReviewUserReportDto dto, ClaimsPrincipal user, IUserReportService userReportService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var report = await userReportService.ReviewReportAsync(id, userId, dto);
             return report == null ? Results.NotFound() : Results.Ok(report);
         })
@@ -486,7 +487,7 @@ public static class AdminEndpoints
 
         admin.MapPost("/reports/{id:int}/hide-content", [RequireModerator] async (int id, HideContentFromReportDto dto, ClaimsPrincipal user, IUserReportService userReportService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var result = await userReportService.HideContentFromReportAsync(id, userId, dto.Reason);
             return result ? Results.Ok(new { message = "Content hidden and users notified" }) : Results.BadRequest(new { message = "Failed to hide content" });
         })

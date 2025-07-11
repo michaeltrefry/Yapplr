@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Yapplr.Api.Authorization;
 using Yapplr.Api.DTOs;
+using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Endpoints;
@@ -13,22 +15,22 @@ public static class NotificationEndpoints
         var notifications = app.MapGroup("/api/notifications").WithTags("Notifications");
 
         // Get user notifications with pagination
-        notifications.MapGet("/", [Authorize] async (ClaimsPrincipal user, INotificationService notificationService, int page = 1, int pageSize = 25) =>
-        {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var result = await notificationService.GetUserNotificationsAsync(userId, page, pageSize);
-            
-            return Results.Ok(result);
-        })
+        notifications.MapGet("/", [RequireActiveUser] async (ClaimsPrincipal user, INotificationService notificationService, int page = 1, int pageSize = 25) => 
+            {
+                var userId = user.GetUserId(true);
+                var result = await notificationService.GetUserNotificationsAsync(userId, page, pageSize);
+                
+                return Results.Ok(result);
+            })
         .WithName("GetNotifications")
         .WithSummary("Get user notifications with pagination")
         .Produces<NotificationListDto>(200)
         .Produces(401);
 
         // Get unread notification count
-        notifications.MapGet("/unread-count", [Authorize] async (ClaimsPrincipal user, INotificationService notificationService) =>
+        notifications.MapGet("/unread-count", [RequireActiveUser] async (ClaimsPrincipal user, INotificationService notificationService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var unreadCount = await notificationService.GetUnreadNotificationCountAsync(userId);
 
             return Results.Ok(new { unreadCount });
@@ -39,9 +41,9 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Get combined unread counts for notifications and messages
-        notifications.MapGet("/combined-unread-count", [Authorize] async (ClaimsPrincipal user, INotificationService notificationService, IMessageService messageService) =>
+        notifications.MapGet("/combined-unread-count", [RequireActiveUser] async (ClaimsPrincipal user, INotificationService notificationService, IMessageService messageService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
 
             // Execute queries sequentially to avoid DbContext concurrency issues
             var notificationCount = await notificationService.GetUnreadNotificationCountAsync(userId);
@@ -59,9 +61,9 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Mark notification as read
-        notifications.MapPut("/{notificationId:int}/read", [Authorize] async (int notificationId, ClaimsPrincipal user, INotificationService notificationService) =>
+        notifications.MapPut("/{notificationId:int}/read", [RequireActiveUser] async (int notificationId, ClaimsPrincipal user, INotificationService notificationService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var success = await notificationService.MarkNotificationAsReadAsync(notificationId, userId);
             
             return success ? Results.Ok(new { message = "Notification marked as read" }) : Results.NotFound(new { message = "Notification not found" });
@@ -73,9 +75,9 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Mark all notifications as read
-        notifications.MapPut("/read-all", [Authorize] async (ClaimsPrincipal user, INotificationService notificationService) =>
+        notifications.MapPut("/read-all", [RequireActiveUser] async (ClaimsPrincipal user, INotificationService notificationService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var success = await notificationService.MarkAllNotificationsAsReadAsync(userId);
             
             return Results.Ok(new { message = success ? "All notifications marked as read" : "No unread notifications found" });
@@ -86,9 +88,9 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Test notification endpoint (Firebase + SignalR fallback)
-        notifications.MapPost("/test", [Authorize] async (ClaimsPrincipal user, ICompositeNotificationService notificationService) =>
+        notifications.MapPost("/test", [RequireActiveUser] async (ClaimsPrincipal user, ICompositeNotificationService notificationService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
 
             var success = await notificationService.SendTestNotificationAsync(userId);
 
@@ -106,9 +108,9 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Test Firebase-specific notification endpoint
-        notifications.MapPost("/test-firebase", [Authorize] async (ClaimsPrincipal user, IFirebaseService firebaseService, IUserService userService) =>
+        notifications.MapPost("/test-firebase", [RequireActiveUser] async (ClaimsPrincipal user, IFirebaseService firebaseService, IUserService userService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var currentUser = await userService.GetUserByIdAsync(userId);
 
             if (currentUser?.FcmToken == null || string.IsNullOrEmpty(currentUser.FcmToken))
@@ -132,7 +134,7 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Test Firebase service with mock token (for simulator testing)
-        notifications.MapPost("/test-firebase-mock", [Authorize] async (IFirebaseService firebaseService) =>
+        notifications.MapPost("/test-firebase-mock", [RequireActiveUser] async (IFirebaseService firebaseService) =>
         {
             // Use a mock Expo push token format for testing
             var mockToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
@@ -152,9 +154,9 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Test SignalR-specific notification endpoint
-        notifications.MapPost("/test-signalr", [Authorize] async (ClaimsPrincipal user, SignalRNotificationService signalRService) =>
+        notifications.MapPost("/test-signalr", [RequireActiveUser] async (ClaimsPrincipal user, SignalRNotificationService signalRService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
 
             var success = await signalRService.SendTestNotificationAsync(userId);
 
@@ -170,9 +172,9 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Test Expo-specific notification endpoint
-        notifications.MapPost("/test-expo", [Authorize] async (ClaimsPrincipal user, ExpoNotificationService expoService, IUserService userService) =>
+        notifications.MapPost("/test-expo", [RequireActiveUser] async (ClaimsPrincipal user, ExpoNotificationService expoService, IUserService userService) =>
         {
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = user.GetUserId(true);
             var currentUser = await userService.GetUserByIdAsync(userId);
 
             if (currentUser?.ExpoPushToken == null || string.IsNullOrEmpty(currentUser.ExpoPushToken))
