@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag, ContentPageVersion } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -409,6 +409,23 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
       getSystemTags: async (): Promise<SystemTag[]> => {
         const response = await client.get('/api/admin/system-tags');
+        return response.data;
+      },
+    },
+
+    content: {
+      getTermsOfService: async (): Promise<ContentPageVersion> => {
+        const response = await client.get('/api/content/terms');
+        return response.data;
+      },
+
+      getPrivacyPolicy: async (): Promise<ContentPageVersion> => {
+        const response = await client.get('/api/content/privacy');
+        return response.data;
+      },
+
+      getPublishedContentBySlug: async (slug: string): Promise<ContentPageVersion> => {
+        const response = await client.get(`/api/content/pages/${slug}`);
         return response.data;
       },
     },

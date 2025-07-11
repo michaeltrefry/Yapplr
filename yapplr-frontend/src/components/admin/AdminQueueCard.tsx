@@ -12,6 +12,8 @@ export interface AdminQueueCardProps {
   content: AdminPost | AdminComment;
   contentType: 'post' | 'comment';
   onHide?: (id: number, reason: string) => Promise<void>;
+  onUnhide?: (id: number) => Promise<void>;
+  onTag?: (id: number, tagIds: number[]) => Promise<void>;
   onApproveAiSuggestion?: (postId: number, tagId: number) => Promise<void>;
   onRejectAiSuggestion?: (postId: number, tagId: number) => Promise<void>;
   onBulkApproveAiSuggestions?: (postId: number, tagIds: number[]) => Promise<void>;
@@ -25,6 +27,8 @@ export function AdminQueueCard({
   content,
   contentType,
   onHide,
+  onUnhide,
+  onTag,
   onApproveAiSuggestion,
   onRejectAiSuggestion,
   onBulkApproveAiSuggestions,
@@ -34,23 +38,31 @@ export function AdminQueueCard({
   className = '',
 }: AdminQueueCardProps) {
   const [showActionForm, setShowActionForm] = useState(false);
+  const [actionType, setActionType] = useState<'hide' | 'tag' | null>(null);
   const [expandedAiSuggestions, setExpandedAiSuggestions] = useState(false);
 
   const isPost = contentType === 'post';
   const post = content as AdminPost;
 
   const handleActionClick = (action: 'hide' | 'unhide' | 'tag') => {
-    if (action === 'hide') {
-      setShowActionForm(true);
+    if (action === 'unhide' && onUnhide) {
+      onUnhide(content.id);
+      return;
     }
+
+    setActionType(action === 'hide' ? 'hide' : 'tag');
+    setShowActionForm(true);
   };
 
-  const handleActionSubmit = async (reason: string) => {
+  const handleActionSubmit = async (reason: string, tagIds?: number[]) => {
     try {
-      if (onHide) {
+      if (actionType === 'hide' && onHide) {
         await onHide(content.id, reason);
+      } else if (actionType === 'tag' && onTag && tagIds) {
+        await onTag(content.id, tagIds);
       }
       setShowActionForm(false);
+      setActionType(null);
     } catch (error) {
       console.error('Action failed:', error);
     }
@@ -58,6 +70,7 @@ export function AdminQueueCard({
 
   const handleActionCancel = () => {
     setShowActionForm(false);
+    setActionType(null);
   };
 
   const toggleAiSuggestions = () => {
@@ -188,9 +201,9 @@ export function AdminQueueCard({
           contentType={contentType}
         />
         
-        {showActionForm && (
+        {showActionForm && actionType && (
           <InlineActionForm
-            actionType="hide"
+            actionType={actionType}
             contentType={contentType}
             onSubmit={handleActionSubmit}
             onCancel={handleActionCancel}

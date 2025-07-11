@@ -349,6 +349,28 @@ export interface UnreadCountResponse {
   unreadCount: number;
 }
 
+// Content Management Types
+export enum ContentPageType {
+  TermsOfService = 0,
+  PrivacyPolicy = 1,
+  CommunityGuidelines = 2,
+  AboutUs = 3,
+  Help = 4,
+}
+
+export interface ContentPageVersion {
+  id: number;
+  contentPageId: number;
+  content: string;
+  changeNotes?: string;
+  versionNumber: number;
+  isPublished: boolean;
+  publishedAt?: string;
+  publishedByUsername?: string;
+  createdByUsername: string;
+  createdAt: string;
+}
+
 // API Client interface
 export interface YapplrApi {
   baseURL: string;
@@ -428,5 +450,10 @@ export interface YapplrApi {
     createReport: (data: CreateUserReportDto) => Promise<UserReport>;
     getMyReports: (page: number, pageSize: number) => Promise<UserReport[]>;
     getSystemTags: () => Promise<SystemTag[]>;
+  };
+  content: {
+    getTermsOfService: () => Promise<ContentPageVersion>;
+    getPrivacyPolicy: () => Promise<ContentPageVersion>;
+    getPublishedContentBySlug: (slug: string) => Promise<ContentPageVersion>;
   };
 }

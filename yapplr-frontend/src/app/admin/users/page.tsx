@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { AdminUser, UserRole, UserStatus } from '@/types';
+import { SuspendUserModal } from '@/components/admin';
 import {
   Users,
   Search,
@@ -25,6 +26,8 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState<UserStatus | ''>('');
   const [roleFilter, setRoleFilter] = useState<UserRole | ''>('');
   const [page, setPage] = useState(1);
+  const [suspendModalOpen, setSuspendModalOpen] = useState(false);
+  const [userToSuspend, setUserToSuspend] = useState<AdminUser | null>(null);
 
   useEffect(() => {
     // Get initial filters from URL params
@@ -58,24 +61,33 @@ export default function UsersPage() {
     }
   };
 
-  const handleSuspendUser = async (userId: number) => {
-    const reason = prompt('Enter reason for suspension:');
-    if (!reason) return;
+  const handleSuspendUser = (userId: number) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setUserToSuspend(user);
+      setSuspendModalOpen(true);
+    }
+  };
 
-    const daysInput = prompt('Enter number of days (leave empty for permanent):');
-    const days = daysInput ? parseInt(daysInput) : null;
-    
-    const suspendedUntil = days 
+  const handleSuspendSubmit = async (reason: string, days: number | null) => {
+    if (!userToSuspend) return;
+
+    const suspendedUntil = days
       ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
       : undefined;
 
     try {
-      await adminApi.suspendUser(userId, { reason, suspendedUntil });
+      await adminApi.suspendUser(userToSuspend.id, { reason, suspendedUntil });
       fetchUsers();
     } catch (error) {
       console.error('Failed to suspend user:', error);
-      alert('Failed to suspend user');
+      throw error; // Let the modal handle the error display
     }
+  };
+
+  const handleSuspendModalClose = () => {
+    setSuspendModalOpen(false);
+    setUserToSuspend(null);
   };
 
   const handleUnsuspendUser = async (userId: number) => {
@@ -367,6 +379,15 @@ export default function UsersPage() {
           <p className="text-gray-500">No users found matching your criteria</p>
         </div>
       )}
+
+      {/* Suspend User Modal */}
+      <SuspendUserModal
+        isOpen={suspendModalOpen}
+        onClose={handleSuspendModalClose}
+        onSubmit={handleSuspendSubmit}
+        username={userToSuspend?.username || ''}
+        isLoading={loading}
+      />
     </div>
   );
 }

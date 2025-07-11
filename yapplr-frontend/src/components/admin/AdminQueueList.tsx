@@ -10,6 +10,8 @@ export interface AdminQueueListProps {
   contentType: 'post' | 'comment';
   loading?: boolean;
   onHide?: (id: number, reason: string) => Promise<void>;
+  onUnhide?: (id: number) => Promise<void>;
+  onTag?: (id: number, tagIds: number[]) => Promise<void>;
   onApproveAiSuggestion?: (postId: number, tagId: number) => Promise<void>;
   onRejectAiSuggestion?: (postId: number, tagId: number) => Promise<void>;
   onBulkApproveAiSuggestions?: (postId: number, tagIds: number[]) => Promise<void>;
@@ -25,6 +27,8 @@ export function AdminQueueList({
   contentType,
   loading = false,
   onHide,
+  onUnhide,
+  onTag,
   onApproveAiSuggestion,
   onRejectAiSuggestion,
   onBulkApproveAiSuggestions,
@@ -62,6 +66,8 @@ export function AdminQueueList({
           content={item}
           contentType={contentType}
           onHide={onHide}
+          onUnhide={onUnhide}
+          onTag={onTag}
           onApproveAiSuggestion={onApproveAiSuggestion}
           onRejectAiSuggestion={onRejectAiSuggestion}
           onBulkApproveAiSuggestions={onBulkApproveAiSuggestions}

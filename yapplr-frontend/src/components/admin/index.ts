@@ -13,6 +13,7 @@ export { InlineActionForm } from './InlineActionForm';
 export { StatusBadge } from './StatusBadge';
 export { UserLink } from './UserLink';
 export { SystemTagDisplay } from './SystemTagDisplay';
+export { default as SuspendUserModal } from './SuspendUserModal';
 
 export type { AdminContentCardProps } from './AdminContentCard';
 export type { AdminContentListProps } from './AdminContentList';

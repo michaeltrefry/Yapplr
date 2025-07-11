@@ -18,6 +18,7 @@ import {
   FileSearch,
   Scale,
   Home,
+  Edit,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -78,6 +79,12 @@ const adminNavItems = [
     href: '/admin/analytics',
     icon: BarChart3,
     roles: [UserRole.Moderator, UserRole.Admin],
+  },
+  {
+    name: 'Content Management',
+    href: '/admin/content',
+    icon: Edit,
+    roles: [UserRole.Admin],
   },
 ];
 

@@ -1,18 +1,81 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../contexts/AuthContext';
+import { ContentPageVersion } from '../../types';
+import { parseMarkdown, formatLastUpdated, MarkdownElement } from '../../utils/markdownParser';
 
 interface TermsOfServiceScreenProps {
   navigation: any;
 }
 
 export default function TermsOfServiceScreen({ navigation }: TermsOfServiceScreenProps) {
+  const { api } = useAuth();
+  const [content, setContent] = useState<ContentPageVersion | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchTermsContent();
+  }, []);
+
+  const fetchTermsContent = async () => {
+    try {
+      const termsContent = await api.content.getTermsOfService();
+      setContent(termsContent);
+    } catch (err) {
+      console.error('Failed to fetch Terms of Service:', err);
+      setError('Failed to load Terms of Service');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderMarkdownElement = (element: MarkdownElement, index: number) => {
+    switch (element.type) {
+      case 'heading1':
+        return (
+          <Text key={index} style={styles.mainTitle}>
+            {element.content}
+          </Text>
+        );
+      case 'heading2':
+        return (
+          <Text key={index} style={styles.sectionTitle}>
+            {element.content}
+          </Text>
+        );
+      case 'heading3':
+        return (
+          <Text key={index} style={styles.subSectionTitle}>
+            {element.content}
+          </Text>
+        );
+      case 'bulletPoint':
+        return (
+          <Text key={index} style={styles.bulletPoint}>
+            • {element.content}
+          </Text>
+        );
+      case 'break':
+        return <View key={index} style={styles.break} />;
+      case 'paragraph':
+      default:
+        return (
+          <Text key={index} style={styles.paragraph}>
+            {element.content}
+          </Text>
+        );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -25,118 +88,37 @@ export default function TermsOfServiceScreen({ navigation }: TermsOfServiceScree
         <Text style={styles.headerTitle}>Terms of Service</Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.lastUpdated}>
-          Last updated: {new Date().toLocaleDateString()}
-        </Text>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>1. Acceptance of Terms</Text>
-          <Text style={styles.paragraph}>
-            By creating an account or using Yapplr, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, please do not use our service.
-          </Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={styles.loadingText}>Loading Terms of Service...</Text>
         </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>2. Description of Service</Text>
-          <Text style={styles.paragraph}>
-            Yapplr is a social media platform that allows users to share short messages ("yaps"), follow other users, and engage with content through likes, comments, and reposts.
-          </Text>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={48} color="#EF4444" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchTermsContent}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
         </View>
+      ) : content ? (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <Text style={styles.lastUpdated}>
+            Last updated: {formatLastUpdated(content.publishedAt || content.createdAt)}
+          </Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3. User Accounts</Text>
-          <Text style={styles.paragraph}>
-            To use Yapplr, you must:
-          </Text>
-          <Text style={styles.bulletPoint}>• Be at least 13 years old</Text>
-          <Text style={styles.bulletPoint}>• Provide accurate and complete information</Text>
-          <Text style={styles.bulletPoint}>• Maintain the security of your account credentials</Text>
-          <Text style={styles.bulletPoint}>• Verify your email address</Text>
-          <Text style={styles.bulletPoint}>• Accept responsibility for all activity under your account</Text>
+          <View style={styles.section}>
+            {parseMarkdown(content.content).map((element, index) =>
+              renderMarkdownElement(element, index)
+            )}
+          </View>
+        </ScrollView>
+      ) : (
+        <View style={styles.errorContainer}>
+          <Ionicons name="document-text" size={48} color="#9CA3AF" />
+          <Text style={styles.errorText}>Terms of Service not available</Text>
         </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>4. Content Guidelines</Text>
-          <Text style={styles.paragraph}>
-            You are responsible for the content you post. You agree not to post content that:
-          </Text>
-          <Text style={styles.bulletPoint}>• Is illegal, harmful, threatening, or abusive</Text>
-          <Text style={styles.bulletPoint}>• Harasses, bullies, or intimidates others</Text>
-          <Text style={styles.bulletPoint}>• Contains hate speech or discriminatory language</Text>
-          <Text style={styles.bulletPoint}>• Violates intellectual property rights</Text>
-          <Text style={styles.bulletPoint}>• Contains spam, malware, or phishing attempts</Text>
-          <Text style={styles.bulletPoint}>• Impersonates another person or entity</Text>
-          <Text style={styles.bulletPoint}>• Contains explicit sexual content involving minors</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>5. Privacy and Content Visibility</Text>
-          <Text style={styles.paragraph}>
-            Yapplr offers three privacy levels for your content:
-          </Text>
-          <Text style={styles.bulletPoint}>• <Text style={styles.bold}>Public:</Text> Visible to everyone on the platform</Text>
-          <Text style={styles.bulletPoint}>• <Text style={styles.bold}>Followers:</Text> Visible only to your approved followers</Text>
-          <Text style={styles.bulletPoint}>• <Text style={styles.bold}>Private:</Text> Visible only to you</Text>
-          <Text style={styles.paragraph}>
-            You are responsible for setting appropriate privacy levels for your content.
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>6. Intellectual Property</Text>
-          <Text style={styles.paragraph}>
-            You retain ownership of content you create and post on Yapplr. By posting content, you grant Yapplr a non-exclusive, royalty-free license to use, display, and distribute your content on the platform.
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>7. Prohibited Activities</Text>
-          <Text style={styles.paragraph}>
-            You agree not to:
-          </Text>
-          <Text style={styles.bulletPoint}>• Use automated tools to access or interact with the service</Text>
-          <Text style={styles.bulletPoint}>• Attempt to gain unauthorized access to other accounts</Text>
-          <Text style={styles.bulletPoint}>• Interfere with the proper functioning of the service</Text>
-          <Text style={styles.bulletPoint}>• Create multiple accounts to evade restrictions</Text>
-          <Text style={styles.bulletPoint}>• Sell or transfer your account to others</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>8. Moderation and Enforcement</Text>
-          <Text style={styles.paragraph}>
-            We reserve the right to:
-          </Text>
-          <Text style={styles.bulletPoint}>• Remove content that violates these terms</Text>
-          <Text style={styles.bulletPoint}>• Suspend or terminate accounts for violations</Text>
-          <Text style={styles.bulletPoint}>• Investigate reported content and user behavior</Text>
-          <Text style={styles.bulletPoint}>• Cooperate with law enforcement when required</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>9. Disclaimers</Text>
-          <Text style={styles.paragraph}>
-            Yapplr is provided "as is" without warranties of any kind. We do not guarantee uninterrupted service or the accuracy of user-generated content.
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>10. Changes to Terms</Text>
-          <Text style={styles.paragraph}>
-            We may update these Terms of Service from time to time. Continued use of the service after changes constitutes acceptance of the new terms.
-          </Text>
-        </View>
-
-        <View style={[styles.section, { marginBottom: 40 }]}>
-          <Text style={styles.sectionTitle}>11. Contact Information</Text>
-          <Text style={styles.paragraph}>
-            If you have questions about these Terms of Service, please contact us at:
-          </Text>
-          <Text style={styles.paragraph}>
-            Email: legal@yapplr.com
-          </Text>
-        </View>
-      </ScrollView>
+      )}
     </View>
   );
 }
@@ -200,5 +182,58 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  mainTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  subSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  break: {
+    height: 8,
   },
 });

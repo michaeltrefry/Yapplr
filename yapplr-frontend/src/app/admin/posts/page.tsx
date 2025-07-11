@@ -34,11 +34,21 @@ export default function AdminPostsPage() {
     }
   };
 
+  const refreshPosts = async () => {
+    try {
+      const data = await adminApi.getPosts(currentPage, pageSize, isHiddenFilter);
+      setPosts(data);
+      setTotalPages(Math.ceil(data.length / pageSize) || 1);
+    } catch (error) {
+      console.error('Failed to refresh posts:', error);
+    }
+  };
+
   const handleHidePost = async (postId: number, reason: string) => {
     try {
       setActionLoading(postId);
       await adminApi.hidePost(postId, { reason });
-      await fetchPosts();
+      await refreshPosts();
     } catch (error) {
       console.error('Failed to hide post:', error);
     } finally {
@@ -50,7 +60,7 @@ export default function AdminPostsPage() {
     try {
       setActionLoading(postId);
       await adminApi.unhidePost(postId);
-      await fetchPosts();
+      await refreshPosts();
     } catch (error) {
       console.error('Failed to unhide post:', error);
     } finally {
@@ -61,10 +71,14 @@ export default function AdminPostsPage() {
   const handleTagPost = async (postId: number, tagIds: number[]) => {
     try {
       setActionLoading(postId);
-      // Note: You may need to implement this API endpoint
-      // await adminApi.tagPost(postId, tagIds);
-      console.log('Tagging post', postId, 'with tags', tagIds);
-      await fetchPosts();
+      // Apply each selected tag to the post
+      for (const tagId of tagIds) {
+        await adminApi.applySystemTagToPost(postId, {
+          systemTagId: tagId,
+          reason: 'Applied via admin interface'
+        });
+      }
+      await refreshPosts();
     } catch (error) {
       console.error('Failed to tag post:', error);
     } finally {
@@ -75,7 +89,7 @@ export default function AdminPostsPage() {
   const handleBulkHide = async (postIds: number[], reason: string) => {
     try {
       await adminApi.bulkHidePosts(postIds, reason);
-      await fetchPosts();
+      await refreshPosts();
     } catch (error) {
       console.error('Failed to bulk hide posts:', error);
     }
@@ -86,7 +100,7 @@ export default function AdminPostsPage() {
       // Note: Bulk unhide for posts not yet implemented in API
       // For now, unhide posts individually
       await Promise.all(postIds.map(id => adminApi.unhidePost(id)));
-      await fetchPosts();
+      await refreshPosts();
     } catch (error) {
       console.error('Failed to bulk unhide posts:', error);
     }

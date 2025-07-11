@@ -744,3 +744,46 @@ export interface ReviewUserReportDto {
 export interface HideContentFromReportDto {
   reason: string;
 }
+
+// Content Management Types
+export enum ContentPageType {
+  TermsOfService = 0,
+  PrivacyPolicy = 1,
+  CommunityGuidelines = 2,
+  AboutUs = 3,
+  Help = 4,
+}
+
+export interface ContentPage {
+  id: number;
+  title: string;
+  slug: string;
+  type: ContentPageType;
+  publishedVersionId?: number;
+  publishedVersion?: ContentPageVersion;
+  createdAt: string;
+  updatedAt: string;
+  totalVersions: number;
+}
+
+export interface ContentPageVersion {
+  id: number;
+  contentPageId: number;
+  content: string;
+  changeNotes?: string;
+  versionNumber: number;
+  isPublished: boolean;
+  publishedAt?: string;
+  publishedByUsername?: string;
+  createdByUsername: string;
+  createdAt: string;
+}
+
+export interface CreateContentPageVersionDto {
+  content: string;
+  changeNotes?: string;
+}
+
+export interface PublishContentVersionDto {
+  versionId: number;
+}

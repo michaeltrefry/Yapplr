@@ -120,6 +120,32 @@ export default function ContentQueuePage() {
     }
   };
 
+  const handleUnhidePost = async (postId: number) => {
+    try {
+      await adminApi.unhidePost(postId);
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to unhide post:', error);
+    }
+  };
+
+  const handleTagPost = async (postId: number, tagIds: number[]) => {
+    try {
+      // Apply each selected tag to the post
+      for (const tagId of tagIds) {
+        await adminApi.applySystemTagToPost(postId, {
+          systemTagId: tagId,
+          reason: 'Applied via admin interface'
+        });
+      }
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to tag post:', error);
+    }
+  };
+
   const handleHideComment = async (commentId: number, reason: string) => {
     try {
       await adminApi.hideComment(commentId, { reason });
@@ -127,6 +153,32 @@ export default function ContentQueuePage() {
       setQueue(queueData);
     } catch (error) {
       console.error('Failed to hide comment:', error);
+    }
+  };
+
+  const handleUnhideComment = async (commentId: number) => {
+    try {
+      await adminApi.unhideComment(commentId);
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to unhide comment:', error);
+    }
+  };
+
+  const handleTagComment = async (commentId: number, tagIds: number[]) => {
+    try {
+      // Apply each selected tag to the comment
+      for (const tagId of tagIds) {
+        await adminApi.applySystemTagToComment(commentId, {
+          systemTagId: tagId,
+          reason: 'Applied via admin interface'
+        });
+      }
+      const queueData = await adminApi.getContentQueue();
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Failed to tag comment:', error);
     }
   };
 
@@ -286,6 +338,8 @@ export default function ContentQueuePage() {
             contentType="post"
             loading={loading}
             onHide={handleHidePost}
+            onUnhide={handleUnhidePost}
+            onTag={handleTagPost}
             onApproveAiSuggestion={handleApproveAiSuggestion}
             onRejectAiSuggestion={handleRejectAiSuggestion}
             onBulkApproveAiSuggestions={handleBulkApproveAiSuggestions}
@@ -300,6 +354,8 @@ export default function ContentQueuePage() {
             contentType="comment"
             loading={loading}
             onHide={handleHideComment}
+            onUnhide={handleUnhideComment}
+            onTag={handleTagComment}
             showAiSuggestions={false}
           />
         )}

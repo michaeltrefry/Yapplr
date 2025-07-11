@@ -62,6 +62,9 @@ import type {
   CreateUserReportDto,
   ReviewUserReportDto,
   HideContentFromReportDto,
+  ContentPage,
+  ContentPageVersion,
+  CreateContentPageVersionDto,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -605,6 +608,10 @@ export const adminApi = {
     await api.post(`/admin/comments/${id}/unhide`);
   },
 
+  applySystemTagToComment: async (id: number, data: ApplySystemTagDto): Promise<void> => {
+    await api.post(`/admin/comments/${id}/system-tags`, data);
+  },
+
 
 
   // Analytics and Reporting
@@ -753,6 +760,54 @@ export const adminApi = {
 
   bulkRejectAiSuggestedTags: async (tagIds: number[], reason?: string): Promise<void> => {
     await api.post('/admin/ai-suggestions/bulk-reject', { suggestedTagIds: tagIds, reason });
+  },
+
+  // Content Management
+  getContentPages: async (): Promise<ContentPage[]> => {
+    const response = await api.get('/admin/content-pages');
+    return response.data;
+  },
+
+  getContentPage: async (id: number): Promise<ContentPage> => {
+    const response = await api.get(`/admin/content-pages/${id}`);
+    return response.data;
+  },
+
+  getContentPageVersions: async (contentPageId: number): Promise<ContentPageVersion[]> => {
+    const response = await api.get(`/admin/content-pages/${contentPageId}/versions`);
+    return response.data;
+  },
+
+  getContentPageVersion: async (versionId: number): Promise<ContentPageVersion> => {
+    const response = await api.get(`/admin/content-pages/versions/${versionId}`);
+    return response.data;
+  },
+
+  createContentPageVersion: async (contentPageId: number, data: CreateContentPageVersionDto): Promise<ContentPageVersion> => {
+    const response = await api.post(`/admin/content-pages/${contentPageId}/versions`, data);
+    return response.data;
+  },
+
+  publishContentPageVersion: async (contentPageId: number, versionId: number): Promise<void> => {
+    await api.post(`/admin/content-pages/${contentPageId}/publish`, { versionId });
+  },
+};
+
+// Public Content API
+export const contentApi = {
+  getTermsOfService: async (): Promise<ContentPageVersion> => {
+    const response = await api.get('/content/terms');
+    return response.data;
+  },
+
+  getPrivacyPolicy: async (): Promise<ContentPageVersion> => {
+    const response = await api.get('/content/privacy');
+    return response.data;
+  },
+
+  getPublishedContentBySlug: async (slug: string): Promise<ContentPageVersion> => {
+    const response = await api.get(`/content/pages/${slug}`);
+    return response.data;
   },
 };
 

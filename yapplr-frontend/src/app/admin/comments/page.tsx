@@ -34,11 +34,21 @@ export default function AdminCommentsPage() {
     }
   };
 
+  const refreshComments = async () => {
+    try {
+      const data = await adminApi.getComments(currentPage, pageSize, isHiddenFilter);
+      setComments(data);
+      setTotalPages(Math.ceil(data.length / pageSize) || 1);
+    } catch (error) {
+      console.error('Failed to refresh comments:', error);
+    }
+  };
+
   const handleHideComment = async (commentId: number, reason: string) => {
     try {
       setActionLoading(commentId);
       await adminApi.hideComment(commentId, { reason });
-      await fetchComments();
+      await refreshComments();
     } catch (error) {
       console.error('Failed to hide comment:', error);
     } finally {
@@ -50,7 +60,7 @@ export default function AdminCommentsPage() {
     try {
       setActionLoading(commentId);
       await adminApi.unhideComment(commentId);
-      await fetchComments();
+      await refreshComments();
     } catch (error) {
       console.error('Failed to unhide comment:', error);
     } finally {
@@ -61,10 +71,14 @@ export default function AdminCommentsPage() {
   const handleTagComment = async (commentId: number, tagIds: number[]) => {
     try {
       setActionLoading(commentId);
-      // Note: You may need to implement this API endpoint
-      // await adminApi.tagComment(commentId, tagIds);
-      console.log('Tagging comment', commentId, 'with tags', tagIds);
-      await fetchComments();
+      // Apply each selected tag to the comment
+      for (const tagId of tagIds) {
+        await adminApi.applySystemTagToComment(commentId, {
+          systemTagId: tagId,
+          reason: 'Applied via admin interface'
+        });
+      }
+      await refreshComments();
     } catch (error) {
       console.error('Failed to tag comment:', error);
     } finally {
@@ -77,7 +91,7 @@ export default function AdminCommentsPage() {
       // Note: Bulk hide for comments not yet implemented in API
       // For now, hide comments individually
       await Promise.all(commentIds.map(id => adminApi.hideComment(id, { reason })));
-      await fetchComments();
+      await refreshComments();
     } catch (error) {
       console.error('Failed to bulk hide comments:', error);
     }
@@ -88,7 +102,7 @@ export default function AdminCommentsPage() {
       // Note: Bulk unhide for comments not yet implemented in API
       // For now, unhide comments individually
       await Promise.all(commentIds.map(id => adminApi.unhideComment(id)));
-      await fetchComments();
+      await refreshComments();
     } catch (error) {
       console.error('Failed to bulk unhide comments:', error);
     }

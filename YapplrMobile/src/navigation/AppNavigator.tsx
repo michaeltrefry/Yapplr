@@ -28,6 +28,7 @@ import SearchScreen from '../screens/main/SearchScreen';
 import CommentsScreen from '../screens/main/CommentsScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
 import BlockedUsersScreen from '../screens/main/BlockedUsersScreen';
+import HelpSupportScreen from '../screens/main/HelpSupportScreen';
 import CreatePostScreen from '../screens/main/CreatePostScreen';
 import NotificationDebugScreen from '../screens/main/NotificationDebugScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
@@ -45,6 +46,7 @@ export type RootStackParamList = {
   FollowersList: { userId: number; username: string };
   Settings: undefined;
   BlockedUsers: undefined;
+  HelpSupport: undefined;
   NotificationDebug: undefined;
   NotificationTest: undefined;
   Notifications: undefined;
@@ -224,6 +226,11 @@ function MainStack() {
       <Stack.Screen
         name="BlockedUsers"
         component={BlockedUsersScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="HelpSupport"
+        component={HelpSupportScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

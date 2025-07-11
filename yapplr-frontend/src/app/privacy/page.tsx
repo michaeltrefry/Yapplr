@@ -1,8 +1,52 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { ContentPageVersion } from '@/types';
+import { contentApi } from '@/lib/api';
+import { AlertCircle } from 'lucide-react';
 
 export default function PrivacyPolicyPage() {
+  const [content, setContent] = useState<ContentPageVersion | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPrivacyContent();
+  }, []);
+
+  const fetchPrivacyContent = async () => {
+    try {
+      const privacyContent = await contentApi.getPrivacyPolicy();
+      setContent(privacyContent);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderMarkdown = (markdown: string) => {
+    // Simple markdown rendering
+    return markdown
+      .split('\n')
+      .map((line, index) => {
+        if (line.startsWith('# ')) {
+          return <h1 key={index} className="text-3xl font-bold mb-6">{line.slice(2)}</h1>;
+        }
+        if (line.startsWith('## ')) {
+          return <h2 key={index} className="text-xl font-semibold text-gray-900 mb-4">{line.slice(3)}</h2>;
+        }
+        if (line.startsWith('### ')) {
+          return <h3 key={index} className="text-lg font-medium text-gray-900 mb-3">{line.slice(4)}</h3>;
+        }
+        if (line.trim() === '') {
+          return <br key={index} />;
+        }
+        return <p key={index} className="mb-4">{line}</p>;
+      });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -16,114 +60,35 @@ export default function PrivacyPolicyPage() {
             </Link>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Privacy Policy</h1>
-          
-          <div className="prose prose-gray max-w-none">
-            <p className="text-sm text-gray-600 mb-6">
-              <strong>Last updated:</strong> {new Date().toLocaleDateString()}
-            </p>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">1. Information We Collect</h2>
-              <p className="mb-4">
-                When you create an account on Yapplr, we collect:
-              </p>
-              <ul className="list-disc pl-6 mb-4">
-                <li>Email address (required for account creation and verification)</li>
-                <li>Username (your unique identifier on the platform)</li>
-                <li>Password (stored securely using industry-standard encryption)</li>
-                <li>Profile information (bio, pronouns, tagline, birthday - all optional)</li>
-                <li>Posts, comments, and other content you create</li>
-                <li>Usage data and interactions with other users</li>
-              </ul>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">2. How We Use Your Information</h2>
-              <p className="mb-4">
-                We use your information to:
-              </p>
-              <ul className="list-disc pl-6 mb-4">
-                <li>Provide and maintain the Yapplr service</li>
-                <li>Verify your identity and secure your account</li>
-                <li>Enable you to connect and communicate with other users</li>
-                <li>Send important account notifications and updates</li>
-                <li>Improve our service and develop new features</li>
-                <li>Ensure compliance with our Terms of Service</li>
-              </ul>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">3. Information Sharing</h2>
-              <p className="mb-4">
-                We do not sell, trade, or rent your personal information to third parties. We may share your information only in the following circumstances:
-              </p>
-              <ul className="list-disc pl-6 mb-4">
-                <li>With your explicit consent</li>
-                <li>To comply with legal obligations or court orders</li>
-                <li>To protect the rights, property, or safety of Yapplr, our users, or others</li>
-                <li>In connection with a business transfer or acquisition</li>
-              </ul>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">4. Data Security</h2>
-              <p className="mb-4">
-                We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. This includes:
-              </p>
-              <ul className="list-disc pl-6 mb-4">
-                <li>Encryption of sensitive data in transit and at rest</li>
-                <li>Regular security assessments and updates</li>
-                <li>Access controls and authentication measures</li>
-                <li>Secure hosting infrastructure</li>
-              </ul>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">5. Your Rights</h2>
-              <p className="mb-4">
-                You have the right to:
-              </p>
-              <ul className="list-disc pl-6 mb-4">
-                <li>Access and update your personal information</li>
-                <li>Delete your account and associated data</li>
-                <li>Control your privacy settings and content visibility</li>
-                <li>Opt out of non-essential communications</li>
-                <li>Request a copy of your data</li>
-              </ul>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">6. Cookies and Tracking</h2>
-              <p className="mb-4">
-                We use essential cookies to maintain your login session and provide core functionality. We do not use tracking cookies for advertising purposes.
-              </p>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">7. Children's Privacy</h2>
-              <p className="mb-4">
-                Yapplr is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.
-              </p>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">8. Changes to This Policy</h2>
-              <p className="mb-4">
-                We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new policy on this page and updating the "Last updated" date.
-              </p>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">9. Contact Us</h2>
-              <p className="mb-4">
-                If you have any questions about this Privacy Policy, please contact us at:
-              </p>
-              <p className="mb-4">
-                Email: privacy@yapplr.com
-              </p>
-            </section>
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Error</h3>
+                  <div className="mt-2 text-sm text-red-700">{error}</div>
+                </div>
+              </div>
+            </div>
+          ) : content ? (
+            <>
+              <div className="prose prose-gray max-w-none">
+                <p className="text-sm text-gray-600 mb-6">
+                  <strong>Last updated:</strong> {new Date(content.publishedAt || content.createdAt).toLocaleDateString()}
+                </p>
+                {renderMarkdown(content.content)}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
+              <p className="text-gray-600">Privacy Policy content is not available at this time.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
