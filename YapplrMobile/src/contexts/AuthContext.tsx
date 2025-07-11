@@ -95,14 +95,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       console.log('Attempting login to:', API_BASE_URL);
       const response = await api.auth.login(data);
-      console.log('Login successful');
-      await AsyncStorage.setItem(TOKEN_KEY, response.token);
-      setToken(response.token);
-      setUser(response.user);
+      console.log('Login response:', response);
+
+      // Check if this is an error response (has status field instead of token)
+      if (response && 'status' in response && response.status === 403) {
+        // This is an error response, create a proper error object
+        const error = new Error(response.detail || 'Email verification required');
+        (error as any).response = {
+          status: response.status,
+          data: {
+            message: response.detail,
+            title: response.title,
+            type: response.type
+          }
+        };
+        throw error;
+      }
+
+      // Only proceed if we have a valid response with token
+      if (response && response.token) {
+        await AsyncStorage.setItem(TOKEN_KEY, response.token);
+        setToken(response.token);
+        setUser(response.user);
+      } else {
+        throw new Error('Invalid login response - missing token');
+      }
     } catch (error) {
-      console.error('Login error:', error);
-      if (error instanceof Error && error.message?.includes('Network')) {
-        console.error('Network error during login - check API server and network connection');
+      if (error instanceof Error) {
+        if (error.message?.includes('verified')) {
+          // Email verification required - this is expected behavior, not an error
+          console.warn('Login redirected to email verification:', error.message);
+        } else {
+          console.error('Login error:', error);
+          if (error.message?.includes('Network')) {
+            console.error('Network error during login - check API server and network connection');
+          }
+        }
       }
       throw error;
     }
