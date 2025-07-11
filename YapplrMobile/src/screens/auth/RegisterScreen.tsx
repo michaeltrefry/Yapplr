@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -21,8 +22,9 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [bio, setBio] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { register } = useAuth();
+  const { registerWithoutLogin } = useAuth();
 
   const handleRegister = async () => {
     if (!email || !username || !password) {
@@ -30,25 +32,22 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
       return;
     }
 
+    if (!acceptTerms) {
+      Alert.alert('Error', 'You must accept the Terms of Service and Privacy Policy to create an account');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await register({
+      await registerWithoutLogin({
         email,
         username,
         password,
+        acceptTerms,
         bio: bio || undefined,
       });
-      // After successful registration, navigate to email verification
-      Alert.alert(
-        'Registration Successful',
-        'Please check your email for a verification code to complete your registration.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('VerifyEmail', { email }),
-          },
-        ]
-      );
+      // After successful registration, navigate directly to email verification
+      navigation.navigate('VerifyEmail', { email });
     } catch (error: any) {
       Alert.alert('Registration Failed', error.response?.data?.message || 'An error occurred');
     } finally {
@@ -104,6 +103,35 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
               numberOfLines={3}
               textAlignVertical="top"
             />
+
+            <View style={styles.termsContainer}>
+              <TouchableOpacity
+                style={styles.checkbox}
+                onPress={() => setAcceptTerms(!acceptTerms)}
+              >
+                <View style={[styles.checkboxInner, acceptTerms && styles.checkboxChecked]}>
+                  {acceptTerms && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+              </TouchableOpacity>
+              <View style={styles.termsTextContainer}>
+                <Text style={styles.termsText}>
+                  I agree to the{' '}
+                  <Text
+                    style={styles.linkText}
+                    onPress={() => navigation.navigate('TermsOfService')}
+                  >
+                    Terms of Service
+                  </Text>
+                  {' '}and{' '}
+                  <Text
+                    style={styles.linkText}
+                    onPress={() => navigation.navigate('PrivacyPolicy')}
+                  >
+                    Privacy Policy
+                  </Text>
+                </Text>
+              </View>
+            </View>
 
             <TouchableOpacity
               style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -190,5 +218,41 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#3B82F6',
     fontSize: 14,
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 16,
+  },
+  checkbox: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  checkboxInner: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  checkboxChecked: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  termsTextContainer: {
+    flex: 1,
+  },
+  termsText: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
   },
 });

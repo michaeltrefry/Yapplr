@@ -32,6 +32,8 @@ import CreatePostScreen from '../screens/main/CreatePostScreen';
 import NotificationDebugScreen from '../screens/main/NotificationDebugScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 import NotificationTestScreen from '../screens/NotificationTestScreen';
+import PrivacyPolicyScreen from '../screens/legal/PrivacyPolicyScreen';
+import TermsOfServiceScreen from '../screens/legal/TermsOfServiceScreen';
 import { Post } from '../types';
 import NotificationNavigationService from '../services/NotificationNavigationService';
 
@@ -46,6 +48,8 @@ export type RootStackParamList = {
   NotificationDebug: undefined;
   NotificationTest: undefined;
   Notifications: undefined;
+  PrivacyPolicy: undefined;
+  TermsOfService: undefined;
   Conversation: {
     conversationId: number;
     otherUser: { id: number; username: string }
@@ -64,6 +68,8 @@ export type AuthStackParamList = {
   VerifyEmail: { email?: string };
   ResendVerification: undefined;
   EmailVerificationRequired: { email?: string };
+  PrivacyPolicy: undefined;
+  TermsOfService: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -82,6 +88,8 @@ function AuthStackNavigator() {
       <AuthStack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
       <AuthStack.Screen name="ResendVerification" component={ResendVerificationScreen} />
       <AuthStack.Screen name="EmailVerificationRequired" component={EmailVerificationRequiredScreen} />
+      <AuthStack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+      <AuthStack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
     </AuthStack.Navigator>
   );
 }
@@ -231,6 +239,16 @@ function MainStack() {
       <Stack.Screen
         name="Notifications"
         component={NotificationsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TermsOfService"
+        component={TermsOfServiceScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

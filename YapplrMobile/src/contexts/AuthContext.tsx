@@ -9,6 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  registerWithoutLogin: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
   api: YapplrApi;
@@ -119,6 +120,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const registerWithoutLogin = async (data: RegisterData) => {
+    try {
+      // Register but don't store token or set user
+      await api.auth.register(data);
+    } catch (error) {
+      console.error('Register error:', error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await AsyncStorage.removeItem(TOKEN_KEY);
@@ -141,6 +152,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isAuthenticated,
         login,
         register,
+        registerWithoutLogin,
         logout,
         updateUser,
         api,

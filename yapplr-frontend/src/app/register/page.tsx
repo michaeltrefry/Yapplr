@@ -13,6 +13,7 @@ function RegisterForm() {
     bio: '',
     pronouns: '',
     tagline: '',
+    acceptTerms: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,9 +23,12 @@ function RegisterForm() {
   const { register } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -32,6 +36,12 @@ function RegisterForm() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    if (!formData.acceptTerms) {
+      setError('You must accept the Terms of Service and Privacy Policy to create an account');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       await register(formData);
@@ -208,6 +218,39 @@ function RegisterForm() {
               value={formData.tagline}
               onChange={handleChange}
             />
+          </div>
+
+          <div className="flex items-start">
+            <div className="flex items-center h-5">
+              <input
+                id="acceptTerms"
+                name="acceptTerms"
+                type="checkbox"
+                checked={formData.acceptTerms}
+                onChange={handleChange}
+                className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+              />
+            </div>
+            <div className="ml-3 text-sm">
+              <label htmlFor="acceptTerms" className="text-gray-700">
+                I agree to the{' '}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="text-blue-600 hover:text-blue-700 underline"
+                >
+                  Terms of Service
+                </Link>
+                {' '}and{' '}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="text-blue-600 hover:text-blue-700 underline"
+                >
+                  Privacy Policy
+                </Link>
+              </label>
+            </div>
           </div>
 
           {error && (

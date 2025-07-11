@@ -131,6 +131,27 @@ export default function Home() {
                 </Link>
               </div>
             </div>
+
+            {/* Legal Links Widget */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="font-bold text-gray-900 mb-3">Legal</h3>
+              <div className="space-y-2">
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="block text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Privacy Policy
+                </Link>
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="block text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Terms of Service
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

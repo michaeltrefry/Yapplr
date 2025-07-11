@@ -14,14 +14,21 @@ public static class AuthEndpoints
 
         auth.MapPost("/register", async ([FromBody] RegisterUserDto registerDto, IAuthService authService) =>
         {
-            var result = await authService.RegisterAsync(registerDto);
-            
-            if (result == null)
+            try
             {
-                return Results.BadRequest(new { message = "User already exists or username is taken" });
-            }
+                var result = await authService.RegisterAsync(registerDto);
 
-            return Results.Ok(result);
+                if (result == null)
+                {
+                    return Results.BadRequest(new { message = "User already exists or username is taken" });
+                }
+
+                return Results.Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
         })
         .WithName("Register")
         .WithSummary("Register a new user")

@@ -111,6 +111,42 @@ export default function SettingsScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Legal</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('PrivacyPolicy')}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconContainer, styles.greenIconContainer]}>
+                <Ionicons name="shield-checkmark-outline" size={20} color="#10B981" />
+              </View>
+              <View style={styles.menuItemText}>
+                <Text style={styles.menuItemTitle}>Privacy Policy</Text>
+                <Text style={styles.menuItemSubtitle}>Learn how we protect your data</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('TermsOfService')}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconContainer, styles.blueIconContainer]}>
+                <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.menuItemText}>
+                <Text style={styles.menuItemTitle}>Terms of Service</Text>
+                <Text style={styles.menuItemSubtitle}>Review our terms and conditions</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -182,6 +218,9 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   orangeIconContainer: {
     backgroundColor: colors.background === '#FFFFFF' ? '#FFF7ED' : '#9A3412',
+  },
+  greenIconContainer: {
+    backgroundColor: colors.background === '#FFFFFF' ? '#F0FDF4' : '#14532D',
   },
   menuItemText: {
     flex: 1,

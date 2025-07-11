@@ -61,6 +61,8 @@ public class User
 
     public bool EmailVerified { get; set; } = false;
 
+    public DateTime? TermsAcceptedAt { get; set; }
+
     // Admin/Moderation fields
     public UserRole Role { get; set; } = UserRole.User;
     public UserStatus Status { get; set; } = UserStatus.Active;

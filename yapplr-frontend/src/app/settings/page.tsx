@@ -223,6 +223,51 @@ export default function SettingsPage() {
                     <ArrowRight className="w-5 h-5 text-gray-400" />
                   </Link>
                 </div>
+
+                {/* Legal Section */}
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Legal</h2>
+
+                  {/* Privacy Policy */}
+                  <Link
+                    href="/privacy"
+                    target="_blank"
+                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors mb-3"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <Shield className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Privacy Policy</h3>
+                        <p className="text-sm text-gray-600">
+                          Learn how we protect your data
+                        </p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-gray-400" />
+                  </Link>
+
+                  {/* Terms of Service */}
+                  <Link
+                    href="/terms"
+                    target="_blank"
+                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Bug className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Terms of Service</h3>
+                        <p className="text-sm text-gray-600">
+                          Review our terms and conditions
+                        </p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-gray-400" />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

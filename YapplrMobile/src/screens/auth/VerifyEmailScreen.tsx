@@ -84,8 +84,13 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
         <View style={styles.content}>
           <Text style={styles.title}>Verify Your Email</Text>
           <Text style={styles.subtitle}>
-            Enter the 6-digit code sent to{email ? ` ${email}` : ' your email address'}
+            Registration successful! Please check your email for a verification code and enter it below to complete your account setup.
           </Text>
+          {email && (
+            <Text style={styles.emailText}>
+              Code sent to: {email}
+            </Text>
+          )}
 
           <View style={styles.form}>
             <TextInput
@@ -158,9 +163,16 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 15,
     color: '#666',
     lineHeight: 22,
+  },
+  emailText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#2563eb',
+    fontWeight: '500',
   },
   form: {
     width: '100%',

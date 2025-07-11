@@ -40,6 +40,7 @@ export interface RegisterData {
   email: string;
   password: string;
   username: string;
+  acceptTerms: boolean;
   bio?: string;
   birthday?: string;
   pronouns?: string;

@@ -39,6 +39,12 @@ public class AuthService : IAuthService
             return null; // Username already taken
         }
 
+        // Validate terms acceptance
+        if (!registerDto.AcceptTerms)
+        {
+            throw new ArgumentException("Terms of service must be accepted to create an account");
+        }
+
         // Create new user (unverified by default)
         var user = new User
         {
@@ -50,6 +56,7 @@ public class AuthService : IAuthService
             Pronouns = registerDto.Pronouns,
             Tagline = registerDto.Tagline,
             EmailVerified = false, // User starts unverified
+            TermsAcceptedAt = DateTime.UtcNow, // Record terms acceptance
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
