@@ -45,6 +45,10 @@ public class YapplrDbContext : DbContext
     public DbSet<AiSuggestedTag> AiSuggestedTags { get; set; }
     public DbSet<UserReport> UserReports { get; set; }
     public DbSet<UserReportSystemTag> UserReportSystemTags { get; set; }
+
+    // Content Management entities
+    public DbSet<ContentPage> ContentPages { get; set; }
+    public DbSet<ContentPageVersion> ContentPageVersions { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -585,6 +589,41 @@ public class YapplrDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.SystemTagId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ContentPage configuration
+        modelBuilder.Entity<ContentPage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Slug).IsUnique().UseCollation("case_insensitive_collation");
+            entity.HasIndex(e => e.Type).IsUnique();
+            entity.Property(e => e.Type)
+                  .HasConversion<int>();
+            entity.HasOne(e => e.PublishedVersion)
+                  .WithOne()
+                  .HasForeignKey<ContentPage>(e => e.PublishedVersionId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ContentPageVersion configuration
+        modelBuilder.Entity<ContentPageVersion>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ContentPageId, e.VersionNumber }).IsUnique();
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.IsPublished);
+            entity.HasOne(e => e.ContentPage)
+                  .WithMany(e => e.Versions)
+                  .HasForeignKey(e => e.ContentPageId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.CreatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.CreatedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.PublishedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.PublishedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

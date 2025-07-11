@@ -270,6 +270,45 @@ public class TopModeratorsDto
     public int TotalActions { get; set; }
 }
 
+// Content Management DTOs
+public class ContentPageDto
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public ContentPageType Type { get; set; }
+    public int? PublishedVersionId { get; set; }
+    public ContentPageVersionDto? PublishedVersion { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public int TotalVersions { get; set; }
+}
+
+public class ContentPageVersionDto
+{
+    public int Id { get; set; }
+    public int ContentPageId { get; set; }
+    public string Content { get; set; } = string.Empty;
+    public string? ChangeNotes { get; set; }
+    public int VersionNumber { get; set; }
+    public bool IsPublished { get; set; }
+    public DateTime? PublishedAt { get; set; }
+    public string? PublishedByUsername { get; set; }
+    public string CreatedByUsername { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CreateContentPageVersionDto
+{
+    public string Content { get; set; } = string.Empty;
+    public string? ChangeNotes { get; set; }
+}
+
+public class PublishContentVersionDto
+{
+    public int VersionId { get; set; }
+}
+
 public class ContentTrendsDto
 {
     public List<HashtagStatsDto> TrendingHashtags { get; set; } = new();

@@ -12,13 +12,17 @@ public class UserService : IUserService
     private readonly YapplrDbContext _context;
     private readonly IBlockService _blockService;
     private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<UserService> _logger;
 
-    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService, ILogger<UserService> logger)
+    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService, IEmailService emailService, IConfiguration configuration, ILogger<UserService> logger)
     {
         _context = context;
         _blockService = blockService;
         _notificationService = notificationService;
+        _emailService = emailService;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -522,8 +526,31 @@ public class UserService : IUserService
 
         await _context.SaveChangesAsync();
 
-        // Send notification to the suspended user
+        // Enhancement 1: Send in-app notification to the suspended user
         await _notificationService.CreateUserSuspensionNotificationAsync(userId, reason, suspendedUntil, moderator.Username);
+
+        // Enhancement 3: Send email notification
+        try
+        {
+            var frontendUrl = _configuration["FrontendUrl"] ?? "https://yapplr.com";
+            var appealUrl = $"{frontendUrl}/appeals";
+
+            await _emailService.SendUserSuspensionEmailAsync(
+                user.Email,
+                user.Username,
+                reason,
+                suspendedUntil,
+                moderator.Username,
+                appealUrl
+            );
+
+            _logger.LogInformation("Suspension email sent to user {UserId} ({Email})", userId, user.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send suspension email to user {UserId} ({Email})", userId, user.Email);
+            // Don't fail the suspension if email fails
+        }
 
         return true;
     }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Yapplr.Api.Authorization;
+using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
@@ -95,19 +96,26 @@ public static class AdminEndpoints
         .Produces<AdminUserDto>(200)
         .Produces(404);
 
-        admin.MapPost("/users/{id:int}/suspend", [RequireModerator] async (int id, [FromBody] SuspendUserDto suspendDto, ClaimsPrincipal user, IUserService userService, IAuditService auditService) =>
+        admin.MapPost("/users/{id:int}/suspend", [RequireModerator] async (int id, [FromBody] SuspendUserDto suspendDto, ClaimsPrincipal user, IUserService userService, IAuditService auditService, IModerationMessageService moderationMessageService, YapplrDbContext context) =>
         {
             var currentUserId = GetCurrentUserId(user);
             if (currentUserId == null)
                 return Results.Unauthorized();
 
             var success = await userService.SuspendUserAsync(id, currentUserId.Value, suspendDto.Reason, suspendDto.SuspendedUntil);
-            
+
             if (success)
             {
                 await auditService.LogUserSuspendedAsync(id, currentUserId.Value, suspendDto.Reason, suspendDto.SuspendedUntil);
+
+                // Enhancement 2: Send detailed system message with appeal instructions
+                var moderator = await context.Users.FindAsync(currentUserId.Value);
+                if (moderator != null)
+                {
+                    await moderationMessageService.SendUserSuspensionMessageAsync(id, suspendDto.Reason, suspendDto.SuspendedUntil, moderator.Username);
+                }
             }
-            
+
             return success ? Results.Ok(new { message = "User suspended successfully" }) : Results.BadRequest(new { message = "Failed to suspend user" });
         })
         .WithName("SuspendUser")
@@ -325,7 +333,19 @@ public static class AdminEndpoints
         .Produces(200)
         .Produces(400);
 
+        admin.MapPost("/comments/{id:int}/system-tags", [RequireModerator] async (int id, [FromBody] ApplySystemTagDto tagDto, ClaimsPrincipal user, IAdminService adminService) =>
+        {
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
 
+            var success = await adminService.ApplySystemTagToCommentAsync(id, tagDto.SystemTagId, currentUserId.Value, tagDto.Reason);
+            return success ? Results.Ok(new { message = "System tag applied successfully" }) : Results.BadRequest(new { message = "Failed to apply system tag" });
+        })
+        .WithName("ApplySystemTagToComment")
+        .WithSummary("Apply a system tag to a comment")
+        .Produces(200)
+        .Produces(400);
 
         // Analytics and Reporting
         admin.MapGet("/stats", [RequireModerator] async (IAdminService adminService) =>
@@ -604,6 +624,82 @@ public static class AdminEndpoints
         .WithSummary("Bulk reject AI suggested tags")
         .Produces(200)
         .Produces(400);
+
+        // Content Management Endpoints
+        admin.MapGet("/content-pages", [RequireModerator] async (IContentManagementService contentService) =>
+        {
+            var pages = await contentService.GetContentPagesAsync();
+            return Results.Ok(pages);
+        })
+        .WithName("GetContentPages")
+        .WithSummary("Get all content pages")
+        .Produces<IEnumerable<ContentPageDto>>(200);
+
+        admin.MapGet("/content-pages/{id:int}", [RequireModerator] async (int id, IContentManagementService contentService) =>
+        {
+            var page = await contentService.GetContentPageAsync(id);
+            return page == null ? Results.NotFound() : Results.Ok(page);
+        })
+        .WithName("GetContentPage")
+        .WithSummary("Get content page by ID")
+        .Produces<ContentPageDto>(200)
+        .Produces(404);
+
+        admin.MapGet("/content-pages/{id:int}/versions", [RequireModerator] async (int id, IContentManagementService contentService) =>
+        {
+            var versions = await contentService.GetContentPageVersionsAsync(id);
+            return Results.Ok(versions);
+        })
+        .WithName("GetContentPageVersions")
+        .WithSummary("Get all versions of a content page")
+        .Produces<IEnumerable<ContentPageVersionDto>>(200);
+
+        admin.MapGet("/content-pages/versions/{versionId:int}", [RequireModerator] async (int versionId, IContentManagementService contentService) =>
+        {
+            var version = await contentService.GetContentPageVersionAsync(versionId);
+            return version == null ? Results.NotFound() : Results.Ok(version);
+        })
+        .WithName("GetContentPageVersion")
+        .WithSummary("Get specific content page version")
+        .Produces<ContentPageVersionDto>(200)
+        .Produces(404);
+
+        admin.MapPost("/content-pages/{id:int}/versions", [RequireModerator] async (int id, [FromBody] CreateContentPageVersionDto createDto, ClaimsPrincipal user, IContentManagementService contentService) =>
+        {
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            try
+            {
+                var version = await contentService.CreateContentPageVersionAsync(id, createDto, currentUserId.Value);
+                return Results.Created($"/api/admin/content-pages/versions/{version.Id}", version);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        })
+        .WithName("CreateContentPageVersion")
+        .WithSummary("Create a new version of a content page")
+        .Produces<ContentPageVersionDto>(201)
+        .Produces(400)
+        .Produces(401);
+
+        admin.MapPost("/content-pages/{id:int}/publish", [RequireModerator] async (int id, [FromBody] PublishContentVersionDto publishDto, ClaimsPrincipal user, IContentManagementService contentService) =>
+        {
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var success = await contentService.PublishContentPageVersionAsync(id, publishDto.VersionId, currentUserId.Value);
+            return success ? Results.Ok(new { message = "Version published successfully" }) : Results.BadRequest(new { message = "Failed to publish version" });
+        })
+        .WithName("PublishContentPageVersion")
+        .WithSummary("Publish a specific version of a content page")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
     }
 
     // Additional DTOs for bulk actions

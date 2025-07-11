@@ -190,8 +190,10 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IUserReportService, UserReportService>();
 builder.Services.AddScoped<IModerationMessageService, ModerationMessageService>();
+builder.Services.AddScoped<IContentManagementService, ContentManagementService>();
 builder.Services.AddScoped<SystemTagSeedService>();
 builder.Services.AddScoped<EssentialUserSeedService>();
+builder.Services.AddScoped<ContentSeedService>();
 
 // Add test data seed service (for all environments except production)
 Console.WriteLine($"🔍 Environment detected: {builder.Environment.EnvironmentName} (IsProduction: {builder.Environment.IsProduction()})");
@@ -369,6 +371,12 @@ using (var scope = app.Services.CreateScope())
             await systemTagSeedService.SeedDefaultSystemTagsAsync();
             logger.LogInformation("✅ System tags seeding completed successfully");
 
+            // Seed content pages
+            logger.LogInformation("📄 Seeding content pages...");
+            var contentSeedService = scope.ServiceProvider.GetRequiredService<ContentSeedService>();
+            await contentSeedService.SeedContentPagesAsync();
+            logger.LogInformation("✅ Content pages seeding completed successfully");
+
             // Seed test data (all environments except production)
             logger.LogInformation("🔍 Environment check for seeding: {Environment} (IsProduction: {IsProduction})",
                 app.Environment.EnvironmentName, app.Environment.IsProduction());
@@ -433,6 +441,7 @@ app.MapMetricsEndpoints();
 app.MapNotificationConfigurationEndpoints();
 app.MapTagEndpoints();
 app.MapUserReportEndpoints();
+app.MapContentEndpoints();
 app.MapAdminEndpoints();
 
 // Map SignalR hub (if enabled)
