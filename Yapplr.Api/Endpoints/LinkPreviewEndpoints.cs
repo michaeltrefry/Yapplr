@@ -32,7 +32,7 @@ public static class LinkPreviewEndpoints
         .Produces(404);
 
         // Create/fetch link preview for URL
-        linkPreviews.MapPost("/", [RequireActiveUser] async ([FromBody] CreateLinkPreviewDto createDto, ILinkPreviewService linkPreviewService) =>
+        linkPreviews.MapPost("/", async ([FromBody] CreateLinkPreviewDto createDto, ILinkPreviewService linkPreviewService) =>
         {
             var linkPreview = await linkPreviewService.GetOrCreateLinkPreviewAsync(createDto.Url);
 
@@ -40,12 +40,13 @@ public static class LinkPreviewEndpoints
         })
         .WithName("CreateLinkPreview")
         .WithSummary("Create or get existing link preview for URL")
+        .RequireAuthorization("ActiveUser")
         .Produces<LinkPreviewDto>(200)
         .Produces(400)
         .Produces(401);
 
         // Process multiple URLs from post content
-        linkPreviews.MapPost("/process", [RequireActiveUser] async ([FromBody] ProcessLinksDto processDto, ILinkPreviewService linkPreviewService) =>
+        linkPreviews.MapPost("/process", async ([FromBody] ProcessLinksDto processDto, ILinkPreviewService linkPreviewService) =>
         {
             var linkPreviews = await linkPreviewService.ProcessPostLinksAsync(processDto.Content);
 
@@ -53,6 +54,7 @@ public static class LinkPreviewEndpoints
         })
         .WithName("ProcessPostLinks")
         .WithSummary("Process and create link previews for URLs found in post content")
+        .RequireAuthorization("ActiveUser")
         .Produces<IEnumerable<LinkPreviewDto>>(200)
         .Produces(401);
     }

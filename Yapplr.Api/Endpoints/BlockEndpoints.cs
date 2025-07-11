@@ -12,7 +12,7 @@ public static class BlockEndpoints
         var blocks = app.MapGroup("/api/blocks").WithTags("Blocks");
 
         // Block a user
-        blocks.MapPost("/users/{userId:int}", [RequireActiveUser] async (int userId, ClaimsPrincipal user, IBlockService blockService) =>
+        blocks.MapPost("/users/{userId:int}", async (int userId, ClaimsPrincipal user, IBlockService blockService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var success = await blockService.BlockUserAsync(currentUserId, userId);
@@ -21,12 +21,13 @@ public static class BlockEndpoints
         })
         .WithName("BlockUser")
         .WithSummary("Block a user")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)
         .Produces(401);
 
         // Unblock a user
-        blocks.MapDelete("/users/{userId:int}", [RequireActiveUser] async (int userId, ClaimsPrincipal user, IBlockService blockService) =>
+        blocks.MapDelete("/users/{userId:int}", async (int userId, ClaimsPrincipal user, IBlockService blockService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var success = await blockService.UnblockUserAsync(currentUserId, userId);
@@ -35,12 +36,13 @@ public static class BlockEndpoints
         })
         .WithName("UnblockUser")
         .WithSummary("Unblock a user")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)
         .Produces(401);
 
         // Check if user is blocked
-        blocks.MapGet("/users/{userId:int}/status", [RequireActiveUser] async (int userId, ClaimsPrincipal user, IBlockService blockService) =>
+        blocks.MapGet("/users/{userId:int}/status", async (int userId, ClaimsPrincipal user, IBlockService blockService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var isBlocked = await blockService.IsUserBlockedAsync(currentUserId, userId);
@@ -49,11 +51,12 @@ public static class BlockEndpoints
         })
         .WithName("GetBlockStatus")
         .WithSummary("Check if a user is blocked")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(401);
 
         // Get list of blocked users
-        blocks.MapGet("/", [RequireActiveUser] async (ClaimsPrincipal user, IBlockService blockService) =>
+        blocks.MapGet("/", async (ClaimsPrincipal user, IBlockService blockService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var blockedUsers = await blockService.GetBlockedUsersAsync(currentUserId);
@@ -62,6 +65,7 @@ public static class BlockEndpoints
         })
         .WithName("GetBlockedUsers")
         .WithSummary("Get list of blocked users")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(401);
     }

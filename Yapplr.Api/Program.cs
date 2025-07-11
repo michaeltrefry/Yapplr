@@ -13,6 +13,7 @@ using Yapplr.Api.Hubs;
 using Yapplr.Api.Configuration;
 using SendGrid;
 using Yapplr.Api.Models;
+using Yapplr.Api.Authorization;
 
 
 // Auto-detect environment based on Git branch ONLY in development scenarios
@@ -78,7 +79,33 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+// Add authorization with policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("User", policy =>
+        policy.Requirements.Add(new RoleRequirement(UserRole.User)));
+
+    options.AddPolicy("ActiveUser", policy =>
+    {
+        policy.Requirements.Add(new RoleRequirement(UserRole.User, UserStatus.Active));
+    });
+
+    options.AddPolicy("Moderator", policy =>
+    {
+        policy.Requirements.Add(new RoleRequirement(UserRole.Moderator, UserStatus.Active));
+    });
+
+    options.AddPolicy("Admin", policy =>
+    {
+        policy.Requirements.Add(new RoleRequirement(UserRole.Admin, UserStatus.Active));
+    });
+
+    options.AddPolicy("System", policy =>
+        policy.Requirements.Add(new RoleRequirement(UserRole.System)));
+});
+
+// Register authorization handler
+builder.Services.AddScoped<IAuthorizationHandler, RoleAuthorizationHandler>();
 
 // Add HTTP context accessor
 builder.Services.AddHttpContextAccessor();

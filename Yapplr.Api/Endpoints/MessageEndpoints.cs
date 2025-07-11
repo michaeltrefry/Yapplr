@@ -15,7 +15,7 @@ public static class MessageEndpoints
         var messages = app.MapGroup("/api/messages").WithTags("Messages");
 
         // Send a new message (creates conversation if needed)
-        messages.MapPost("/", [RequireActiveUser] async ([FromBody] CreateMessageDto createDto, ClaimsPrincipal user, IMessageService messageService) =>
+        messages.MapPost("/", async ([FromBody] CreateMessageDto createDto, ClaimsPrincipal user, IMessageService messageService) =>
         {
             var senderId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var message = await messageService.SendMessageAsync(senderId, createDto);
@@ -24,12 +24,13 @@ public static class MessageEndpoints
         })
         .WithName("SendMessage")
         .WithSummary("Send a new message")
+        .RequireAuthorization("ActiveUser")
         .Produces<MessageDto>(201)
         .Produces(400)
         .Produces(401);
 
         // Send message to existing conversation
-        messages.MapPost("/conversation", [RequireActiveUser] async ([FromBody] SendMessageDto sendDto, ClaimsPrincipal user, IMessageService messageService) =>
+        messages.MapPost("/conversation", async ([FromBody] SendMessageDto sendDto, ClaimsPrincipal user, IMessageService messageService) =>
         {
             var senderId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var message = await messageService.SendMessageToConversationAsync(senderId, sendDto);
@@ -38,12 +39,13 @@ public static class MessageEndpoints
         })
         .WithName("SendMessageToConversation")
         .WithSummary("Send message to existing conversation")
+        .RequireAuthorization("ActiveUser")
         .Produces<MessageDto>(200)
         .Produces(400)
         .Produces(401);
 
         // Get conversations list
-        messages.MapGet("/conversations", [RequireActiveUser] async (ClaimsPrincipal user, IMessageService messageService, int page = 1, int pageSize = 25) =>
+        messages.MapGet("/conversations", async (ClaimsPrincipal user, IMessageService messageService, int page = 1, int pageSize = 25) =>
         {
             var userId = user.GetUserId(true);
             var conversations = await messageService.GetConversationsAsync(userId, page, pageSize);
@@ -52,11 +54,12 @@ public static class MessageEndpoints
         })
         .WithName("GetConversations")
         .WithSummary("Get user's conversations")
+        .RequireAuthorization("ActiveUser")
         .Produces<IEnumerable<ConversationListDto>>(200)
         .Produces(401);
 
         // Get specific conversation
-        messages.MapGet("/conversations/{conversationId:int}", [RequireActiveUser] async (int conversationId, ClaimsPrincipal user, IMessageService messageService) =>
+        messages.MapGet("/conversations/{conversationId:int}", async (int conversationId, ClaimsPrincipal user, IMessageService messageService) =>
         {
             var userId = user.GetUserId(true);
             var conversation = await messageService.GetConversationAsync(conversationId, userId);
@@ -65,12 +68,13 @@ public static class MessageEndpoints
         })
         .WithName("GetConversation")
         .WithSummary("Get specific conversation")
+        .RequireAuthorization("ActiveUser")
         .Produces<ConversationDto>(200)
         .Produces(404)
         .Produces(401);
 
         // Get messages in conversation
-        messages.MapGet("/conversations/{conversationId:int}/messages", [RequireActiveUser] async (int conversationId, ClaimsPrincipal user, IMessageService messageService, int page = 1, int pageSize = 25) =>
+        messages.MapGet("/conversations/{conversationId:int}/messages", async (int conversationId, ClaimsPrincipal user, IMessageService messageService, int page = 1, int pageSize = 25) =>
         {
             var userId = user.GetUserId(true);
             var messages = await messageService.GetMessagesAsync(conversationId, userId, page, pageSize);
@@ -79,11 +83,12 @@ public static class MessageEndpoints
         })
         .WithName("GetMessages")
         .WithSummary("Get messages in conversation")
+        .RequireAuthorization("ActiveUser")
         .Produces<IEnumerable<MessageDto>>(200)
         .Produces(401);
 
         // Mark conversation as read
-        messages.MapPost("/conversations/{conversationId:int}/read", [RequireActiveUser] async (int conversationId, ClaimsPrincipal user, IMessageService messageService) =>
+        messages.MapPost("/conversations/{conversationId:int}/read", async (int conversationId, ClaimsPrincipal user, IMessageService messageService) =>
         {
             var userId = user.GetUserId(true);
             var success = await messageService.MarkConversationAsReadAsync(conversationId, userId);
@@ -92,12 +97,13 @@ public static class MessageEndpoints
         })
         .WithName("MarkConversationAsRead")
         .WithSummary("Mark conversation as read")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)
         .Produces(401);
 
         // Check if user can message another user
-        messages.MapGet("/can-message/{userId:int}", [RequireActiveUser] async (int userId, ClaimsPrincipal user, IMessageService messageService) =>
+        messages.MapGet("/can-message/{userId:int}", async (int userId, ClaimsPrincipal user, IMessageService messageService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var canMessage = await messageService.CanUserMessageAsync(currentUserId, userId);
@@ -106,11 +112,12 @@ public static class MessageEndpoints
         })
         .WithName("CanMessage")
         .WithSummary("Check if current user can message another user")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(401);
 
         // Get or create conversation with another user
-        messages.MapPost("/conversations/with/{userId:int}", [RequireActiveUser] async (int userId, ClaimsPrincipal user, IMessageService messageService) =>
+        messages.MapPost("/conversations/with/{userId:int}", async (int userId, ClaimsPrincipal user, IMessageService messageService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -126,12 +133,13 @@ public static class MessageEndpoints
         })
         .WithName("GetOrCreateConversation")
         .WithSummary("Get or create conversation with another user")
+        .RequireAuthorization("ActiveUser")
         .Produces<ConversationDto>(200)
         .Produces(400)
         .Produces(401);
 
         // Get total unread message count
-        messages.MapGet("/unread-count", [RequireActiveUser] async (ClaimsPrincipal user, IMessageService messageService) =>
+        messages.MapGet("/unread-count", async (ClaimsPrincipal user, IMessageService messageService) =>
         {
             var userId = user.GetUserId(true);
             var unreadCount = await messageService.GetTotalUnreadMessageCountAsync(userId);
@@ -140,6 +148,7 @@ public static class MessageEndpoints
         })
         .WithName("GetUnreadMessageCount")
         .WithSummary("Get total unread message count for user")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(401);
     }

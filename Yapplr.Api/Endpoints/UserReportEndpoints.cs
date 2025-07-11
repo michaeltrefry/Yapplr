@@ -15,7 +15,7 @@ public static class UserReportEndpoints
         var reports = app.MapGroup("/api/reports").WithTags("User Reports");
 
         // Create a user report
-        reports.MapPost("/", [RequireActiveUser] async (
+        reports.MapPost("/", async (
             CreateUserReportDto dto,
             ClaimsPrincipal user,
             IUserReportService userReportService) =>
@@ -41,12 +41,13 @@ public static class UserReportEndpoints
         })
         .WithName("CreateUserReport")
         .WithSummary("Create a user report for objectionable content")
+        .RequireAuthorization("ActiveUser")
         .Produces<UserReportDto>(201)
         .Produces(400)
         .Produces(401);
 
         // Get user's own reports
-        reports.MapGet("/my-reports", [RequireActiveUser] async (
+        reports.MapGet("/my-reports", async (
             ClaimsPrincipal user,
             IUserReportService userReportService,
             int page = 1,

@@ -248,13 +248,6 @@ public static class SecurityEndpoints
         INotificationAuditService auditService,
         [FromQuery] DateTime? since = null)
     {
-        // Simple admin check - in production, you'd want proper role-based authorization
-        var username = user.FindFirst(ClaimTypes.Name)?.Value;
-        if (username != "admin") // Replace with proper admin check
-        {
-            return Results.Forbid();
-        }
-
         try
         {
             var events = await auditService.GetSecurityEventsAsync(since);

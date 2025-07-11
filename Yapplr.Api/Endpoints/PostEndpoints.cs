@@ -15,7 +15,7 @@ public static class PostEndpoints
         var posts = app.MapGroup("/api/posts").WithTags("Posts");
 
         // Create post
-        posts.MapPost("/", [RequireActiveUser] async ([FromBody] CreatePostDto createDto, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPost("/", async ([FromBody] CreatePostDto createDto, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
             var post = await postService.CreatePostAsync(userId, createDto);
@@ -24,6 +24,7 @@ public static class PostEndpoints
         })
         .WithName("CreatePost")
         .WithSummary("Create a new post")
+        .RequireAuthorization("ActiveUser")
         .Produces<PostDto>(201)
         .Produces(400)
         .Produces(401);
@@ -45,7 +46,7 @@ public static class PostEndpoints
         .Produces(404);
 
         // Get timeline (authenticated)
-        posts.MapGet("/timeline", [RequireActiveUser] async (ClaimsPrincipal user, IPostService postService, int page = 1, int pageSize = 25) =>
+        posts.MapGet("/timeline", async (ClaimsPrincipal user, IPostService postService, int page = 1, int pageSize = 25) =>
         {
             var userId = user.GetUserId(true);
             var timeline = await postService.GetTimelineWithRepostsAsync(userId, page, pageSize);
@@ -54,6 +55,7 @@ public static class PostEndpoints
         })
         .WithName("GetTimeline")
         .WithSummary("Get timeline feed with reposts")
+        .RequireAuthorization("User")
         .Produces<IEnumerable<TimelineItemDto>>(200)
         .Produces(401);
 
@@ -103,7 +105,7 @@ public static class PostEndpoints
         .Produces<IEnumerable<TimelineItemDto>>(200);
 
         // Update post
-        posts.MapPut("/{id:int}", [RequireActiveUser] async (int id, [FromBody] UpdatePostDto updateDto, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPut("/{id:int}", async (int id, [FromBody] UpdatePostDto updateDto, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
             var post = await postService.UpdatePostAsync(id, userId, updateDto);
@@ -112,13 +114,14 @@ public static class PostEndpoints
         })
         .WithName("UpdatePost")
         .WithSummary("Update a post")
+        .RequireAuthorization("ActiveUser")
         .Produces<PostDto>(200)
         .Produces(400)
         .Produces(401)
         .Produces(404);
 
         // Delete post
-        posts.MapDelete("/{id:int}", [RequireActiveUser] async (int id, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapDelete("/{id:int}", async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
             var success = await postService.DeletePostAsync(id, userId);
@@ -127,12 +130,13 @@ public static class PostEndpoints
         })
         .WithName("DeletePost")
         .WithSummary("Delete a post")
+        .RequireAuthorization("ActiveUser")
         .Produces(204)
         .Produces(401)
         .Produces(404);
 
         // Like/Unlike post
-        posts.MapPost("/{id:int}/like", [RequireActiveUser] async (int id, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPost("/{id:int}/like", async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
             var success = await postService.LikePostAsync(id, userId);
@@ -141,11 +145,12 @@ public static class PostEndpoints
         })
         .WithName("LikePost")
         .WithSummary("Like a post")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)
         .Produces(401);
 
-        posts.MapDelete("/{id:int}/like", [RequireActiveUser] async (int id, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapDelete("/{id:int}/like", async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
             var success = await postService.UnlikePostAsync(id, userId);
@@ -154,12 +159,13 @@ public static class PostEndpoints
         })
         .WithName("UnlikePost")
         .WithSummary("Unlike a post")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)
         .Produces(401);
 
         // Repost/Unrepost
-        posts.MapPost("/{id:int}/repost", [RequireActiveUser] async (int id, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPost("/{id:int}/repost", async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
             var success = await postService.RepostAsync(id, userId);
@@ -168,11 +174,12 @@ public static class PostEndpoints
         })
         .WithName("RepostPost")
         .WithSummary("Repost a post")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)
         .Produces(401);
 
-        posts.MapDelete("/{id:int}/repost", [RequireActiveUser] async (int id, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapDelete("/{id:int}/repost", async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
             var success = await postService.UnrepostAsync(id, userId);
@@ -181,12 +188,13 @@ public static class PostEndpoints
         })
         .WithName("UnrepostPost")
         .WithSummary("Remove repost")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)
         .Produces(401);
 
         // Comments
-        posts.MapPost("/{id:int}/comments", [RequireActiveUser] async (int id, [FromBody] CreateCommentDto createDto, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPost("/{id:int}/comments", async (int id, [FromBody] CreateCommentDto createDto, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
             var comment = await postService.AddCommentAsync(id, userId, createDto);
@@ -195,6 +203,7 @@ public static class PostEndpoints
         })
         .WithName("AddComment")
         .WithSummary("Add comment to post")
+        .RequireAuthorization("ActiveUser")
         .Produces<CommentDto>(201)
         .Produces(400)
         .Produces(401);
@@ -208,7 +217,7 @@ public static class PostEndpoints
         .WithSummary("Get post comments")
         .Produces<IEnumerable<CommentDto>>(200);
 
-        posts.MapPut("/comments/{commentId:int}", [RequireActiveUser] async (int commentId, [FromBody] UpdateCommentDto updateDto, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapPut("/comments/{commentId:int}", async (int commentId, [FromBody] UpdateCommentDto updateDto, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
             var comment = await postService.UpdateCommentAsync(commentId, userId, updateDto);
@@ -217,12 +226,13 @@ public static class PostEndpoints
         })
         .WithName("UpdateComment")
         .WithSummary("Update a comment")
+        .RequireAuthorization("ActiveUser")
         .Produces<CommentDto>(200)
         .Produces(400)
         .Produces(401)
         .Produces(404);
 
-        posts.MapDelete("/comments/{commentId:int}", [RequireActiveUser] async (int commentId, ClaimsPrincipal user, IPostService postService) =>
+        posts.MapDelete("/comments/{commentId:int}", async (int commentId, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
             var success = await postService.DeleteCommentAsync(commentId, userId);
@@ -231,6 +241,7 @@ public static class PostEndpoints
         })
         .WithName("DeleteComment")
         .WithSummary("Delete a comment")
+        .RequireAuthorization("ActiveUser")
         .Produces(204)
         .Produces(401)
         .Produces(404);

@@ -11,7 +11,7 @@ public static class ImageEndpoints
     {
         var images = app.MapGroup("/api/images").WithTags("Images");
 
-        images.MapPost("/upload", [RequireActiveUser] async (IFormFile file, IImageService imageService, HttpContext context) =>
+        images.MapPost("/upload", async (IFormFile file, IImageService imageService, HttpContext context) =>
         {
             try
             {
@@ -37,6 +37,7 @@ public static class ImageEndpoints
         })
         .WithName("UploadImage")
         .WithSummary("Upload an image file")
+        .RequireAuthorization("ActiveUser")
         .Accepts<IFormFile>("multipart/form-data")
         .Produces<object>(200)
         .Produces(400)
@@ -71,13 +72,14 @@ public static class ImageEndpoints
         .Produces(200)
         .Produces(404);
 
-        images.MapDelete("/{fileName}", [RequireActiveUser] (string fileName, IImageService imageService) =>
+        images.MapDelete("/{fileName}", (string fileName, IImageService imageService) =>
         {
             var success = imageService.DeleteImage(fileName);
             return success ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DeleteImage")
         .WithSummary("Delete an uploaded image")
+        .RequireAuthorization("ActiveUser")
         .Produces(204)
         .Produces(401)
         .Produces(404);

@@ -14,7 +14,7 @@ public static class UserPreferencesEndpoints
         var preferences = app.MapGroup("/api/preferences")
             .WithTags("User Preferences");
 
-        preferences.MapGet("/", [RequireActiveUser] async (ClaimsPrincipal user, IUserPreferencesService preferencesService) =>
+        preferences.MapGet("/", async (ClaimsPrincipal user, IUserPreferencesService preferencesService) =>
         {
             var userId = user.GetUserId(true);
             var userPreferences = await preferencesService.GetUserPreferencesAsync(userId);
@@ -22,10 +22,11 @@ public static class UserPreferencesEndpoints
         })
         .WithName("GetUserPreferences")
         .WithSummary("Get current user's preferences")
+        .RequireAuthorization("ActiveUser")
         .Produces<UserPreferencesDto>(200)
         .Produces(401);
 
-        preferences.MapPut("/", [RequireActiveUser] async (ClaimsPrincipal user, UpdateUserPreferencesDto updateDto, IUserPreferencesService preferencesService) =>
+        preferences.MapPut("/", async (ClaimsPrincipal user, UpdateUserPreferencesDto updateDto, IUserPreferencesService preferencesService) =>
         {
             var userId = user.GetUserId(true);
             var updatedPreferences = await preferencesService.UpdateUserPreferencesAsync(userId, updateDto);
@@ -33,6 +34,7 @@ public static class UserPreferencesEndpoints
         })
         .WithName("UpdateUserPreferences")
         .WithSummary("Update current user's preferences")
+        .RequireAuthorization("ActiveUser")
         .Produces<UserPreferencesDto>(200)
         .Produces(401)
         .Produces(400);

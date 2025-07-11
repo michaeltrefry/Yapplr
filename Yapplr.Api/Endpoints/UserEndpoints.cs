@@ -13,7 +13,7 @@ public static class UserEndpoints
     {
         var users = app.MapGroup("/api/users").WithTags("Users");
 
-        users.MapGet("/me", [RequireActiveUser] async (ClaimsPrincipal user, IUserService userService) =>
+        users.MapGet("/me", async (ClaimsPrincipal user, IUserService userService) =>
         {
             var userId = user.GetUserId(true);
             var userDto = await userService.GetUserByIdAsync(userId);
@@ -22,11 +22,12 @@ public static class UserEndpoints
         })
         .WithName("GetCurrentUser")
         .WithSummary("Get current user profile")
+        .RequireAuthorization("User")
         .Produces<UserDto>(200)
         .Produces(401)
         .Produces(404);
 
-        users.MapPut("/me", [RequireActiveUser] async ([FromBody] UpdateUserDto updateDto, ClaimsPrincipal user, IUserService userService) =>
+        users.MapPut("/me", async ([FromBody] UpdateUserDto updateDto, ClaimsPrincipal user, IUserService userService) =>
         {
             var userId = user.GetUserId(true);
             var userDto = await userService.UpdateUserAsync(userId, updateDto);
@@ -35,11 +36,12 @@ public static class UserEndpoints
         })
         .WithName("UpdateCurrentUser")
         .WithSummary("Update current user profile")
+        .RequireAuthorization("ActiveUser")
         .Produces<UserDto>(200)
         .Produces(401)
         .Produces(404);
 
-        users.MapGet("/{username}", [RequireActiveUser] async (string username, ClaimsPrincipal user, IUserService userService) =>
+        users.MapGet("/{username}", async (string username, ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var userProfile = await userService.GetUserProfileAsync(username, currentUserId);
@@ -48,6 +50,7 @@ public static class UserEndpoints
         })
         .WithName("GetUserProfile")
         .WithSummary("Get user profile by username")
+        .RequireAuthorization("User")
         .Produces<UserProfileDto>(200)
         .Produces(401)
         .Produces(404);
@@ -65,7 +68,7 @@ public static class UserEndpoints
         .WithSummary("Search users by username or bio")
         .Produces<IEnumerable<UserDto>>(200);
 
-        users.MapPost("/me/profile-image", [RequireActiveUser] async (IFormFile file, ClaimsPrincipal user, IUserService userService, IImageService imageService) =>
+        users.MapPost("/me/profile-image", async (IFormFile file, ClaimsPrincipal user, IUserService userService, IImageService imageService) =>
         {
             try
             {
@@ -82,13 +85,14 @@ public static class UserEndpoints
         })
         .WithName("UploadProfileImage")
         .WithSummary("Upload profile image for current user")
+        .RequireAuthorization("ActiveUser")
         .Produces<UserDto>(200)
         .Produces(400)
         .Produces(401)
         .Produces(404)
         .DisableAntiforgery();
 
-        users.MapDelete("/me/profile-image", [RequireActiveUser] async (ClaimsPrincipal user, IUserService userService, IImageService imageService) =>
+        users.MapDelete("/me/profile-image", async (ClaimsPrincipal user, IUserService userService, IImageService imageService) =>
         {
             var userId = user.GetUserId(true);
             var userDto = await userService.RemoveProfileImageAsync(userId, imageService);
@@ -97,11 +101,12 @@ public static class UserEndpoints
         })
         .WithName("RemoveProfileImage")
         .WithSummary("Remove profile image for current user")
+        .RequireAuthorization("ActiveUser")
         .Produces<UserDto>(200)
         .Produces(401)
         .Produces(404);
 
-        users.MapPost("/{userId}/follow", [RequireActiveUser] async (int userId, ClaimsPrincipal user, IUserService userService) =>
+        users.MapPost("/{userId}/follow", async (int userId, ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -113,11 +118,12 @@ public static class UserEndpoints
         })
         .WithName("FollowUser")
         .WithSummary("Follow a user")
+        .RequireAuthorization("ActiveUser")
         .Produces<FollowResponseDto>(200)
         .Produces(400)
         .Produces(401);
 
-        users.MapDelete("/{userId}/follow", [RequireActiveUser] async (int userId, ClaimsPrincipal user, IUserService userService) =>
+        users.MapDelete("/{userId}/follow", async (int userId, ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -126,10 +132,11 @@ public static class UserEndpoints
         })
         .WithName("UnfollowUser")
         .WithSummary("Unfollow a user")
+        .RequireAuthorization("ActiveUser")
         .Produces<FollowResponseDto>(200)
         .Produces(401);
 
-        users.MapGet("/me/following", [RequireActiveUser] async (ClaimsPrincipal user, IUserService userService) =>
+        users.MapGet("/me/following", async (ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var following = await userService.GetFollowingAsync(currentUserId);
@@ -137,10 +144,11 @@ public static class UserEndpoints
         })
         .WithName("GetFollowing")
         .WithSummary("Get users that the current user is following")
+        .RequireAuthorization("User")
         .Produces<IEnumerable<UserDto>>(200)
         .Produces(401);
 
-        users.MapGet("/me/followers", [RequireActiveUser] async (ClaimsPrincipal user, IUserService userService) =>
+        users.MapGet("/me/followers", async (ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var followers = await userService.GetFollowersAsync(currentUserId);
@@ -148,10 +156,11 @@ public static class UserEndpoints
         })
         .WithName("GetFollowers")
         .WithSummary("Get users that are following the current user")
+        .RequireAuthorization("User")
         .Produces<IEnumerable<UserDto>>(200)
         .Produces(401);
 
-        users.MapGet("/me/following/online-status", [RequireActiveUser] async (ClaimsPrincipal user, IUserService userService) =>
+        users.MapGet("/me/following/online-status", async (ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var following = await userService.GetFollowingWithOnlineStatusAsync(currentUserId);
@@ -159,6 +168,7 @@ public static class UserEndpoints
         })
         .WithName("GetFollowingWithOnlineStatus")
         .WithSummary("Get users that the current user is following with their online status")
+        .RequireAuthorization("User")
         .Produces<IEnumerable<UserWithOnlineStatusDto>>(200)
         .Produces(401);
 
@@ -180,7 +190,7 @@ public static class UserEndpoints
         .WithSummary("Get users that are following a specific user")
         .Produces<IEnumerable<UserDto>>(200);
 
-        users.MapPost("/me/fcm-token", [RequireActiveUser] async ([FromBody] UpdateFcmTokenDto tokenDto, ClaimsPrincipal user, IUserService userService) =>
+        users.MapPost("/me/fcm-token", async ([FromBody] UpdateFcmTokenDto tokenDto, ClaimsPrincipal user, IUserService userService) =>
         {
             var userId = user.GetUserId(true);
             var success = await userService.UpdateFcmTokenAsync(userId, tokenDto.Token);
@@ -188,9 +198,10 @@ public static class UserEndpoints
             return success ? Results.Ok() : Results.BadRequest("Failed to update FCM token");
         })
         .WithName("UpdateFcmToken")
-        .WithSummary("Update user's FCM token for push notifications");
+        .WithSummary("Update user's FCM token for push notifications")
+        .RequireAuthorization("ActiveUser");
 
-        users.MapDelete("/me/fcm-token", [RequireActiveUser] async (ClaimsPrincipal user, IUserService userService) =>
+        users.MapDelete("/me/fcm-token", async (ClaimsPrincipal user, IUserService userService) =>
         {
             var userId = user.GetUserId(true);
             var success = await userService.UpdateFcmTokenAsync(userId, null);
@@ -198,9 +209,10 @@ public static class UserEndpoints
             return success ? Results.Ok(new { message = "FCM token cleared successfully" }) : Results.BadRequest("Failed to clear FCM token");
         })
         .WithName("ClearFcmToken")
-        .WithSummary("Clear user's FCM token");
+        .WithSummary("Clear user's FCM token")
+        .RequireAuthorization("ActiveUser");
 
-        users.MapPost("/me/expo-push-token", [RequireActiveUser] async ([FromBody] UpdateExpoPushTokenDto tokenDto, ClaimsPrincipal user, IUserService userService) =>
+        users.MapPost("/me/expo-push-token", async ([FromBody] UpdateExpoPushTokenDto tokenDto, ClaimsPrincipal user, IUserService userService) =>
         {
             var userId = user.GetUserId(true);
             var success = await userService.UpdateExpoPushTokenAsync(userId, tokenDto.Token);
@@ -208,9 +220,10 @@ public static class UserEndpoints
             return success ? Results.Ok() : Results.BadRequest("Failed to update Expo push token");
         })
         .WithName("UpdateExpoPushToken")
-        .WithSummary("Update user's Expo push token for push notifications");
+        .WithSummary("Update user's Expo push token for push notifications")
+        .RequireAuthorization("ActiveUser");
 
-        users.MapDelete("/me/expo-push-token", [RequireActiveUser] async (ClaimsPrincipal user, IUserService userService) =>
+        users.MapDelete("/me/expo-push-token", async (ClaimsPrincipal user, IUserService userService) =>
         {
             var userId = user.GetUserId(true);
             var success = await userService.UpdateExpoPushTokenAsync(userId, null);
@@ -218,9 +231,10 @@ public static class UserEndpoints
             return success ? Results.Ok(new { message = "Expo push token cleared successfully" }) : Results.BadRequest("Failed to clear Expo push token");
         })
         .WithName("ClearExpoPushToken")
-        .WithSummary("Clear user's Expo push token");
+        .WithSummary("Clear user's Expo push token")
+        .RequireAuthorization("User");
 
-        users.MapGet("/me/follow-requests", [RequireActiveUser] async (ClaimsPrincipal user, IUserService userService) =>
+        users.MapGet("/me/follow-requests", async (ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var requests = await userService.GetPendingFollowRequestsAsync(currentUserId);
@@ -228,10 +242,11 @@ public static class UserEndpoints
         })
         .WithName("GetPendingFollowRequests")
         .WithSummary("Get pending follow requests for current user")
+        .RequireAuthorization("User")
         .Produces<IEnumerable<FollowRequestDto>>(200)
         .Produces(401);
 
-        users.MapPost("/follow-requests/{requestId}/approve", [RequireActiveUser] async (int requestId, ClaimsPrincipal user, IUserService userService) =>
+        users.MapPost("/follow-requests/{requestId}/approve", async (int requestId, ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -247,11 +262,12 @@ public static class UserEndpoints
         })
         .WithName("ApproveFollowRequest")
         .WithSummary("Approve a follow request")
+        .RequireAuthorization("User")
         .Produces<FollowResponseDto>(200)
         .Produces(400)
         .Produces(401);
 
-        users.MapPost("/follow-requests/{requestId}/deny", [RequireActiveUser] async (int requestId, ClaimsPrincipal user, IUserService userService) =>
+        users.MapPost("/follow-requests/{requestId}/deny", async (int requestId, ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -267,11 +283,12 @@ public static class UserEndpoints
         })
         .WithName("DenyFollowRequest")
         .WithSummary("Deny a follow request")
+        .RequireAuthorization("User")
         .Produces<FollowResponseDto>(200)
         .Produces(400)
         .Produces(401);
 
-        users.MapPost("/follow-requests/approve-by-user/{requesterId}", [RequireActiveUser] async (int requesterId, ClaimsPrincipal user, IUserService userService) =>
+        users.MapPost("/follow-requests/approve-by-user/{requesterId}", async (int requesterId, ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -287,11 +304,12 @@ public static class UserEndpoints
         })
         .WithName("ApproveFollowRequestByUserId")
         .WithSummary("Approve a follow request by requester user ID")
+        .RequireAuthorization("User")
         .Produces<FollowResponseDto>(200)
         .Produces(400)
         .Produces(401);
 
-        users.MapPost("/follow-requests/deny-by-user/{requesterId}", [RequireActiveUser] async (int requesterId, ClaimsPrincipal user, IUserService userService) =>
+        users.MapPost("/follow-requests/deny-by-user/{requesterId}", async (int requesterId, ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -307,11 +325,12 @@ public static class UserEndpoints
         })
         .WithName("DenyFollowRequestByUserId")
         .WithSummary("Deny a follow request by requester user ID")
+        .RequireAuthorization("User")
         .Produces<FollowResponseDto>(200)
         .Produces(400)
         .Produces(401);
 
-        users.MapGet("/debug-follow-status/{username}", [RequireActiveUser] async (string username, ClaimsPrincipal user, IUserService userService) =>
+        users.MapGet("/debug-follow-status/{username}", async (string username, ClaimsPrincipal user, IUserService userService) =>
         {
             var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var profile = await userService.GetUserProfileAsync(username, currentUserId);
@@ -328,6 +347,7 @@ public static class UserEndpoints
         })
         .WithName("DebugFollowStatus")
         .WithSummary("Debug follow status for a user")
+        .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(401)
         .Produces(404);
