@@ -224,7 +224,7 @@ public class MessageService : IMessageService
 
         await _context.SaveChangesAsync();
 
-        // Send Firebase push notification to other participants
+        // Send push notification to other participants
         var sender = await _context.Users.FindAsync(senderId);
         if (sender != null)
         {

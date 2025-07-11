@@ -43,6 +43,82 @@ const NotificationTestScreen: React.FC = () => {
     }
   };
 
+  const handleTestBannerQueue = async () => {
+    try {
+      // Send multiple notifications quickly to test the queue
+      const notifications = [
+        { type: 'message', title: 'Test Message 1', body: 'First notification in queue' },
+        { type: 'like', title: 'Test Like', body: 'Second notification in queue' },
+        { type: 'follow', title: 'Test Follow', body: 'Third notification in queue' },
+      ];
+
+      for (let i = 0; i < notifications.length; i++) {
+        setTimeout(() => {
+          if ((global as any).showNotificationBanner) {
+            (global as any).showNotificationBanner({
+              ...notifications[i],
+              data: { userId: '1', username: 'testuser' },
+              timestamp: new Date().toISOString(),
+            });
+          }
+        }, i * 500); // Send every 500ms
+      }
+
+      Alert.alert('Success', 'Banner queue test started!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to test banner queue');
+      console.error(error);
+    }
+  };
+
+  const handleTestSwipeActions = async () => {
+    try {
+      // Send a message notification to test swipe actions
+      if ((global as any).showNotificationBanner) {
+        (global as any).showNotificationBanner({
+          type: 'message',
+          title: 'Swipe Test',
+          body: 'Swipe right to mark as read, left to reply',
+          data: {
+            conversationId: '1',
+            userId: '2',
+            username: 'testuser'
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      Alert.alert('Success', 'Swipe test notification sent! Try swiping the banner.');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to test swipe actions');
+      console.error(error);
+    }
+  };
+
+  const handleTestMentionNotification = async () => {
+    try {
+      // Send a mention notification to test banner and navigation
+      if ((global as any).showNotificationBanner) {
+        (global as any).showNotificationBanner({
+          type: 'mention',
+          title: 'You were mentioned',
+          body: '@testuser mentioned you in a post',
+          data: {
+            postId: '38', // Use a post that exists in the timeline
+            mentionerUsername: 'testuser',
+            type: 'mention'
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      Alert.alert('Success', 'Mention test notification sent! Tap to test navigation.');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to test mention notification');
+      console.error(error);
+    }
+  };
+
   const handleRefreshSignalR = async () => {
     try {
       await refreshSignalRConnection();
@@ -207,6 +283,49 @@ const NotificationTestScreen: React.FC = () => {
             <Text style={styles.buttonText}>Test Backend</Text>
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Enhanced Banner Features */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Enhanced Banner Features</Text>
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.button, styles.testButton]}
+            onPress={handleTestBannerQueue}
+          >
+            <Text style={styles.buttonText}>Test Queue</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.testButton]}
+            onPress={handleTestSwipeActions}
+          >
+            <Text style={styles.buttonText}>Test Swipe</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.button, styles.testButton]}
+            onPress={handleTestMentionNotification}
+          >
+            <Text style={styles.buttonText}>Test Mention</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.instruction}>
+          • Queue Test: Sends multiple notifications to test queuing
+        </Text>
+        <Text style={styles.instruction}>
+          • Swipe Test: Sends a message notification to test swipe actions
+        </Text>
+        <Text style={styles.instruction}>
+          • Mention Test: Sends a mention notification to test banner and navigation
+        </Text>
+        <Text style={styles.instruction}>
+          • Swipe right to mark as read, left to reply
+        </Text>
       </View>
 
       {/* Instructions */}

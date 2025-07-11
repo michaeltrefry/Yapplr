@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +33,7 @@ import NotificationDebugScreen from '../screens/main/NotificationDebugScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 import NotificationTestScreen from '../screens/NotificationTestScreen';
 import { Post } from '../types';
+import NotificationNavigationService from '../services/NotificationNavigationService';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -248,13 +249,21 @@ function MainStack() {
 
 export default function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+
+  // Register navigation ref with the notification navigation service
+  useEffect(() => {
+    if (navigationRef.current) {
+      NotificationNavigationService.setNavigationRef(navigationRef.current);
+    }
+  }, []);
 
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       {isAuthenticated ? <MainStack /> : <AuthStackNavigator />}
     </NavigationContainer>
   );

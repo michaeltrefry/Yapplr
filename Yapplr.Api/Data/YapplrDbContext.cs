@@ -49,15 +49,15 @@ public class YapplrDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+        modelBuilder.HasCollation("case_insensitive_collation", locale: "en-u-ks-primary", provider: "icu", deterministic: false);
         // User configuration
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Email).IsUnique();
-            entity.HasIndex(e => e.Username).IsUnique();
+            entity.HasIndex(e => e.Username).IsUnique().UseCollation("case_insensitive_collation");
             entity.Property(e => e.Email).IsRequired();
-            entity.Property(e => e.Username).IsRequired();
+            entity.Property(e => e.Username).IsRequired().UseCollation("case_insensitive_collation");
             entity.Property(e => e.PasswordHash).IsRequired();
 
             // Performance indexes for user queries
@@ -68,7 +68,7 @@ public class YapplrDbContext : DbContext
         modelBuilder.Entity<Post>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Content).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(256).UseCollation("case_insensitive_collation");
             entity.Property(e => e.Privacy)
                   .HasConversion<int>()
                   .HasDefaultValue(PostPrivacy.Public);
@@ -102,7 +102,7 @@ public class YapplrDbContext : DbContext
         modelBuilder.Entity<Comment>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Content).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(256).UseCollation("case_insensitive_collation");
             entity.HasOne(e => e.User)
                   .WithMany(e => e.Comments)
                   .HasForeignKey(e => e.UserId)
@@ -199,9 +199,9 @@ public class YapplrDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Token).IsUnique();
-            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.Email).UseCollation("case_insensitive_collation");
             entity.Property(e => e.Token).IsRequired();
-            entity.Property(e => e.Email).IsRequired();
+            entity.Property(e => e.Email).IsRequired().UseCollation("case_insensitive_collation");
             entity.HasOne(e => e.User)
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
@@ -236,7 +236,7 @@ public class YapplrDbContext : DbContext
         modelBuilder.Entity<Message>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Content).HasMaxLength(1000);
+            entity.Property(e => e.Content).HasMaxLength(1000).UseCollation("case_insensitive_collation");
             entity.HasOne(e => e.Conversation)
                   .WithMany(e => e.Messages)
                   .HasForeignKey(e => e.ConversationId)
@@ -340,8 +340,8 @@ public class YapplrDbContext : DbContext
         modelBuilder.Entity<Tag>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
-            entity.HasIndex(e => e.Name).IsUnique(); // Ensure unique tag names
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50).UseCollation("case_insensitive_collation");
+            entity.HasIndex(e => e.Name).IsUnique().UseCollation("case_insensitive_collation"); // Ensure unique tag names
             entity.HasIndex(e => e.PostCount); // For trending tags queries
             entity.HasIndex(e => e.CreatedAt); // For chronological queries
         });
@@ -413,7 +413,7 @@ public class YapplrDbContext : DbContext
         modelBuilder.Entity<SystemTag>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasIndex(e => e.Name).IsUnique().UseCollation("case_insensitive_collation");
             entity.HasIndex(e => e.Category);
             entity.HasIndex(e => e.IsActive);
         });

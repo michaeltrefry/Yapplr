@@ -231,7 +231,7 @@ public class CompositeNotificationService : ICompositeNotificationService
 
     public async Task<bool> SendNotificationAsync(int userId, string title, string body, Dictionary<string, string>? data = null)
     {
-        return await SendNotificationWithPreferencesAsync(userId, "generic", title, body, data);
+        return await SendNotificationWithPreferencesAsync(userId, data?["type"] ?? "generic", title, body, data);
     }
 
     private async Task<bool> SendNotificationWithPreferencesAsync(int userId, string notificationType, string title, string body, Dictionary<string, string>? data = null)

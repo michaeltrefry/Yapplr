@@ -83,13 +83,13 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
         }
 
         // Start metrics tracking
-        var trackingId = _metricsService.StartDeliveryTracking(userId, "generic", "SignalR");
+        var trackingId = _metricsService.StartDeliveryTracking(userId, data?["type"] ?? "generic", "SignalR");
 
         try
         {
             await _hubContext.SendNotificationToUserAsync(
                 userId,
-                "generic",
+                data?["type"] ?? "generic",
                 title,
                 body,
                 data

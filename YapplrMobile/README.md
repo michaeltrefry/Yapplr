@@ -111,6 +111,29 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Auto-scroll & Highlighting**: Automatic scrolling to specific comments with visual highlighting
 - ✅ **Read Status Management**: Mark notifications as read with proper state management
 
+### **Enhanced Notification Banners** 🆕
+- ✅ **Navigation on Tap**: Tap notification banners to navigate to relevant screens
+  - **Messages**: Navigate directly to conversation with sender
+  - **Mentions**: Navigate to post comments where you were mentioned
+  - **Follows**: Navigate to the follower's profile
+- ✅ **Banner Queue System**: Multiple notifications display sequentially with smooth transitions
+  - **Smart Queuing**: Notifications queue when multiple arrive quickly
+  - **Sequential Display**: Shows one banner at a time with 300ms delays
+  - **Auto-processing**: Automatically shows next notification after dismissal
+- ✅ **Custom Swipe Actions**: Interactive swipe gestures for quick actions
+  - **Swipe Right**: Mark notification as read (with success haptic feedback)
+  - **Swipe Left**: Reply to message notifications (with medium haptic feedback)
+  - **Gesture Recognition**: Smooth swipe detection with spring-back animations
+- ✅ **Sound & Haptic Feedback**: Rich feedback patterns for different notification types
+  - **Messages**: Medium haptic + double vibration pattern + sound
+  - **Mentions**: Heavy haptic + strong single vibration + sound
+  - **Likes**: Light haptic + light vibration (no sound for less urgency)
+  - **Comments**: Medium haptic + standard vibration + sound
+  - **Follows**: Success haptic + triple vibration pattern + sound
+  - **Reposts**: Light haptic + light vibration (no sound)
+- ✅ **Visual Design**: Modern banner design with emoji icons and smooth animations
+- ✅ **Testing Suite**: Comprehensive test buttons for all banner features
+
 ### **Post Creation & Privacy**
 - ✅ **Tab Bar Integration**: Prominent create post button in center of tab bar
 - ✅ **Three Privacy Levels**: Public, Followers, and Private post options
@@ -173,7 +196,12 @@ YapplrMobile/
 │   ├── components/
 │   │   ├── CreatePostModal.tsx      # Post creation with image upload
 │   │   ├── ImageViewer.tsx          # Full-screen image viewer
-│   │   └── PostCard.tsx             # Timeline post display with user navigation
+│   │   ├── PostCard.tsx             # Timeline post display with user navigation
+│   │   ├── NotificationBanner.tsx   # Enhanced notification banner with swipe actions
+│   │   └── NotificationBannerManager.tsx # Banner queue and lifecycle management
+│   ├── services/
+│   │   ├── NotificationNavigationService.ts # Smart navigation from notifications
+│   │   └── NotificationFeedbackService.ts   # Haptic and sound feedback patterns
 │   ├── contexts/
 │   │   └── AuthContext.tsx          # Authentication state management
 │   ├── navigation/
@@ -245,6 +273,26 @@ For development with physical devices:
 - iOS Simulator for iOS-specific testing
 - Android Emulator for Android testing
 
+### **Enhanced Notification Banner Testing**
+The app includes a comprehensive test suite for notification banner features:
+
+1. **Access Test Screen**: Navigate to "Notification Test Screen" in the app
+2. **Available Tests**:
+   - **Test Queue**: Sends multiple notifications rapidly to test queuing system
+   - **Test Swipe**: Sends a message notification to test swipe gestures
+   - **Test Mention**: Sends a mention notification to test navigation to post comments
+3. **Test Scenarios**:
+   - **Navigation**: Tap banners to test navigation to conversations, posts, and profiles
+   - **Swipe Actions**: Swipe right (mark as read) and left (reply) on message notifications
+   - **Queue Behavior**: Send multiple notifications to verify sequential display
+   - **Haptic Feedback**: Feel different vibration patterns for different notification types
+   - **Sound Feedback**: Hear notification sounds (varies by notification type)
+
+### **Testing Haptic Feedback**
+- **iOS**: Full haptic feedback support with different patterns
+- **Android**: Vibration patterns with fallback support
+- **Expo Go**: Limited haptic support, use development build for full testing
+
 ### **Production Testing**
 - Build standalone apps for app store testing
 - Test with production API endpoints
@@ -283,8 +331,9 @@ For issues or questions:
 
 ## 🎉 **Current Status**
 
-The Yapplr mobile app now has **full feature parity** with the web frontend for core functionality:
+The Yapplr mobile app now has **full feature parity** with the web frontend for core functionality, plus **enhanced mobile-specific features**:
 
+### **Core Features**
 - ✅ **Authentication**: Complete login/register flow
 - ✅ **Timeline**: Posts with images, likes, reposts, and user profile images
 - ✅ **Post Creation**: Text and image posts with gallery picker
@@ -300,4 +349,11 @@ The Yapplr mobile app now has **full feature parity** with the web frontend for 
 - ✅ **Real-time Updates**: Live timeline refresh
 - ✅ **Profile Management**: Edit profile information and upload profile pictures
 
-The app is ready for production use and further feature development!
+### **Mobile-Enhanced Features** 🆕
+- ✅ **Interactive Notification Banners**: Tap to navigate, swipe for actions
+- ✅ **Haptic Feedback System**: Rich tactile feedback for different notification types
+- ✅ **Gesture-Based Interactions**: Swipe actions for quick notification management
+- ✅ **Smart Notification Queuing**: Elegant handling of multiple simultaneous notifications
+- ✅ **Context-Aware Navigation**: Intelligent routing from notifications to relevant content
+
+The app is ready for production use and provides a **superior mobile experience** with native mobile interactions!
