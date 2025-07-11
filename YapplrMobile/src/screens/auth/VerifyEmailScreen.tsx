@@ -40,18 +40,28 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
 
     setIsLoading(true);
     try {
-      await api.auth.verifyEmail(token);
-      Alert.alert(
-        'Success',
-        'Email verified successfully! You can now log in.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Login'),
-          },
-        ]
-      );
+      const result = await api.auth.verifyEmail(token);
+      console.log('Verify email result:', result);
+
+      // Check if this is actually an error response disguised as success
+      if (result && 'status' in result && result.status === 400) {
+        // This is an error response
+        Alert.alert('Error', result.message || 'Invalid or expired verification token');
+      } else {
+        // This is a real success
+        Alert.alert(
+          'Success',
+          'Email verified successfully! You can now log in.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Login'),
+            },
+          ]
+        );
+      }
     } catch (error: any) {
+      console.log('Verify email error:', error);
       Alert.alert('Error', error.response?.data?.message || 'Verification failed');
     } finally {
       setIsLoading(false);
