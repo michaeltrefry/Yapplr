@@ -1,12 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using Yapplr.Api.Models;
 using Yapplr.Api.Common;
+using Yapplr.Shared.Models;
 
 namespace Yapplr.Api.DTOs;
 
 public record CreatePostDto(
     [Required][StringLength(256, MinimumLength = 1)] string Content,
     string? ImageFileName = null,
+    string? VideoFileName = null,
     PostPrivacy Privacy = PostPrivacy.Public
 );
 
@@ -19,6 +21,9 @@ public record PostDto(
     int Id,
     string Content,
     string? ImageUrl,
+    string? VideoUrl,
+    string? VideoThumbnailUrl,
+    VideoProcessingStatus? VideoProcessingStatus,
     PostPrivacy Privacy,
     DateTime CreatedAt,
     DateTime UpdatedAt,

@@ -41,6 +41,7 @@ public static class WebApplicationExtensions
         app.MapPostEndpoints();
         app.MapBlockEndpoints();
         app.MapImageEndpoints();
+        app.MapVideoEndpoints();
         app.MapMessageEndpoints();
         app.MapUserPreferencesEndpoints();
         app.MapNotificationEndpoints();

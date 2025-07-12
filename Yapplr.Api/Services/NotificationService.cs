@@ -443,10 +443,17 @@ public class NotificationService : INotificationService
                 imageUrl = notification.Post.ImageFileName;
             }
 
+            // Generate video URLs (without HttpContext, just use filenames)
+            var videoUrl = notification.Post.ProcessedVideoFileName;
+            var videoThumbnailUrl = notification.Post.VideoThumbnailFileName;
+
             dto.Post = new PostDto(
                 notification.Post.Id,
                 notification.Post.Content,
                 imageUrl,
+                videoUrl,
+                videoThumbnailUrl,
+                notification.Post.VideoFileName != null ? notification.Post.VideoProcessingStatus : null,
                 notification.Post.Privacy,
                 notification.Post.CreatedAt,
                 notification.Post.UpdatedAt,
@@ -483,10 +490,17 @@ public class NotificationService : INotificationService
                     imageUrl = notification.Comment.Post.ImageFileName;
                 }
 
+                // Generate video URLs (without HttpContext, just use filenames)
+                var videoUrl = notification.Comment.Post.ProcessedVideoFileName;
+                var videoThumbnailUrl = notification.Comment.Post.VideoThumbnailFileName;
+
                 dto.Post = new PostDto(
                     notification.Comment.Post.Id,
                     notification.Comment.Post.Content,
                     imageUrl,
+                    videoUrl,
+                    videoThumbnailUrl,
+                    notification.Comment.Post.VideoFileName != null ? notification.Comment.Post.VideoProcessingStatus : null,
                     notification.Comment.Post.Privacy,
                     notification.Comment.Post.CreatedAt,
                     notification.Comment.Post.UpdatedAt,

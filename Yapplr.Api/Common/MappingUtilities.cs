@@ -22,6 +22,30 @@ public static class MappingUtilities
     }
 
     /// <summary>
+    /// Generate video URL from filename
+    /// </summary>
+    public static string? GenerateVideoUrl(string? fileName, HttpContext? httpContext)
+    {
+        if (string.IsNullOrEmpty(fileName) || httpContext?.Request == null)
+            return null;
+
+        var request = httpContext.Request;
+        return $"{request.Scheme}://{request.Host}/api/videos/processed/{fileName}";
+    }
+
+    /// <summary>
+    /// Generate video thumbnail URL from filename
+    /// </summary>
+    public static string? GenerateVideoThumbnailUrl(string? fileName, HttpContext? httpContext)
+    {
+        if (string.IsNullOrEmpty(fileName) || httpContext?.Request == null)
+            return null;
+
+        var request = httpContext.Request;
+        return $"{request.Scheme}://{request.Host}/api/videos/thumbnails/{fileName}";
+    }
+
+    /// <summary>
     /// Check if entity is edited (updated more than 1 minute after creation)
     /// </summary>
     public static bool IsEdited(DateTime createdAt, DateTime updatedAt)
@@ -240,10 +264,17 @@ public static class MappingUtilities
             );
         }
 
+        // Generate video URLs
+        var videoUrl = GenerateVideoUrl(post.ProcessedVideoFileName, httpContext);
+        var videoThumbnailUrl = GenerateVideoThumbnailUrl(post.VideoThumbnailFileName, httpContext);
+
         return new PostDto(
             post.Id,
             post.Content,
             imageUrl,
+            videoUrl,
+            videoThumbnailUrl,
+            post.VideoFileName != null ? post.VideoProcessingStatus : null,
             post.Privacy,
             post.CreatedAt,
             post.UpdatedAt,

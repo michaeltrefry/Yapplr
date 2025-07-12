@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Post, PostPrivacy } from '@/types';
+import { Post, PostPrivacy, VideoProcessingStatus } from '@/types';
 import { formatDate, formatNumber } from '@/lib/utils';
-import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag, Play } from 'lucide-react';
 import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -364,6 +364,52 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                   height={300}
                   className="max-w-full h-auto rounded-lg border border-gray-200"
                 />
+              </div>
+            )}
+
+            {/* Video */}
+            {post.videoUrl && post.videoProcessingStatus === VideoProcessingStatus.Completed && (
+              <div className="mt-3">
+                <video
+                  src={post.videoUrl}
+                  poster={post.videoThumbnailUrl}
+                  controls
+                  className="max-w-full h-auto rounded-lg border border-gray-200"
+                  style={{ maxHeight: '400px' }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            )}
+
+            {/* Video Processing Status */}
+            {post.videoProcessingStatus !== null && post.videoProcessingStatus !== VideoProcessingStatus.Completed && (
+              <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center space-x-2">
+                  <Play className="w-5 h-5 text-gray-400" />
+                  <div>
+                    {post.videoProcessingStatus === VideoProcessingStatus.Pending && (
+                      <p className="text-sm text-gray-600">Video is being processed...</p>
+                    )}
+                    {post.videoProcessingStatus === VideoProcessingStatus.Processing && (
+                      <p className="text-sm text-gray-600">Video is being optimized for streaming...</p>
+                    )}
+                    {post.videoProcessingStatus === VideoProcessingStatus.Failed && (
+                      <p className="text-sm text-red-600">Video processing failed. Please try uploading again.</p>
+                    )}
+                    {post.videoThumbnailUrl && (
+                      <div className="mt-2">
+                        <Image
+                          src={post.videoThumbnailUrl}
+                          alt="Video thumbnail"
+                          width={200}
+                          height={150}
+                          className="rounded border border-gray-200"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

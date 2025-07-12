@@ -29,6 +29,32 @@ services:
     networks:
       - yapplr-network
 
+  yapplr-video-processor:
+    build:
+      context: .
+      dockerfile: Yapplr.VideoProcessor/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      # RabbitMQ configuration
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=yapplr
+      - RabbitMQ__Password=yapplr123
+      - RabbitMQ__VirtualHost=/
+      # Video processing configuration
+      - VideoProcessing__InputPath=/app/uploads/videos
+      - VideoProcessing__OutputPath=/app/uploads/processed
+      - VideoProcessing__ThumbnailPath=/app/uploads/thumbnails
+      - VideoProcessing__TempPath=/app/uploads/temp
+      - VideoProcessing__DeleteOriginalAfterProcessing=true
+    volumes:
+      - yapplr_uploads:/app/uploads
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+
   postgres:
     image: postgres:16-alpine
     environment:

@@ -284,6 +284,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<IBlockService, BlockService>();
         services.AddScoped<IImageService, ImageService>();
+        services.AddScoped<IVideoService, VideoService>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
         services.AddScoped<INotificationService, NotificationService>();
@@ -375,6 +376,10 @@ public static class ServiceCollectionExtensions
         // Configure Frontend URLs
         services.Configure<FrontendUrlsConfiguration>(
             configuration.GetSection(FrontendUrlsConfiguration.SectionName));
+
+        // Configure Uploads
+        services.Configure<UploadsConfiguration>(
+            configuration.GetSection(UploadsConfiguration.SectionName));
 
         // Add provider-specific services
         if (notificationConfig.Firebase.Enabled)

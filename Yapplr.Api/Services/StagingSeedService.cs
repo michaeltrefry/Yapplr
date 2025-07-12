@@ -208,6 +208,7 @@ public class StagingSeedService
             var createPostDto = new CreatePostDto(
                 randomContent,
                 null, // No image
+                null, // No video
                 (PostPrivacy)random.Next(0, 3) // Random privacy level
             );
 
@@ -238,6 +239,7 @@ public class StagingSeedService
             var createPostDto = new CreatePostDto(
                 content,
                 null, // No image
+                null, // No video
                 PostPrivacy.Public // Make moderation test posts public for visibility
             );
 

@@ -1,4 +1,5 @@
 using Yapplr.Api.Extensions;
+using Yapplr.Shared.Extensions;
 
 // Auto-detect environment based on Git branch
 EnvironmentExtensions.ConfigureEnvironmentFromGitBranch();

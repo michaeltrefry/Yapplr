@@ -3,6 +3,7 @@ using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Services;
 
@@ -159,7 +160,13 @@ public class TagService : ITagService
         // Map tags to DTOs
         var tags = post.PostTags.Select(pt => pt.Tag.ToDto()).ToList();
 
-        return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
+        // Generate video URLs
+        var videoUrl = MappingUtilities.GenerateVideoUrl(post.ProcessedVideoFileName, null);
+        var videoThumbnailUrl = MappingUtilities.GenerateVideoThumbnailUrl(post.VideoThumbnailFileName, null);
+
+        return new PostDto(post.Id, post.Content, imageUrl, videoUrl, videoThumbnailUrl,
+                          post.VideoFileName != null ? post.VideoProcessingStatus : null,
+                          post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
                           post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, new List<LinkPreviewDto>(), isLiked, isReposted, isEdited);
     }
 

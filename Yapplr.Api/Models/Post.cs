@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Yapplr.Api.Common;
+using Yapplr.Shared.Models;
 
 namespace Yapplr.Api.Models;
 
@@ -12,6 +13,19 @@ public class Post : IUserOwnedEntity
     public string Content { get; set; } = string.Empty;
     [StringLength(256)]
     public string? ImageFileName { get; set; }
+
+    // Video support
+    [StringLength(256)]
+    public string? VideoFileName { get; set; }
+    [StringLength(256)]
+    public string? ProcessedVideoFileName { get; set; }
+    [StringLength(256)]
+    public string? VideoThumbnailFileName { get; set; }
+    public VideoProcessingStatus VideoProcessingStatus { get; set; } = VideoProcessingStatus.Pending;
+    public DateTime? VideoProcessingStartedAt { get; set; }
+    public DateTime? VideoProcessingCompletedAt { get; set; }
+    [StringLength(500)]
+    public string? VideoProcessingError { get; set; }
 
     public PostPrivacy Privacy { get; set; } = PostPrivacy.Public;
 

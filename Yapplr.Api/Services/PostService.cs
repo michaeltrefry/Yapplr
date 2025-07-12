@@ -5,6 +5,9 @@ using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Utils;
 using Yapplr.Api.Common;
+using MassTransit;
+using Yapplr.Shared.Messages;
+using Yapplr.Shared.Models;
 
 namespace Yapplr.Api.Services;
 
@@ -16,6 +19,7 @@ public class PostService : BaseService, IPostService
     private readonly ILinkPreviewService _linkPreviewService;
     private readonly IContentModerationService _contentModerationService;
     private readonly IConfiguration _configuration;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public PostService(
         YapplrDbContext context,
@@ -25,6 +29,7 @@ public class PostService : BaseService, IPostService
         ILinkPreviewService linkPreviewService,
         IContentModerationService contentModerationService,
         IConfiguration configuration,
+        IPublishEndpoint publishEndpoint,
         ILogger<PostService> logger) : base(context, logger)
     {
         _httpContextAccessor = httpContextAccessor;
@@ -33,6 +38,7 @@ public class PostService : BaseService, IPostService
         _linkPreviewService = linkPreviewService;
         _contentModerationService = contentModerationService;
         _configuration = configuration;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
@@ -41,6 +47,8 @@ public class PostService : BaseService, IPostService
         {
             Content = createDto.Content,
             ImageFileName = createDto.ImageFileName,
+            VideoFileName = createDto.VideoFileName,
+            VideoProcessingStatus = createDto.VideoFileName != null ? VideoProcessingStatus.Pending : VideoProcessingStatus.Pending,
             Privacy = createDto.Privacy,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
@@ -61,6 +69,12 @@ public class PostService : BaseService, IPostService
 
         // Perform content moderation analysis
         await ProcessContentModerationAsync(post.Id, createDto.Content, userId);
+
+        // Process video if present
+        if (!string.IsNullOrEmpty(createDto.VideoFileName))
+        {
+            await ProcessVideoAsync(post.Id, userId, createDto.VideoFileName, createDto.Content);
+        }
 
         // Load the post with user data
         var createdPost = await _context.Posts
@@ -942,6 +956,62 @@ public class PostService : BaseService, IPostService
         {
             _logger.LogError(ex, "Error processing content moderation for comment {CommentId}", commentId);
             // Don't fail comment creation/update if moderation fails
+        }
+    }
+
+    private async Task ProcessVideoAsync(int postId, int userId, string videoFileName, string postContent)
+    {
+        try
+        {
+            _logger.LogInformation("Publishing video processing request for Post {PostId}, Video: {VideoFileName}", postId, videoFileName);
+
+            // Construct the full path to the uploaded video
+            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "videos");
+            var videoPath = Path.Combine(uploadsPath, videoFileName);
+
+            // Update post status to processing
+            var post = await _context.Posts.FindAsync(postId);
+            if (post != null)
+            {
+                post.VideoProcessingStatus = VideoProcessingStatus.Processing;
+                post.VideoProcessingStartedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+
+            // Publish video processing request to RabbitMQ
+            var videoProcessingRequest = new VideoProcessingRequest
+            {
+                PostId = postId,
+                UserId = userId,
+                OriginalVideoFileName = videoFileName,
+                OriginalVideoPath = videoPath,
+                RequestedAt = DateTime.UtcNow,
+                PostContent = postContent
+            };
+
+            await _publishEndpoint.Publish(videoProcessingRequest);
+
+            _logger.LogInformation("Video processing request published successfully for Post {PostId}", postId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error publishing video processing request for Post {PostId}", postId);
+
+            // Update post status to failed
+            try
+            {
+                var post = await _context.Posts.FindAsync(postId);
+                if (post != null)
+                {
+                    post.VideoProcessingStatus = VideoProcessingStatus.Failed;
+                    post.VideoProcessingError = $"Failed to publish processing request: {ex.Message}";
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception updateEx)
+            {
+                _logger.LogError(updateEx, "Error updating post status to failed for Post {PostId}", postId);
+            }
         }
     }
 }

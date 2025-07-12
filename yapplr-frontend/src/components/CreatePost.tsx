@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { postApi, imageApi, tagApi } from '@/lib/api';
+import { postApi, imageApi, videoApi, tagApi } from '@/lib/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { Image as ImageIcon, X, Hash, Globe, Users, Lock, ChevronDown, AlertCircle } from 'lucide-react';
+import { Image as ImageIcon, Video, X, Hash, Globe, Users, Lock, ChevronDown, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { PostPrivacy, UserStatus } from '@/types';
 
@@ -13,10 +13,14 @@ export default function CreatePost() {
   const [, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [uploadedVideoFileName, setUploadedVideoFileName] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [privacy, setPrivacy] = useState<PostPrivacy>(PostPrivacy.Public);
   const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false);
   const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const privacyDropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -95,6 +99,13 @@ export default function CreatePost() {
     },
   });
 
+  const uploadVideoMutation = useMutation({
+    mutationFn: videoApi.uploadVideo,
+    onSuccess: (data) => {
+      setUploadedVideoFileName(data.fileName);
+    },
+  });
+
   const createPostMutation = useMutation({
     mutationFn: postApi.createPost,
     onSuccess: () => {
@@ -102,10 +113,16 @@ export default function CreatePost() {
       setSelectedFile(null);
       setImagePreview(null);
       setUploadedFileName(null);
+      setVideoPreview(null);
+      setUploadedVideoFileName(null);
+      setMediaType(null);
       setPrivacy(PostPrivacy.Public);
       setShowHashtagSuggestions(false); // Hide hashtag suggestions after posting
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+      if (videoInputRef.current) {
+        videoInputRef.current.value = '';
       }
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
     },
@@ -128,6 +145,7 @@ export default function CreatePost() {
       }
 
       setSelectedFile(file);
+      setMediaType('image');
 
       // Create preview
       const reader = new FileReader();
@@ -136,8 +154,47 @@ export default function CreatePost() {
       };
       reader.readAsDataURL(file);
 
+      // Clear video if present
+      setVideoPreview(null);
+      setUploadedVideoFileName(null);
+
       // Upload immediately
       uploadImageMutation.mutate(file);
+    }
+  };
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm', 'video/x-matroska'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Please select a valid video file (MP4, AVI, MOV, WMV, FLV, WebM, MKV)');
+        return;
+      }
+
+      // Validate file size (100MB)
+      if (file.size > 100 * 1024 * 1024) {
+        alert('Video file size must be less than 100MB');
+        return;
+      }
+
+      setSelectedFile(file);
+      setMediaType('video');
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setVideoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Clear image if present
+      setImagePreview(null);
+      setUploadedFileName(null);
+
+      // Upload immediately
+      uploadVideoMutation.mutate(file);
     }
   };
 
@@ -145,8 +202,19 @@ export default function CreatePost() {
     setSelectedFile(null);
     setImagePreview(null);
     setUploadedFileName(null);
+    setMediaType(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const removeVideo = () => {
+    setSelectedFile(null);
+    setVideoPreview(null);
+    setUploadedVideoFileName(null);
+    setMediaType(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
     }
   };
 
@@ -157,6 +225,7 @@ export default function CreatePost() {
     createPostMutation.mutate({
       content: content.trim(),
       imageFileName: uploadedFileName || undefined,
+      videoFileName: uploadedVideoFileName || undefined,
       privacy: privacy,
     });
   };
@@ -281,12 +350,19 @@ export default function CreatePost() {
               </div>
             )}
 
-            {/* Hidden File Input */}
+            {/* Hidden File Inputs */}
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
               onChange={handleFileSelect}
+              className="hidden"
+            />
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleVideoSelect}
               className="hidden"
             />
 
@@ -315,6 +391,32 @@ export default function CreatePost() {
               </div>
             )}
 
+            {/* Video Preview */}
+            {videoPreview && (
+              <div className="mt-3 relative">
+                <video
+                  src={videoPreview}
+                  controls
+                  className="max-w-full h-auto rounded-lg border border-gray-200"
+                  style={{ maxHeight: '400px' }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+                <button
+                  type="button"
+                  onClick={removeVideo}
+                  className="absolute top-2 right-2 bg-gray-800 bg-opacity-75 text-white rounded-full p-1 hover:bg-opacity-100 transition-opacity"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                {uploadVideoMutation.isPending && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                    <div className="text-white text-sm">Uploading video...</div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex items-center justify-between mt-4">
               <div className="flex items-center space-x-4">
@@ -323,9 +425,18 @@ export default function CreatePost() {
                   onClick={() => fileInputRef.current?.click()}
                   className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
                   title="Add image"
-                  disabled={uploadImageMutation.isPending}
+                  disabled={uploadImageMutation.isPending || mediaType === 'video'}
                 >
                   <ImageIcon className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => videoInputRef.current?.click()}
+                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                  title="Add video"
+                  disabled={uploadVideoMutation.isPending || mediaType === 'image'}
+                >
+                  <Video className="w-5 h-5" />
                 </button>
 
                 {/* Privacy Selector */}
@@ -386,10 +497,12 @@ export default function CreatePost() {
                 </span>
                 <button
                   type="submit"
-                  disabled={!content.trim() || remainingChars < 0 || createPostMutation.isPending || uploadImageMutation.isPending}
+                  disabled={!content.trim() || remainingChars < 0 || createPostMutation.isPending || uploadImageMutation.isPending || uploadVideoMutation.isPending}
                   className="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {createPostMutation.isPending ? 'Yapping...' : uploadImageMutation.isPending ? 'Uploading...' : 'Yap'}
+                  {createPostMutation.isPending ? 'Yapping...' :
+                   uploadImageMutation.isPending ? 'Uploading image...' :
+                   uploadVideoMutation.isPending ? 'Uploading video...' : 'Yap'}
                 </button>
               </div>
             </div>

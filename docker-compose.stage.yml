@@ -52,6 +52,36 @@ services:
       retries: 5
       start_period: 120s
 
+  yapplr-video-processor:
+    build:
+      context: .
+      dockerfile: Yapplr.VideoProcessor/Dockerfile
+    image: yapplr-video-processor:latest
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Staging
+      # RabbitMQ configuration
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=${STAGE_RABBITMQ_USERNAME:-yapplr}
+      - RabbitMQ__Password=${STAGE_RABBITMQ_PASSWORD:-yapplr123}
+      - RabbitMQ__VirtualHost=/
+      # Video processing configuration
+      - VideoProcessing__InputPath=/app/uploads/videos
+      - VideoProcessing__OutputPath=/app/uploads/processed
+      - VideoProcessing__ThumbnailPath=/app/uploads/thumbnails
+      - VideoProcessing__TempPath=/app/uploads/temp
+      - VideoProcessing__DeleteOriginalAfterProcessing=true
+      - VideoProcessing__MaxFileSizeBytes=104857600
+      - VideoProcessing__MaxDurationSeconds=300
+    volumes:
+      - yapplr_uploads:/app/uploads
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   yapplr-frontend:
     build:
       context: yapplr-frontend

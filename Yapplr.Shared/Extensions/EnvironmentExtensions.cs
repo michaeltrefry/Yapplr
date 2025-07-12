@@ -1,4 +1,4 @@
-namespace Yapplr.Api.Extensions;
+namespace Yapplr.Shared.Extensions;
 
 public static class EnvironmentExtensions
 {
@@ -13,6 +13,7 @@ public static class EnvironmentExtensions
                 var gitBranch = GetCurrentGitBranch();
                 var environment = (gitBranch == "main" || gitBranch == "master") ? "Test" : "Development";
                 Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", environment);
+                Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", environment);
                 Console.WriteLine($"🔄 Auto-detected Git branch '{gitBranch}' -> Using {environment} environment");
             }
             catch (Exception ex)

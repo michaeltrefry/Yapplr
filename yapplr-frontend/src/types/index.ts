@@ -4,6 +4,14 @@ export enum PostPrivacy {
   Private = 2,
 }
 
+export enum VideoProcessingStatus {
+  Pending = 0,
+  Processing = 1,
+  Completed = 2,
+  Failed = 3,
+  Cancelled = 4,
+}
+
 export interface Tag {
   id: number;
   name: string;
@@ -101,6 +109,9 @@ export interface Post {
   id: number;
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
+  videoThumbnailUrl?: string;
+  videoProcessingStatus?: VideoProcessingStatus;
   privacy: PostPrivacy;
   createdAt: string;
   updatedAt: string;
@@ -204,6 +215,7 @@ export interface LoginData {
 export interface CreatePostData {
   content: string;
   imageFileName?: string;
+  videoFileName?: string;
   privacy?: PostPrivacy;
 }
 
