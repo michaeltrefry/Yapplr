@@ -361,6 +361,54 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
       },
     },
 
+    videos: {
+      uploadVideo: async (uri: string, fileName: string, type: string): Promise<VideoUploadResponse> => {
+        console.log('Uploading video:', { uri, fileName, type });
+
+        const formData = new FormData();
+
+        // React Native specific FormData format - ensure proper MIME type
+        const mimeType = type.startsWith('video/') ? type : `video/${type}`;
+
+        formData.append('file', {
+          uri: uri,
+          type: mimeType,
+          name: fileName,
+        } as any);
+
+        console.log('FormData created with MIME type:', mimeType);
+
+        try {
+          const response = await client.post('/api/videos/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+
+          // Check if the response is actually successful (since we don't throw on 4xx)
+          if (response.status >= 400) {
+            const errorMessage = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            console.error('API error response:', errorMessage);
+            throw new Error(`Upload failed with status ${response.status}: ${errorMessage}`);
+          }
+
+          if (!response.data || !response.data.fileName) {
+            throw new Error('Upload succeeded but no file information returned');
+          }
+
+          console.log('Video upload successful:', response.data);
+          return response.data;
+        } catch (error: any) {
+          console.error('Video upload error:', error.message);
+          throw error;
+        }
+      },
+
+      deleteVideo: async (fileName: string): Promise<void> => {
+        await client.delete(`/api/videos/${fileName}`);
+      },
+    },
+
     notifications: {
       getNotifications: async (page: number = 1, pageSize: number = 25): Promise<NotificationList> => {
         const response = await client.get(`/api/notifications?page=${page}&pageSize=${pageSize}`);

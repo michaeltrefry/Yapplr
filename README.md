@@ -5,7 +5,7 @@ A complete Twitter-like social media platform built with modern web technologies
 ## 🚀 Features
 
 ### Core Social Features
-- **Yaps**: Create text yaps (up to 256 characters) with optional images
+- **Yaps**: Create text yaps (up to 256 characters) with optional images and videos
 - **Reyaps**: Reyap content with proper attribution in timeline feeds
 - **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, auto-scroll to new comments, and reply functionality
 - **Mentions**: @username mention system with clickable links and real-time notifications
@@ -21,7 +21,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Content Management**: Delete your own yaps, comments, and reyaps with confirmation dialogs
 - **User Blocking**: Block/unblock users with automatic unfollowing and content filtering
 - **Settings Management**: Dedicated settings page with blocklist management
-- **Private Messaging**: Send direct messages with text and photo attachments
+- **Private Messaging**: Send direct messages with text, photo, and video attachments
 - **Message Conversations**: Organized conversation threads with read status tracking and visual unread indicators
 - **Messaging Privacy**: Blocked users cannot send messages to each other
 - **Message Notifications**: Real-time unread message badges on Messages tab and conversation list
@@ -107,7 +107,9 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Real-time Updates**: Live timeline with instant social interaction feedback and immediate sidebar following list updates
 - **Infinite Scroll**: Smooth pagination with 25 posts per page for optimal performance
 - **Return to Top**: Convenient navigation button when reaching the end of timelines
-- **Image Upload**: Server-side image storage for yaps and profile pictures
+- **Media Upload**: Server-side storage for images and videos in yaps, messages, and profile pictures
+- **Video Processing**: Automatic video processing with FFmpeg including format conversion, compression, and thumbnail generation
+- **iPhone Photo Library Support**: Unified media picker supporting both photos and videos from iPhone photo library via Safari
 - **User Search**: Find users by username or bio content
 - **Hashtag Search**: Search and discover hashtags with trending topics and post counts
 - **Clean UI**: 2015 Twitter-inspired design with modern touches
@@ -116,12 +118,33 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Content Control**: Delete buttons with confirmation dialogs for your own content
 - **Optimized Images**: Next.js Image component for better performance and loading
 - **Real-time Messaging**: Live message updates with automatic conversation refresh
-- **Message Attachments**: Send photos in messages with preview and validation
+- **Message Attachments**: Send photos and videos in messages with preview and validation
 - **Conversation Management**: Infinite scroll message history with unread count indicators
 - **Message Notifications**: Red badge indicators showing unread message counts on tabs and conversation lists
 - **Visual Read Status**: Bold text and background highlights for conversations with unread messages
 - **Dark Mode**: Complete dark theme with toggle in Settings, synchronized across all platforms
 - **Database Performance**: Optimized with strategic indexing for fast timeline, profile, and messaging queries
+
+### 🎥 Video Features
+- **Video Upload Support**: Upload videos in posts and messages with comprehensive format support
+  - **Supported Formats**: MP4, MOV, AVI, WMV, FLV, WebM, MKV
+  - **File Size Limits**: Up to 100MB for videos, 5MB for images
+  - **iPhone Compatibility**: Native support for iPhone video formats (MOV, MP4)
+- **Unified Media Picker**: Single interface for selecting both photos and videos
+  - **Web Frontend**: iPhone Safari optimized file picker with photo library access
+  - **Mobile App**: Native photo library integration with expo-image-picker
+  - **File Validation**: Automatic format detection and size validation with user-friendly error messages
+- **Video Processing Pipeline**: Automatic server-side video processing with FFmpeg
+  - **Format Conversion**: Standardize videos to web-compatible formats
+  - **Compression**: Optimize file sizes while maintaining quality
+  - **Thumbnail Generation**: Automatic video thumbnail creation for previews
+  - **Processing Status**: Real-time status updates (Pending → Processing → Completed/Failed)
+- **Video Display**: Optimized video playback with controls and thumbnails
+  - **Video Player**: HTML5 video player with standard controls
+  - **Thumbnail Previews**: Show video thumbnails while processing
+  - **Processing Indicators**: Visual feedback during video processing
+  - **Error Handling**: Graceful handling of processing failures with retry options
+- **Cross-Platform Consistency**: Same video features across web and mobile platforms
 
 ## 🛠 Tech Stack
 
@@ -134,7 +157,9 @@ A complete Twitter-like social media platform built with modern web technologies
 - **JWT Bearer** - Authentication
 - **BCrypt** - Password hashing
 - **SendGrid** - Email service for verification and password reset (with AWS SES fallback)
-- **File System Storage** - Image upload and serving
+- **File System Storage** - Image and video upload and serving
+- **Video Processing Service** - FFmpeg-based video processing with RabbitMQ messaging
+- **RabbitMQ** - Message queue for asynchronous video processing tasks
 - **AI Content Moderation** - Python-based sentiment analysis and content moderation service
 
 ### Content Moderation Service (Python)

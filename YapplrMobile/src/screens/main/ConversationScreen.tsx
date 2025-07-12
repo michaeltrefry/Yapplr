@@ -30,8 +30,9 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
   const colors = useThemeColors();
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [selectedMediaUri, setSelectedMediaUri] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const queryClient = useQueryClient();
 
@@ -76,11 +77,12 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
 
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ content, imageFileName }: { content: string; imageFileName?: string }) => {
+    mutationFn: async ({ content, imageFileName, videoFileName }: { content: string; imageFileName?: string; videoFileName?: string }) => {
       return await api.messages.sendMessageToConversation({
         conversationId,
         content,
         imageFileName,
+        videoFileName,
       });
     },
     onSuccess: async () => {
@@ -96,7 +98,8 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['unreadMessageCount'] });
       setMessageText('');
-      setSelectedImageUri(null);
+      setSelectedMediaUri(null);
+      setMediaType(null);
       // Scroll to bottom
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
@@ -108,7 +111,7 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
     },
   });
 
-  const pickImage = async () => {
+  const pickMedia = async () => {
     try {
       // Request permission
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -118,58 +121,102 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
         return;
       }
 
-      // Launch image picker with compression for large iPhone photos
+      // Launch media picker supporting both images and videos
       const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'], // Support both images and videos
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.5, // Reduced quality to handle large iPhone photos (5MB API limit)
+        quality: 0.5, // Reduced quality for images
         allowsMultipleSelection: false,
         selectionLimit: 1,
         exif: false,
+        videoMaxDuration: 60, // Limit videos to 60 seconds
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
-        setSelectedImageUri(asset.uri);
+
+        // Determine if this is an image or video
+        const isVideo = asset.type === 'video' ||
+                       (asset.mimeType && asset.mimeType.startsWith('video/')) ||
+                       (asset.fileName && /\.(mp4|mov|avi|wmv|flv|webm|mkv)$/i.test(asset.fileName));
+
+        // Validate file size based on type
+        if (isVideo) {
+          // Video size limit: 100MB (matching backend)
+          const maxVideoSize = 100 * 1024 * 1024; // 100MB in bytes
+          if (asset.fileSize && asset.fileSize > maxVideoSize) {
+            Alert.alert('File Too Large', 'Video files must be less than 100MB. Please select a smaller video or compress it.');
+            return;
+          }
+        } else {
+          // Image size limit: 5MB (matching existing logic)
+          const maxImageSize = 5 * 1024 * 1024; // 5MB in bytes
+          if (asset.fileSize && asset.fileSize > maxImageSize) {
+            Alert.alert('File Too Large', 'Image files must be less than 5MB. Please select a smaller image.');
+            return;
+          }
+        }
+
+        setSelectedMediaUri(asset.uri);
+        setMediaType(isVideo ? 'video' : 'image');
       }
     } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      console.error('Error picking media:', error);
+      Alert.alert('Error', 'Failed to pick media. Please try again.');
     }
   };
 
-  const uploadImageAndSend = async (imageUri: string, fileName: string) => {
+  const uploadMediaAndSend = async (mediaUri: string, fileName: string, type: 'image' | 'video') => {
     try {
-      setIsUploadingImage(true);
+      setIsUploadingMedia(true);
 
-      // Upload the image first
-      const uploadResult = await api.images.uploadImage(imageUri, fileName, 'image/jpeg');
-
-      // Send message with image
-      await sendMessageMutation.mutateAsync({
+      let uploadResult;
+      let messageData: { content: string; imageFileName?: string; videoFileName?: string } = {
         content: messageText.trim(),
-        imageFileName: uploadResult.fileName,
-      });
+      };
+
+      if (type === 'video') {
+        // Determine video MIME type
+        let mimeType = 'video/mp4'; // default
+        if (fileName.toLowerCase().endsWith('.mov')) {
+          mimeType = 'video/quicktime';
+        } else if (fileName.toLowerCase().endsWith('.avi')) {
+          mimeType = 'video/x-msvideo';
+        } else if (fileName.toLowerCase().endsWith('.wmv')) {
+          mimeType = 'video/x-ms-wmv';
+        }
+
+        uploadResult = await api.videos.uploadVideo(mediaUri, fileName, mimeType);
+        messageData.videoFileName = uploadResult.fileName;
+      } else {
+        uploadResult = await api.images.uploadImage(mediaUri, fileName, 'image/jpeg');
+        messageData.imageFileName = uploadResult.fileName;
+      }
+
+      // Send message with media
+      await sendMessageMutation.mutateAsync(messageData);
     } catch (error) {
-      console.error('Error uploading image:', error);
-      Alert.alert('Error', 'Failed to upload image. Please try again.');
+      console.error(`Error uploading ${type}:`, error);
+      Alert.alert('Error', `Failed to upload ${type}. Please try again.`);
     } finally {
-      setIsUploadingImage(false);
+      setIsUploadingMedia(false);
     }
   };
 
   const handleSendMessage = async () => {
     const trimmedMessage = messageText.trim();
 
-    // Check if we have content or an image
-    if (!trimmedMessage && !selectedImageUri) return;
-    if (isSending || isUploadingImage) return;
+    // Check if we have content or media
+    if (!trimmedMessage && !selectedMediaUri) return;
+    if (isSending || isUploadingMedia) return;
 
     setIsSending(true);
     try {
-      if (selectedImageUri) {
-        // Upload image and send message
-        await uploadImageAndSend(selectedImageUri, 'message-image.jpg');
+      if (selectedMediaUri && mediaType) {
+        // Upload media and send message
+        const fileName = mediaType === 'video' ? 'message-video.mp4' : 'message-image.jpg';
+        await uploadMediaAndSend(selectedMediaUri, fileName, mediaType);
       } else {
         // Send text-only message
         await sendMessageMutation.mutateAsync({ content: trimmedMessage });
@@ -179,8 +226,9 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
     }
   };
 
-  const removeSelectedImage = () => {
-    setSelectedImageUri(null);
+  const removeSelectedMedia = () => {
+    setSelectedMediaUri(null);
+    setMediaType(null);
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
@@ -305,11 +353,18 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
           }
         />
 
-        {/* Image preview */}
-        {selectedImageUri && (
-          <View style={styles.imagePreviewContainer}>
-            <Image source={{ uri: selectedImageUri }} style={styles.imagePreview} />
-            <TouchableOpacity style={styles.removeImageButton} onPress={removeSelectedImage}>
+        {/* Media preview */}
+        {selectedMediaUri && (
+          <View style={styles.mediaPreviewContainer}>
+            {mediaType === 'video' ? (
+              <View style={styles.videoPreviewPlaceholder}>
+                <Ionicons name="play-circle" size={48} color="#6B7280" />
+                <Text style={styles.videoPreviewText}>Video selected</Text>
+              </View>
+            ) : (
+              <Image source={{ uri: selectedMediaUri }} style={styles.imagePreview} />
+            )}
+            <TouchableOpacity style={styles.removeMediaButton} onPress={removeSelectedMedia}>
               <Ionicons name="close-circle" size={24} color="#EF4444" />
             </TouchableOpacity>
           </View>
@@ -317,11 +372,11 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
 
         <View style={styles.inputContainer}>
           <TouchableOpacity
-            style={styles.imageButton}
-            onPress={pickImage}
-            disabled={isUploadingImage}
+            style={styles.mediaButton}
+            onPress={pickMedia}
+            disabled={isUploadingMedia}
           >
-            <Ionicons name="image" size={24} color="#6B7280" />
+            <Ionicons name="attach" size={24} color="#6B7280" />
           </TouchableOpacity>
 
           <TextInput
@@ -339,18 +394,18 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!messageText.trim() && !selectedImageUri || isSending || isUploadingImage) && styles.sendButtonDisabled
+              (!messageText.trim() && !selectedMediaUri || isSending || isUploadingMedia) && styles.sendButtonDisabled
             ]}
             onPress={handleSendMessage}
-            disabled={(!messageText.trim() && !selectedImageUri) || isSending || isUploadingImage}
+            disabled={(!messageText.trim() && !selectedMediaUri) || isSending || isUploadingMedia}
           >
-            {(isSending || isUploadingImage) ? (
+            {(isSending || isUploadingMedia) ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Ionicons
                 name="send"
                 size={20}
-                color={(!messageText.trim() && !selectedImageUri || isSending || isUploadingImage) ? '#9CA3AF' : '#fff'}
+                color={(!messageText.trim() && !selectedMediaUri || isSending || isUploadingMedia) ? '#9CA3AF' : '#fff'}
               />
             )}
           </TouchableOpacity>
@@ -439,7 +494,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   messageTextWithImage: {
     marginTop: 0,
   },
-  imagePreviewContainer: {
+  mediaPreviewContainer: {
     position: 'relative',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -450,7 +505,22 @@ const createStyles = (colors: any) => StyleSheet.create({
     height: 75,
     borderRadius: 8,
   },
-  removeImageButton: {
+  videoPreviewPlaceholder: {
+    width: 100,
+    height: 75,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  videoPreviewText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  removeMediaButton: {
     position: 'absolute',
     top: 4,
     right: 12,
@@ -464,7 +534,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderTopColor: colors.border,
     backgroundColor: colors.background,
   },
-  imageButton: {
+  mediaButton: {
     width: 40,
     height: 40,
     borderRadius: 20,

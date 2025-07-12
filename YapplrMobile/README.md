@@ -16,7 +16,7 @@ React Native mobile application for the Yapplr social media platform.
 - **Axios**: HTTP client for API communication
 - **AsyncStorage**: Local data persistence
 - **TypeScript**: Type safety and better development experience
-- **Expo Image Picker**: Camera and gallery integration
+- **Expo Image Picker**: Camera and gallery integration for photos and videos
 
 ## 🚀 **Getting Started**
 
@@ -74,9 +74,11 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Blocked Users**: View and manage blocked users list
 
 ### **Post Management**
-- ✅ **Create Posts**: Text and image post creation with mention detection
-- ✅ **Image Upload**: Gallery picker integration
-- ✅ **Timeline Display**: Posts with images and interactions
+- ✅ **Create Posts**: Text, image, and video post creation with mention detection
+- ✅ **Media Upload**: Unified gallery picker for both images and videos from iPhone photo library
+- ✅ **Video Support**: Upload videos up to 100MB in multiple formats (MP4, MOV, AVI, WMV, FLV, WebM, MKV)
+- ✅ **File Validation**: Automatic format detection and size validation with user-friendly error messages
+- ✅ **Timeline Display**: Posts with images, videos, and interactions
 - ✅ **Like/Repost**: Social interaction features
 - ✅ **Comments System**: Full commenting functionality with dedicated screens
 - ✅ **Comment Replies**: Reply to specific comments with automatic @username prefilling
@@ -249,7 +251,7 @@ For development with physical devices:
 ## 🎯 **Next Steps**
 
 ### **Immediate Enhancements**
-1. **Camera Integration**: Add camera capture for posts
+1. **Camera Integration**: Add camera capture for posts (gallery picker implemented)
 2. **Push Notifications**: Real-time push notification delivery (notifications system implemented, push delivery pending)
 3. **Follow/Unfollow**: Implement follow functionality in user profiles
 
@@ -336,7 +338,7 @@ The Yapplr mobile app now has **full feature parity** with the web frontend for 
 ### **Core Features**
 - ✅ **Authentication**: Complete login/register flow
 - ✅ **Timeline**: Posts with images, likes, reposts, and user profile images
-- ✅ **Post Creation**: Text and image posts with gallery picker
+- ✅ **Post Creation**: Text, image, and video posts with unified gallery picker
 - ✅ **Image Viewing**: Full-screen viewer with pinch-to-zoom
 - ✅ **Social Features**: Like, repost, and user interactions
 - ✅ **User Profiles**: Navigate to user profiles by tapping avatars/names
@@ -344,7 +346,7 @@ The Yapplr mobile app now has **full feature parity** with the web frontend for 
 - ✅ **Profile Timeline**: View any user's posts and profile information with images
 - ✅ **User Search**: Search and navigate to user profiles instantly
 - ✅ **Private Messaging**: Complete messaging system with conversation management
-- ✅ **Message Composition**: Send and receive messages in real-time
+- ✅ **Message Composition**: Send and receive text, image, and video messages in real-time
 - ✅ **Conversation Navigation**: Access conversations from multiple entry points
 - ✅ **Real-time Updates**: Live timeline refresh
 - ✅ **Profile Management**: Edit profile information and upload profile pictures

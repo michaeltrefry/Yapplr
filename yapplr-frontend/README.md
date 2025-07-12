@@ -26,9 +26,12 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Background Notifications**: Push notifications work even when the app is minimized or closed
 - **Comment Replies**: Reply to specific comments with automatic @username prefilling and reply context
 - **Content Management**: Delete your own yaps, comments, and reyaps with confirmation dialogs
-- **Image Upload**: Upload and display images in yaps and profiles with Next.js optimization
+- **Media Upload**: Upload and display images and videos in yaps and profiles with Next.js optimization
+- **Video Support**: Upload videos up to 100MB in multiple formats (MP4, MOV, AVI, WMV, FLV, WebM, MKV)
+- **iPhone Photo Library**: Unified media picker optimized for iPhone Safari with direct photo library access
+- **File Validation**: Automatic format detection and size validation with user-friendly error messages
 - **Search**: Find users by username or bio
-- **Private Messaging**: Send direct messages with text and photo attachments with real-time notifications
+- **Private Messaging**: Send direct messages with text, photo, and video attachments with real-time notifications
 - **Message Conversations**: Organized conversation threads with read status tracking
 
 ## Tech Stack

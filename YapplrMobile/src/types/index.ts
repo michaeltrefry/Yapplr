@@ -73,6 +73,7 @@ export interface AuthResponse {
 export interface CreatePostData {
   content: string;
   imageFileName?: string;
+  videoFileName?: string;
   privacy?: PostPrivacy;
 }
 
@@ -205,6 +206,7 @@ export interface SendMessageData {
   conversationId: number;
   content: string;
   imageFileName?: string;
+  videoFileName?: string;
 }
 
 export interface FollowResponse {
@@ -224,6 +226,12 @@ export interface BlockStatusResponse {
 export interface ImageUploadResponse {
   fileName: string;
   imageUrl: string;
+}
+
+export interface VideoUploadResponse {
+  fileName: string;
+  videoUrl: string;
+  fileSizeBytes: number;
 }
 
 // Moderation and Appeal Types
@@ -462,6 +470,10 @@ export interface YapplrApi {
   images: {
     uploadImage: (uri: string, fileName: string, type: string) => Promise<ImageUploadResponse>;
     deleteImage: (fileName: string) => Promise<void>;
+  };
+  videos: {
+    uploadVideo: (uri: string, fileName: string, type: string) => Promise<VideoUploadResponse>;
+    deleteVideo: (fileName: string) => Promise<void>;
   };
   preferences: {
     get: () => Promise<{ darkMode: boolean }>;

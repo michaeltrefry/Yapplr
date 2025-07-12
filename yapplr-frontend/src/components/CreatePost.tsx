@@ -20,7 +20,6 @@ export default function CreatePost() {
   const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false);
   const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
   const privacyDropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -121,100 +120,95 @@ export default function CreatePost() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      if (videoInputRef.current) {
-        videoInputRef.current.value = '';
-      }
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
     },
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Please select a valid image file (JPG, PNG, GIF, WebP)');
+      // Determine if this is an image or video
+      const isVideo = file.type.startsWith('video/');
+      const isImage = file.type.startsWith('image/');
+
+      if (!isImage && !isVideo) {
+        alert('Please select a valid image or video file');
         return;
       }
 
-      // Validate file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
-        return;
+      if (isVideo) {
+        // Validate video file type
+        const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm', 'video/x-matroska'];
+        if (!allowedVideoTypes.includes(file.type)) {
+          alert('Please select a valid video file (MP4, AVI, MOV, WMV, FLV, WebM, MKV)');
+          return;
+        }
+
+        // Validate video file size (100MB)
+        if (file.size > 100 * 1024 * 1024) {
+          alert('Video file size must be less than 100MB');
+          return;
+        }
+
+        setSelectedFile(file);
+        setMediaType('video');
+
+        // Create video preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setVideoPreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Clear image if present
+        setImagePreview(null);
+        setUploadedFileName(null);
+
+        // Upload immediately
+        uploadVideoMutation.mutate(file);
+      } else {
+        // Handle image
+        const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedImageTypes.includes(file.type)) {
+          alert('Please select a valid image file (JPG, PNG, GIF, WebP)');
+          return;
+        }
+
+        // Validate image file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Image file size must be less than 5MB');
+          return;
+        }
+
+        setSelectedFile(file);
+        setMediaType('image');
+
+        // Create image preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setImagePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Clear video if present
+        setVideoPreview(null);
+        setUploadedVideoFileName(null);
+
+        // Upload immediately
+        uploadImageMutation.mutate(file);
       }
-
-      setSelectedFile(file);
-      setMediaType('image');
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      // Clear video if present
-      setVideoPreview(null);
-      setUploadedVideoFileName(null);
-
-      // Upload immediately
-      uploadImageMutation.mutate(file);
     }
   };
 
-  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm', 'video/x-matroska'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Please select a valid video file (MP4, AVI, MOV, WMV, FLV, WebM, MKV)');
-        return;
-      }
-
-      // Validate file size (100MB)
-      if (file.size > 100 * 1024 * 1024) {
-        alert('Video file size must be less than 100MB');
-        return;
-      }
-
-      setSelectedFile(file);
-      setMediaType('video');
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setVideoPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      // Clear image if present
-      setImagePreview(null);
-      setUploadedFileName(null);
-
-      // Upload immediately
-      uploadVideoMutation.mutate(file);
-    }
-  };
-
-  const removeImage = () => {
+  const removeMedia = () => {
     setSelectedFile(null);
     setImagePreview(null);
+    setVideoPreview(null);
     setUploadedFileName(null);
+    setUploadedVideoFileName(null);
     setMediaType(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
-    }
-  };
-
-  const removeVideo = () => {
-    setSelectedFile(null);
-    setVideoPreview(null);
-    setUploadedVideoFileName(null);
-    setMediaType(null);
-    if (videoInputRef.current) {
-      videoInputRef.current.value = '';
     }
   };
 
@@ -350,19 +344,13 @@ export default function CreatePost() {
               </div>
             )}
 
-            {/* Hidden File Inputs */}
+            {/* Hidden Unified Media Input */}
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <input
-              ref={videoInputRef}
-              type="file"
-              accept="video/*"
-              onChange={handleVideoSelect}
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,video/mp4,video/mov,video/avi,video/wmv,video/flv,video/webm,video/x-matroska"
+              multiple={false}
+              onChange={handleMediaSelect}
               className="hidden"
             />
 
@@ -378,7 +366,7 @@ export default function CreatePost() {
                 />
                 <button
                   type="button"
-                  onClick={removeImage}
+                  onClick={removeMedia}
                   className="absolute top-2 right-2 bg-gray-800 bg-opacity-75 text-white rounded-full p-1 hover:bg-opacity-100 transition-opacity"
                 >
                   <X className="w-4 h-4" />
@@ -404,7 +392,7 @@ export default function CreatePost() {
                 </video>
                 <button
                   type="button"
-                  onClick={removeVideo}
+                  onClick={removeMedia}
                   className="absolute top-2 right-2 bg-gray-800 bg-opacity-75 text-white rounded-full p-1 hover:bg-opacity-100 transition-opacity"
                 >
                   <X className="w-4 h-4" />
@@ -423,20 +411,12 @@ export default function CreatePost() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
-                  title="Add image"
-                  disabled={uploadImageMutation.isPending || mediaType === 'video'}
+                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors flex items-center gap-1 sm:gap-2"
+                  title="Add photo or video from library"
+                  disabled={uploadImageMutation.isPending || uploadVideoMutation.isPending}
                 >
                   <ImageIcon className="w-5 h-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => videoInputRef.current?.click()}
-                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
-                  title="Add video"
-                  disabled={uploadVideoMutation.isPending || mediaType === 'image'}
-                >
-                  <Video className="w-5 h-5" />
+                  <span className="hidden sm:inline text-sm">Photo/Video</span>
                 </button>
 
                 {/* Privacy Selector */}

@@ -35,9 +35,10 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
   const styles = createStyles(colors);
   const [content, setContent] = useState('');
   const [privacy, setPrivacy] = useState<PostPrivacy>(PostPrivacy.Public);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
@@ -71,12 +72,13 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
 
   const resetForm = () => {
     setContent('');
-    setSelectedImage(null);
+    setSelectedMedia(null);
+    setMediaType(null);
     setUploadedFileName(null);
-    setIsUploadingImage(false);
+    setIsUploadingMedia(false);
   };
 
-  const pickImage = async () => {
+  const pickMedia = async () => {
     try {
       // Request permission
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -86,68 +88,154 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
         return;
       }
 
-      // Launch image picker with compression for large iPhone photos
+      // Launch media picker supporting both images and videos
       const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'], // Support both images and videos
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.5, // Reduced quality to handle large iPhone photos (5MB API limit)
+        quality: 0.5, // Reduced quality for images
         allowsMultipleSelection: false,
         selectionLimit: 1,
         exif: false,
+        videoMaxDuration: 60, // Limit videos to 60 seconds
       });
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         console.log('Full asset details:', JSON.stringify(asset, null, 2));
-        setSelectedImage(asset.uri);
 
-        // Upload image immediately
-        const fileName = asset.fileName || 'image.jpg';
-        // Ensure proper MIME type based on file extension
-        let mimeType = asset.mimeType || asset.type || 'image/jpeg';
+        // Determine if this is an image or video
+        const isVideo = asset.type === 'video' ||
+                       (asset.mimeType && asset.mimeType.startsWith('video/')) ||
+                       (asset.fileName && /\.(mp4|mov|avi|wmv|flv|webm|mkv)$/i.test(asset.fileName));
 
-        console.log('Original mimeType:', mimeType, 'fileName:', fileName);
-
-        if (!mimeType.startsWith('image/')) {
-          // Fallback based on file extension
-          if (fileName.toLowerCase().endsWith('.png')) {
-            mimeType = 'image/png';
-          } else if (fileName.toLowerCase().endsWith('.gif')) {
-            mimeType = 'image/gif';
-          } else if (fileName.toLowerCase().endsWith('.heic')) {
-            mimeType = 'image/heic';
-          } else {
-            mimeType = 'image/jpeg';
+        // Validate file size based on type
+        if (isVideo) {
+          // Video size limit: 100MB (matching backend)
+          const maxVideoSize = 100 * 1024 * 1024; // 100MB in bytes
+          if (asset.fileSize && asset.fileSize > maxVideoSize) {
+            Alert.alert('File Too Large', 'Video files must be less than 100MB. Please select a smaller video or compress it.');
+            return;
+          }
+        } else {
+          // Image size limit: 5MB (matching existing logic)
+          const maxImageSize = 5 * 1024 * 1024; // 5MB in bytes
+          if (asset.fileSize && asset.fileSize > maxImageSize) {
+            Alert.alert('File Too Large', 'Image files must be less than 5MB. Please select a smaller image.');
+            return;
           }
         }
 
+        setSelectedMedia(asset.uri);
+        setMediaType(isVideo ? 'video' : 'image');
+
+        // Upload media immediately
+        const fileName = asset.fileName || (isVideo ? 'video.mp4' : 'image.jpg');
+        let mimeType = asset.mimeType || asset.type;
+
+        console.log('Original mimeType:', mimeType, 'fileName:', fileName, 'isVideo:', isVideo);
+
+        if (isVideo) {
+          // Validate video file type
+          const supportedVideoTypes = ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm', 'mkv'];
+          const fileExtension = fileName.toLowerCase().split('.').pop();
+
+          if (!fileExtension || !supportedVideoTypes.includes(fileExtension)) {
+            Alert.alert('Unsupported Video Format', 'Please select a video in one of these formats: MP4, MOV, AVI, WMV, FLV, WebM, MKV');
+            return;
+          }
+
+          // Handle video MIME types
+          if (!mimeType || !mimeType.startsWith('video/')) {
+            // Fallback based on file extension
+            if (fileName.toLowerCase().endsWith('.mov')) {
+              mimeType = 'video/quicktime';
+            } else if (fileName.toLowerCase().endsWith('.avi')) {
+              mimeType = 'video/x-msvideo';
+            } else if (fileName.toLowerCase().endsWith('.wmv')) {
+              mimeType = 'video/x-ms-wmv';
+            } else if (fileName.toLowerCase().endsWith('.flv')) {
+              mimeType = 'video/x-flv';
+            } else if (fileName.toLowerCase().endsWith('.webm')) {
+              mimeType = 'video/webm';
+            } else if (fileName.toLowerCase().endsWith('.mkv')) {
+              mimeType = 'video/x-matroska';
+            } else {
+              mimeType = 'video/mp4';
+            }
+          }
+          await uploadVideo(asset.uri, fileName, mimeType);
+        } else {
+          // Validate image file type
+          const supportedImageTypes = ['jpg', 'jpeg', 'png', 'gif', 'heic', 'webp'];
+          const fileExtension = fileName.toLowerCase().split('.').pop();
+
+          if (!fileExtension || !supportedImageTypes.includes(fileExtension)) {
+            Alert.alert('Unsupported Image Format', 'Please select an image in one of these formats: JPG, PNG, GIF, HEIC, WebP');
+            return;
+          }
+
+          // Handle image MIME types
+          if (!mimeType || !mimeType.startsWith('image/')) {
+            // Fallback based on file extension
+            if (fileName.toLowerCase().endsWith('.png')) {
+              mimeType = 'image/png';
+            } else if (fileName.toLowerCase().endsWith('.gif')) {
+              mimeType = 'image/gif';
+            } else if (fileName.toLowerCase().endsWith('.heic')) {
+              mimeType = 'image/heic';
+            } else if (fileName.toLowerCase().endsWith('.webp')) {
+              mimeType = 'image/webp';
+            } else {
+              mimeType = 'image/jpeg';
+            }
+          }
+          await uploadImage(asset.uri, fileName, mimeType);
+        }
+
         console.log('Final mimeType:', mimeType);
-        await uploadImage(asset.uri, fileName, mimeType);
       }
     } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      console.error('Error picking media:', error);
+      Alert.alert('Error', 'Failed to pick media. Please try again.');
     }
   };
 
   const uploadImage = async (uri: string, fileName: string, type: string) => {
     try {
-      setIsUploadingImage(true);
+      setIsUploadingMedia(true);
       const response = await api.images.uploadImage(uri, fileName, type);
       setUploadedFileName(response.fileName);
     } catch (error) {
       console.error('Error uploading image:', error);
       Alert.alert('Error', 'Failed to upload image. Please try again.');
-      setSelectedImage(null);
+      setSelectedMedia(null);
+      setMediaType(null);
     } finally {
-      setIsUploadingImage(false);
+      setIsUploadingMedia(false);
     }
   };
 
-  const removeImage = () => {
-    setSelectedImage(null);
+  const uploadVideo = async (uri: string, fileName: string, type: string) => {
+    try {
+      setIsUploadingMedia(true);
+      const response = await api.videos.uploadVideo(uri, fileName, type);
+      setUploadedFileName(response.fileName);
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      Alert.alert('Error', 'Failed to upload video. Please try again.');
+      setSelectedMedia(null);
+      setMediaType(null);
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const removeMedia = () => {
+    setSelectedMedia(null);
+    setMediaType(null);
     setUploadedFileName(null);
-    setIsUploadingImage(false);
+    setIsUploadingMedia(false);
   };
 
   const handleSubmit = () => {
@@ -161,20 +249,30 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
       return;
     }
 
-    if (isUploadingImage) {
-      Alert.alert('Please wait', 'Image is still uploading...');
+    if (isUploadingMedia) {
+      Alert.alert('Please wait', `${mediaType === 'video' ? 'Video' : 'Media'} is still uploading...`);
       return;
     }
 
-    createPostMutation.mutate({
+    const postData: CreatePostData = {
       content: content.trim(),
       privacy,
-      imageFileName: uploadedFileName || undefined,
-    });
+    };
+
+    // Add the appropriate file name based on media type
+    if (uploadedFileName) {
+      if (mediaType === 'video') {
+        postData.videoFileName = uploadedFileName;
+      } else {
+        postData.imageFileName = uploadedFileName;
+      }
+    }
+
+    createPostMutation.mutate(postData);
   };
 
   const handleClose = () => {
-    if ((content.trim() || selectedImage) && !createPostMutation.isPending) {
+    if ((content.trim() || selectedMedia) && !createPostMutation.isPending) {
       Alert.alert(
         'Discard Post?',
         'You have unsaved changes. Are you sure you want to discard this post?',
@@ -240,7 +338,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
 
   const remainingChars = 256 - content.length;
   const isOverLimit = remainingChars < 0;
-  const canSubmit = content.trim().length > 0 && !isOverLimit && !createPostMutation.isPending && !isUploadingImage;
+  const canSubmit = content.trim().length > 0 && !isOverLimit && !createPostMutation.isPending && !isUploadingMedia;
 
   return (
     <Modal
@@ -302,14 +400,14 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.imageButton}
-                onPress={pickImage}
-                disabled={isUploadingImage}
+                style={styles.mediaButton}
+                onPress={pickMedia}
+                disabled={isUploadingMedia}
               >
                 <Ionicons
-                  name="image-outline"
+                  name="attach-outline"
                   size={20}
-                  color={isUploadingImage ? "#9CA3AF" : "#6B7280"}
+                  color={isUploadingMedia ? "#9CA3AF" : "#6B7280"}
                 />
               </TouchableOpacity>
             </View>
@@ -338,17 +436,26 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
               textAlignVertical="top"
             />
 
-            {/* Image Preview */}
-            {selectedImage && (
-              <View style={styles.imageContainer}>
-                <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
-                {isUploadingImage && (
-                  <View style={styles.imageOverlay}>
+            {/* Media Preview */}
+            {selectedMedia && (
+              <View style={styles.mediaContainer}>
+                {mediaType === 'video' ? (
+                  <View style={styles.videoPreview}>
+                    <Ionicons name="play-circle" size={64} color="#6B7280" />
+                    <Text style={styles.videoText}>Video selected</Text>
+                  </View>
+                ) : (
+                  <Image source={{ uri: selectedMedia }} style={styles.imagePreview} />
+                )}
+                {isUploadingMedia && (
+                  <View style={styles.mediaOverlay}>
                     <ActivityIndicator size="large" color="#3B82F6" />
-                    <Text style={styles.uploadingText}>Uploading...</Text>
+                    <Text style={styles.uploadingText}>
+                      {mediaType === 'video' ? 'Uploading video...' : 'Uploading image...'}
+                    </Text>
                   </View>
                 )}
-                <TouchableOpacity style={styles.removeImageButton} onPress={removeImage}>
+                <TouchableOpacity style={styles.removeMediaButton} onPress={removeMedia}>
                   <Ionicons name="close" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
@@ -485,13 +592,13 @@ const createStyles = (colors: any) => StyleSheet.create({
   charCountOver: {
     color: colors.error,
   },
-  imageButton: {
+  mediaButton: {
     marginLeft: 12,
     padding: 8,
     borderRadius: 20,
     backgroundColor: colors.surface,
   },
-  imageContainer: {
+  mediaContainer: {
     marginTop: 16,
     borderRadius: 12,
     overflow: 'hidden',
@@ -502,7 +609,23 @@ const createStyles = (colors: any) => StyleSheet.create({
     height: 200,
     resizeMode: 'cover',
   },
-  imageOverlay: {
+  videoPreview: {
+    width: '100%',
+    height: 200,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+  },
+  videoText: {
+    marginTop: 8,
+    fontSize: 16,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  mediaOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -518,7 +641,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  removeImageButton: {
+  removeMediaButton: {
     position: 'absolute',
     top: 8,
     right: 8,

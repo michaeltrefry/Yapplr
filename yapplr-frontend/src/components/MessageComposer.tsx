@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { messageApi, imageApi } from '@/lib/api';
+import { messageApi, imageApi, videoApi } from '@/lib/api';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { Send, Image as ImageIcon, X } from 'lucide-react';
 import Image from 'next/image';
@@ -14,7 +14,10 @@ interface MessageComposerProps {
 export default function MessageComposer({ conversationId }: MessageComposerProps) {
   const [content, setContent] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [uploadedVideoFileName, setUploadedVideoFileName] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
@@ -27,12 +30,22 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
     },
   });
 
+  const uploadVideoMutation = useMutation({
+    mutationFn: videoApi.uploadVideo,
+    onSuccess: (data) => {
+      setUploadedVideoFileName(data.fileName);
+    },
+  });
+
   const sendMessageMutation = useMutation({
     mutationFn: messageApi.sendMessageToConversation,
     onSuccess: () => {
       setContent('');
       setImagePreview(null);
+      setVideoPreview(null);
       setUploadedFileName(null);
+      setUploadedVideoFileName(null);
+      setMediaType(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -50,37 +63,86 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
     },
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Please select a valid image file (JPG, PNG, GIF, WebP)');
+      // Determine if this is an image or video
+      const isVideo = file.type.startsWith('video/');
+      const isImage = file.type.startsWith('image/');
+
+      if (!isImage && !isVideo) {
+        alert('Please select a valid image or video file');
         return;
       }
 
-      // Validate file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
-        return;
+      if (isVideo) {
+        // Validate video file type
+        const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm', 'video/x-matroska'];
+        if (!allowedVideoTypes.includes(file.type)) {
+          alert('Please select a valid video file (MP4, AVI, MOV, WMV, FLV, WebM, MKV)');
+          return;
+        }
+
+        // Validate video file size (100MB)
+        if (file.size > 100 * 1024 * 1024) {
+          alert('Video file size must be less than 100MB');
+          return;
+        }
+
+        setMediaType('video');
+
+        // Create video preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setVideoPreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Clear image if present
+        setImagePreview(null);
+        setUploadedFileName(null);
+
+        // Upload immediately
+        uploadVideoMutation.mutate(file);
+      } else {
+        // Handle image
+        const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedImageTypes.includes(file.type)) {
+          alert('Please select a valid image file (JPG, PNG, GIF, WebP)');
+          return;
+        }
+
+        // Validate image file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Image file size must be less than 5MB');
+          return;
+        }
+
+        setMediaType('image');
+
+        // Create image preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setImagePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Clear video if present
+        setVideoPreview(null);
+        setUploadedVideoFileName(null);
+
+        // Upload immediately
+        uploadImageMutation.mutate(file);
       }
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      // Upload immediately
-      uploadImageMutation.mutate(file);
     }
   };
 
-  const removeImage = () => {
+  const removeMedia = () => {
     setImagePreview(null);
+    setVideoPreview(null);
     setUploadedFileName(null);
+    setUploadedVideoFileName(null);
+    setMediaType(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -88,14 +150,15 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Must have either content or image
-    if (!content.trim() && !uploadedFileName) return;
+
+    // Must have either content or media
+    if (!content.trim() && !uploadedFileName && !uploadedVideoFileName) return;
 
     sendMessageMutation.mutate({
       conversationId,
       content: content.trim() || undefined,
       imageFileName: uploadedFileName || undefined,
+      videoFileName: uploadedVideoFileName || undefined,
     });
   };
 
@@ -115,33 +178,48 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   };
 
-  const isLoading = sendMessageMutation.isPending || uploadImageMutation.isPending;
+  const isLoading = sendMessageMutation.isPending || uploadImageMutation.isPending || uploadVideoMutation.isPending;
   const canSend = (content.trim() || uploadedFileName) && !isLoading;
 
   return (
     <form onSubmit={handleSubmit} className="p-4">
-      {/* Image Preview */}
-      {imagePreview && (
+      {/* Media Preview */}
+      {(imagePreview || videoPreview) && (
         <div className="mb-3 relative inline-block">
           <div className="relative rounded-lg overflow-hidden border border-gray-200">
-            <Image
-              src={imagePreview}
-              alt="Image preview"
-              width={200}
-              height={150}
-              className="object-cover"
-            />
+            {imagePreview && (
+              <Image
+                src={imagePreview}
+                alt="Image preview"
+                width={200}
+                height={150}
+                className="object-cover"
+              />
+            )}
+            {videoPreview && (
+              <video
+                src={videoPreview}
+                width={200}
+                height={150}
+                controls
+                className="object-cover"
+              >
+                Your browser does not support the video tag.
+              </video>
+            )}
             <button
               type="button"
-              onClick={removeImage}
+              onClick={removeMedia}
               className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-1 hover:bg-opacity-70 transition-opacity"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-          {uploadImageMutation.isPending && (
+          {(uploadImageMutation.isPending || uploadVideoMutation.isPending) && (
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-              <div className="text-white text-sm">Uploading...</div>
+              <div className="text-white text-sm">
+                {uploadVideoMutation.isPending ? 'Uploading video...' : 'Uploading image...'}
+              </div>
             </div>
           )}
         </div>
@@ -149,21 +227,22 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
 
       {/* Input Area */}
       <div className="flex items-end space-x-3">
-        {/* Hidden File Input */}
+        {/* Hidden Media Input */}
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
-          onChange={handleFileSelect}
+          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,video/mp4,video/mov,video/avi,video/wmv,video/flv,video/webm,video/x-matroska"
+          multiple={false}
+          onChange={handleMediaSelect}
           className="hidden"
         />
 
-        {/* Image Upload Button */}
+        {/* Media Upload Button */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0 border-none bg-transparent focus:outline-none"
-          title="Add image"
+          title="Add photo or video from library"
           disabled={isLoading}
           style={{
             border: 'none',

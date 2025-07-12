@@ -288,6 +288,7 @@ export interface SendMessageData {
   conversationId: number;
   content?: string;
   imageFileName?: string;
+  videoFileName?: string;
 }
 
 export interface CanMessageResponse {
