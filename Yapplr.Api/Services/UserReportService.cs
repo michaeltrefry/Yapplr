@@ -299,7 +299,9 @@ public class UserReportService : IUserReportService
                 post.User.ExpoPushToken,
                 post.User.EmailVerified,
                 post.User.Role,
-                post.User.Status
+                post.User.Status,
+                post.User.SuspendedUntil,
+                post.User.SuspensionReason
             ),
             LikeCount = post.Likes?.Count ?? 0,
             CommentCount = post.Comments?.Count ?? 0,
@@ -333,7 +335,9 @@ public class UserReportService : IUserReportService
                 comment.User.ExpoPushToken,
                 comment.User.EmailVerified,
                 comment.User.Role,
-                comment.User.Status
+                comment.User.Status,
+                comment.User.SuspendedUntil,
+                comment.User.SuspensionReason
             ),
             PostId = comment.PostId
         };

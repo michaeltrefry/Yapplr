@@ -14,10 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { TimelineItem, Post } from '../../types';
+import { TimelineItem, Post, UserStatus } from '../../types';
 
 import PostCard from '../../components/PostCard';
 import { NotificationStatusIndicator } from '../../components/NotificationStatus';
+import SuspensionBanner from '../../components/SuspensionBanner';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MainTabs'>;
@@ -25,6 +26,9 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MainTab
 export default function HomeScreen({ navigation }: { navigation: HomeScreenNavigationProp }) {
   const { api, user } = useAuth();
   const colors = useThemeColors();
+
+  // Check if user is suspended
+  const isSuspended = user?.status === UserStatus.Suspended;
   const [refreshing, setRefreshing] = useState(false);
 
   const [commentCountUpdates, setCommentCountUpdates] = useState<Record<number, number>>({});
@@ -205,6 +209,11 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Suspension Banner */}
+      {isSuspended && user && (
+        <SuspensionBanner user={user} />
+      )}
 
       <FlatList
         data={timelineWithUpdates}

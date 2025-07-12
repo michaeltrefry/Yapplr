@@ -45,8 +45,8 @@ export enum UserRole {
 export enum UserStatus {
   Active = 0,
   Suspended = 1,
-  Banned = 2,
-  ShadowBanned = 3,
+  ShadowBanned = 2,
+  Banned = 3
 }
 
 export interface User {
@@ -62,6 +62,8 @@ export interface User {
   emailVerified: boolean;
   role?: UserRole;
   status?: UserStatus;
+  suspendedUntil?: string;
+  suspensionReason?: string;
 }
 
 export interface UserWithOnlineStatus {

@@ -21,7 +21,9 @@ public static class UserExtensions
             user.ExpoPushToken,
             user.EmailVerified,
             user.Role,
-            user.Status
+            user.Status,
+            user.SuspendedUntil,
+            user.SuspensionReason
         );
     }
 }

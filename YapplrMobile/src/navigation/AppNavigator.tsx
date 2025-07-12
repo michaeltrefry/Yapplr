@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { UserStatus } from '../types';
 import LoadingScreen from '../screens/LoadingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -100,6 +101,9 @@ function MainTabs() {
   const { api, user } = useAuth();
   const colors = useThemeColors();
 
+  // Check if user is suspended
+  const isSuspended = user?.status === UserStatus.Suspended;
+
   // Fetch unread message count
   const { data: unreadData } = useQuery({
     queryKey: ['unreadMessageCount'],
@@ -128,17 +132,21 @@ function MainTabs() {
                 width: 50,
                 height: 50,
                 borderRadius: 25,
-                backgroundColor: colors.primary,
+                backgroundColor: isSuspended ? colors.textMuted : colors.primary,
                 justifyContent: 'center',
                 alignItems: 'center',
                 marginBottom: 2,
-                shadowColor: colors.primary,
+                shadowColor: isSuspended ? colors.textMuted : colors.primary,
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
+                shadowOpacity: isSuspended ? 0.1 : 0.3,
                 shadowRadius: 4,
-                elevation: 5,
+                elevation: isSuspended ? 2 : 5,
               }}>
-                <Ionicons name="add" size={28} color={colors.primaryText} />
+                <Ionicons
+                  name={isSuspended ? "ban" : "add"}
+                  size={28}
+                  color={isSuspended ? colors.background : colors.primaryText}
+                />
               </View>
             );
           } else if (route.name === 'Messages') {

@@ -1,5 +1,19 @@
 // Local types for mobile app - copied from yapplr-shared
 
+export enum UserRole {
+  User = 0,
+  Moderator = 1,
+  Admin = 2,
+  System = 3
+}
+
+export enum UserStatus {
+  Active = 0,
+  Suspended = 1,
+  ShadowBanned = 2,
+  Banned = 3
+}
+
 export interface User {
   id: number;
   email: string;
@@ -12,6 +26,10 @@ export interface User {
   createdAt: string;
   lastSeenAt?: string;
   emailVerified: boolean;
+  role?: UserRole;
+  status?: UserStatus;
+  suspendedUntil?: string;
+  suspensionReason?: string;
 }
 
 export interface UserProfile {

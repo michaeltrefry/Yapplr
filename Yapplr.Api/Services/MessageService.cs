@@ -494,7 +494,9 @@ public class MessageService : IMessageService
                 null!, // expo push token (system user doesn't need Expo)
                 message.Sender.EmailVerified,
                 UserRole.System,
-                message.Sender.Status
+                message.Sender.Status,
+                message.Sender.SuspendedUntil,
+                message.Sender.SuspensionReason
             );
         }
         else if (message.Sender == null)
@@ -514,7 +516,9 @@ public class MessageService : IMessageService
                 null!, // expo push token
                 true, // email verified
                 UserRole.System,
-                UserStatus.Active
+                UserStatus.Active,
+                null, // suspendedUntil
+                null // suspensionReason
             );
         }
         else

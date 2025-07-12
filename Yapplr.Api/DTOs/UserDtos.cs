@@ -40,7 +40,9 @@ public record UserDto(
     string? ExpoPushToken,
     bool EmailVerified,
     UserRole Role,
-    UserStatus Status
+    UserStatus Status,
+    DateTime? SuspendedUntil,
+    string? SuspensionReason
 );
 
 public record UserProfileDto(

@@ -27,7 +27,9 @@ public class ExtensionTests
             LastSeenAt = new DateTime(2023, 1, 3),
             Role = UserRole.User,
             Status = UserStatus.Active,
-            FcmToken = "test-fcm-token"
+            FcmToken = "test-fcm-token",
+            SuspendedUntil = null,
+            SuspensionReason = null
         };
 
         // Act
@@ -47,6 +49,8 @@ public class ExtensionTests
         dto.Role.Should().Be(UserRole.User);
         dto.Status.Should().Be(UserStatus.Active);
         dto.FcmToken.Should().Be("test-fcm-token");
+        dto.SuspendedUntil.Should().BeNull();
+        dto.SuspensionReason.Should().BeNull();
     }
 
     [Fact]
@@ -169,6 +173,30 @@ public class ExtensionTests
         bannedDto.Status.Should().Be(UserStatus.Banned);
         suspendedDto.Status.Should().Be(UserStatus.Suspended);
         shadowDto.Status.Should().Be(UserStatus.ShadowBanned);
+    }
+
+    [Fact]
+    public void UserToDto_WithSuspendedUser_MapsSuspensionFields()
+    {
+        // Arrange
+        var suspensionDate = new DateTime(2023, 12, 31, 23, 59, 59);
+        var suspendedUser = new User
+        {
+            Id = 10,
+            Email = "suspended@example.com",
+            Username = "suspended",
+            Status = UserStatus.Suspended,
+            SuspendedUntil = suspensionDate,
+            SuspensionReason = "Violation of community guidelines"
+        };
+
+        // Act
+        var dto = suspendedUser.ToDto();
+
+        // Assert
+        dto.Status.Should().Be(UserStatus.Suspended);
+        dto.SuspendedUntil.Should().Be(suspensionDate);
+        dto.SuspensionReason.Should().Be("Violation of community guidelines");
     }
 
     [Fact]

@@ -49,7 +49,7 @@ echo -e "${GREEN}✅ Environment variables validated${NC}"
 
 # Stop existing containers
 echo -e "${GREEN}🛑 Stopping existing containers...${NC}"
-docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
+docker compose -f docker-compose.prod.yml down --remove-orphans || true
 
 # Force remove specific containers that might be stuck
 echo -e "${GREEN}🧹 Force removing any stuck containers...${NC}"

@@ -14,8 +14,8 @@ public enum UserStatus
 {
     Active = 0,
     Suspended = 1,
-    Banned = 2,
-    ShadowBanned = 3
+    ShadowBanned = 2,
+    Banned = 3
 }
 
 public class User

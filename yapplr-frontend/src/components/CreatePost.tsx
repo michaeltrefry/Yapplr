@@ -4,9 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { postApi, imageApi, tagApi } from '@/lib/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { Image as ImageIcon, X, Hash, Globe, Users, Lock, ChevronDown } from 'lucide-react';
+import { Image as ImageIcon, X, Hash, Globe, Users, Lock, ChevronDown, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
-import { PostPrivacy } from '@/types';
+import { PostPrivacy, UserStatus } from '@/types';
 
 export default function CreatePost() {
   const [content, setContent] = useState('');
@@ -162,6 +162,62 @@ export default function CreatePost() {
   };
 
   const remainingChars = 256 - content.length;
+
+  // Check if user is suspended
+  const isSuspended = user?.status === UserStatus.Suspended;
+  const suspensionEndDate = user?.suspendedUntil ? new Date(user.suspendedUntil) : null;
+  const suspensionReason = user?.suspensionReason;
+
+  // If user is suspended, show suspension message instead of create post form
+  if (isSuspended) {
+    return (
+      <div className="border-b border-gray-200 p-4 bg-white">
+        <div className="flex space-x-3">
+          {/* Avatar */}
+          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <span className="text-white font-semibold text-lg">
+              {user?.username.charAt(0).toUpperCase()}
+            </span>
+          </div>
+
+          {/* Suspension Message */}
+          <div className="flex-1">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-red-800 mb-1">
+                    Account Suspended
+                  </h3>
+                  <p className="text-sm text-red-700 mb-2">
+                    Your account has been suspended and you cannot create posts or interact with content.
+                  </p>
+                  {suspensionEndDate && (
+                    <p className="text-sm text-red-700 mb-2">
+                      <strong>Suspension ends:</strong> {suspensionEndDate.toLocaleDateString()} at {suspensionEndDate.toLocaleTimeString()}
+                    </p>
+                  )}
+                  {!suspensionEndDate && (
+                    <p className="text-sm text-red-700 mb-2">
+                      <strong>Duration:</strong> Indefinite
+                    </p>
+                  )}
+                  {suspensionReason && (
+                    <p className="text-sm text-red-700 mb-2">
+                      <strong>Reason:</strong> {suspensionReason}
+                    </p>
+                  )}
+                  <p className="text-sm text-red-600">
+                    You can still browse and view content, but posting and interactions are disabled.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="border-b border-gray-200 p-4 bg-white">
