@@ -70,26 +70,27 @@ The seeding includes posts that test various moderation scenarios:
 
 ### Service: `StagingSeedService`
 - **Location**: `Yapplr.Api/Services/StagingSeedService.cs`
-- **Registration**: Only registered in Staging environment
-- **Execution**: Runs automatically after database migrations and system tag seeding
+- **Registration**: Only registered in non-production environments (Development, Test, Staging, etc.)
+- **Execution**: Runs automatically after database migrations, essential users, system tags, and content pages seeding
 
 ### Environment Detection
 ```csharp
-if (builder.Environment.IsEnvironment("Staging"))
+if (!environment.IsProduction())
 {
-    builder.Services.AddScoped<StagingSeedService>();
+    services.AddScoped<StagingSeedService>();
 }
 ```
 
 ### Seeding Process
-1. **Check Admin User**: If admin user exists, skip all seeding
-2. **Check Existing Data**: If any users exist, skip seeding
-3. **Run Migrations**: Database schema is created/updated
-4. **Seed System Tags**: Default system tags are created
-5. **Create Admin User**: Single admin with full permissions
-6. **Create Test Users**: 20 users with realistic profiles
-7. **Generate Content**: Posts, follows, likes, and comments
-8. **Save Changes**: Commits all data to database
+1. **Run Migrations**: Database schema is created/updated
+2. **Seed Essential Users**: System user is created
+3. **Seed System Tags**: Default system tags are created
+4. **Seed Content Pages**: Terms of Service and Privacy Policy are created
+5. **Check Existing Data**: If any non-system users exist, skip test data seeding
+6. **Create Admin User**: Single admin with full permissions
+7. **Create Test Users**: 20 users with realistic profiles
+8. **Generate Content**: Posts, follows, likes, and comments
+9. **Save Changes**: Commits all data to database
 
 ### Password Hashing
 All passwords are properly hashed using BCrypt before storage:

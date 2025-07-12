@@ -1,6 +1,9 @@
 using MassTransit;
+using Microsoft.Extensions.Options;
 using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.EmailTemplates;
+using Yapplr.Api.Configuration;
 
 namespace Yapplr.Api.CQRS.Handlers;
 
@@ -43,40 +46,32 @@ public class SendEmailCommandHandler : BaseCommandHandler<SendEmailCommand>
 public class SendWelcomeEmailCommandHandler : BaseCommandHandler<SendWelcomeEmailCommand>
 {
     private readonly IEmailService _emailService;
+    private readonly FrontendUrlsConfiguration _frontendUrls;
 
     public SendWelcomeEmailCommandHandler(
         IEmailService emailService,
-        ILogger<SendWelcomeEmailCommandHandler> logger) : base(logger)
+        ILogger<SendWelcomeEmailCommandHandler> logger,
+        IOptions<FrontendUrlsConfiguration> frontendUrls) : base(logger)
     {
         _emailService = emailService;
+        _frontendUrls = frontendUrls.Value;
     }
 
     protected override async Task HandleAsync(SendWelcomeEmailCommand command, ConsumeContext<SendWelcomeEmailCommand> context)
     {
-        var subject = "Welcome to Yapplr!";
-        var htmlBody = $@"
-            <h1>Welcome to Yapplr, {command.Username}!</h1>
-            <p>Thank you for joining our community. To get started, please verify your email address by clicking the link below:</p>
-            <p><a href=""https://yapplr.com/verify-email?token={command.VerificationToken}"">Verify Email Address</a></p>
-            <p>If you didn't create this account, please ignore this email.</p>
-            <p>Best regards,<br>The Yapplr Team</p>";
+        // Use the proper email verification template with environment-aware URL
+        var verificationUrl = _frontendUrls.GetVerifyEmailUrl(command.VerificationToken);
+        var template = new EmailVerificationTemplate(command.Username, command.VerificationToken, verificationUrl);
 
-        var textBody = $@"
-            Welcome to Yapplr, {command.Username}!
-            
-            Thank you for joining our community. To get started, please verify your email address by visiting:
-            https://yapplr.com/verify-email?token={command.VerificationToken}
-            
-            If you didn't create this account, please ignore this email.
-            
-            Best regards,
-            The Yapplr Team";
-
-        var success = await _emailService.SendEmailAsync(command.ToEmail, subject, htmlBody, textBody);
+        var success = await _emailService.SendEmailAsync(
+            command.ToEmail,
+            template.Subject,
+            template.GenerateHtmlBody(),
+            template.GenerateTextBody());
 
         if (!success)
         {
-            Logger.LogWarning("Failed to send welcome email to {ToEmail} for user {Username}", 
+            Logger.LogWarning("Failed to send welcome email to {ToEmail} for user {Username}",
                 command.ToEmail, command.Username);
             throw new InvalidOperationException($"Failed to send welcome email to {command.ToEmail}");
         }
@@ -89,42 +84,32 @@ public class SendWelcomeEmailCommandHandler : BaseCommandHandler<SendWelcomeEmai
 public class SendEmailVerificationCommandHandler : BaseCommandHandler<SendEmailVerificationCommand>
 {
     private readonly IEmailService _emailService;
+    private readonly FrontendUrlsConfiguration _frontendUrls;
 
     public SendEmailVerificationCommandHandler(
         IEmailService emailService,
-        ILogger<SendEmailVerificationCommandHandler> logger) : base(logger)
+        ILogger<SendEmailVerificationCommandHandler> logger,
+        IOptions<FrontendUrlsConfiguration> frontendUrls) : base(logger)
     {
         _emailService = emailService;
+        _frontendUrls = frontendUrls.Value;
     }
 
     protected override async Task HandleAsync(SendEmailVerificationCommand command, ConsumeContext<SendEmailVerificationCommand> context)
     {
-        var subject = "Verify Your Email Address";
-        var htmlBody = $@"
-            <h1>Email Verification</h1>
-            <p>Hi {command.Username},</p>
-            <p>Please verify your email address by clicking the link below:</p>
-            <p><a href=""https://yapplr.com/verify-email?token={command.VerificationToken}"">Verify Email Address</a></p>
-            <p>This link will expire in 24 hours.</p>
-            <p>If you didn't request this verification, please ignore this email.</p>";
+        // Use the proper email verification template with environment-aware URL
+        var verificationUrl = _frontendUrls.GetVerifyEmailUrl(command.VerificationToken);
+        var template = new EmailVerificationTemplate(command.Username, command.VerificationToken, verificationUrl);
 
-        var textBody = $@"
-            Email Verification
-            
-            Hi {command.Username},
-            
-            Please verify your email address by visiting:
-            https://yapplr.com/verify-email?token={command.VerificationToken}
-            
-            This link will expire in 24 hours.
-            
-            If you didn't request this verification, please ignore this email.";
-
-        var success = await _emailService.SendEmailAsync(command.ToEmail, subject, htmlBody, textBody);
+        var success = await _emailService.SendEmailAsync(
+            command.ToEmail,
+            template.Subject,
+            template.GenerateHtmlBody(),
+            template.GenerateTextBody());
 
         if (!success)
         {
-            Logger.LogWarning("Failed to send email verification to {ToEmail} for user {Username}", 
+            Logger.LogWarning("Failed to send email verification to {ToEmail} for user {Username}",
                 command.ToEmail, command.Username);
             throw new InvalidOperationException($"Failed to send email verification to {command.ToEmail}");
         }

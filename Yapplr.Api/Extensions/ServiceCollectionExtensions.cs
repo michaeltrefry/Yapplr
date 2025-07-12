@@ -372,6 +372,10 @@ public static class ServiceCollectionExtensions
         services.Configure<CorsConfiguration>(
             configuration.GetSection(CorsConfiguration.SectionName));
 
+        // Configure Frontend URLs
+        services.Configure<FrontendUrlsConfiguration>(
+            configuration.GetSection(FrontendUrlsConfiguration.SectionName));
+
         // Add provider-specific services
         if (notificationConfig.Firebase.Enabled)
         {

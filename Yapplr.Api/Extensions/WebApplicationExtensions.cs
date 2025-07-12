@@ -99,20 +99,38 @@ public static class WebApplicationExtensions
                     async () => {
                         // Test database connection first
                         await context.Database.CanConnectAsync();
-                        
+
                         // Run migrations
                         await context.Database.MigrateAsync();
-                        
+
                         // Seed essential users
                         logger.LogInformation("👤 Seeding essential users...");
                         var essentialUserSeedService = scope.ServiceProvider.GetRequiredService<EssentialUserSeedService>();
                         await essentialUserSeedService.SeedEssentialUsersAsync();
-                        
+
+                        // Seed system tags
+                        logger.LogInformation("🏷️ Seeding system tags...");
+                        var systemTagSeedService = scope.ServiceProvider.GetRequiredService<SystemTagSeedService>();
+                        await systemTagSeedService.SeedDefaultSystemTagsAsync();
+
+                        // Seed content pages
+                        logger.LogInformation("📄 Seeding content pages...");
+                        var contentSeedService = scope.ServiceProvider.GetRequiredService<ContentSeedService>();
+                        await contentSeedService.SeedContentPagesAsync();
+
+                        // Seed test data for non-production environments
+                        var stagingSeedService = scope.ServiceProvider.GetService<StagingSeedService>();
+                        if (stagingSeedService != null)
+                        {
+                            logger.LogInformation("🌱 Seeding test data for non-production environment...");
+                            await stagingSeedService.SeedStagingDataAsync();
+                        }
+
                         return true;
                     },
                     "DatabaseMigrationAndSeeding");
                     
-                logger.LogInformation("✅ Database migrations and seeding completed successfully");
+                logger.LogInformation("✅ Database migrations and all seeding operations completed successfully");
             }
             catch (Exception ex)
             {

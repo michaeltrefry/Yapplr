@@ -457,8 +457,6 @@ dist
 .pnp.*
 
 # Sensitive configuration files
-appsettings.Development.json
-appsettings.Production.json
 *.secrets.json
 
 # Database files
@@ -493,4 +491,5 @@ Thumbs.db
 *.tmp
 *.temp
 firebase-service-account.json
-appsettings.*.json
+appsettings.Development.json
+appsettings.Test.json
