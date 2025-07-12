@@ -69,21 +69,44 @@ dotnet run --project Yapplr.Api -- create-admin \
 
 ### 3. CORS Configuration
 
-Update `appsettings.Production.json`:
+The CORS configuration is now environment-specific and configurable. Update `appsettings.Production.json`:
 
 ```json
 {
   "Cors": {
-    "AllowedOrigins": [
-      "https://yapplr.com",
-      "https://admin.yapplr.com"
-    ],
-    "AllowedMethods": ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    "AllowedHeaders": ["*"],
-    "AllowCredentials": true
+    "AllowFrontend": {
+      "AllowedOrigins": [
+        "https://yapplr.com",
+        "https://www.yapplr.com",
+        "https://app.yapplr.com",
+        "https://admin.yapplr.com"
+      ],
+      "AllowAnyHeader": true,
+      "AllowAnyMethod": true,
+      "AllowCredentials": true
+    },
+    "AllowSignalR": {
+      "AllowedOrigins": [
+        "https://yapplr.com",
+        "https://www.yapplr.com",
+        "https://app.yapplr.com",
+        "https://admin.yapplr.com"
+      ],
+      "AllowAnyHeader": true,
+      "AllowAnyMethod": true,
+      "AllowCredentials": true
+    },
+    "AllowAll": {
+      "AllowAnyOrigin": false,
+      "AllowAnyHeader": false,
+      "AllowAnyMethod": false,
+      "AllowCredentials": false
+    }
   }
 }
 ```
+
+For detailed CORS configuration options, see `Documents/CORS_CONFIGURATION_GUIDE.md`.
 
 ## 🗄️ Database Setup
 

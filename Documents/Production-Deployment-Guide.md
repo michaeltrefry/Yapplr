@@ -217,18 +217,35 @@ if (!app.Environment.IsDevelopment())
 ```
 
 ### 7.2 CORS Configuration
-```csharp
-builder.Services.AddCors(options =>
+
+CORS is now configurable through appsettings files. Update your production configuration:
+
+```json
 {
-    options.AddPolicy("Production", policy =>
-    {
-        policy.WithOrigins("https://yourdomain.com")
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
-    });
-});
+  "Cors": {
+    "AllowFrontend": {
+      "AllowedOrigins": ["https://yourdomain.com"],
+      "AllowAnyHeader": true,
+      "AllowAnyMethod": true,
+      "AllowCredentials": true
+    },
+    "AllowSignalR": {
+      "AllowedOrigins": ["https://yourdomain.com"],
+      "AllowAnyHeader": true,
+      "AllowAnyMethod": true,
+      "AllowCredentials": true
+    },
+    "AllowAll": {
+      "AllowAnyOrigin": false,
+      "AllowAnyHeader": false,
+      "AllowAnyMethod": false,
+      "AllowCredentials": false
+    }
+  }
+}
 ```
+
+See `Documents/CORS_CONFIGURATION_GUIDE.md` for complete configuration options.
 
 ### 7.3 Rate Limiting
 ```csharp

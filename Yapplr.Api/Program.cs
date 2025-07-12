@@ -42,6 +42,11 @@ var notificationConfig = builder.Configuration
     .GetSection(NotificationProvidersConfiguration.SectionName)
     .Get<NotificationProvidersConfiguration>() ?? new NotificationProvidersConfiguration();
 
+// Load CORS configuration early
+var corsConfig = builder.Configuration
+    .GetSection(CorsConfiguration.SectionName)
+    .Get<CorsConfiguration>() ?? new CorsConfiguration();
+
 // Add services to the container.
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
@@ -113,39 +118,118 @@ builder.Services.AddHttpContextAccessor();
 // Add CORS
 builder.Services.AddCors(options =>
 {
+    // Configure AllowFrontend policy
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000", "http://localhost:5173", "http://192.168.254.181:3000", // Development
-                "https://yapplr.com", "https://www.yapplr.com", "https://app.yapplr.com", // Production
-                "https://stg.yapplr.com", "https://stg-api.yapplr.com", // Staging HTTPS
-                "http://stg.yapplr.com", "http://stg-api.yapplr.com" // Staging HTTP
-              )
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        var frontendConfig = corsConfig.AllowFrontend;
+
+        if (frontendConfig.AllowAnyOrigin)
+        {
+            policy.AllowAnyOrigin();
+        }
+        else if (frontendConfig.AllowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(frontendConfig.AllowedOrigins);
+        }
+
+        if (frontendConfig.AllowAnyHeader)
+        {
+            policy.AllowAnyHeader();
+        }
+        else if (frontendConfig.AllowedHeaders.Length > 0)
+        {
+            policy.WithHeaders(frontendConfig.AllowedHeaders);
+        }
+
+        if (frontendConfig.AllowAnyMethod)
+        {
+            policy.AllowAnyMethod();
+        }
+        else if (frontendConfig.AllowedMethods.Length > 0)
+        {
+            policy.WithMethods(frontendConfig.AllowedMethods);
+        }
+
+        if (frontendConfig.AllowCredentials && !frontendConfig.AllowAnyOrigin)
+        {
+            policy.AllowCredentials();
+        }
     });
 
-    // SignalR-specific CORS policy with credentials support
+    // Configure AllowSignalR policy
     options.AddPolicy("AllowSignalR", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000", "http://localhost:5173", "http://192.168.254.181:3000", // Development
-                "https://yapplr.com", "https://www.yapplr.com", "https://app.yapplr.com", // Production
-                "https://stg.yapplr.com", "https://stg-api.yapplr.com", // Staging HTTPS
-                "http://stg.yapplr.com", "http://stg-api.yapplr.com" // Staging HTTP
-              )
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        var signalRConfig = corsConfig.AllowSignalR;
+
+        if (signalRConfig.AllowAnyOrigin)
+        {
+            policy.AllowAnyOrigin();
+        }
+        else if (signalRConfig.AllowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(signalRConfig.AllowedOrigins);
+        }
+
+        if (signalRConfig.AllowAnyHeader)
+        {
+            policy.AllowAnyHeader();
+        }
+        else if (signalRConfig.AllowedHeaders.Length > 0)
+        {
+            policy.WithHeaders(signalRConfig.AllowedHeaders);
+        }
+
+        if (signalRConfig.AllowAnyMethod)
+        {
+            policy.AllowAnyMethod();
+        }
+        else if (signalRConfig.AllowedMethods.Length > 0)
+        {
+            policy.WithMethods(signalRConfig.AllowedMethods);
+        }
+
+        if (signalRConfig.AllowCredentials && !signalRConfig.AllowAnyOrigin)
+        {
+            policy.AllowCredentials();
+        }
     });
 
-    // Allow all origins for mobile development (no credentials for mobile)
+    // Configure AllowAll policy
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        var allowAllConfig = corsConfig.AllowAll;
+
+        if (allowAllConfig.AllowAnyOrigin)
+        {
+            policy.AllowAnyOrigin();
+        }
+        else if (allowAllConfig.AllowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowAllConfig.AllowedOrigins);
+        }
+
+        if (allowAllConfig.AllowAnyHeader)
+        {
+            policy.AllowAnyHeader();
+        }
+        else if (allowAllConfig.AllowedHeaders.Length > 0)
+        {
+            policy.WithHeaders(allowAllConfig.AllowedHeaders);
+        }
+
+        if (allowAllConfig.AllowAnyMethod)
+        {
+            policy.AllowAnyMethod();
+        }
+        else if (allowAllConfig.AllowedMethods.Length > 0)
+        {
+            policy.WithMethods(allowAllConfig.AllowedMethods);
+        }
+
+        if (allowAllConfig.AllowCredentials && !allowAllConfig.AllowAnyOrigin)
+        {
+            policy.AllowCredentials();
+        }
     });
 });
 
@@ -271,6 +355,10 @@ builder.Services.AddHostedService<NotificationBackgroundService>();
 // Configure notification providers
 builder.Services.Configure<NotificationProvidersConfiguration>(
     builder.Configuration.GetSection(NotificationProvidersConfiguration.SectionName));
+
+// Configure CORS
+builder.Services.Configure<CorsConfiguration>(
+    builder.Configuration.GetSection(CorsConfiguration.SectionName));
 
 if (notificationConfig.Firebase.Enabled)
 {
@@ -442,6 +530,7 @@ app.MapTagEndpoints();
 app.MapUserReportEndpoints();
 app.MapContentEndpoints();
 app.MapAdminEndpoints();
+app.MapCorsConfigurationEndpoints();
 
 // Map SignalR hub (if enabled)
 if (notificationConfig.SignalR.Enabled)
