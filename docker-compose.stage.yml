@@ -3,8 +3,8 @@
 services:
   yapplr-api:
     build:
-      context: Yapplr.Api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Yapplr.Api/Dockerfile
     image: yapplr-api:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
@@ -32,6 +32,8 @@ services:
       - RabbitMQ__Username=${STAGE_RABBITMQ_USERNAME:-yapplr}
       - RabbitMQ__Password=${STAGE_RABBITMQ_PASSWORD:-yapplr123}
       - RabbitMQ__VirtualHost=/
+      # Upload configuration - override to use Docker volume path
+      - Uploads__BasePath=/app/uploads
     volumes:
       - yapplr_uploads:/app/uploads
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -58,7 +60,7 @@ services:
       dockerfile: Yapplr.VideoProcessor/Dockerfile
     image: yapplr-video-processor:latest
     environment:
-      - ASPNETCORE_ENVIRONMENT=Staging
+      - DOTNET_ENVIRONMENT=Staging
       # RabbitMQ configuration
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Port=5672
@@ -73,6 +75,14 @@ services:
       - VideoProcessing__DeleteOriginalAfterProcessing=true
       - VideoProcessing__MaxFileSizeBytes=104857600
       - VideoProcessing__MaxDurationSeconds=300
+      - VideoProcessing__VideoCodec=libx264
+      - VideoProcessing__AudioCodec=aac
+      # FFmpeg configuration
+      - FFmpeg__BinaryPath=/usr/bin/ffmpeg
+      - FFmpeg__WorkingDirectory=/tmp
+      - FFmpeg__TimeoutSeconds=300
+      - FFmpeg__EnableHardwareAcceleration=false
+      - FFmpeg__LogLevel=info
     volumes:
       - yapplr_uploads:/app/uploads
     restart: unless-stopped

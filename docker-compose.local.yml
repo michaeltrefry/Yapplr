@@ -1,27 +1,27 @@
-
-
 services:
   yapplr-api:
     build:
       context: .
       dockerfile: Yapplr.Api/Dockerfile
-    image: yapplr-api:latest
+    image: yapplr-api:local
+    ports:
+      - "8080:8080"  # Expose API for local access
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=${PROD_DATABASE_CONNECTION_STRING}
-      - JwtSettings__SecretKey=${PROD_JWT_SECRET_KEY}
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=yapplr_db;Username=postgres;Password=localdev123
+      - JwtSettings__SecretKey=your-super-secret-jwt-key-that-should-be-at-least-32-characters-long-for-local-dev
       - JwtSettings__Issuer=Yapplr.Api
       - JwtSettings__Audience=Yapplr.Client
       - JwtSettings__ExpirationInMinutes=60
-      # SendGrid configuration
-      - SendGridSettings__ApiKey=${PROD_SENDGRID_API_KEY}
-      - SendGridSettings__FromEmail=${PROD_SENDGRID_FROM_EMAIL}
-      - SendGridSettings__FromName=${PROD_SENDGRID_FROM_NAME}
+      # SendGrid configuration (optional for local)
+      - SendGridSettings__ApiKey=SG.dummy-key-for-local-development
+      - SendGridSettings__FromEmail=noreply@yapplr.local
+      - SendGridSettings__FromName=Yapplr Local
       # Email provider selection
-      - EmailProvider=${PROD_EMAIL_PROVIDER}
-      # Firebase configuration (REQUIRED for notifications)
-      - Firebase__ProjectId=${PROD_FIREBASE_PROJECT_ID}
-      - Firebase__ServiceAccountKey=${PROD_FIREBASE_SERVICE_ACCOUNT_KEY}
+      - EmailProvider=Console
+      # Firebase configuration (optional for local)
+      - Firebase__ProjectId=yapplr-local
+      - Firebase__ServiceAccountKey={}
       # Content Moderation configuration
       - ContentModeration__ServiceUrl=http://content-moderation:8000
       - ContentModeration__Enabled=true
@@ -29,18 +29,19 @@ services:
       # RabbitMQ configuration
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Port=5672
-      - RabbitMQ__Username=${PROD_RABBITMQ_USERNAME}
-      - RabbitMQ__Password=${PROD_RABBITMQ_PASSWORD}
+      - RabbitMQ__Username=yapplr
+      - RabbitMQ__Password=yapplr123
       - RabbitMQ__VirtualHost=/
       # Upload configuration - override to use Docker volume path
       - Uploads__BasePath=/app/uploads
     volumes:
       - yapplr_uploads:/app/uploads
-      - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: unless-stopped
     networks:
       - yapplr-network
     depends_on:
+      postgres:
+        condition: service_healthy
       content-moderation:
         condition: service_healthy
       rabbitmq:
@@ -49,28 +50,28 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 120s
 
   yapplr-video-processor:
     build:
       context: .
       dockerfile: Yapplr.VideoProcessor/Dockerfile
-    image: yapplr-video-processor:latest
+    image: yapplr-video-processor:local
     environment:
-      - DOTNET_ENVIRONMENT=Production
+      - DOTNET_ENVIRONMENT=Development
       # RabbitMQ configuration
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Port=5672
-      - RabbitMQ__Username=${PROD_RABBITMQ_USERNAME}
-      - RabbitMQ__Password=${PROD_RABBITMQ_PASSWORD}
+      - RabbitMQ__Username=yapplr
+      - RabbitMQ__Password=yapplr123
       - RabbitMQ__VirtualHost=/
       # Video processing configuration
       - VideoProcessing__InputPath=/app/uploads/videos
       - VideoProcessing__OutputPath=/app/uploads/processed
       - VideoProcessing__ThumbnailPath=/app/uploads/thumbnails
       - VideoProcessing__TempPath=/app/uploads/temp
-      - VideoProcessing__DeleteOriginalAfterProcessing=true
+      - VideoProcessing__DeleteOriginalAfterProcessing=false
       - VideoProcessing__MaxFileSizeBytes=104857600
       - VideoProcessing__MaxDurationSeconds=300
       - VideoProcessing__VideoCodec=libx264
@@ -80,7 +81,7 @@ services:
       - FFmpeg__WorkingDirectory=/tmp
       - FFmpeg__TimeoutSeconds=300
       - FFmpeg__EnableHardwareAcceleration=false
-      - FFmpeg__LogLevel=error
+      - FFmpeg__LogLevel=info
     volumes:
       - yapplr_uploads:/app/uploads
     restart: unless-stopped
@@ -95,12 +96,14 @@ services:
       context: yapplr-frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=https://${PROD_API_DOMAIN_NAME}
-        # Notification provider configuration (SignalR-only for production web)
+        - NEXT_PUBLIC_API_URL=http://localhost:8080
+        # Notification provider configuration (SignalR-only for local web)
         - NEXT_PUBLIC_ENABLE_SIGNALR=true
         # Force rebuild by passing current timestamp
         - CACHE_BUST=${CACHE_BUST:-$(date +%s)}
-    image: yapplr-frontend:latest
+    image: yapplr-frontend:local
+    ports:
+      - "3000:3000"  # Expose frontend for local access
     restart: unless-stopped
     networks:
       - yapplr-network
@@ -109,7 +112,7 @@ services:
     build:
       context: sentiment-analysis
       dockerfile: Dockerfile
-    image: content-moderation:latest
+    image: content-moderation:local
     environment:
       - PORT=8000
     restart: unless-stopped
@@ -128,34 +131,37 @@ services:
         reservations:
           memory: 512M
 
-  nginx:
-    image: nginx:alpine
+  postgres:
+    image: postgres:16-alpine
     ports:
-      - "80:80"
-      - "443:443"
+      - "5433:5432"  # Use different external port to avoid conflict with local PostgreSQL
+    environment:
+      - POSTGRES_DB=yapplr_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=localdev123
+      # Security: Only allow connections from Docker network
+      - POSTGRES_HOST_AUTH_METHOD=md5
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/www/certbot:/var/www/certbot
-    # No dependencies - nginx can start independently and handle service availability gracefully
+      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - yapplr-network
-
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - /var/www/certbot:/var/www/certbot
-    command: certbot certonly --manual --preferred-challenges=dns --email ${PROD_CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${PROD_CERTBOT_DOMAIN} -d yapplr.com
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d yapplr_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
     environment:
-      - RABBITMQ_DEFAULT_USER=${PROD_RABBITMQ_USERNAME}
-      - RABBITMQ_DEFAULT_PASS=${PROD_RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_USER=yapplr
+      - RABBITMQ_DEFAULT_PASS=yapplr123
       - RABBITMQ_DEFAULT_VHOST=/
-    # No external ports exposed - only accessible from Docker network
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: unless-stopped
@@ -170,6 +176,7 @@ services:
 
 volumes:
   yapplr_uploads:
+  postgres_data:
   rabbitmq_data:
 
 networks:

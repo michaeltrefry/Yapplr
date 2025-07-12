@@ -13,25 +13,27 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 # Copy csproj and restore as distinct layers
-COPY ["Yapplr.Api.csproj", "."]
-RUN dotnet restore "./Yapplr.Api.csproj"
+COPY ["Yapplr.Api/Yapplr.Api.csproj", "Yapplr.Api/"]
+COPY ["Yapplr.Shared/Yapplr.Shared.csproj", "Yapplr.Shared/"]
+RUN dotnet restore "Yapplr.Api/Yapplr.Api.csproj"
 
 # Copy everything else and build
 COPY . .
-WORKDIR "/src/."
-RUN dotnet build "./Yapplr.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/Yapplr.Api"
+RUN dotnet build "Yapplr.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Publish the application
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Yapplr.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Yapplr.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Final stage/image
 FROM base AS final
 WORKDIR /app
 
-# Create uploads directory
-RUN mkdir -p /app/uploads/images
+# Create uploads directory with proper permissions
+RUN mkdir -p /uploads /app/uploads/images /app/uploads/videos /app/uploads/processed /app/uploads/thumbnails /app/uploads/temp \
+    && chmod -R 777 /uploads /app/uploads
 
 # Copy published application
 COPY --from=publish /app/publish .

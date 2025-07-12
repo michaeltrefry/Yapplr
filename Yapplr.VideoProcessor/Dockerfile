@@ -2,11 +2,30 @@
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 
-# Install FFmpeg and other dependencies
+# Install FFmpeg with comprehensive codec support and other dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    # Additional codec libraries for comprehensive video format support
+    libx264-dev \
+    libx265-dev \
+    libvpx-dev \
+    libmp3lame-dev \
+    libopus-dev \
+    libvorbis-dev \
+    libtheora-dev \
+    # Hardware acceleration libraries (if available)
+    libva-dev \
+    libvdpau-dev \
+    # Additional multimedia libraries
+    libavcodec-extra \
+    libavformat-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libswresample-dev \
+    # Cleanup
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Use the SDK image to build the application
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
@@ -40,6 +59,11 @@ RUN mkdir -p /app/uploads/videos \
 
 # Copy published application
 COPY --from=publish /app/publish .
+
+# Verify FFmpeg installation and available codecs
+RUN ffmpeg -version && \
+    ffmpeg -codecs | grep -E "(libx264|libx265|aac|libmp3lame)" && \
+    echo "FFmpeg codec verification completed successfully"
 
 # Create a non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app

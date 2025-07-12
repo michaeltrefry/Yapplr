@@ -19,6 +19,7 @@ builder.Configuration.AddEnvironmentVariables();
 
 // Add services
 builder.Services.AddSingleton<IVideoProcessingService, VideoProcessingService>();
+builder.Services.AddSingleton<ICodecTestService, CodecTestService>();
 
 // Add MassTransit with RabbitMQ
 builder.Services.AddMassTransit(x =>
@@ -58,4 +59,38 @@ builder.Services.AddMassTransit(x =>
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
+
+// Run codec compatibility test on startup
+using (var scope = host.Services.CreateScope())
+{
+    var codecTestService = scope.ServiceProvider.GetRequiredService<ICodecTestService>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    logger.LogInformation("Running codec compatibility test on startup...");
+    var testResult = await codecTestService.RunCodecTestsAsync();
+
+    if (testResult.Success)
+    {
+        logger.LogInformation("✅ Codec compatibility test passed - all required codecs are available");
+        logger.LogInformation("Available video codecs: {VideoCodecs}",
+            string.Join(", ", testResult.VideoCodecs.Where(c => c.Value).Select(c => c.Key)));
+        logger.LogInformation("Available audio codecs: {AudioCodecs}",
+            string.Join(", ", testResult.AudioCodecs.Where(c => c.Value).Select(c => c.Key)));
+    }
+    else
+    {
+        logger.LogWarning("⚠️ Codec compatibility test failed: {ErrorMessage}", testResult.ErrorMessage);
+        logger.LogWarning("Some video processing features may not work correctly");
+
+        // Log missing codecs
+        var missingVideoCodecs = testResult.VideoCodecs.Where(c => !c.Value).Select(c => c.Key);
+        var missingAudioCodecs = testResult.AudioCodecs.Where(c => !c.Value).Select(c => c.Key);
+
+        if (missingVideoCodecs.Any())
+            logger.LogWarning("Missing video codecs: {MissingVideoCodecs}", string.Join(", ", missingVideoCodecs));
+        if (missingAudioCodecs.Any())
+            logger.LogWarning("Missing audio codecs: {MissingAudioCodecs}", string.Join(", ", missingAudioCodecs));
+    }
+}
+
 host.Run();

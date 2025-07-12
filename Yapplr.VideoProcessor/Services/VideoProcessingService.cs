@@ -14,13 +14,107 @@ public class VideoProcessingService : IVideoProcessingService
     {
         _logger = logger;
         _configuration = configuration;
-        
+
         // Configure FFMpeg binary path
         var ffmpegPath = _configuration["FFmpeg:BinaryPath"];
         if (!string.IsNullOrEmpty(ffmpegPath) && File.Exists(ffmpegPath))
         {
             GlobalFFOptions.Configure(new FFOptions { BinaryFolder = Path.GetDirectoryName(ffmpegPath) });
         }
+    }
+
+    /// <summary>
+    /// Validates that the specified codec is available in the current FFmpeg installation
+    /// </summary>
+    private async Task<bool> IsCodecAvailableAsync(string codecName, bool isVideoCodec = true)
+    {
+        try
+        {
+            var codecType = isVideoCodec ? "encoders" : "encoders";
+            var process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = _configuration["FFmpeg:BinaryPath"] ?? "ffmpeg",
+                    Arguments = $"-{codecType}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return output.Contains(codecName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to check codec availability for {CodecName}", codecName);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets the best available video codec from the fallback list
+    /// </summary>
+    private async Task<string> GetBestAvailableVideoCodecAsync(string preferredCodec)
+    {
+        // First try the preferred codec
+        if (await IsCodecAvailableAsync(preferredCodec, true))
+        {
+            _logger.LogInformation("Using preferred video codec: {Codec}", preferredCodec);
+            return preferredCodec;
+        }
+
+        // Try fallback codecs
+        var fallbackCodecs = _configuration.GetSection("VideoProcessing:FallbackCodecs:Video").Get<string[]>()
+                           ?? new[] { "libx264", "libx265", "libvpx-vp9", "libvpx" };
+
+        foreach (var codec in fallbackCodecs)
+        {
+            if (await IsCodecAvailableAsync(codec, true))
+            {
+                _logger.LogInformation("Using fallback video codec: {Codec} (preferred {PreferredCodec} not available)",
+                    codec, preferredCodec);
+                return codec;
+            }
+        }
+
+        _logger.LogWarning("No suitable video codec found, using default: libx264");
+        return "libx264"; // Last resort
+    }
+
+    /// <summary>
+    /// Gets the best available audio codec from the fallback list
+    /// </summary>
+    private async Task<string> GetBestAvailableAudioCodecAsync(string preferredCodec)
+    {
+        // First try the preferred codec
+        if (await IsCodecAvailableAsync(preferredCodec, false))
+        {
+            _logger.LogInformation("Using preferred audio codec: {Codec}", preferredCodec);
+            return preferredCodec;
+        }
+
+        // Try fallback codecs
+        var fallbackCodecs = _configuration.GetSection("VideoProcessing:FallbackCodecs:Audio").Get<string[]>()
+                           ?? new[] { "aac", "libmp3lame", "libvorbis", "libopus" };
+
+        foreach (var codec in fallbackCodecs)
+        {
+            if (await IsCodecAvailableAsync(codec, false))
+            {
+                _logger.LogInformation("Using fallback audio codec: {Codec} (preferred {PreferredCodec} not available)",
+                    codec, preferredCodec);
+                return codec;
+            }
+        }
+
+        _logger.LogWarning("No suitable audio codec found, using default: aac");
+        return "aac"; // Last resort
     }
 
     public async Task<VideoProcessingResult> ProcessVideoAsync(
@@ -211,6 +305,10 @@ public class VideoProcessingService : IVideoProcessingService
             throw new InvalidOperationException("No video stream found in input file");
         }
 
+        // Validate and get best available codecs
+        var videoCodec = await GetBestAvailableVideoCodecAsync(config.VideoCodec);
+        var audioCodec = await GetBestAvailableAudioCodecAsync(config.AudioCodec);
+
         // Calculate scaling dimensions while maintaining aspect ratio
         var originalWidth = videoStream.Width;
         var originalHeight = videoStream.Height;
@@ -244,8 +342,8 @@ public class VideoProcessingService : IVideoProcessingService
         await FFMpegArguments
             .FromFileInput(inputPath)
             .OutputToFile(outputPath, true, options => options
-                .WithVideoCodec(config.VideoCodec)
-                .WithAudioCodec(config.AudioCodec)
+                .WithVideoCodec(videoCodec)
+                .WithAudioCodec(audioCodec)
                 .WithVideoBitrate(config.TargetBitrate)
                 .WithVideoFilters(filterOptions => filterOptions
                     .Scale(targetWidth, targetHeight))

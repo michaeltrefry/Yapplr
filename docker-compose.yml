@@ -20,6 +20,8 @@ services:
       - RabbitMQ__Username=yapplr
       - RabbitMQ__Password=yapplr123
       - RabbitMQ__VirtualHost=/
+      # Upload configuration - override to use Docker volume path
+      - Uploads__BasePath=/app/uploads
     volumes:
       - yapplr_uploads:/app/uploads
     depends_on:
@@ -34,7 +36,7 @@ services:
       context: .
       dockerfile: Yapplr.VideoProcessor/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - DOTNET_ENVIRONMENT=Production
       # RabbitMQ configuration
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Port=5672
@@ -47,6 +49,14 @@ services:
       - VideoProcessing__ThumbnailPath=/app/uploads/thumbnails
       - VideoProcessing__TempPath=/app/uploads/temp
       - VideoProcessing__DeleteOriginalAfterProcessing=true
+      - VideoProcessing__VideoCodec=libx264
+      - VideoProcessing__AudioCodec=aac
+      # FFmpeg configuration
+      - FFmpeg__BinaryPath=/usr/bin/ffmpeg
+      - FFmpeg__WorkingDirectory=/tmp
+      - FFmpeg__TimeoutSeconds=300
+      - FFmpeg__EnableHardwareAcceleration=false
+      - FFmpeg__LogLevel=error
     volumes:
       - yapplr_uploads:/app/uploads
     depends_on:
