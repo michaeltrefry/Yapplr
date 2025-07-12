@@ -323,4 +323,39 @@ public class NotificationCompressionService : INotificationCompressionService
         var messageFields = new[] { "body", "message", "content", "text", "description" };
         return messageFields.Contains(fieldName.ToLower());
     }
+
+    // Add a method to optimize common notification patterns
+    public async Task<(string title, string body, Dictionary<string, string>? data)> OptimizeNotificationAsync(
+        string title, 
+        string body, 
+        Dictionary<string, string>? data = null,
+        OptimizationSettings? settings = null)
+    {
+        try
+        {
+            var payload = new { title, body, data };
+            var optimizedPayload = await OptimizePayloadAsync(payload, settings);
+
+            // Extract optimized values
+            if (optimizedPayload is Dictionary<string, object> optimizedDict)
+            {
+                var optimizedTitle = optimizedDict.TryGetValue("title", out var t) ? t?.ToString() ?? title : title;
+                var optimizedBody = optimizedDict.TryGetValue("body", out var b) ? b?.ToString() ?? body : body;
+                Dictionary<string, string>? optimizedData = data;
+
+                if (optimizedDict.TryGetValue("data", out var d) && d is Dictionary<string, object> dataDict)
+                {
+                    optimizedData = dataDict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? "");
+                }
+
+                return (optimizedTitle, optimizedBody, optimizedData);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to optimize notification payload, using original");
+        }
+
+        return (title, body, data);
+    }
 }

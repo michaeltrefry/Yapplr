@@ -376,70 +376,35 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<YapplrDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var retryService = scope.ServiceProvider.GetRequiredService<ISmartRetryService>();
 
-    const int maxRetries = 5;
-    const int delayMs = 2000;
-
-    for (int attempt = 1; attempt <= maxRetries; attempt++)
+    try
     {
-        try
-        {
-            logger.LogInformation("🗄️ Running database migrations at startup... (attempt {Attempt}/{MaxRetries})", attempt, maxRetries);
-
-            // Test database connection first
-            await context.Database.CanConnectAsync();
-
-            // Run migrations
-            await context.Database.MigrateAsync();
-            logger.LogInformation("✅ Database migrations completed successfully");
-
-            // Seed essential users (system user, etc.)
-            logger.LogInformation("👤 Seeding essential users...");
-            var essentialUserSeedService = scope.ServiceProvider.GetRequiredService<EssentialUserSeedService>();
-            await essentialUserSeedService.SeedEssentialUsersAsync();
-            logger.LogInformation("✅ Essential users seeding completed successfully");
-
-            // Seed default system tags
-            logger.LogInformation("🏷️ Seeding default system tags...");
-            var systemTagSeedService = scope.ServiceProvider.GetRequiredService<SystemTagSeedService>();
-            await systemTagSeedService.SeedDefaultSystemTagsAsync();
-            logger.LogInformation("✅ System tags seeding completed successfully");
-
-            // Seed content pages
-            logger.LogInformation("📄 Seeding content pages...");
-            var contentSeedService = scope.ServiceProvider.GetRequiredService<ContentSeedService>();
-            await contentSeedService.SeedContentPagesAsync();
-            logger.LogInformation("✅ Content pages seeding completed successfully");
-
-            // Seed test data (all environments except production)
-            logger.LogInformation("🔍 Environment check for seeding: {Environment} (IsProduction: {IsProduction})",
-                app.Environment.EnvironmentName, app.Environment.IsProduction());
-
-            if (!app.Environment.IsProduction())
-            {
-                logger.LogInformation("🌱 Seeding test data for {Environment} environment...", app.Environment.EnvironmentName);
-                var stagingSeedService = scope.ServiceProvider.GetRequiredService<StagingSeedService>();
-                await stagingSeedService.SeedStagingDataAsync();
-                logger.LogInformation("✅ Test data seeding completed successfully for {Environment} environment", app.Environment.EnvironmentName);
-            }
-            else
-            {
-                logger.LogInformation("⚠️ Skipping test data seeding - Production environment detected");
-            }
-
-            break; // Success, exit retry loop
-        }
-        catch (Exception ex) when (attempt < maxRetries)
-        {
-            logger.LogWarning(ex, "❌ Failed to run database migrations or seeding at startup (attempt {Attempt}/{MaxRetries}). Retrying in {Delay}ms...",
-                attempt, maxRetries, delayMs);
-            await Task.Delay(delayMs);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "❌ Failed to run database migrations or seeding at startup after {MaxRetries} attempts", maxRetries);
-            throw; // This will prevent the application from starting if migrations fail
-        }
+        logger.LogInformation("🗄️ Running database migrations at startup...");
+        
+        await retryService.ExecuteWithRetryAsync(
+            async () => {
+                // Test database connection first
+                await context.Database.CanConnectAsync();
+                
+                // Run migrations
+                await context.Database.MigrateAsync();
+                
+                // Seed essential users
+                logger.LogInformation("👤 Seeding essential users...");
+                var essentialUserSeedService = scope.ServiceProvider.GetRequiredService<EssentialUserSeedService>();
+                await essentialUserSeedService.SeedEssentialUsersAsync();
+                
+                return true;
+            },
+            "DatabaseMigrationAndSeeding");
+            
+        logger.LogInformation("✅ Database migrations and seeding completed successfully");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "❌ Failed to run database migrations or seeding at startup after multiple attempts");
+        throw; // This will prevent the application from starting if migrations fail
     }
 }
 

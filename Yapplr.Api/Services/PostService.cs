@@ -148,17 +148,7 @@ public class PostService : BaseService, IPostService
             .ToListAsync();
 
         // Get reposts from followed users and self
-        var reposts = await _context.Reposts
-            .Include(r => r.User)
-            .Include(r => r.Post)
-            .ThenInclude(p => p.User)
-            .Include(r => r.Post)
-            .ThenInclude(p => p.Likes)
-            .Include(r => r.Post)
-            .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
-            .Include(r => r.Post)
-            .ThenInclude(p => p.Reposts)
-            .AsSplitQuery()
+        var reposts = await _context.GetRepostsWithIncludes()
             .Where(r =>
                 !r.Post.IsDeletedByUser && // Filter out reposts of user-deleted posts
                 !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
@@ -207,50 +197,20 @@ public class PostService : BaseService, IPostService
         var fetchSize = pageSize * 2; // Fetch more to account for mixed posts and reposts
 
         // Get blocked user IDs if user is authenticated
-        var blockedUserIds = new List<int>();
-        if (currentUserId.HasValue)
-        {
-            blockedUserIds = await GetBlockedUserIdsAsync(currentUserId.Value);
-        }
+        var blockedUserIds = currentUserId.HasValue
+            ? await _context.GetBlockedUserIdsAsync(currentUserId.Value)
+            : new HashSet<int>();
 
         // Get public posts only
-        var posts = await _context.Posts
-            .Include(p => p.User)
-            .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
-            .Include(p => p.Reposts)
-            .Include(p => p.PostTags)
-                .ThenInclude(pt => pt.Tag)
-            .Include(p => p.PostLinkPreviews)
-                .ThenInclude(plp => plp.LinkPreview)
-            .AsSplitQuery()
-            .Where(p =>
-                !p.IsDeletedByUser && // Filter out user-deleted posts
-                !p.IsHidden && // Filter out moderator-hidden posts
-                p.Privacy == PostPrivacy.Public && // Only public posts
-                !blockedUserIds.Contains(p.UserId)) // Filter out blocked users
+        var posts = await _context.GetPostsForFeed()
+            .ApplyPublicVisibilityFilters(blockedUserIds)
             .OrderByDescending(p => p.CreatedAt)
             .Take(fetchSize)
             .ToListAsync();
 
         // Get reposts of public posts only
-        var reposts = await _context.Reposts
-            .Include(r => r.User)
-            .Include(r => r.Post)
-            .ThenInclude(p => p.User)
-            .Include(r => r.Post)
-            .ThenInclude(p => p.Likes)
-            .Include(r => r.Post)
-            .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
-            .Include(r => r.Post)
-            .ThenInclude(p => p.Reposts)
-            .AsSplitQuery()
-            .Where(r =>
-                !r.Post.IsDeletedByUser && // Filter out reposts of user-deleted posts
-                !r.Post.IsHidden && // Filter out reposts of moderator-hidden posts
-                r.Post.Privacy == PostPrivacy.Public && // Only reposts of public posts
-                !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
-                !blockedUserIds.Contains(r.Post.UserId)) // Filter out reposts of posts from blocked users
+        var reposts = await _context.GetRepostsWithIncludes()
+            .ApplyRepostVisibilityFilters(blockedUserIds)
             .OrderByDescending(r => r.CreatedAt)
             .Take(fetchSize)
             .ToListAsync();

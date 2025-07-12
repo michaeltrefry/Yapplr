@@ -300,43 +300,42 @@ public class CompositeNotificationService : ICompositeNotificationService
     {
         try
         {
+            Func<Task<bool>> sendOperation = () => SendNotificationDirectAsync(userId, title, body, data);
+            
             // Use smart retry if available
-            if (_retryService != null)
-            {
-                return await _retryService.ExecuteWithRetryAsync(
-                    async () => await SendNotificationDirectAsync(userId, title, body, data),
-                    $"SendNotification_{notificationType}_{userId}");
-            }
-            else
-            {
-                return await SendNotificationDirectAsync(userId, title, body, data);
-            }
+            return _retryService != null
+                ? await _retryService.ExecuteWithRetryAsync(sendOperation, $"SendNotification_{notificationType}_{userId}")
+                : await sendOperation();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send notification to user {UserId} after all retry attempts", userId);
 
-            // Queue for offline delivery if user is offline
+            // Queue for offline delivery if service is available
             if (_offlineService != null)
             {
-                var offlineNotification = new OfflineNotification
-                {
-                    UserId = userId,
-                    NotificationType = notificationType,
-                    Title = title,
-                    Body = body,
-                    Data = data,
-                    Priority = GetNotificationPriority(notificationType)
-                };
-
-                await _offlineService.QueueOfflineNotificationAsync(offlineNotification);
-                _logger.LogInformation("Queued notification for offline delivery to user {UserId}", userId);
-
+                await QueueForOfflineDelivery(userId, notificationType, title, body, data);
                 return true; // Consider it successful since it's queued
             }
 
             return false;
         }
+    }
+
+    private async Task QueueForOfflineDelivery(int userId, string notificationType, string title, string body, Dictionary<string, string>? data)
+    {
+        var offlineNotification = new OfflineNotification
+        {
+            UserId = userId,
+            NotificationType = notificationType,
+            Title = title,
+            Body = body,
+            Data = data,
+            Priority = GetNotificationPriority(notificationType)
+        };
+
+        await _offlineService!.QueueOfflineNotificationAsync(offlineNotification);
+        _logger.LogInformation("Queued notification for offline delivery to user {UserId}", userId);
     }
 
     private async Task<bool> SendNotificationDirectAsync(int userId, string title, string body, Dictionary<string, string>? data = null)

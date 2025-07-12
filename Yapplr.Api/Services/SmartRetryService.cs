@@ -322,4 +322,19 @@ public class SmartRetryService : ISmartRetryService
 
         return delay;
     }
+
+    // Add a simpler overload for common use cases
+    public async Task ExecuteWithRetryAsync(
+        Func<Task> operation,
+        string operationName,
+        CancellationToken cancellationToken = default)
+    {
+        await ExecuteWithRetryAsync<bool>(
+            async () => {
+                await operation();
+                return true;
+            },
+            operationName,
+            cancellationToken);
+    }
 }
