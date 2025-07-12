@@ -137,7 +137,7 @@ export default function Sidebar() {
         <div className="border-t border-gray-200 pt-4 space-y-2">
           <Link
             href={`/profile/${user?.username}`}
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 hover:bg-gray-100 rounded-lg p-2 transition-colors cursor-pointer"
+            className="flex items-center justify-center lg:justify-start hover:bg-gray-100 rounded-lg p-2 transition-colors cursor-pointer"
             title={`Go to @${user?.username}'s profile`}
           >
             <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -145,7 +145,7 @@ export default function Sidebar() {
                 {user?.username.charAt(0).toUpperCase()}
               </span>
             </div>
-            <div className="flex-1 min-w-0 hidden lg:block">
+            <div className="flex-1 min-w-0 hidden lg:block lg:ml-3">
               <p className="text-sm font-medium text-gray-900 truncate">
                 @{user?.username}
               </p>
@@ -157,11 +157,11 @@ export default function Sidebar() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 w-full"
+            className="flex items-center justify-center lg:justify-start px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 w-full"
             title="Logout"
           >
-            <LogOut className="w-6 h-6" />
-            <span className="text-lg hidden lg:block">Logout</span>
+            <LogOut className="w-6 h-6 flex-shrink-0" />
+            <span className="text-lg hidden lg:block lg:ml-3">Logout</span>
           </button>
         </div>
       </div>
