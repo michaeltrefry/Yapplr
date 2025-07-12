@@ -11,6 +11,8 @@ using Yapplr.Api.Configuration;
 using SendGrid;
 using Yapplr.Api.Models;
 using Yapplr.Api.Authorization;
+using MassTransit;
+using Yapplr.Api.CQRS;
 
 namespace Yapplr.Api.Extensions;
 
@@ -60,6 +62,9 @@ public static class ServiceCollectionExtensions
 
         // Add email services
         services.AddEmailServices();
+
+        // Add CQRS and RabbitMQ services
+        services.AddCqrsServices(configuration);
 
         return services;
     }
@@ -456,6 +461,48 @@ public static class ServiceCollectionExtensions
             var factory = provider.GetRequiredService<IEmailServiceFactory>();
             return factory.CreateEmailService();
         });
+
+        return services;
+    }
+
+    private static IServiceCollection AddCqrsServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Add MassTransit with RabbitMQ
+        services.AddMassTransit(x =>
+        {
+            // Register all command handlers
+            x.AddConsumers(typeof(Program).Assembly);
+
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                var rabbitMqConfig = configuration.GetSection("RabbitMQ");
+                var host = rabbitMqConfig["Host"] ?? "localhost";
+                var port = rabbitMqConfig.GetValue<int>("Port", 5672);
+                var username = rabbitMqConfig["Username"] ?? "guest";
+                var password = rabbitMqConfig["Password"] ?? "guest";
+                var virtualHost = rabbitMqConfig["VirtualHost"] ?? "/";
+
+                cfg.Host(host, h =>
+                {
+                    h.Username(username);
+                    h.Password(password);
+                });
+
+                // Configure retry policy
+                cfg.UseMessageRetry(r => r.Intervals(
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(5),
+                    TimeSpan.FromSeconds(15),
+                    TimeSpan.FromMinutes(1)
+                ));
+
+                // Configure endpoints for command handlers
+                cfg.ConfigureEndpoints(context);
+            });
+        });
+
+        // Register CQRS services
+        services.AddScoped<ICommandPublisher, CommandPublisher>();
 
         return services;
     }

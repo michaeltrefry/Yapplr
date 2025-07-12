@@ -10,6 +10,8 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Exceptions;
+using Yapplr.Api.CQRS;
+using Yapplr.Api.CQRS.Commands;
 
 namespace Yapplr.Api.Services;
 
@@ -18,12 +20,14 @@ public class AuthService : IAuthService
     private readonly YapplrDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
+    private readonly ICommandPublisher _commandPublisher;
 
-    public AuthService(YapplrDbContext context, IConfiguration configuration, IEmailService emailService)
+    public AuthService(YapplrDbContext context, IConfiguration configuration, IEmailService emailService, ICommandPublisher commandPublisher)
     {
         _context = context;
         _configuration = configuration;
         _emailService = emailService;
+        _commandPublisher = commandPublisher;
     }
 
     public async Task<AuthResponseDto?> RegisterAsync(RegisterUserDto registerDto)
@@ -80,9 +84,29 @@ public class AuthService : IAuthService
         _context.EmailVerifications.Add(emailVerification);
         await _context.SaveChangesAsync();
 
-        // Send verification email
-        var verificationUrl = $"https://yapplr.com/verify-email?token={verificationToken}";
-        await _emailService.SendEmailVerificationAsync(registerDto.Email, user.Username, verificationToken, verificationUrl);
+        // Send verification email using CQRS command
+        var emailCommand = new SendWelcomeEmailCommand
+        {
+            UserId = user.Id,
+            ToEmail = registerDto.Email,
+            Username = user.Username,
+            VerificationToken = verificationToken
+        };
+
+        // Publish command asynchronously - don't wait for completion
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _commandPublisher.PublishAsync(emailCommand);
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail registration
+                // In production, you might want to use a proper background service
+                Console.WriteLine($"Failed to publish welcome email command: {ex.Message}");
+            }
+        });
 
         // Return auth response but user will need to verify email to fully access the app
         var token = GenerateJwtToken(user);
@@ -194,9 +218,27 @@ public class AuthService : IAuthService
         _context.PasswordResets.Add(passwordReset);
         await _context.SaveChangesAsync();
 
-        // Send reset email
-        var resetUrl = $"{resetBaseUrl}?token={resetToken}";
-        await _emailService.SendPasswordResetEmailAsync(email, user.Username, resetToken, resetUrl);
+        // Send reset email using CQRS command
+        var emailCommand = new SendPasswordResetEmailCommand
+        {
+            UserId = user.Id,
+            ToEmail = email,
+            Username = user.Username,
+            ResetToken = resetToken
+        };
+
+        // Publish command asynchronously
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _commandPublisher.PublishAsync(emailCommand);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to publish password reset email command: {ex.Message}");
+            }
+        });
 
         return true;
     }

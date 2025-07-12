@@ -25,9 +25,11 @@ public class User : IEntity
     
     [Required]
     [EmailAddress]
+    [StringLength(100)]
     public string Email { get; set; } = string.Empty;
     
     [Required]
+    [StringLength(100)]
     public string PasswordHash { get; set; } = string.Empty;
     
     [Required]
@@ -68,11 +70,14 @@ public class User : IEntity
     public UserRole Role { get; set; } = UserRole.User;
     public UserStatus Status { get; set; } = UserStatus.Active;
     public DateTime? SuspendedUntil { get; set; }
+    [StringLength(500)]
     public string? SuspensionReason { get; set; }
     public int? SuspendedByUserId { get; set; }
     public User? SuspendedByUser { get; set; }
     public DateTime? LastLoginAt { get; set; }
+    [StringLength(64)]
     public string? LastLoginIp { get; set; }
+    public float? TrustScore { get; set; } = 1.0f;
 
     // Navigation properties
     public ICollection<Post> Posts { get; set; } = new List<Post>();

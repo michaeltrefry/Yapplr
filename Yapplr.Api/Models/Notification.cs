@@ -17,6 +17,7 @@ public class Notification
     
     public DateTime? ReadAt { get; set; }
 
+    [StringLength(20)]
     public string? Status { get; set; } // For follow requests: "approved", "denied", null for pending
 
     // Foreign keys

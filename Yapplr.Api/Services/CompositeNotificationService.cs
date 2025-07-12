@@ -234,7 +234,7 @@ public class CompositeNotificationService : ICompositeNotificationService
         return await SendNotificationWithPreferencesAsync(userId, data?["type"] ?? "generic", title, body, data);
     }
 
-    private async Task<bool> SendNotificationWithPreferencesAsync(int userId, string notificationType, string title, string body, Dictionary<string, string>? data = null)
+    public async Task<bool> SendNotificationWithPreferencesAsync(int userId, string notificationType, string title, string body, Dictionary<string, string>? data = null)
     {
         var startTime = DateTime.UtcNow;
 

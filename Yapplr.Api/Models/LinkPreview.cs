@@ -19,7 +19,7 @@ public class LinkPreview
     [StringLength(2048)]
     public string? ImageUrl { get; set; }
     
-    [StringLength(100)]
+    [StringLength(500)]
     public string? SiteName { get; set; }
     
     public LinkPreviewStatus Status { get; set; } = LinkPreviewStatus.Pending;

@@ -38,6 +38,7 @@ public class NotificationPreferences
     public bool EnableQuietHours { get; set; } = false;
     public TimeOnly QuietHoursStart { get; set; } = new TimeOnly(22, 0); // 10 PM
     public TimeOnly QuietHoursEnd { get; set; } = new TimeOnly(8, 0); // 8 AM
+    [StringLength(20)]
     public string QuietHoursTimezone { get; set; } = "UTC";
     
     // Frequency limits
@@ -122,7 +123,9 @@ public class NotificationDeliveryConfirmation
 {
     public int Id { get; set; }
     public int UserId { get; set; }
+    [StringLength(64)]
     public string NotificationId { get; set; } = string.Empty;
+    [StringLength(64)]
     public string NotificationType { get; set; } = string.Empty;
     public NotificationDeliveryMethod DeliveryMethod { get; set; }
     public DateTime SentAt { get; set; }
@@ -130,6 +133,7 @@ public class NotificationDeliveryConfirmation
     public DateTime? ReadAt { get; set; }
     public bool IsDelivered { get; set; } = false;
     public bool IsRead { get; set; } = false;
+    [StringLength(256)]
     public string? DeliveryError { get; set; }
     public int RetryCount { get; set; } = 0;
     
@@ -144,10 +148,15 @@ public class NotificationHistory
 {
     public int Id { get; set; }
     public int UserId { get; set; }
+    [StringLength(64)]
     public string NotificationId { get; set; } = string.Empty;
+    [StringLength(100)]
     public string NotificationType { get; set; } = string.Empty;
+    [StringLength(256)]
     public string Title { get; set; } = string.Empty;
+    [StringLength(1000)]
     public string Body { get; set; } = string.Empty;
+    [StringLength(1000)]
     public string? DataJson { get; set; } // JSON serialized data
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? DeliveredAt { get; set; }

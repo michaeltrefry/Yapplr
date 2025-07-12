@@ -20,7 +20,13 @@ public class Comment : IUserOwnedEntity
     public int? HiddenByUserId { get; set; }
     public User? HiddenByUser { get; set; }
     public DateTime? HiddenAt { get; set; }
+    [StringLength(256)]
     public string? HiddenReason { get; set; }
+
+    public bool IsFlagged { get; set; } = false;
+    [StringLength(256)]
+    public string? FlaggedReason { get; set; }
+    public DateTime? FlaggedAt { get; set; }
 
     // User deletion fields (soft delete)
     public bool IsDeletedByUser { get; set; } = false;

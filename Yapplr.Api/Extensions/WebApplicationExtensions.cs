@@ -54,6 +54,7 @@ public static class WebApplicationExtensions
         app.MapContentEndpoints();
         app.MapAdminEndpoints();
         app.MapCorsConfigurationEndpoints();
+        app.MapCqrsTestEndpoints();
 
         return app;
     }

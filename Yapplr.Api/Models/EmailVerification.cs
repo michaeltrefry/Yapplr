@@ -7,10 +7,12 @@ public class EmailVerification
     public int Id { get; set; }
     
     [Required]
+    [StringLength(500)]
     public string Token { get; set; } = string.Empty;
     
     [Required]
     [EmailAddress]
+    [StringLength(256)]
     public string Email { get; set; } = string.Empty;
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

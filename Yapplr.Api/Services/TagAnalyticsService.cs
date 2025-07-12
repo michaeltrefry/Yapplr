@@ -8,10 +8,12 @@ namespace Yapplr.Api.Services;
 public class TagAnalyticsService : ITagAnalyticsService
 {
     private readonly YapplrDbContext _context;
+    private readonly ILogger<TagAnalyticsService> _logger;
 
-    public TagAnalyticsService(YapplrDbContext context)
+    public TagAnalyticsService(YapplrDbContext context, ILogger<TagAnalyticsService> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<TagDto>> GetTrendingTagsAsync(int days = 7, int limit = 10)
@@ -134,5 +136,27 @@ public class TagAnalyticsService : ITagAnalyticsService
         }
 
         return result;
+    }
+
+    public async Task UpdateTagMetricsAsync(int tagId, string action, DateTime timestamp)
+    {
+        try
+        {
+            // For now, we'll just log the metric update
+            // In a real implementation, you might update analytics tables or send to a metrics service
+            _logger.LogInformation("Updating tag metrics for tag {TagId}: {Action} at {Timestamp}",
+                tagId, action, timestamp);
+
+            // You could implement actual metric updates here, such as:
+            // - Incrementing counters in a separate analytics table
+            // - Sending metrics to a time-series database
+            // - Updating cached statistics
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update tag metrics for tag {TagId}: {Error}",
+                tagId, ex.Message);
+            // Don't throw - analytics failures shouldn't break the main flow
+        }
     }
 }

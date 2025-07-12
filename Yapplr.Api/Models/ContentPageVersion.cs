@@ -10,6 +10,7 @@ public class ContentPageVersion
     public ContentPage ContentPage { get; set; } = null!;
     
     [Required]
+    [StringLength(4000)]
     public string Content { get; set; } = string.Empty;
     
     [StringLength(500)]
