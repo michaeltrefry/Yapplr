@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { Home, User, Search, LogOut, Settings, MessageCircle, Bell, TestTube, TrendingUp, Shield } from 'lucide-react';
+import { Home, Search, LogOut, Settings, MessageCircle, Bell, TestTube, TrendingUp, Shield } from 'lucide-react';
 import { UserRole } from '@/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -93,14 +93,6 @@ export default function Sidebar() {
           </Link>
 
           <Link
-            href={`/profile/${user?.username}`}
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
-          >
-            <User className="w-6 h-6" />
-            <span className="text-lg hidden lg:block">Profile</span>
-          </Link>
-
-          <Link
             href="/settings"
             className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
           >
@@ -142,31 +134,33 @@ export default function Sidebar() {
         </nav>
 
         {/* User Info & Logout */}
-        <div className="border-t border-gray-200 pt-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold">
-                  {user?.username.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0 hidden lg:block">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  @{user?.username}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {user?.email}
-                </p>
-              </div>
+        <div className="border-t border-gray-200 pt-4 space-y-2">
+          <Link
+            href={`/profile/${user?.username}`}
+            className="flex items-center space-x-3 hover:bg-gray-100 rounded-lg p-2 transition-colors cursor-pointer"
+          >
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-semibold">
+                {user?.username.charAt(0).toUpperCase()}
+              </span>
             </div>
-            <button
-              onClick={handleLogout}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
+            <div className="flex-1 min-w-0 hidden lg:block">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                @{user?.username}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {user?.email}
+              </p>
+            </div>
+          </Link>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 w-full"
+          >
+            <LogOut className="w-6 h-6" />
+            <span className="text-lg hidden lg:block">Logout</span>
+          </button>
         </div>
       </div>
     </div>
