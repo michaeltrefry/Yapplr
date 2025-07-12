@@ -340,10 +340,13 @@ builder.Services.AddScoped<ICompositeNotificationService>(provider =>
         auditService);
 });
 
-// Register all email services
-builder.Services.AddScoped<EmailService>();
-builder.Services.AddScoped<AwsSesEmailService>();
-builder.Services.AddScoped<SendGridEmailService>();
+// Register email senders
+builder.Services.AddScoped<Yapplr.Api.Services.EmailSenders.AwsSesEmailSender>();
+builder.Services.AddScoped<Yapplr.Api.Services.EmailSenders.SendGridEmailSender>();
+builder.Services.AddScoped<Yapplr.Api.Services.EmailSenders.SmtpEmailSender>();
+builder.Services.AddScoped<IEmailSenderFactory, EmailSenderFactory>();
+
+// Register email service factory
 builder.Services.AddScoped<IEmailServiceFactory, EmailServiceFactory>();
 
 // Register the email service based on configuration

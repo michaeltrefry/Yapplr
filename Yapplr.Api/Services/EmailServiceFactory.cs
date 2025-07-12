@@ -8,24 +8,19 @@ public interface IEmailServiceFactory
 public class EmailServiceFactory : IEmailServiceFactory
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly IConfiguration _configuration;
+    private readonly IEmailSenderFactory _emailSenderFactory;
 
-    public EmailServiceFactory(IServiceProvider serviceProvider, IConfiguration configuration)
+    public EmailServiceFactory(IServiceProvider serviceProvider, IEmailSenderFactory emailSenderFactory)
     {
         _serviceProvider = serviceProvider;
-        _configuration = configuration;
+        _emailSenderFactory = emailSenderFactory;
     }
 
     public IEmailService CreateEmailService()
     {
-        var emailProvider = _configuration["EmailProvider"];
-        
-        return emailProvider?.ToLowerInvariant() switch
-        {
-            "awsses" => _serviceProvider.GetRequiredService<AwsSesEmailService>(),
-            "smtp" => _serviceProvider.GetRequiredService<EmailService>(),
-            "sendgrid" => _serviceProvider.GetRequiredService<SendGridEmailService>(),
-            _ => _serviceProvider.GetRequiredService<AwsSesEmailService>() // Default to AWS SES
-        };
+        var emailSender = _emailSenderFactory.CreateEmailSender();
+        var logger = _serviceProvider.GetRequiredService<ILogger<UnifiedEmailService>>();
+
+        return new UnifiedEmailService(emailSender, logger);
     }
 }
