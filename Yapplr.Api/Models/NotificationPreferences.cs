@@ -38,7 +38,7 @@ public class NotificationPreferences
     public bool EnableQuietHours { get; set; } = false;
     public TimeOnly QuietHoursStart { get; set; } = new TimeOnly(22, 0); // 10 PM
     public TimeOnly QuietHoursEnd { get; set; } = new TimeOnly(8, 0); // 8 AM
-    [StringLength(20)]
+    [StringLength(50)]
     public string QuietHoursTimezone { get; set; } = "UTC";
     
     // Frequency limits

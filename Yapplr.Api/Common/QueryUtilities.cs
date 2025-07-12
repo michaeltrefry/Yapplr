@@ -59,6 +59,7 @@ public static class QueryUtilities
         return query.Where(p =>
             !p.IsDeletedByUser && // Filter out user-deleted posts
             !p.IsHidden && // Filter out moderator-hidden posts
+            (!p.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && p.UserId == currentUserId.Value)) && // Filter out posts hidden during video processing, except user's own posts
             !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
             (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
              (currentUserId.HasValue && p.UserId == currentUserId.Value) || // User's own posts are always visible
@@ -74,6 +75,7 @@ public static class QueryUtilities
         return query.Where(p =>
             !p.IsDeletedByUser && // Filter out user-deleted posts
             !p.IsHidden && // Filter out moderator-hidden posts
+            !p.IsHiddenDuringVideoProcessing && // Filter out posts hidden during video processing (public timeline doesn't show user's own posts)
             p.Privacy == PostPrivacy.Public && // Only public posts
             !blockedUserIds.Contains(p.UserId)); // Filter out blocked users
     }
@@ -176,6 +178,7 @@ public static class QueryUtilities
         return query.Where(p =>
             !p.IsDeletedByUser &&
             !p.IsHidden &&
+            (!p.IsHiddenDuringVideoProcessing || p.UserId == userId) &&
             !blockedSet.Contains(p.UserId) &&
             (p.Privacy == PostPrivacy.Public ||
              p.UserId == userId ||
@@ -210,6 +213,9 @@ public static class QueryUtilities
         {
             query = query.Where(p => !p.IsHidden);
         }
+
+        // Filter out posts hidden during video processing, except user's own posts
+        query = query.Where(p => !p.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && p.UserId == currentUserId.Value));
 
         // Filter out blocked users
         if (blockedUserIds?.Any() == true)

@@ -120,4 +120,9 @@ public interface INotificationService
     /// Creates a system message notification
     /// </summary>
     Task CreateSystemMessageNotificationAsync(int userId, string message);
+
+    /// <summary>
+    /// Creates a video processing completion notification
+    /// </summary>
+    Task CreateVideoProcessingCompletedNotificationAsync(int userId, int postId);
 }

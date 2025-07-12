@@ -14,7 +14,7 @@ public class NotificationAuditLog
     [StringLength(64)]
     public string EventId { get; set; } = Guid.NewGuid().ToString();
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-    [StringLength(20)]
+    [StringLength(30)]
     public string EventType { get; set; } = string.Empty; // "sent", "delivered", "failed", "blocked", "rate_limited"
     public int? UserId { get; set; }
     [StringLength(100)]

@@ -19,5 +19,8 @@ public enum NotificationType
     ContentRestored = 106,
     AppealApproved = 107,
     AppealDenied = 108,
-    SystemMessage = 109
+    SystemMessage = 109,
+
+    // Video processing notifications
+    VideoProcessingCompleted = 110
 }

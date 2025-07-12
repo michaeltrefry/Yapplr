@@ -48,6 +48,7 @@ public class TagService : ITagService
             var actualPostCount = await _context.PostTags
                 .Where(pt => pt.TagId == tag.Id &&
                             !blockedUserIds.Contains(pt.Post.UserId) &&
+                            (!pt.Post.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)) &&
                             (pt.Post.Privacy == PostPrivacy.Public ||
                              (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)))
                 .CountAsync();
@@ -94,6 +95,7 @@ public class TagService : ITagService
             .AsSplitQuery()
             .Where(p => p.PostTags.Any(pt => pt.Tag.Name == normalizedTagName) &&
                        !p.IsDeletedByUser && // Filter out user-deleted posts
+                       (!p.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && p.UserId == currentUserId.Value)) && // Filter out posts hidden during video processing, except user's own posts
                        !blockedUserIds.Contains(p.UserId) &&
                        (p.Privacy == PostPrivacy.Public ||
                         (currentUserId.HasValue && p.UserId == currentUserId.Value)))
@@ -129,6 +131,7 @@ public class TagService : ITagService
         var actualPostCount = await _context.PostTags
             .Where(pt => pt.Tag.Name == normalizedTagName &&
                         !blockedUserIds.Contains(pt.Post.UserId) &&
+                        (!pt.Post.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)) &&
                         (pt.Post.Privacy == PostPrivacy.Public ||
                          (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)))
             .CountAsync();

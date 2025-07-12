@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useAuth } from '../contexts/AuthContext';
-import { TimelineItem, Post } from '../types';
+import { TimelineItem, Post, VideoProcessingStatus } from '../types';
 import ImageViewer from './ImageViewer';
 import { ContentHighlight } from '../utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
@@ -208,6 +208,36 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
           linkPreviews={item.post.linkPreviews}
           style={styles.linkPreviewContainer}
         />
+      )}
+
+      {/* Video Processing Status */}
+      {item.post.videoProcessingStatus !== null &&
+       item.post.videoProcessingStatus !== VideoProcessingStatus.Completed && (
+        <View style={styles.videoProcessingContainer}>
+          <View style={styles.videoProcessingContent}>
+            <Ionicons name="play-outline" size={20} color="#6B7280" />
+            <View style={styles.videoProcessingText}>
+              {(item.post.videoProcessingStatus === VideoProcessingStatus.Pending ||
+                item.post.videoProcessingStatus === VideoProcessingStatus.Processing) && (
+                <Text style={styles.videoProcessingMessage}>
+                  Your video is processing. It will be available on your feed when it has completed.
+                </Text>
+              )}
+              {item.post.videoProcessingStatus === VideoProcessingStatus.Failed && (
+                <Text style={[styles.videoProcessingMessage, styles.videoProcessingError]}>
+                  Video processing failed. Please try uploading again.
+                </Text>
+              )}
+              {item.post.videoThumbnailUrl && (
+                <Image
+                  source={{ uri: item.post.videoThumbnailUrl }}
+                  style={styles.videoThumbnail}
+                  resizeMode="cover"
+                />
+              )}
+            </View>
+          </View>
+        </View>
       )}
 
       <View style={styles.postActions}>
@@ -508,5 +538,35 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   linkPreviewContainer: {
     marginTop: 12,
+  },
+  videoProcessingContainer: {
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  videoProcessingContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  videoProcessingText: {
+    flex: 1,
+  },
+  videoProcessingMessage: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  videoProcessingError: {
+    color: '#EF4444',
+  },
+  videoThumbnail: {
+    width: 120,
+    height: 90,
+    borderRadius: 6,
+    marginTop: 8,
   },
 });

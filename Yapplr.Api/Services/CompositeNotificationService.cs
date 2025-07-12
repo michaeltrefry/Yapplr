@@ -456,7 +456,7 @@ public class CompositeNotificationService : ICompositeNotificationService
 
     private string GetActiveProviderName()
     {
-        return _activeProvider?.GetType().Name ?? "Unknown";
+        return _activeProvider?.ProviderName ?? "Unknown";
     }
 
     private class SecurityCheckResult

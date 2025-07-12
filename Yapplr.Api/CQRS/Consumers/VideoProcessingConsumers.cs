@@ -1,6 +1,7 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
+using Yapplr.Api.Services;
 using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
 
@@ -13,11 +14,13 @@ public class VideoProcessingCompletedConsumer : IConsumer<VideoProcessingComplet
 {
     private readonly YapplrDbContext _context;
     private readonly ILogger<VideoProcessingCompletedConsumer> _logger;
+    private readonly INotificationService _notificationService;
 
-    public VideoProcessingCompletedConsumer(YapplrDbContext context, ILogger<VideoProcessingCompletedConsumer> logger)
+    public VideoProcessingCompletedConsumer(YapplrDbContext context, ILogger<VideoProcessingCompletedConsumer> logger, INotificationService notificationService)
     {
         _context = context;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
     public async Task Consume(ConsumeContext<VideoProcessingCompleted> context)
@@ -42,10 +45,19 @@ public class VideoProcessingCompletedConsumer : IConsumer<VideoProcessingComplet
             post.VideoProcessingCompletedAt = message.CompletedAt;
             post.VideoProcessingError = null; // Clear any previous errors
 
+            // Make the post visible at the user's selected privacy level
+            post.IsHiddenDuringVideoProcessing = false;
+
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Updated Post {PostId} with processed video: {ProcessedVideoFileName}, thumbnail: {ThumbnailFileName}", 
+            _logger.LogInformation("Updated Post {PostId} with processed video: {ProcessedVideoFileName}, thumbnail: {ThumbnailFileName}",
                 message.PostId, message.ProcessedVideoFileName, message.ThumbnailFileName);
+
+            // Send notification to the user that their video is ready
+            await _notificationService.CreateVideoProcessingCompletedNotificationAsync(message.UserId, message.PostId);
+
+            _logger.LogInformation("Sent video processing completion notification to user {UserId} for post {PostId}",
+                message.UserId, message.PostId);
         }
         catch (Exception ex)
         {

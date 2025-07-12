@@ -82,6 +82,14 @@ export enum PostPrivacy {
   Private = 2,
 }
 
+export enum VideoProcessingStatus {
+  Pending = 0,
+  Processing = 1,
+  Completed = 2,
+  Failed = 3,
+  Cancelled = 4,
+}
+
 export interface Tag {
   id: number;
   name: string;
@@ -121,6 +129,10 @@ export interface Post {
   updatedAt?: string;
   isEdited: boolean;
   imageUrl?: string;
+  videoUrl?: string;
+  videoThumbnailUrl?: string;
+  videoProcessingStatus?: VideoProcessingStatus;
+  privacy: PostPrivacy;
   user: User;
   likeCount: number;
   commentCount: number;
@@ -335,6 +347,9 @@ export enum NotificationType {
   AppealApproved = 107,
   AppealDenied = 108,
   SystemMessage = 109,
+
+  // Video processing notifications
+  VideoProcessingCompleted = 110,
 }
 
 export interface Notification {

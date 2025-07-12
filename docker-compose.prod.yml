@@ -32,6 +32,11 @@ services:
       - RabbitMQ__Username=${PROD_RABBITMQ_USERNAME}
       - RabbitMQ__Password=${PROD_RABBITMQ_PASSWORD}
       - RabbitMQ__VirtualHost=/
+      # SignalR configuration
+      - NotificationProviders__SignalR__Enabled=true
+      - NotificationProviders__SignalR__MaxConnectionsPerUser=10
+      - NotificationProviders__SignalR__MaxTotalConnections=10000
+      - NotificationProviders__SignalR__EnableDetailedErrors=false
       # Upload configuration - override to use Docker volume path
       - Uploads__BasePath=/app/uploads
     volumes:

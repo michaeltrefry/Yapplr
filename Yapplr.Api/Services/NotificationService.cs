@@ -749,4 +749,31 @@ public class NotificationService : INotificationService
         // Send real-time notification
         await _notificationService.SendNotificationAsync(userId, "System Message", message);
     }
+
+    public async Task CreateVideoProcessingCompletedNotificationAsync(int userId, int postId)
+    {
+        var message = "Your video has finished processing and is now available on your feed.";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.VideoProcessingCompleted,
+            Message = message,
+            UserId = userId,
+            PostId = postId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification with post ID
+        var notificationData = new Dictionary<string, string>
+        {
+            ["type"] = "VideoProcessingCompleted",
+            ["postId"] = postId.ToString()
+        };
+
+        await _notificationService.SendNotificationAsync(userId, "Video Ready", "Your video has finished processing and is ready for viewing.", notificationData);
+    }
 }

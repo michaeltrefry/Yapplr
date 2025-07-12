@@ -388,11 +388,8 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 <div className="flex items-center space-x-2">
                   <Play className="w-5 h-5 text-gray-400" />
                   <div>
-                    {post.videoProcessingStatus === VideoProcessingStatus.Pending && (
-                      <p className="text-sm text-gray-600">Video is being processed...</p>
-                    )}
-                    {post.videoProcessingStatus === VideoProcessingStatus.Processing && (
-                      <p className="text-sm text-gray-600">Video is being optimized for streaming...</p>
+                    {(post.videoProcessingStatus === VideoProcessingStatus.Pending || post.videoProcessingStatus === VideoProcessingStatus.Processing) && (
+                      <p className="text-sm text-gray-600">Your video is processing. It will be available on your feed when it has completed.</p>
                     )}
                     {post.videoProcessingStatus === VideoProcessingStatus.Failed && (
                       <p className="text-sm text-red-600">Video processing failed. Please try uploading again.</p>

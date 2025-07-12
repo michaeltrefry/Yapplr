@@ -52,7 +52,9 @@ public class PostService : BaseService, IPostService
             Privacy = createDto.Privacy,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            // Hide posts with videos during processing so they're only visible to the author
+            IsHiddenDuringVideoProcessing = !string.IsNullOrEmpty(createDto.VideoFileName)
         };
 
         _context.Posts.Add(post);
@@ -131,6 +133,7 @@ public class PostService : BaseService, IPostService
             .Where(p =>
                 !p.IsDeletedByUser && // Filter out user-deleted posts
                 !p.IsHidden && // Filter out moderator-hidden posts
+                (!p.IsHiddenDuringVideoProcessing || p.UserId == userId) && // Filter out posts hidden during video processing, except user's own posts
                 !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                 p.UserId == userId || // User's own posts are always visible
@@ -289,6 +292,7 @@ public class PostService : BaseService, IPostService
             .Where(p => p.UserId == userId &&
                 !p.IsDeletedByUser && // Filter out user-deleted posts
                 !p.IsHidden && // Filter out moderator-hidden posts
+                (!p.IsHiddenDuringVideoProcessing || currentUserId == userId) && // Filter out posts hidden during video processing, except when viewing your own posts
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                  currentUserId == userId || // User's own posts are always visible
                  (p.Privacy == PostPrivacy.Followers && isFollowing))) // Followers-only posts visible if following
@@ -337,6 +341,7 @@ public class PostService : BaseService, IPostService
             .Where(p => p.UserId == userId &&
                 !p.IsDeletedByUser && // Filter out user-deleted posts
                 !p.IsHidden && // Filter out moderator-hidden posts
+                (!p.IsHiddenDuringVideoProcessing || currentUserId == userId) && // Filter out posts hidden during video processing, except when viewing your own posts
                 (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
                  currentUserId == userId || // User's own posts are always visible
                  (p.Privacy == PostPrivacy.Followers && isFollowing))) // Followers-only posts visible if following

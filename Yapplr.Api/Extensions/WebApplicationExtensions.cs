@@ -24,8 +24,15 @@ public static class WebApplicationExtensions
         app.MapOpenApi();
         app.UseHttpsRedirection();
         
-        // Use AllowSignalR CORS policy for development (supports credentials for SignalR)
-        app.UseCors("AllowSignalR");
+        // Use AllowAll CORS policy for development (temporary fix for Docker)
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseCors("AllowAll");
+        }
+        else
+        {
+            app.UseCors("AllowSignalR");
+        }
         app.UseAuthentication();
         app.UseMiddleware<UserActivityMiddleware>();
         app.UseAuthorization();

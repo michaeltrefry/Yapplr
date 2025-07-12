@@ -27,6 +27,9 @@ public class Post : IUserOwnedEntity
     [StringLength(500)]
     public string? VideoProcessingError { get; set; }
 
+    // Video processing visibility - when true, post is hidden from public feeds until video processing completes
+    public bool IsHiddenDuringVideoProcessing { get; set; } = false;
+
     public PostPrivacy Privacy { get; set; } = PostPrivacy.Public;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

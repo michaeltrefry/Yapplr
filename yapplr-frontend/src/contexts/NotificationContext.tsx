@@ -63,6 +63,71 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     refetchNotifications();
   }, [refetchNotifications]);
 
+  // Function to update a specific post in timeline caches
+  const updatePostInTimelines = useCallback(async (postId: number) => {
+    try {
+      console.log('🔔 Fetching updated post data for postId:', postId);
+
+      // Fetch the updated post data
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${postId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch post ${postId}: ${response.status}`);
+      }
+
+      const updatedPost = await response.json();
+      console.log('🔔 Updated post data received:', updatedPost);
+
+      // Update timeline queries
+      const timelineQueries = [
+        ['timeline'],
+        ['publicTimeline'],
+        ['userTimeline']
+      ];
+
+      timelineQueries.forEach(queryKey => {
+        queryClient.setQueriesData(
+          { queryKey, exact: false },
+          (oldData: any) => {
+            if (!oldData?.pages) return oldData;
+
+            console.log(`🔔 Updating ${queryKey[0]} cache for post ${postId}`);
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page: any[]) =>
+                page.map((item: any) => {
+                  if (item.post?.id === postId) {
+                    console.log(`🔔 Found and updating post ${postId} in ${queryKey[0]}`);
+                    return {
+                      ...item,
+                      post: updatedPost
+                    };
+                  }
+                  return item;
+                })
+              )
+            };
+          }
+        );
+      });
+
+      console.log('🔔 Successfully updated post in timeline caches');
+    } catch (error) {
+      console.error('🔔 Error updating post in timelines:', error);
+      // Fallback to invalidating queries if update fails
+      console.log('🔔 Falling back to query invalidation');
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['publicTimeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
+    }
+  }, [queryClient]);
+
   // Initialize SignalR when user is authenticated
   useEffect(() => {
     if (!user) return;
@@ -145,7 +210,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [isSignalRReady, retryCount, maxRetries]);
 
   // Generic notification handler for both Firebase and SignalR
-  const handleNotificationMessage = useCallback((type: string, provider: string) => {
+  const handleNotificationMessage = useCallback((type: string, provider: string, payload?: SignalRNotificationPayload) => {
     console.log(`🔔 NOTIFICATION CONTEXT RECEIVED ${provider.toUpperCase()} MESSAGE`);
     console.log(`🔔 Message type: ${type}`);
     console.log('🔔 Timestamp:', new Date().toISOString());
@@ -154,7 +219,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (type === 'message') {
       console.log('🔔 Refreshing unread message count');
       refreshUnreadCount();
-    } else if (['mention', 'reply', 'comment', 'follow', 'like', 'repost', 'follow_request'].includes(type)) {
+    } else if (['mention', 'reply', 'comment', 'follow', 'like', 'repost', 'follow_request', 'generic', 'VideoProcessingCompleted'].includes(type)) {
       console.log('🔔 Refreshing notification count');
       refreshNotificationCount();
     }
@@ -164,6 +229,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     queryClient.invalidateQueries({ queryKey: ['conversations'] });
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
+    // For video processing completed notifications, try to update specific post
+    if (type === 'VideoProcessingCompleted' && payload?.data?.postId) {
+      const postId = parseInt(payload.data.postId);
+      console.log('🔔 VideoProcessingCompleted notification with postId - updating specific post:', postId);
+
+      // Update the specific post in timeline caches
+      updatePostInTimelines(postId);
+    } else if (type === 'generic' && payload?.data?.postId) {
+      const postId = parseInt(payload.data.postId);
+      console.log('🔔 Generic notification with postId - updating specific post:', postId);
+
+      // Update the specific post in timeline caches
+      updatePostInTimelines(postId);
+    } else if (type === 'generic') {
+      console.log('🔔 Generic notification without postId - invalidating timeline queries');
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['publicTimeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
+    }
+
     console.log(`🔔 ${provider} message handling complete`);
   }, [refreshUnreadCount, refreshNotificationCount, queryClient]);
 
@@ -172,7 +257,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (!isSignalRReady) return;
 
     const handleSignalRMessage = (payload: SignalRNotificationPayload) => {
-      handleNotificationMessage(payload.type, 'SignalR');
+      handleNotificationMessage(payload.type, 'SignalR', payload);
     };
 
     signalRMessagingService.addMessageListener(handleSignalRMessage);
