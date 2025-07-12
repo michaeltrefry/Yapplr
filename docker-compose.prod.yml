@@ -26,6 +26,12 @@ services:
       - ContentModeration__ServiceUrl=http://content-moderation:8000
       - ContentModeration__Enabled=true
       - ContentModeration__AutoApplyTags=false
+      # RabbitMQ configuration
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=${PROD_RABBITMQ_USERNAME}
+      - RabbitMQ__Password=${PROD_RABBITMQ_PASSWORD}
+      - RabbitMQ__VirtualHost=/
     volumes:
       - yapplr_uploads:/app/uploads
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -34,6 +40,8 @@ services:
       - yapplr-network
     depends_on:
       content-moderation:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -101,8 +109,28 @@ services:
       - /var/www/certbot:/var/www/certbot
     command: certbot certonly --manual --preferred-challenges=dns --email ${PROD_CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${PROD_CERTBOT_DOMAIN} -d yapplr.com
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=${PROD_RABBITMQ_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${PROD_RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_VHOST=/
+    # No external ports exposed - only accessible from Docker network
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
 volumes:
   yapplr_uploads:
+  rabbitmq_data:
 
 networks:
   yapplr-network:

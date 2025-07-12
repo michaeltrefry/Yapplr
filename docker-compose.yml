@@ -14,10 +14,17 @@ services:
       - JwtSettings__Issuer=Yapplr.Api
       - JwtSettings__Audience=Yapplr.Client
       - JwtSettings__ExpirationInMinutes=60
+      # RabbitMQ configuration
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=yapplr
+      - RabbitMQ__Password=yapplr123
+      - RabbitMQ__VirtualHost=/
     volumes:
       - yapplr_uploads:/app/uploads
     depends_on:
       - postgres
+      - rabbitmq
     restart: unless-stopped
     networks:
       - yapplr-network
@@ -37,9 +44,31 @@ services:
     networks:
       - yapplr-network
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=yapplr
+      - RABBITMQ_DEFAULT_PASS=yapplr123
+      - RABBITMQ_DEFAULT_VHOST=/
+    ports:
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
 volumes:
   postgres_data:
   yapplr_uploads:
+  rabbitmq_data:
 
 networks:
   yapplr-network:
