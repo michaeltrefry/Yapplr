@@ -5,6 +5,7 @@ using Yapplr.Api.Authorization;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -18,9 +19,10 @@ public static class PostEndpoints
         posts.MapPost("/", async ([FromBody] CreatePostDto createDto, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
-            var post = await postService.CreatePostAsync(userId, createDto);
-
-            return post == null ? Results.BadRequest() : Results.Created($"/api/posts/{post.Id}", post);
+            return await EndpointUtilities.HandleAsync(
+                async () => await postService.CreatePostAsync(userId, createDto),
+                $"/api/posts/{{id}}"
+            );
         })
         .WithName("CreatePost")
         .WithSummary("Create a new post")
@@ -32,13 +34,10 @@ public static class PostEndpoints
         // Get post by ID
         posts.MapGet("/{id:int}", async (int id, ClaimsPrincipal? user, IPostService postService) =>
         {
-            var currentUserId = user?.Identity?.IsAuthenticated == true 
-                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value) 
-                : (int?)null;
-            
-            var post = await postService.GetPostByIdAsync(id, currentUserId);
-            
-            return post == null ? Results.NotFound() : Results.Ok(post);
+            var currentUserId = user?.GetUserIdOrNull();
+            return await EndpointUtilities.HandleAsync(
+                async () => await postService.GetPostByIdAsync(id, currentUserId)
+            );
         })
         .WithName("GetPost")
         .WithSummary("Get post by ID")
@@ -49,9 +48,11 @@ public static class PostEndpoints
         posts.MapGet("/timeline", async (ClaimsPrincipal user, IPostService postService, int page = 1, int pageSize = 25) =>
         {
             var userId = user.GetUserId(true);
-            var timeline = await postService.GetTimelineWithRepostsAsync(userId, page, pageSize);
+            var (validPage, validPageSize) = EndpointUtilities.GetPaginationParams(page, pageSize);
 
-            return Results.Ok(timeline);
+            return await EndpointUtilities.HandleAsync(
+                async () => await postService.GetTimelineWithRepostsAsync(userId, validPage, validPageSize)
+            );
         })
         .WithName("GetTimeline")
         .WithSummary("Get timeline feed with reposts")

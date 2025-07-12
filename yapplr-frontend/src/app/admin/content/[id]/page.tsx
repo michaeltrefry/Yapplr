@@ -10,7 +10,7 @@ import Link from 'next/link';
 export default function ContentEditorPage() {
   const params = useParams();
   const router = useRouter();
-  const contentPageId = parseInt(params.id as string);
+  const contentPageId = parseInt(params?.id as string);
 
   const [contentPage, setContentPage] = useState<ContentPage | null>(null);
   const [content, setContent] = useState('');

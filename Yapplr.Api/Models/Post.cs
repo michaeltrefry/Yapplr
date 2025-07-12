@@ -1,8 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Models;
 
-public class Post
+public class Post : IUserOwnedEntity
 {
     public int Id { get; set; }
     

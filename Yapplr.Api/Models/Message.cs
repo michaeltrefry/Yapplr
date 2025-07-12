@@ -1,8 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Models;
 
-public class Message
+public class Message : IUserOwnedEntity
 {
     public int Id { get; set; }
     
@@ -22,7 +23,14 @@ public class Message
     // Foreign keys
     public int ConversationId { get; set; }
     public int SenderId { get; set; }
-    
+
+    // IUserOwnedEntity implementation
+    public int UserId
+    {
+        get => SenderId;
+        set => SenderId = value;
+    }
+
     // Navigation properties
     public Conversation Conversation { get; set; } = null!;
     public User Sender { get; set; } = null!;

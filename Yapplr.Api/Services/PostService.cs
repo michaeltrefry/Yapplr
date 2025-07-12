@@ -4,19 +4,18 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Utils;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Services;
 
-public class PostService : IPostService
+public class PostService : BaseService, IPostService
 {
-    private readonly YapplrDbContext _context;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IBlockService _blockService;
     private readonly INotificationService _notificationService;
     private readonly ILinkPreviewService _linkPreviewService;
     private readonly IContentModerationService _contentModerationService;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<PostService> _logger;
 
     public PostService(
         YapplrDbContext context,
@@ -26,16 +25,14 @@ public class PostService : IPostService
         ILinkPreviewService linkPreviewService,
         IContentModerationService contentModerationService,
         IConfiguration configuration,
-        ILogger<PostService> logger)
+        ILogger<PostService> logger) : base(context, logger)
     {
-        _context = context;
         _httpContextAccessor = httpContextAccessor;
         _blockService = blockService;
         _notificationService = notificationService;
         _linkPreviewService = linkPreviewService;
         _contentModerationService = contentModerationService;
         _configuration = configuration;
-        _logger = logger;
     }
 
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
@@ -78,54 +75,23 @@ public class PostService : IPostService
             .AsSplitQuery()
             .FirstAsync(p => p.Id == post.Id);
 
-        return MapToPostDto(createdPost, userId);
+        return createdPost.MapToPostDto(userId, _httpContextAccessor.HttpContext);
     }
 
     public async Task<PostDto?> GetPostByIdAsync(int postId, int? currentUserId = null)
     {
-        var post = await _context.Posts
-            .Include(p => p.User)
-            .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
-            .Include(p => p.Reposts)
-            .Include(p => p.PostTags)
-                .ThenInclude(pt => pt.Tag)
-            .Include(p => p.PostLinkPreviews)
-                .ThenInclude(plp => plp.LinkPreview)
-            .Include(p => p.HiddenByUser) // Include moderation info
-            .Include(p => p.PostSystemTags)
-                .ThenInclude(pst => pst.SystemTag)
-            .Include(p => p.PostSystemTags)
-                .ThenInclude(pst => pst.AppliedByUser)
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(p => p.Id == postId && !p.IsDeletedByUser); // Filter out user-deleted posts
+        var post = await _context.GetPostsWithIncludes()
+            .FirstOrDefaultAsync(p => p.Id == postId && !p.IsDeletedByUser);
 
         if (post == null) return null;
 
         // Check if user can view this hidden post
-        if (post.IsHidden)
+        if (post.IsHidden && !await _context.CanViewHiddenContentAsync(currentUserId, post.UserId))
         {
-            // Get current user to check role
-            User? currentUser = null;
-            if (currentUserId.HasValue)
-            {
-                currentUser = await _context.Users.FindAsync(currentUserId.Value);
-            }
-
-            // Allow viewing if:
-            // 1. User is the post author
-            // 2. User is admin or moderator
-            bool canViewHiddenPost = currentUserId.HasValue &&
-                (post.UserId == currentUserId.Value ||
-                 (currentUser != null && (currentUser.Role == UserRole.Admin || currentUser.Role == UserRole.Moderator)));
-
-            if (!canViewHiddenPost)
-            {
-                return null; // Hide the post from unauthorized users
-            }
+            return null; // Hide the post from unauthorized users
         }
 
-        return MapToPostDto(post, currentUserId);
+        return post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext, includeModeration: true);
     }
 
     public async Task<IEnumerable<PostDto>> GetTimelineAsync(int userId, int page = 1, int pageSize = 20)
@@ -160,42 +126,24 @@ public class PostService : IPostService
             .Take(pageSize)
             .ToListAsync();
 
-        return posts.Select(p => MapToPostDto(p, userId));
+        return posts.Select(p => p.MapToPostDto(userId, _httpContextAccessor.HttpContext));
     }
 
     public async Task<IEnumerable<TimelineItemDto>> GetTimelineWithRepostsAsync(int userId, int page = 1, int pageSize = 20)
     {
-        // Get user's following list for privacy filtering
-        var followingIds = await _context.Follows
-            .Where(f => f.FollowerId == userId)
-            .Select(f => f.FollowingId)
-            .ToListAsync();
+        LogOperation(nameof(GetTimelineWithRepostsAsync), new { userId, page, pageSize });
 
-        // Get blocked user IDs to filter them out
+        // Get user's following list and blocked users for filtering
+        var followingIds = await GetFollowingUserIdsAsync(userId);
         var blockedUserIds = await GetBlockedUserIdsAsync(userId);
 
         // Create a larger page size for fetching since we'll filter and sort in memory
         var fetchSize = pageSize * 3; // Fetch more to account for mixed posts and reposts
 
-        // Get original posts with basic data
-        var posts = await _context.Posts
-            .Include(p => p.User)
-            .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
-            .Include(p => p.Reposts)
-            .Include(p => p.PostTags)
-                .ThenInclude(pt => pt.Tag)
-            .Include(p => p.PostLinkPreviews)
-                .ThenInclude(plp => plp.LinkPreview)
-            .AsSplitQuery()
-            .Where(p =>
-                !p.IsDeletedByUser && // Filter out user-deleted posts
-                !p.IsHidden && // Filter out moderator-hidden posts
-                !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
-                (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
-                p.UserId == userId || // User's own posts are always visible
-                (p.Privacy == PostPrivacy.Followers && followingIds.Contains(p.UserId)))) // Followers-only posts visible if following the author
-            .OrderByDescending(p => p.CreatedAt)
+        // Get original posts with filtering
+        var posts = await _context.GetPostsWithIncludes()
+            .FilterForVisibility(userId, blockedUserIds, followingIds)
+            .OrderByNewest()
             .Take(fetchSize)
             .ToListAsync();
 
@@ -230,15 +178,17 @@ public class PostService : IPostService
         // Add original posts
         foreach (var post in posts)
         {
-            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, MapToPostDto(post, userId)));
+            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt,
+                post.MapToPostDto(userId, _httpContextAccessor.HttpContext)));
         }
 
         // Add reposts
         foreach (var repost in reposts)
         {
-            var repostedByUser = repost.User.ToDto();
+            var repostedByUser = repost.User.MapToUserDto();
 
-            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, MapToPostDto(repost.Post, userId), repostedByUser));
+            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt,
+                repost.Post.MapToPostDto(userId, _httpContextAccessor.HttpContext), repostedByUser));
         }
 
         // Sort by creation date and apply pagination
@@ -312,14 +262,14 @@ public class PostService : IPostService
         timelineItems.AddRange(posts.Select(p => new TimelineItemDto(
             "post",
             p.CreatedAt,
-            MapToPostDto(p, currentUserId)
+            p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext)
         )));
 
         // Add reposts
         timelineItems.AddRange(reposts.Select(r => new TimelineItemDto(
             "repost",
             r.CreatedAt,
-            MapToPostDto(r.Post, currentUserId),
+            r.Post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext),
             r.User.ToDto()
         )));
 
@@ -373,7 +323,7 @@ public class PostService : IPostService
             .Take(pageSize)
             .ToListAsync();
 
-        return posts.Select(p => MapToPostDto(p, currentUserId));
+        return posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext));
     }
 
     public async Task<IEnumerable<TimelineItemDto>> GetUserTimelineAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
@@ -462,7 +412,7 @@ public class PostService : IPostService
         // Add original posts
         foreach (var post in posts)
         {
-            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, MapToPostDto(post, currentUserId)));
+            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext)));
         }
 
         // Add reposts
@@ -470,7 +420,7 @@ public class PostService : IPostService
         {
             var repostedByUser = repost.User.ToDto();
 
-            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, MapToPostDto(repost.Post, currentUserId), repostedByUser));
+            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, repost.Post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext), repostedByUser));
         }
 
         // Sort by creation date and apply pagination
@@ -606,7 +556,7 @@ public class PostService : IPostService
             .Include(c => c.User)
             .FirstAsync(c => c.Id == comment.Id);
 
-        return MapToCommentDto(createdComment);
+        return createdComment.MapToCommentDto(_httpContextAccessor.HttpContext);
     }
 
     public async Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId)
@@ -617,7 +567,7 @@ public class PostService : IPostService
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
-        return comments.Select(MapToCommentDto);
+        return comments.Select(c => c.MapToCommentDto(_httpContextAccessor.HttpContext));
     }
 
     public async Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId, int currentUserId)
@@ -633,7 +583,7 @@ public class PostService : IPostService
         comments = comments.Where(c => !blockedUserIds.Contains(c.UserId)).ToList();
     
 
-        return comments.Select(MapToCommentDto);
+        return comments.Select(c => c.MapToCommentDto(_httpContextAccessor.HttpContext));
     }
 
     public async Task<bool> DeleteCommentAsync(int commentId, int userId)
@@ -651,141 +601,21 @@ public class PostService : IPostService
         return true;
     }
 
-    private PostDto MapToPostDto(Post post, int? currentUserId)
-    {
-        var userDto = post.User.ToDto();
+    // Removed MapToPostDto method - now using extension method from MappingUtilities
 
-        var isLiked = currentUserId.HasValue && post.Likes.Any(l => l.UserId == currentUserId.Value);
-        var isReposted = currentUserId.HasValue && post.Reposts.Any(r => r.UserId == currentUserId.Value);
-
-        // Generate image URL from filename
-        string? imageUrl = null;
-        if (!string.IsNullOrEmpty(post.ImageFileName))
-        {
-            var request = _httpContextAccessor.HttpContext?.Request;
-            if (request != null)
-            {
-                imageUrl = $"{request.Scheme}://{request.Host}/api/images/{post.ImageFileName}";
-            }
-        }
-
-        var isEdited = post.UpdatedAt > post.CreatedAt.AddMinutes(1); // Consider edited if updated more than 1 minute after creation
-
-        // Map tags to DTOs
-        var tags = post.PostTags.Select(pt => pt.Tag.ToDto()).ToList();
-
-        // Map link previews to DTOs
-        var linkPreviews = post.PostLinkPreviews.Select(plp => new LinkPreviewDto(
-            plp.LinkPreview.Id,
-            plp.LinkPreview.Url,
-            plp.LinkPreview.Title,
-            plp.LinkPreview.Description,
-            plp.LinkPreview.ImageUrl,
-            plp.LinkPreview.SiteName,
-            plp.LinkPreview.Status,
-            plp.LinkPreview.ErrorMessage,
-            plp.LinkPreview.CreatedAt
-        )).ToList();
-
-        // Include moderation information if user is authorized to see it
-        PostModerationInfoDto? moderationInfo = null;
-        if (post.IsHidden && currentUserId.HasValue)
-        {
-            // Check if current user can see moderation info (post author or admin/moderator)
-            var canSeeModerationInfo = post.UserId == currentUserId.Value;
-
-            if (!canSeeModerationInfo && currentUserId.HasValue)
-            {
-                // Check if user is admin/moderator (we need to query this)
-                var currentUser = _context.Users.Find(currentUserId.Value);
-                canSeeModerationInfo = currentUser != null &&
-                    (currentUser.Role == UserRole.Admin || currentUser.Role == UserRole.Moderator);
-            }
-
-            if (canSeeModerationInfo)
-            {
-                // Map system tags
-                var systemTags = post.PostSystemTags.Select(pst => new PostSystemTagDto(
-                    pst.SystemTag.Id,
-                    pst.SystemTag.Name,
-                    pst.SystemTag.Description,
-                    pst.SystemTag.Category.ToString(),
-                    pst.SystemTag.IsVisibleToUsers,
-                    pst.SystemTag.Color,
-                    pst.SystemTag.Icon,
-                    pst.Reason,
-                    pst.AppliedAt,
-                    pst.AppliedByUser.ToDto()
-                )).ToList();
-
-                // Get appeal information for this post
-                PostAppealInfoDto? appealInfo = null;
-                if (currentUserId.HasValue)
-                {
-                    var appeal = _context.UserAppeals
-                        .Include(ua => ua.ReviewedByUser)
-                        .Where(ua => ua.TargetPostId == post.Id &&
-                                   ua.UserId == currentUserId.Value &&
-                                   ua.Type == AppealType.ContentRemoval)
-                        .OrderByDescending(ua => ua.CreatedAt)
-                        .FirstOrDefault();
-
-                    if (appeal != null)
-                    {
-                        appealInfo = new PostAppealInfoDto(
-                            appeal.Id,
-                            appeal.Status,
-                            appeal.Reason,
-                            appeal.AdditionalInfo,
-                            appeal.CreatedAt,
-                            appeal.ReviewedAt,
-                            appeal.ReviewedByUser?.Username,
-                            appeal.ReviewNotes
-                        );
-                    }
-                }
-
-                moderationInfo = new PostModerationInfoDto(
-                    post.IsHidden,
-                    post.HiddenReason,
-                    post.HiddenAt,
-                    post.HiddenByUser?.ToDto(),
-                    systemTags,
-                    null, // Risk score - we'd need to store this separately
-                    null, // Risk level - we'd need to store this separately
-                    appealInfo
-                );
-            }
-        }
-
-        return new PostDto(post.Id, post.Content, imageUrl, post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
-                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, linkPreviews, isLiked, isReposted, isEdited, moderationInfo);
-    }
-
-    private CommentDto MapToCommentDto(Comment comment)
-    {
-        var userDto = comment.User.ToDto();
-
-        var isEdited = comment.UpdatedAt > comment.CreatedAt.AddMinutes(1); // Consider edited if updated more than 1 minute after creation
-
-        return new CommentDto(comment.Id, comment.Content, comment.CreatedAt, comment.UpdatedAt, userDto, isEdited);
-    }
+    // Removed MapToCommentDto method - now using extension method from MappingUtilities
 
     public async Task<PostDto?> UpdatePostAsync(int postId, int userId, UpdatePostDto updateDto)
     {
-        var post = await _context.Posts
-            .Include(p => p.User)
-            .Include(p => p.Likes)
-            .Include(p => p.Comments)
-            .Include(p => p.Reposts)
-            .Include(p => p.PostTags)
-                .ThenInclude(pt => pt.Tag)
-            .Include(p => p.PostLinkPreviews)
-                .ThenInclude(plp => plp.LinkPreview)
+        LogOperation(nameof(UpdatePostAsync), new { postId, userId });
+
+        var post = await _context.GetPostsWithIncludes()
             .FirstOrDefaultAsync(p => p.Id == postId);
 
-        if (post == null || post.UserId != userId)
+        if (post == null)
             return null;
+
+        ValidateUserAuthorization(userId, post.UserId, "update this post");
 
         post.Content = updateDto.Content;
         post.Privacy = updateDto.Privacy;
@@ -805,7 +635,7 @@ public class PostService : IPostService
         // Perform content moderation analysis on updated content
         await ProcessContentModerationAsync(post.Id, updateDto.Content, userId);
 
-        return MapToPostDto(post, userId);
+        return post.MapToPostDto(userId, _httpContextAccessor.HttpContext);
     }
 
     public async Task<CommentDto?> UpdateCommentAsync(int commentId, int userId, UpdateCommentDto updateDto)
@@ -828,10 +658,10 @@ public class PostService : IPostService
         // Perform content moderation analysis on updated comment
         await ProcessCommentModerationAsync(comment.Id, updateDto.Content, userId);
 
-        return MapToCommentDto(comment);
+        return comment.MapToCommentDto(_httpContextAccessor.HttpContext);
     }
 
-    private async Task<List<int>> GetBlockedUserIdsAsync(int userId)
+    private new async Task<List<int>> GetBlockedUserIdsAsync(int userId)
     {
         // Get users that the current user has blocked
         var blockedByUser = await _context.Blocks

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Models;
 
@@ -18,7 +19,7 @@ public enum UserStatus
     Banned = 3
 }
 
-public class User
+public class User : IEntity
 {
     public int Id { get; set; }
     

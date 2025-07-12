@@ -45,7 +45,7 @@ public class NotificationService : INotificationService
 
         // Get users that exist and are not the mentioning user
         var mentionedUsers = await _context.Users
-            .Where(u => mentionedUsernames.Contains(u.Username) && u.Id != mentioningUserId)
+            .Where(u => mentionedUsernames.Contains(u.Username.ToLower()) && u.Id != mentioningUserId)
             .ToListAsync();
 
         var mentioningUser = await _context.Users.FindAsync(mentioningUserId);

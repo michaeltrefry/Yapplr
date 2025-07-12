@@ -34,7 +34,7 @@ public class TagService : ITagService
         }
 
         var tags = await _context.Tags
-            .Where(t => t.Name.Contains(normalizedQuery))
+            .Where(t => EF.Functions.ILike(t.Name, $"%{normalizedQuery}%"))
             .OrderByDescending(t => t.PostCount)
             .ThenBy(t => t.Name)
             .Take(limit)

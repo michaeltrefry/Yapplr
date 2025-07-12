@@ -4,29 +4,26 @@ using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Services;
 
-public class UserService : IUserService
+public class UserService : BaseService, IUserService
 {
-    private readonly YapplrDbContext _context;
     private readonly IBlockService _blockService;
     private readonly INotificationService _notificationService;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<UserService> _logger;
 
-    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService, IEmailService emailService, IConfiguration configuration, ILogger<UserService> logger)
+    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService, IEmailService emailService, IConfiguration configuration, ILogger<UserService> logger) : base(context, logger)
     {
-        _context = context;
         _blockService = blockService;
         _notificationService = notificationService;
         _emailService = emailService;
         _configuration = configuration;
-        _logger = logger;
     }
 
-    public async Task<UserDto?> GetUserByIdAsync(int userId)
+    public new async Task<UserDto?> GetUserByIdAsync(int userId)
     {
         var user = await _context.Users.FindAsync(userId);
         
@@ -105,7 +102,7 @@ public class UserService : IUserService
     public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query)
     {
         var users = await _context.Users
-            .Where(u => u.Username.Contains(query) || u.Bio.Contains(query))
+            .Where(u => EF.Functions.ILike(u.Username, $"%{query}%") || EF.Functions.ILike(u.Bio, $"%{query}%"))
             .Take(20) // Limit results
             .ToListAsync();
 
@@ -115,7 +112,7 @@ public class UserService : IUserService
     public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query, int? currentUserId)
     {
         var users = await _context.Users
-            .Where(u => u.Username.Contains(query) || u.Bio.Contains(query))
+            .Where(u => EF.Functions.ILike(u.Username, $"%{query}%") || EF.Functions.ILike(u.Bio, $"%{query}%"))
             .Take(20) // Limit results
             .ToListAsync();
 
@@ -129,7 +126,7 @@ public class UserService : IUserService
         return users.Select(u => u.ToDto());
     }
 
-    private async Task<List<int>> GetBlockedUserIdsAsync(int userId)
+    private new async Task<List<int>> GetBlockedUserIdsAsync(int userId)
     {
         // Get users that the current user has blocked
         var blockedByUser = await _context.Blocks

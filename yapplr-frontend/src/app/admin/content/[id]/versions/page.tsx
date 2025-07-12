@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 export default function VersionHistoryPage() {
   const params = useParams();
-  const contentPageId = parseInt(params.id as string);
+  const contentPageId = parseInt(params?.id as string);
 
   const [contentPage, setContentPage] = useState<ContentPage | null>(null);
   const [versions, setVersions] = useState<ContentPageVersion[]>([]);

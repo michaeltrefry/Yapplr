@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
 using Yapplr.Api.Exceptions;
+using Yapplr.Api.Common;
 using System.ComponentModel.DataAnnotations;
 
 namespace Yapplr.Api.Endpoints;
@@ -14,21 +15,13 @@ public static class AuthEndpoints
 
         auth.MapPost("/register", async ([FromBody] RegisterUserDto registerDto, IAuthService authService) =>
         {
-            try
+            return await EndpointUtilities.HandleAsync(async () =>
             {
                 var result = await authService.RegisterAsync(registerDto);
-
                 if (result == null)
-                {
-                    return Results.BadRequest(new { message = "User already exists or username is taken" });
-                }
-
-                return Results.Ok(result);
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { message = ex.Message });
-            }
+                    throw new ArgumentException("User already exists or username is taken");
+                return result;
+            });
         })
         .WithName("Register")
         .WithSummary("Register a new user")
@@ -37,26 +30,13 @@ public static class AuthEndpoints
 
         auth.MapPost("/login", async ([FromBody] LoginUserDto loginDto, IAuthService authService) =>
         {
-            try
+            return await EndpointUtilities.HandleAsync(async () =>
             {
                 var result = await authService.LoginAsync(loginDto);
-
                 if (result == null)
-                {
-                    return Results.Unauthorized();
-                }
-
-                return Results.Ok(result);
-            }
-            catch (EmailNotVerifiedException ex)
-            {
-                return Results.Problem(
-                    detail: ex.Message,
-                    statusCode: 403,
-                    title: "Email Verification Required",
-                    type: "email-verification-required"
-                );
-            }
+                    throw new UnauthorizedAccessException("Invalid credentials");
+                return result;
+            });
         })
         .WithName("Login")
         .WithSummary("Login with email and password")

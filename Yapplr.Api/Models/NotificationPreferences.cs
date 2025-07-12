@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Yapplr.Api.Models;
 
@@ -158,6 +159,7 @@ public class NotificationHistory
     public User User { get; set; } = null!;
     
     // Helper property to deserialize data
+    [NotMapped]
     public Dictionary<string, string>? Data
     {
         get => string.IsNullOrEmpty(DataJson) 

@@ -27,7 +27,7 @@ public static class MentionParser
             if (match.Success && match.Groups.Count > 1)
             {
                 var username = match.Groups[1].Value;
-                usernames.Add(username);
+                usernames.Add(username.ToLowerInvariant());
             }
         }
         

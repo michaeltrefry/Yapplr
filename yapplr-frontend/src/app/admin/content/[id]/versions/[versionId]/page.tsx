@@ -9,8 +9,8 @@ import Link from 'next/link';
 
 export default function VersionDetailPage() {
   const params = useParams();
-  const contentPageId = parseInt(params.id as string);
-  const versionId = parseInt(params.versionId as string);
+  const contentPageId = parseInt(params?.id as string);
+  const versionId = parseInt(params?.versionId as string);
 
   const [version, setVersion] = useState<ContentPageVersion | null>(null);
   const [showPreview, setShowPreview] = useState(true);
