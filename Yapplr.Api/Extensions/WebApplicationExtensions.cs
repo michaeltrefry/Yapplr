@@ -13,6 +13,9 @@ public static class WebApplicationExtensions
 {
     public static WebApplication ConfigureYapplrPipeline(this WebApplication app)
     {
+        // Configure forwarded headers for reverse proxy support (must be first)
+        app.UseForwardedHeaders();
+
         // Configure the HTTP request pipeline
         app.UseSwagger();
         app.UseSwaggerUI(c =>

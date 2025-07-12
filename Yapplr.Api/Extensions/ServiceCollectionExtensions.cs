@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -33,6 +34,16 @@ public static class ServiceCollectionExtensions
 
         // Add HTTP context accessor
         services.AddHttpContextAccessor();
+
+        // Configure forwarded headers for reverse proxy support (nginx)
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+                                     Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+            // Clear known networks and proxies to accept headers from any proxy
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
 
         // Add CORS
         services.AddYapplrCors(configuration);
