@@ -43,8 +43,7 @@ jobs:
       
     - name: Build Docker image
       run: |
-        cd Yapplr.Api
-        docker build -t yapplr-api:${{ github.sha }} .
+        docker build -f Yapplr.Api/Dockerfile -t yapplr-api:${{ github.sha }} .
         docker tag yapplr-api:${{ github.sha }} yapplr-api:latest
         
     - name: Save Docker image
