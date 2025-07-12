@@ -5,6 +5,7 @@ import { UserRole } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   Shield,
@@ -133,8 +134,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
+              <Image
+                src="/logo-64.png"
+                alt="Yapplr Logo"
+                width={40}
+                height={40}
+                className="w-10 h-10 mr-3"
+              />
               <Shield className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1 className="text-2xl font-semibold text-gray-900">
                 Yapplr Admin
               </h1>
             </div>

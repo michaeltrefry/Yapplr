@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  Image,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -192,7 +193,14 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft} />
-        <Text style={styles.headerTitle}>Yapplr</Text>
+        <View style={styles.headerCenter}>
+          <Image
+            source={require('../../../assets/yapplr-logo-32.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+          <Text style={styles.headerTitle}>Yapplr</Text>
+        </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.notificationButton}
@@ -248,12 +256,21 @@ const createStyles = (colors: any) => StyleSheet.create({
   headerLeft: {
     width: 40,
   },
+  headerCenter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerLogo: {
+    width: 28,
+    height: 28,
+    marginRight: 8,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.primary,
-    textAlign: 'center',
-    flex: 1,
   },
   headerRight: {
     width: 40,

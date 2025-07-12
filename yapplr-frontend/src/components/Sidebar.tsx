@@ -6,6 +6,7 @@ import { Home, User, Search, LogOut, Settings, MessageCircle, Bell, TestTube, Tr
 import { UserRole } from '@/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import FollowingList from './FollowingList';
 
 export default function Sidebar() {
@@ -23,8 +24,16 @@ export default function Sidebar() {
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="mb-6 lg:mb-8">
-          <h1 className="text-2xl font-bold text-blue-600 hidden lg:block">Yapplr</h1>
-          <h1 className="text-xl font-bold text-blue-600 lg:hidden text-center">Y</h1>
+          <Link href="/" className="flex items-center justify-center lg:justify-start space-x-2">
+            <Image
+              src="/logo-64.png"
+              alt="Yapplr Logo"
+              width={48}
+              height={48}
+              className="w-12 h-12"
+            />
+            <h1 className="text-4xl font-bold text-blue-600 hidden lg:block pb-1">Yapplr</h1>
+          </Link>
         </div>
 
         {/* Navigation */}

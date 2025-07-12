@@ -8,6 +8,7 @@ import Sidebar from '@/components/Sidebar';
 import CreatePost from '@/components/CreatePost';
 import TrendingWidget from '@/components/TrendingWidget';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   const { user, isLoading } = useAuth();
@@ -38,7 +39,16 @@ export default function Home() {
               {/* Header */}
               <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
                 <div className="flex items-center justify-between">
-                  <h1 className="text-xl font-bold text-blue-600">Yapplr</h1>
+                  <div className="flex items-center space-x-2">
+                    <Image
+                      src="/logo-64.png"
+                      alt="Yapplr Logo"
+                      width={48}
+                      height={48}
+                      className="w-12 h-12"
+                    />
+                    <h1 className="text-4xl font-bold text-blue-600 pb-1">Yapplr</h1>
+                  </div>
                   <div className="flex items-center space-x-4">
                     <Link
                       href="/login"
