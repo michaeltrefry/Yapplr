@@ -141,8 +141,8 @@ public static class SecurityEndpoints
             .Produces(403)
             .Produces(404);
 
-        security.MapDelete("/admin/rate-limits/users/{userId}/reset", ResetUserRateLimits)
-            .WithName("ResetUserRateLimits")
+        security.MapDelete("/admin/rate-limits/users/{userId}/reset", ResetUserRateLimitsAdmin)
+            .WithName("ResetUserRateLimitsAdmin")
             .WithSummary("Reset user's rate limits and violations (admin only)")
             .Produces(200)
             .Produces(401)
@@ -544,6 +544,25 @@ public static class SecurityEndpoints
         catch (Exception ex)
         {
             return Results.Problem($"Failed to unblock user: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> ResetUserRateLimitsAdmin(
+        int userId,
+        IApiRateLimitService rateLimitService,
+        ClaimsPrincipal user)
+    {
+        if (!user.IsInRole("Admin"))
+            return Results.Forbid();
+
+        try
+        {
+            await rateLimitService.ResetUserLimitsAsync(userId);
+            return Results.Ok(new { message = $"Rate limits reset for user {userId}" });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Failed to reset rate limits: {ex.Message}");
         }
     }
 

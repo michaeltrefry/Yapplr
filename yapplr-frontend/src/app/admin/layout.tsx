@@ -87,6 +87,12 @@ const adminNavItems = [
     icon: Edit,
     roles: [UserRole.Admin],
   },
+  {
+    name: 'Settings',
+    href: '/admin/settings',
+    icon: Settings,
+    roles: [UserRole.Admin],
+  },
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
