@@ -1,17 +1,20 @@
 using System.Security.Claims;
 using Yapplr.Api.Services;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Middleware;
 
 public class UserActivityMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly IUserCacheService _userCacheService;
+    private readonly ICachingService _cachingService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public UserActivityMiddleware(RequestDelegate next, IUserCacheService userCacheService)
+    public UserActivityMiddleware(RequestDelegate next, ICachingService cachingService, IServiceScopeFactory serviceScopeFactory)
     {
         _next = next;
-        _userCacheService = userCacheService;
+        _cachingService = cachingService;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -27,11 +30,11 @@ public class UserActivityMiddleware
                 {
                     try
                     {
-                        var user = await _userCacheService.GetUserByIdAsync(userId);
+                        var user = await _cachingService.GetUserByIdAsync(userId, _serviceScopeFactory);
                         if (user != null && user.LastSeenAt < DateTime.UtcNow.AddSeconds(-5))
                         {
                             user.LastSeenAt = DateTime.UtcNow;
-                            await _userCacheService.SaveUserAsync(user);
+                            await _cachingService.SaveUserAsync(user, _serviceScopeFactory);
                         }
                     }
                     catch

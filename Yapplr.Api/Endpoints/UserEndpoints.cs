@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
 using Yapplr.Api.Extensions;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -352,36 +353,27 @@ public static class UserEndpoints
         .Produces(404);
 
         // Cache management endpoints (for testing and monitoring)
-        users.MapGet("/cache/stats", (IUserCacheService cacheService) =>
+        users.MapPost("/cache/clear", async (ICachingService cachingService) =>
         {
-            var stats = cacheService.GetCacheStatistics();
-            return Results.Ok(stats);
-        })
-        .WithName("GetUserCacheStats")
-        .WithSummary("Get user cache statistics")
-        .Produces<UserCacheStatistics>(200);
-
-        users.MapPost("/cache/clear", (IUserCacheService cacheService) =>
-        {
-            cacheService.ClearCache();
+            await cachingService.ClearUserCacheAsync();
             return Results.Ok(new { message = "User cache cleared successfully" });
         })
         .WithName("ClearUserCache")
         .WithSummary("Clear all cached users")
         .Produces(200);
 
-        users.MapDelete("/cache/{userId}", (int userId, IUserCacheService cacheService) =>
+        users.MapDelete("/cache/{userId}", async (int userId, ICachingService cachingService) =>
         {
-            cacheService.InvalidateUser(userId);
+            await cachingService.InvalidateUserByIdAsync(userId);
             return Results.Ok(new { message = $"User {userId} removed from cache" });
         })
         .WithName("InvalidateUserCacheById")
         .WithSummary("Remove a specific user from cache by ID")
         .Produces(200);
 
-        users.MapDelete("/cache/username/{username}", (string username, IUserCacheService cacheService) =>
+        users.MapDelete("/cache/username/{username}", async (string username, ICachingService cachingService) =>
         {
-            cacheService.InvalidateUser(username);
+            await cachingService.InvalidateUserByUsernameAsync(username);
             return Results.Ok(new { message = $"User {username} removed from cache" });
         })
         .WithName("InvalidateUserCacheByUsername")
@@ -389,9 +381,9 @@ public static class UserEndpoints
         .Produces(200);
 
         // Demonstration endpoints showing cached vs non-cached lookups
-        users.MapGet("/cached/{userId}", async (int userId, IUserCacheService cacheService) =>
+        users.MapGet("/cached/{userId}", async (int userId, ICachingService cachingService, IServiceScopeFactory serviceScopeFactory) =>
         {
-            var user = await cacheService.GetUserByIdAsync(userId);
+            var user = await cachingService.GetUserByIdAsync(userId, serviceScopeFactory);
             return user == null ? Results.NotFound() : Results.Ok(user.ToDto());
         })
         .WithName("GetUserByIdCached")
@@ -399,9 +391,9 @@ public static class UserEndpoints
         .Produces<UserDto>(200)
         .Produces(404);
 
-        users.MapGet("/cached/username/{username}", async (string username, IUserCacheService cacheService) =>
+        users.MapGet("/cached/username/{username}", async (string username, ICachingService cachingService, IServiceScopeFactory serviceScopeFactory) =>
         {
-            var user = await cacheService.GetUserByUsernameAsync(username);
+            var user = await cachingService.GetUserByUsernameAsync(username, serviceScopeFactory);
             return user == null ? Results.NotFound() : Results.Ok(user.ToDto());
         })
         .WithName("GetUserByUsernameCached")

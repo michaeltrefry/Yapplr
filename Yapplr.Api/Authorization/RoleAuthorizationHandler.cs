@@ -2,18 +2,21 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Authorization;
 
 public class RoleAuthorizationHandler : AuthorizationHandler<RoleRequirement>
 {
-    private readonly IUserCacheService _userCache;
+    private readonly ICachingService _cachingService;
     private readonly IUserService _userService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public RoleAuthorizationHandler(IUserCacheService userCache, IUserService userService)
+    public RoleAuthorizationHandler(ICachingService cachingService, IUserService userService, IServiceScopeFactory serviceScopeFactory)
     {
-        _userCache = userCache;
+        _cachingService = cachingService;
         _userService = userService;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     protected override async Task HandleRequirementAsync(
@@ -38,7 +41,7 @@ public class RoleAuthorizationHandler : AuthorizationHandler<RoleRequirement>
         try
         {
             // Get user entity and check role
-            var user = await _userCache.GetUserByIdAsync(userId);
+            var user = await _cachingService.GetUserByIdAsync(userId, _serviceScopeFactory);
             if (user == null)
             {
                 context.Fail();

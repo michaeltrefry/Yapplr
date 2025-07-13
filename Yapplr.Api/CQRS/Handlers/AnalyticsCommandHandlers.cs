@@ -2,6 +2,7 @@ using MassTransit;
 using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.Services;
 using Yapplr.Api.Models.Analytics;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.CQRS.Handlers;
 
@@ -11,15 +12,18 @@ namespace Yapplr.Api.CQRS.Handlers;
 public class TrackUserActivityCommandHandler : BaseCommandHandler<TrackUserActivityCommand>
 {
     private readonly IAnalyticsService _analyticsService;
-    private readonly IUserCacheService _userCacheService;
+    private readonly ICachingService _cachingService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
     public TrackUserActivityCommandHandler(
         IAnalyticsService analyticsService,
-        IUserCacheService userCacheService,
+        ICachingService cachingService,
+        IServiceScopeFactory serviceScopeFactory,
         ILogger<TrackUserActivityCommandHandler> logger) : base(logger)
     {
         _analyticsService = analyticsService;
-        _userCacheService = userCacheService;
+        _cachingService = cachingService;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     protected override async Task HandleAsync(TrackUserActivityCommand command, ConsumeContext<TrackUserActivityCommand> context)
@@ -27,7 +31,7 @@ public class TrackUserActivityCommandHandler : BaseCommandHandler<TrackUserActiv
         try
         {
             // Get user to validate they exist
-            var user = await _userCacheService.GetUserByIdAsync(command.TargetUserId);
+            var user = await _cachingService.GetUserByIdAsync(command.TargetUserId, _serviceScopeFactory);
             if (user == null)
             {
                 Logger.LogWarning("User {UserId} not found for activity tracking", command.TargetUserId);

@@ -293,7 +293,6 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
-        services.AddSingleton<IUserCacheService, UserCacheService>();
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<IBlockService, BlockService>();
         services.AddScoped<IImageService, ImageService>();
