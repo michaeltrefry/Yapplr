@@ -339,6 +339,14 @@ public class VideoProcessingService : IVideoProcessingService
             targetHeight = originalHeight;
         }
 
+        // Ensure dimensions are even numbers (required by libx264 encoder)
+        // Round down to nearest even number to maintain aspect ratio as closely as possible
+        targetWidth = (targetWidth / 2) * 2;
+        targetHeight = (targetHeight / 2) * 2;
+
+        _logger.LogInformation("Video scaling: {OriginalWidth}x{OriginalHeight} -> {TargetWidth}x{TargetHeight}",
+            originalWidth, originalHeight, targetWidth, targetHeight);
+
         await FFMpegArguments
             .FromFileInput(inputPath)
             .OutputToFile(outputPath, true, options => options
@@ -381,6 +389,13 @@ public class VideoProcessingService : IVideoProcessingService
             thumbnailHeight = config.ThumbnailHeight;
             thumbnailWidth = (int)(config.ThumbnailHeight * aspectRatio);
         }
+
+        // Ensure thumbnail dimensions are even numbers (required by video encoders)
+        thumbnailWidth = (thumbnailWidth / 2) * 2;
+        thumbnailHeight = (thumbnailHeight / 2) * 2;
+
+        _logger.LogInformation("Thumbnail scaling: {OriginalWidth}x{OriginalHeight} -> {ThumbnailWidth}x{ThumbnailHeight}",
+            originalWidth, originalHeight, thumbnailWidth, thumbnailHeight);
 
         await FFMpegArguments
             .FromFileInput(inputPath)
