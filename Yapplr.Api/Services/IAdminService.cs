@@ -75,4 +75,7 @@ public interface IAdminService
     Task<TrustScoreStatsDto> GetTrustScoreStatisticsAsync();
     Task<TrustScoreFactorsDto?> GetUserTrustScoreFactorsAsync(int userId);
     Task<bool> UpdateUserTrustScoreAsync(int userId, int adjustedByUserId, UpdateTrustScoreDto updateDto);
+
+    // Comprehensive User Details
+    Task<AdminUserDetailsDto?> GetUserDetailsAsync(int userId);
 }

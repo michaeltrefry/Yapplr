@@ -13,15 +13,17 @@ public class AdminService : IAdminService
     private readonly INotificationService _notificationService;
     private readonly IModerationMessageService _moderationMessageService;
     private readonly ITrustScoreService _trustScoreService;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AdminService> _logger;
 
-    public AdminService(YapplrDbContext context, IAuditService auditService, INotificationService notificationService, IModerationMessageService moderationMessageService, ITrustScoreService trustScoreService, ILogger<AdminService> logger)
+    public AdminService(YapplrDbContext context, IAuditService auditService, INotificationService notificationService, IModerationMessageService moderationMessageService, ITrustScoreService trustScoreService, IServiceProvider serviceProvider, ILogger<AdminService> logger)
     {
         _context = context;
         _auditService = auditService;
         _notificationService = notificationService;
         _moderationMessageService = moderationMessageService;
         _trustScoreService = trustScoreService;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -1616,6 +1618,122 @@ public class AdminService : IAdminService
         {
             _logger.LogError(ex, "Failed to update trust score for user {UserId}", userId);
             return false;
+        }
+    }
+
+    public async Task<AdminUserDetailsDto?> GetUserDetailsAsync(int userId)
+    {
+        try
+        {
+            var user = await _context.Users
+                .Include(u => u.SuspendedByUser)
+                .Include(u => u.Posts)
+                .Include(u => u.Comments)
+                .Include(u => u.Likes)
+                .Include(u => u.Followers)
+                .Include(u => u.Following)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                return null;
+
+            // Get trust score factors
+            var trustScoreFactors = await GetUserTrustScoreFactorsAsync(userId);
+
+            // Get recent trust score history (last 10 entries)
+            var trustScoreHistory = await GetUserTrustScoreHistoryAsync(userId, 1, 10);
+
+            // Get recent moderation actions (last 10 entries)
+            var recentModerationActions = await _context.AuditLogs
+                .Include(al => al.PerformedByUser)
+                .Where(al => al.TargetUserId == userId)
+                .OrderByDescending(al => al.CreatedAt)
+                .Take(10)
+                .Select(al => new AuditLogDto
+                {
+                    Id = al.Id,
+                    Action = al.Action,
+                    UserId = al.PerformedByUserId,
+                    PerformedByUsername = al.PerformedByUser.Username,
+                    TargetUserId = al.TargetUserId,
+                    Reason = al.Reason,
+                    Details = al.Details,
+                    CreatedAt = al.CreatedAt
+                })
+                .ToListAsync();
+
+            // Get rate limiting information
+            var rateLimitService = _serviceProvider.GetRequiredService<IApiRateLimitService>();
+            var isCurrentlyRateLimited = await rateLimitService.IsUserBlockedAsync(userId);
+            var recentViolations = await rateLimitService.GetRecentViolationsAsync(userId);
+
+            // Count reports made by this user
+            var reportCount = await _context.UserReports
+                .CountAsync(ur => ur.ReportedByUserId == userId);
+
+            // Count moderation actions against this user
+            var moderationActionCount = await _context.AuditLogs
+                .CountAsync(al => al.TargetUserId == userId &&
+                    (al.Action == AuditAction.PostHidden ||
+                     al.Action == AuditAction.CommentHidden ||
+                     al.Action == AuditAction.UserSuspended ||
+                     al.Action == AuditAction.UserBanned));
+
+            return new AdminUserDetailsDto
+            {
+                // Basic Profile Information
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Bio = user.Bio,
+                Birthday = user.Birthday,
+                Pronouns = user.Pronouns,
+                Tagline = user.Tagline,
+                ProfileImageFileName = user.ProfileImageFileName,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt,
+                LastSeenAt = user.LastSeenAt,
+                EmailVerified = user.EmailVerified,
+                TermsAcceptedAt = user.TermsAcceptedAt,
+
+                // Admin/Moderation Information
+                Role = user.Role,
+                Status = user.Status,
+                SuspendedUntil = user.SuspendedUntil,
+                SuspensionReason = user.SuspensionReason,
+                SuspendedByUsername = user.SuspendedByUser?.Username,
+                LastLoginAt = user.LastLoginAt,
+                LastLoginIp = user.LastLoginIp,
+
+                // Trust Score Information
+                TrustScore = user.TrustScore ?? 1.0f,
+                TrustScoreFactors = trustScoreFactors,
+                RecentTrustScoreHistory = trustScoreHistory.ToList(),
+
+                // Rate Limiting Settings
+                RateLimitingEnabled = user.RateLimitingEnabled,
+                TrustBasedRateLimitingEnabled = user.TrustBasedRateLimitingEnabled,
+                IsCurrentlyRateLimited = isCurrentlyRateLimited,
+                RateLimitedUntil = null, // Will be set below if blocked
+                RecentRateLimitViolations = recentViolations.Count,
+
+                // Activity Statistics
+                PostCount = user.Posts.Count,
+                CommentCount = user.Comments.Count,
+                LikeCount = user.Likes.Count,
+                FollowerCount = user.Followers.Count,
+                FollowingCount = user.Following.Count,
+                ReportCount = reportCount,
+                ModerationActionCount = moderationActionCount,
+
+                // Recent Moderation Actions
+                RecentModerationActions = recentModerationActions
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get user details for user {UserId}", userId);
+            return null;
         }
     }
 }

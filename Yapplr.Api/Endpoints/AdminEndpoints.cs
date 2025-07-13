@@ -88,14 +88,15 @@ public static class AdminEndpoints
         .WithSummary("Get users for admin management")
         .Produces<IEnumerable<AdminUserDto>>(200);
 
-        admin.MapGet("/users/{id:int}", async (int id, IUserService userService) =>
+        admin.MapGet("/users/{id:int}", async (int id, IAdminService adminService) =>
         {
-            var user = await userService.GetUserForAdminAsync(id);
-            return user == null ? Results.NotFound() : Results.Ok(user);
+            var userDetails = await adminService.GetUserDetailsAsync(id);
+            return userDetails == null ? Results.NotFound() : Results.Ok(userDetails);
         })
-        .WithName("GetUserForAdmin")
-        .WithSummary("Get user details for admin")
-        .Produces<AdminUserDto>(200)
+        .WithName("GetUserDetails")
+        .WithSummary("Get comprehensive user details for admin")
+        .RequireAuthorization("Moderator")
+        .Produces<AdminUserDetailsDto>(200)
         .Produces(404);
 
         admin.MapPost("/users/{id:int}/suspend", async (int id, [FromBody] SuspendUserDto suspendDto, ClaimsPrincipal user, IUserService userService, IAuditService auditService, IModerationMessageService moderationMessageService, YapplrDbContext context) =>
@@ -190,14 +191,14 @@ public static class AdminEndpoints
             var currentUserId = GetCurrentUserId(user);
             if (currentUserId == null)
                 return Results.Unauthorized();
-            
+
             // Get current user role for audit log
             var targetUser = await userService.GetUserEntityByIdAsync(id);
             if (targetUser == null)
             {
                 return Results.NotFound();
             }
-            
+
             var oldRole = targetUser.Role;
             var success = await userService.ChangeUserRoleAsync(id, currentUserId.Value, roleDto.Role, roleDto.Reason);
 
@@ -205,11 +206,48 @@ public static class AdminEndpoints
             {
                 await auditService.LogUserRoleChangedAsync(id, currentUserId.Value, oldRole, roleDto.Role, roleDto.Reason);
             }
-            
+
             return success ? Results.Ok(new { message = "User role changed successfully" }) : Results.BadRequest(new { message = "Failed to change user role" });
         })
         .WithName("ChangeUserRole")
         .WithSummary("Change a user's role")
+        .RequireAuthorization("Admin")
+        .Produces(200)
+        .Produces(400)
+        .Produces(404);
+
+        admin.MapPut("/users/{id:int}/rate-limiting", async (int id, [FromBody] UpdateUserRateLimitSettingsDto updateDto, ClaimsPrincipal user, IUserService userService, IAuditService auditService, YapplrDbContext context) =>
+        {
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId == null)
+                return Results.Unauthorized();
+
+            var targetUser = await context.Users.FindAsync(id);
+            if (targetUser == null)
+                return Results.NotFound();
+
+            var oldRateLimitingEnabled = targetUser.RateLimitingEnabled;
+            var oldTrustBasedEnabled = targetUser.TrustBasedRateLimitingEnabled;
+
+            targetUser.RateLimitingEnabled = updateDto.RateLimitingEnabled;
+            targetUser.TrustBasedRateLimitingEnabled = updateDto.TrustBasedRateLimitingEnabled;
+            targetUser.UpdatedAt = DateTime.UtcNow;
+
+            await context.SaveChangesAsync();
+
+            // Log the change
+            await auditService.LogActionAsync(
+                AuditAction.UserRoleChanged, // Using closest available action
+                currentUserId.Value,
+                targetUserId: id,
+                reason: updateDto.Reason ?? "Rate limiting settings updated",
+                details: $"RateLimitingEnabled: {oldRateLimitingEnabled} -> {updateDto.RateLimitingEnabled}, TrustBasedRateLimitingEnabled: {oldTrustBasedEnabled} -> {updateDto.TrustBasedRateLimitingEnabled}"
+            );
+
+            return Results.Ok(new { message = "Rate limiting settings updated successfully" });
+        })
+        .WithName("UpdateUserRateLimitSettings")
+        .WithSummary("Update user-specific rate limiting settings")
         .RequireAuthorization("Admin")
         .Produces(200)
         .Produces(400)

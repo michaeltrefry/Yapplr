@@ -149,8 +149,10 @@ public class AuditLogDto
 {
     public int Id { get; set; }
     public AuditAction Action { get; set; }
+    public int UserId { get; set; }
     public string PerformedByUsername { get; set; } = string.Empty;
     public string? TargetUsername { get; set; }
+    public int? TargetUserId { get; set; }
     public int? TargetPostId { get; set; }
     public int? TargetCommentId { get; set; }
     public string? Reason { get; set; }
@@ -455,6 +457,58 @@ public class UpdateTrustScoreDto
     public float ScoreChange { get; set; }
     public string Reason { get; set; } = string.Empty;
     public string? Details { get; set; }
+}
+
+// Comprehensive User Details DTO
+public class AdminUserDetailsDto
+{
+    // Basic Profile Information
+    public int Id { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Bio { get; set; } = string.Empty;
+    public DateTime? Birthday { get; set; }
+    public string Pronouns { get; set; } = string.Empty;
+    public string Tagline { get; set; } = string.Empty;
+    public string ProfileImageFileName { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public DateTime LastSeenAt { get; set; }
+    public bool EmailVerified { get; set; }
+    public DateTime? TermsAcceptedAt { get; set; }
+
+    // Admin/Moderation Information
+    public UserRole Role { get; set; }
+    public UserStatus Status { get; set; }
+    public DateTime? SuspendedUntil { get; set; }
+    public string? SuspensionReason { get; set; }
+    public string? SuspendedByUsername { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public string? LastLoginIp { get; set; }
+
+    // Trust Score Information
+    public float TrustScore { get; set; }
+    public TrustScoreFactorsDto? TrustScoreFactors { get; set; }
+    public List<TrustScoreHistoryDto> RecentTrustScoreHistory { get; set; } = new();
+
+    // Rate Limiting Settings
+    public bool? RateLimitingEnabled { get; set; }
+    public bool? TrustBasedRateLimitingEnabled { get; set; }
+    public bool IsCurrentlyRateLimited { get; set; }
+    public DateTime? RateLimitedUntil { get; set; }
+    public int RecentRateLimitViolations { get; set; }
+
+    // Activity Statistics
+    public int PostCount { get; set; }
+    public int CommentCount { get; set; }
+    public int LikeCount { get; set; }
+    public int FollowerCount { get; set; }
+    public int FollowingCount { get; set; }
+    public int ReportCount { get; set; }
+    public int ModerationActionCount { get; set; }
+
+    // Recent Moderation Actions (last 10)
+    public List<AuditLogDto> RecentModerationActions { get; set; } = new();
 }
 
 public class CreateUserReportDto

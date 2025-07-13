@@ -32,6 +32,8 @@ import type {
   CreateSystemTagDto,
   UpdateSystemTagDto,
   AdminUser,
+  AdminUserDetails,
+  UpdateUserRateLimitSettingsDto,
   AdminPost,
   AdminComment,
   AuditLog,
@@ -549,6 +551,11 @@ export const adminApi = {
     return response.data;
   },
 
+  getUserDetails: async (id: number): Promise<AdminUserDetails> => {
+    const response = await api.get(`/admin/users/${id}`);
+    return response.data;
+  },
+
   suspendUser: async (id: number, data: SuspendUserDto): Promise<void> => {
     await api.post(`/admin/users/${id}/suspend`, data);
   },
@@ -567,6 +574,10 @@ export const adminApi = {
 
   changeUserRole: async (id: number, data: ChangeUserRoleDto): Promise<void> => {
     await api.post(`/admin/users/${id}/change-role`, data);
+  },
+
+  updateUserRateLimitSettings: async (id: number, data: UpdateUserRateLimitSettingsDto): Promise<void> => {
+    await api.put(`/admin/users/${id}/rate-limiting`, data);
   },
 
   // Content Moderation

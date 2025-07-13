@@ -48,6 +48,7 @@ export enum UserRole {
   User = 0,
   Moderator = 1,
   Admin = 2,
+  System = 3,
 }
 
 export enum UserStatus {
@@ -475,6 +476,87 @@ export interface AdminUser {
   followingCount: number;
 }
 
+export interface TrustScoreFactors {
+  userId: number;
+  username: string;
+  currentScore: number;
+  factors: Record<string, any>;
+}
+
+export interface TrustScoreHistory {
+  id: number;
+  userId: number;
+  username: string;
+  previousScore: number;
+  newScore: number;
+  scoreChange: number;
+  reason: string;
+  details?: string;
+  relatedEntityType?: string;
+  relatedEntityId?: number;
+  triggeredByUsername?: string;
+  calculatedBy?: string;
+  isAutomatic: boolean;
+  confidence?: number;
+  createdAt: string;
+}
+
+export interface AdminUserDetails {
+  // Basic Profile Information
+  id: number;
+  username: string;
+  email: string;
+  bio: string;
+  birthday?: string;
+  pronouns: string;
+  tagline: string;
+  profileImageFileName: string;
+  createdAt: string;
+  updatedAt: string;
+  lastSeenAt: string;
+  emailVerified: boolean;
+  termsAcceptedAt?: string;
+
+  // Admin/Moderation Information
+  role: UserRole;
+  status: UserStatus;
+  suspendedUntil?: string;
+  suspensionReason?: string;
+  suspendedByUsername?: string;
+  lastLoginAt?: string;
+  lastLoginIp?: string;
+
+  // Trust Score Information
+  trustScore: number;
+  trustScoreFactors?: TrustScoreFactors;
+  recentTrustScoreHistory: TrustScoreHistory[];
+
+  // Rate Limiting Settings
+  rateLimitingEnabled?: boolean;
+  trustBasedRateLimitingEnabled?: boolean;
+  isCurrentlyRateLimited: boolean;
+  rateLimitedUntil?: string;
+  recentRateLimitViolations: number;
+
+  // Activity Statistics
+  postCount: number;
+  commentCount: number;
+  likeCount: number;
+  followerCount: number;
+  followingCount: number;
+  reportCount: number;
+  moderationActionCount: number;
+
+  // Recent Moderation Actions
+  recentModerationActions: AuditLog[];
+}
+
+export interface UpdateUserRateLimitSettingsDto {
+  rateLimitingEnabled?: boolean | null;
+  trustBasedRateLimitingEnabled?: boolean | null;
+  reason?: string;
+}
+
 export interface AdminPost {
   id: number;
   content: string;
@@ -512,8 +594,10 @@ export interface AdminComment {
 export interface AuditLog {
   id: number;
   action: AuditAction;
+  userId: number;
   performedByUsername: string;
   targetUsername?: string;
+  targetUserId?: number;
   targetPostId?: number;
   targetCommentId?: number;
   reason?: string;

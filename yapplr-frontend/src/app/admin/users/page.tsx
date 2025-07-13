@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { AdminUser, UserRole, UserStatus } from '@/types';
 import { SuspendUserModal } from '@/components/admin';
@@ -20,6 +20,7 @@ import {
 
 export default function UsersPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -279,7 +280,12 @@ export default function UsersPage() {
                           <Users className="h-6 w-6 text-gray-600" />
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">@{user.username}</div>
+                          <button
+                            onClick={() => router.push(`/admin/users/${user.id}`)}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline text-left"
+                          >
+                            @{user.username}
+                          </button>
                           <div className="text-sm text-gray-500 flex items-center">
                             <Mail className="h-4 w-4 mr-1" />
                             {user.email}

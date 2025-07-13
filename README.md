@@ -69,8 +69,15 @@ A complete Twitter-like social media platform built with modern web technologies
   - **Configurable Automation**: Adjustable settings for auto-apply tags, review thresholds, and auto-hiding
 - **User Management**: Complete user administration and moderation tools
   - **User Overview**: Paginated user list with filtering by status (Active, Suspended, Banned, Shadow Banned) and role
-  - **User Actions**: Suspend, ban, shadow ban, and unban users with reason tracking
-  - **Role Management**: Promote users to Moderator or Admin roles with audit logging
+  - **Comprehensive User Details**: Click any username to view detailed user information including:
+    - **Profile Information**: Complete user profile data, email verification status, member since date, last login details
+    - **Trust Score Analysis**: Visual trust score display with factors breakdown and recent history
+    - **Rate Limiting Management**: Configure user-specific rate limiting overrides and view current status
+    - **Activity Statistics**: Comprehensive metrics including posts, comments, likes, followers, reports, and moderation actions
+    - **Moderation History**: Recent administrative actions taken against the user with full audit trail
+    - **Role Management**: Inline role editing with reason tracking and audit logging
+    - **User Actions**: Suspend, ban, shadow ban, and unban users with comprehensive action buttons
+  - **Rate Limiting Overrides**: Disable or configure rate limiting settings for individual users
   - **Account Status**: View user details including login history, IP addresses, and account metrics
 - **Content Moderation**: Advanced content management and moderation capabilities
   - **Post Management**: View, hide, unhide, and delete posts with reason tracking and bulk actions
@@ -511,6 +518,15 @@ Administrators can manage rate limiting through the admin interface:
 - `POST /api/security/admin/rate-limits/users/{userId}/block` - Block user from API access
 - `DELETE /api/security/admin/rate-limits/users/{userId}/block` - Unblock user from API access
 
+## 👤 Admin User Management API
+
+Comprehensive user management endpoints for admin interface:
+
+### User Details Endpoints
+- `GET /api/admin/users/{id}` - Get comprehensive user details including profile, trust score, rate limiting settings, activity statistics, and moderation history
+- `PUT /api/admin/users/{id}/rate-limiting` - Update user-specific rate limiting settings with audit trail
+- `POST /api/admin/users/{id}/change-role` - Change user role with reason tracking and audit logging
+
 ## 🏃‍♂️ Quick Start
 
 ### Prerequisites
@@ -783,6 +799,7 @@ Once you have admin users created:
 4. **Available Admin Pages**:
    - **Dashboard** (`/admin`) - Overview and quick actions
    - **Users** (`/admin/users`) - User management and moderation
+   - **User Details** (`/admin/users/{id}`) - Comprehensive user information and management
    - **Posts** (`/admin/posts`) - Post moderation and management
    - **Comments** (`/admin/comments`) - Comment moderation
    - **Content Queue** (`/admin/queue`) - Flagged content review
@@ -793,7 +810,9 @@ Once you have admin users created:
 
 #### Admin Features
 - **Role-Based Access**: Different permissions for Admin vs Moderator roles
-- **User Management**: Suspend, ban, shadow ban users with reason tracking
+- **Comprehensive User Management**: Detailed user profiles with trust score analysis, rate limiting controls, and complete moderation history
+- **User Details Pages**: Click any username to access comprehensive user information and management tools
+- **Rate Limiting Controls**: Override rate limiting settings for individual users with audit trail
 - **Content Moderation**: Hide, delete, and tag posts and comments
 - **Bulk Actions**: Efficiently moderate multiple items simultaneously
 - **Audit Logging**: Complete tracking of all administrative actions

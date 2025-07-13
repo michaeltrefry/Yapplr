@@ -33,6 +33,8 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Search**: Find users by username or bio
 - **Private Messaging**: Send direct messages with text, photo, and video attachments with real-time notifications
 - **Message Conversations**: Organized conversation threads with read status tracking
+- **Admin Interface**: Comprehensive admin dashboard with user management, content moderation, and analytics
+- **User Details Pages**: Detailed admin user profiles with trust score analysis, rate limiting controls, and moderation history
 
 ## Tech Stack
 
@@ -143,6 +145,9 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **Yap Detail** (`/yap/[id]`) - Individual yap pages with comments, replies, and sharing
 - **Login/Register** - Authentication with password reset functionality
 - **Forgot/Reset Password** - Email-based password recovery
+- **Admin Dashboard** (`/admin`) - Admin interface with platform statistics and quick actions
+- **Admin Users** (`/admin/users`) - User management with filtering and moderation tools
+- **Admin User Details** (`/admin/users/[id]`) - Comprehensive user details with trust score analysis, rate limiting controls, role management, and moderation history
 
 ### Key Components
 - **CreatePost** - Yap creation with privacy selector, image upload, and mention detection

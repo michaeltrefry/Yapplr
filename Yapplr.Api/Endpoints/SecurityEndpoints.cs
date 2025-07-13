@@ -132,14 +132,7 @@ public static class SecurityEndpoints
             .Produces(403)
             .Produces(404);
 
-        security.MapPut("/admin/rate-limits/users/{userId}", UpdateUserRateLimitSettings)
-            .WithName("UpdateUserRateLimitSettings")
-            .WithSummary("Update user-specific rate limiting settings (admin only)")
-            .Produces(200)
-            .Produces(400)
-            .Produces(401)
-            .Produces(403)
-            .Produces(404);
+
 
         security.MapDelete("/admin/rate-limits/users/{userId}/reset", ResetUserRateLimitsAdmin)
             .WithName("ResetUserRateLimitsAdmin")
@@ -484,29 +477,7 @@ public static class SecurityEndpoints
         return Results.Ok(dto);
     }
 
-    private static async Task<IResult> UpdateUserRateLimitSettings(
-        int userId,
-        [FromBody] UpdateUserRateLimitSettingsDto updateDto,
-        YapplrDbContext context,
-        ClaimsPrincipal user)
-    {
-        if (!user.IsInRole("Admin"))
-            return Results.Forbid();
 
-        var dbUser = await context.Users.FindAsync(userId);
-        if (dbUser == null)
-            return Results.NotFound();
-
-        if (updateDto.RateLimitingEnabled.HasValue)
-            dbUser.RateLimitingEnabled = updateDto.RateLimitingEnabled;
-
-        if (updateDto.TrustBasedRateLimitingEnabled.HasValue)
-            dbUser.TrustBasedRateLimitingEnabled = updateDto.TrustBasedRateLimitingEnabled;
-
-        await context.SaveChangesAsync();
-
-        return Results.Ok(new { message = "User rate limiting settings updated successfully" });
-    }
 
     private static async Task<IResult> BlockUserRateLimit(
         int userId,
