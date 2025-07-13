@@ -59,6 +59,10 @@ docker rm -f yapplrapi_certbot_1 || true
 docker rm -f yapplrapi_yapplr-api_1 || true
 docker rm -f yapplrapi_nginx_1 || true
 docker rm -f yapplrapi_yapplr-frontend_1 || true
+docker rm -f yapplr-video-processor_1 || true
+docker rm -f yapplrapi_content-moderation_1 || true
+docker rm -f yapplrapi_rabbitmq_1 || true
+docker rm -f yapplrapi_postgres_1 || true
 
 # Stop and remove all containers with yapplr in the name
 docker ps -a --filter "name=yapplr" --format "{{.Names}}" | xargs -r docker stop || true
@@ -77,6 +81,11 @@ docker network rm yapplr-network || true
 echo -e "${GREEN}🗄️ Ensuring fresh database by removing any postgres volumes...${NC}"
 docker volume rm postgres_data || true
 docker volume rm yapplrapi_postgres_data || true
+docker volume rm yapplr_uploads || true
+docker volume rm yapplrapi_yapplr_uploads || true
+docker volume rm yapplr-video-processor_yapplr_uploads || true
+docker volume rm rabbitmq_data || true
+docker volume rm rabbitmq_rabbitmq_data || true
 docker volume ls -q | grep postgres | xargs -r docker volume rm || true
 
 # Remove old images to force complete rebuild
@@ -84,6 +93,9 @@ echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"
 docker image rm yapplr-api:latest || true
 docker image rm yapplr-frontend:latest || true
 docker image rm content-moderation:latest || true
+docker image rm yapplr-video-processor:latest || true
+docker image rm rabbitmq:latest || true
+docker image rm postgres:latest || true
 docker image prune -f || true
 
 # Set cache bust variable to force frontend rebuild
