@@ -47,6 +47,16 @@ A complete Twitter-like social media platform built with modern web technologies
   - **Admin Roles**: Support for Admin and Moderator roles with different permission levels
   - **Real-time Statistics**: Live dashboard with user counts, content metrics, and moderation activity
   - **Quick Actions**: Fast access to common moderation tasks and system management
+- **🎯 User Trust Score System**: Advanced behavioral scoring system for intelligent moderation
+  - **Dynamic Trust Calculation**: Real-time trust scores based on user behavior, activity, and community standing
+  - **Trust-Based Moderation**: Automatic content visibility and rate limiting based on user trust levels
+  - **Smart Rate Limiting**: Dynamic rate limits (0.25x to 2x) based on user trust scores
+  - **Auto-Hide Low Trust Content**: Content from very low-trust users (< 0.1) automatically hidden
+  - **Moderation Priority Scoring**: 1-5 priority levels for efficient moderation queue management
+  - **Trust-Based Permissions**: Action thresholds for posting, messaging, and reporting based on trust
+  - **Comprehensive Analytics**: Trust score statistics, distribution analysis, and trend tracking
+  - **Admin Trust Management**: Manual trust score adjustments with full audit trail
+  - **Background Maintenance**: Automated trust score recalculation and inactivity decay
 - **AI-Powered Content Moderation**: Intelligent automated content analysis and moderation
   - **Real-time Content Analysis**: Automatic analysis of all posts and comments using AI sentiment analysis
   - **Pattern-Based Detection**: Advanced pattern matching for NSFW content, violence, harassment, hate speech, and misinformation
@@ -288,6 +298,95 @@ Yapplr features an advanced AI-powered content moderation system that automatica
 - `POST /moderate` - Analyze content for moderation (internal service)
 - `GET /health` - Content moderation service health check
 - Admin endpoints for reviewing AI-suggested tags and moderation decisions
+
+## 🎯 User Trust Score System
+
+Yapplr features an advanced user trust score system that provides intelligent, behavior-based moderation and content management. The system automatically calculates trust scores for all users based on their activity, behavior, and community standing.
+
+### Core Features
+- **Dynamic Trust Calculation**: Real-time trust scores (0.0-1.0) based on user behavior and activity patterns
+- **Behavioral Analysis**: Considers profile completeness, posting activity, community engagement, and moderation history
+- **Trust-Based Moderation**: Automatic content visibility adjustments and rate limiting based on user trust levels
+- **Smart Rate Limiting**: Dynamic rate limits from 0.25x (low trust) to 2x (high trust) normal limits
+- **Auto-Hide Protection**: Content from very low-trust users (< 0.1) automatically hidden from feeds
+- **Moderation Priority**: 1-5 priority levels for efficient moderation queue management
+
+### Trust Score Factors
+#### Positive Factors (Increase Trust)
+- **Profile Completeness**: Bio, profile image, email verification (+0.1 to +0.3)
+- **Positive Activity**: Creating posts, engaging with content (+0.05 to +0.15 per action)
+- **Community Standing**: Receiving likes, follows, positive interactions (+0.02 to +0.1)
+- **Account Age**: Established accounts with consistent activity (+0.05 to +0.2)
+
+#### Negative Factors (Decrease Trust)
+- **Moderation Actions**: Content hidden, user suspended, policy violations (-0.1 to -0.5)
+- **Reported Content**: Posts/comments reported by other users (-0.05 to -0.2)
+- **Spam Behavior**: Excessive posting, repetitive content (-0.1 to -0.3)
+- **Inactivity Decay**: Gradual score reduction for inactive accounts (-0.01 per week)
+
+### Trust-Based Features
+#### Content Visibility Levels
+- **Hidden** (< 0.1): Content hidden from all feeds and searches
+- **Limited** (0.1-0.3): Reduced visibility, requires user action to view
+- **Reduced** (0.3-0.5): Lower priority in feeds, limited reach
+- **Normal** (0.5-0.8): Standard visibility and engagement
+- **Full** (0.8+): Maximum visibility and engagement opportunities
+
+#### Action Thresholds
+- **Create Posts**: 0.1 minimum trust score
+- **Create Comments**: 0.1 minimum trust score
+- **Like Content**: 0.05 minimum trust score
+- **Report Content**: 0.2 minimum trust score
+- **Send Messages**: 0.3 minimum trust score
+
+#### Rate Limiting Multipliers
+- **Very Low Trust** (< 0.2): 0.25x normal rate limits
+- **Low Trust** (0.2-0.4): 0.5x normal rate limits
+- **Medium Trust** (0.4-0.6): 1.0x normal rate limits
+- **High Trust** (0.6-0.8): 1.5x normal rate limits
+- **Very High Trust** (0.8+): 2.0x normal rate limits
+
+### Technical Implementation
+- **Background Service**: Automated trust score recalculation and maintenance
+- **Real-time Updates**: Trust scores update immediately based on user actions
+- **Audit Trail**: Complete history of trust score changes with detailed metadata
+- **Safe Defaults**: System defaults to allowing actions if trust score calculation fails
+- **Performance Optimized**: Efficient database queries with proper indexing
+- **Admin Override**: Administrators can manually adjust trust scores with reason tracking
+
+### Admin Features
+- **Trust Score Dashboard**: View platform-wide trust score statistics and distribution
+- **User Trust Management**: View individual user trust scores and adjustment history
+- **Manual Adjustments**: Manually increase or decrease user trust scores with reason tracking
+- **Trust Score Analytics**: Detailed breakdown of factors affecting user trust scores
+- **Moderation Integration**: Trust scores automatically factor into moderation decisions
+
+### Configuration Options
+```json
+{
+  "TrustScore": {
+    "EnableBackgroundService": true,
+    "RecalculationIntervalMinutes": 60,
+    "InactivityDecayDays": 7,
+    "DefaultNewUserScore": 1.0,
+    "MinimumActionThresholds": {
+      "CreatePost": 0.1,
+      "CreateComment": 0.1,
+      "LikeContent": 0.05,
+      "ReportContent": 0.2,
+      "SendMessage": 0.3
+    }
+  }
+}
+```
+
+### API Endpoints
+- `GET /api/admin/trust-scores/` - Get all user trust scores with filtering
+- `GET /api/admin/trust-scores/{userId}` - Get specific user trust score
+- `GET /api/admin/trust-scores/{userId}/history` - Get trust score change history
+- `GET /api/admin/trust-scores/{userId}/factors` - Get trust score factor breakdown
+- `PUT /api/admin/trust-scores/{userId}` - Manually adjust user trust score
+- `GET /api/admin/trust-scores/statistics` - Get platform trust score statistics
 
 ## 🏃‍♂️ Quick Start
 

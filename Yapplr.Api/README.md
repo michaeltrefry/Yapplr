@@ -18,6 +18,9 @@ A Twitter-like social media API built with .NET 9, PostgreSQL, and JWT authentic
 - **Password Reset**: Email-based password reset with AWS SES integration
 - **Email Verification**: Email verification system for new user registrations
 - **Authentication**: JWT-based authentication with secure password hashing and automatic token expiration handling
+- **Trust Score System**: Advanced behavioral scoring system for intelligent moderation and content management
+- **Trust-Based Moderation**: Automatic content visibility and rate limiting based on user trust levels
+- **Admin Dashboard**: Comprehensive admin interface with user management, content moderation, and analytics
 
 ## Tech Stack
 
@@ -136,6 +139,22 @@ The API will be available at:
 - `GET /api/images/{fileName}` - Serve uploaded image
 - `DELETE /api/images/{fileName}` - Delete image file (authenticated)
 
+### Admin - Trust Scores (Admin Only)
+- `GET /api/admin/trust-scores/` - Get all user trust scores with filtering
+- `GET /api/admin/trust-scores/{userId}` - Get specific user trust score
+- `GET /api/admin/trust-scores/{userId}/history` - Get trust score change history
+- `GET /api/admin/trust-scores/{userId}/factors` - Get trust score factor breakdown
+- `PUT /api/admin/trust-scores/{userId}` - Manually adjust user trust score
+- `GET /api/admin/trust-scores/statistics` - Get platform trust score statistics
+
+### Admin - User Management (Admin/Moderator Only)
+- `GET /api/admin/users` - Get all users with filtering and pagination
+- `GET /api/admin/users/{userId}` - Get detailed user information for admin
+- `PUT /api/admin/users/{userId}/suspend` - Suspend user with reason
+- `PUT /api/admin/users/{userId}/ban` - Ban user with reason
+- `PUT /api/admin/users/{userId}/unban` - Unban user
+- `PUT /api/admin/users/{userId}/role` - Change user role (Admin only)
+
 ## Authentication
 
 The API uses JWT Bearer tokens. Include the token in the Authorization header:
@@ -192,6 +211,56 @@ Authorization: Bearer <your-jwt-token>
 - **Public**: Visible to everyone
 - **Followers**: Only visible to followers and the author
 - **Private**: Only visible to the author
+
+## Trust Score System
+
+The API includes an advanced user trust score system that provides intelligent, behavior-based moderation and content management.
+
+### Core Features
+- **Dynamic Trust Calculation**: Real-time trust scores (0.0-1.0) based on user behavior
+- **Trust-Based Rate Limiting**: Dynamic rate limits from 0.25x to 2x based on trust levels
+- **Auto-Hide Protection**: Content from very low-trust users automatically hidden
+- **Moderation Priority**: 1-5 priority levels for efficient moderation queue management
+- **Background Maintenance**: Automated trust score recalculation and inactivity decay
+
+### Trust Score Factors
+#### Positive Factors
+- Profile completeness (bio, image, email verification)
+- Positive activity (creating posts, engaging with content)
+- Community standing (receiving likes, follows)
+- Account age and consistent activity
+
+#### Negative Factors
+- Moderation actions (content hidden, user suspended)
+- Reported content (posts/comments reported by users)
+- Spam behavior (excessive posting, repetitive content)
+- Inactivity decay (gradual score reduction for inactive accounts)
+
+### Action Thresholds
+- **Create Posts**: 0.1 minimum trust score
+- **Create Comments**: 0.1 minimum trust score
+- **Like Content**: 0.05 minimum trust score
+- **Report Content**: 0.2 minimum trust score
+- **Send Messages**: 0.3 minimum trust score
+
+### Content Visibility Levels
+- **Hidden** (< 0.1): Content hidden from feeds and searches
+- **Limited** (0.1-0.3): Reduced visibility, requires user action to view
+- **Reduced** (0.3-0.5): Lower priority in feeds
+- **Normal** (0.5-0.8): Standard visibility
+- **Full** (0.8+): Maximum visibility and engagement
+
+### Configuration
+```json
+{
+  "TrustScore": {
+    "EnableBackgroundService": true,
+    "RecalculationIntervalMinutes": 60,
+    "InactivityDecayDays": 7,
+    "DefaultNewUserScore": 1.0
+  }
+}
+```
 
 ## Database Migration from Yapplr
 
