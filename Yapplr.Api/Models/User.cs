@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Yapplr.Api.Common;
+using Yapplr.Api.Models.Analytics;
 
 namespace Yapplr.Api.Models;
 
@@ -78,6 +79,10 @@ public class User : IEntity
     [StringLength(64)]
     public string? LastLoginIp { get; set; }
     public float? TrustScore { get; set; } = 1.0f;
+
+    // Analytics relationships
+    public ICollection<UserActivity> UserActivities { get; set; } = new List<UserActivity>();
+    public ICollection<UserTrustScoreHistory> TrustScoreHistory { get; set; } = new List<UserTrustScoreHistory>();
 
     // Navigation properties
     public ICollection<Post> Posts { get; set; } = new List<Post>();

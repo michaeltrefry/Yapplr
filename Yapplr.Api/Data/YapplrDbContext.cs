@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Models;
+using Yapplr.Api.Models.Analytics;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Data;
@@ -49,6 +50,13 @@ public class YapplrDbContext : DbContext
     // Content Management entities
     public DbSet<ContentPage> ContentPages { get; set; }
     public DbSet<ContentPageVersion> ContentPageVersions { get; set; }
+
+    // Analytics entities
+    public DbSet<UserActivity> UserActivities { get; set; }
+    public DbSet<ContentEngagement> ContentEngagements { get; set; }
+    public DbSet<UserTrustScoreHistory> UserTrustScoreHistories { get; set; }
+    public DbSet<TagAnalytics> TagAnalytics { get; set; }
+    public DbSet<PerformanceMetric> PerformanceMetrics { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -624,6 +632,93 @@ public class YapplrDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.PublishedByUserId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Analytics entity configurations
+
+        // UserActivity configuration
+        modelBuilder.Entity<UserActivity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt }); // User activity timeline
+            entity.HasIndex(e => new { e.ActivityType, e.CreatedAt }); // Activity type analysis
+            entity.HasIndex(e => new { e.TargetEntityType, e.TargetEntityId }); // Target entity lookups
+            entity.HasIndex(e => e.SessionId); // Session-based analytics
+            entity.HasIndex(e => e.CreatedAt); // Time-based queries
+            entity.HasOne(e => e.User)
+                  .WithMany(e => e.UserActivities)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ContentEngagement configuration
+        modelBuilder.Entity<ContentEngagement>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ContentType, e.ContentId, e.CreatedAt }); // Content engagement timeline
+            entity.HasIndex(e => new { e.UserId, e.EngagementType, e.CreatedAt }); // User engagement patterns
+            entity.HasIndex(e => new { e.EngagementType, e.CreatedAt }); // Engagement type analysis
+            entity.HasIndex(e => new { e.ContentOwnerId, e.CreatedAt }); // Content owner analytics
+            entity.HasIndex(e => e.SessionId); // Session-based analytics
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ContentOwner)
+                  .WithMany()
+                  .HasForeignKey(e => e.ContentOwnerId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // UserTrustScoreHistory configuration
+        modelBuilder.Entity<UserTrustScoreHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt }); // User trust score timeline
+            entity.HasIndex(e => new { e.Reason, e.CreatedAt }); // Reason-based analysis
+            entity.HasIndex(e => new { e.RelatedEntityType, e.RelatedEntityId }); // Related entity lookups
+            entity.HasIndex(e => e.TriggeredByUserId); // Admin action tracking
+            entity.HasOne(e => e.User)
+                  .WithMany(e => e.TrustScoreHistory)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.TriggeredByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.TriggeredByUserId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // TagAnalytics configuration
+        modelBuilder.Entity<TagAnalytics>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.TagId, e.CreatedAt }); // Tag usage timeline
+            entity.HasIndex(e => new { e.Action, e.CreatedAt }); // Action-based analysis
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt }); // User tag behavior
+            entity.HasIndex(e => e.SessionId); // Session-based analytics
+            entity.HasOne(e => e.Tag)
+                  .WithMany()
+                  .HasForeignKey(e => e.TagId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // PerformanceMetric configuration
+        modelBuilder.Entity<PerformanceMetric>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.MetricType, e.CreatedAt }); // Metric type timeline
+            entity.HasIndex(e => new { e.Source, e.CreatedAt }); // Source-based analysis
+            entity.HasIndex(e => new { e.Environment, e.CreatedAt }); // Environment-based analysis
+            entity.HasIndex(e => e.CreatedAt); // Time-based queries
+            entity.HasIndex(e => e.SessionId); // Session-based analytics
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

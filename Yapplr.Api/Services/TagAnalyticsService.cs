@@ -2,17 +2,20 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Extensions;
+using Yapplr.Api.Models.Analytics;
 
 namespace Yapplr.Api.Services;
 
 public class TagAnalyticsService : ITagAnalyticsService
 {
     private readonly YapplrDbContext _context;
+    private readonly IAnalyticsService _analyticsService;
     private readonly ILogger<TagAnalyticsService> _logger;
 
-    public TagAnalyticsService(YapplrDbContext context, ILogger<TagAnalyticsService> logger)
+    public TagAnalyticsService(YapplrDbContext context, IAnalyticsService analyticsService, ILogger<TagAnalyticsService> logger)
     {
         _context = context;
+        _analyticsService = analyticsService;
         _logger = logger;
     }
 
@@ -142,15 +145,25 @@ public class TagAnalyticsService : ITagAnalyticsService
     {
         try
         {
-            // For now, we'll just log the metric update
-            // In a real implementation, you might update analytics tables or send to a metrics service
-            _logger.LogInformation("Updating tag metrics for tag {TagId}: {Action} at {Timestamp}",
-                tagId, action, timestamp);
+            // Convert string action to enum
+            if (!Enum.TryParse<TagAction>(action, true, out var tagAction))
+            {
+                _logger.LogWarning("Unknown tag action: {Action}", action);
+                return;
+            }
 
-            // You could implement actual metric updates here, such as:
-            // - Incrementing counters in a separate analytics table
-            // - Sending metrics to a time-series database
-            // - Updating cached statistics
+            // Track the tag action using the analytics service
+            await _analyticsService.TrackTagActionAsync(
+                tagId: tagId,
+                action: tagAction,
+                userId: null, // No specific user for this action
+                relatedContentType: null,
+                relatedContentId: null,
+                source: "system",
+                metadata: $"{{\"timestamp\":\"{timestamp:O}\"}}");
+
+            _logger.LogInformation("Updated tag metrics for tag {TagId}: {Action} at {Timestamp}",
+                tagId, action, timestamp);
         }
         catch (Exception ex)
         {

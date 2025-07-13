@@ -2,6 +2,7 @@ using MassTransit;
 using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.Services;
 using Yapplr.Api.Data;
+using Yapplr.Api.Models.Analytics;
 using Microsoft.EntityFrameworkCore;
 
 namespace Yapplr.Api.CQRS.Handlers;
@@ -11,15 +12,15 @@ namespace Yapplr.Api.CQRS.Handlers;
 /// </summary>
 public class TrackUserActivityCommandHandler : BaseCommandHandler<TrackUserActivityCommand>
 {
-    private readonly YapplrDbContext _dbContext;
+    private readonly IAnalyticsService _analyticsService;
     private readonly IUserCacheService _userCacheService;
 
     public TrackUserActivityCommandHandler(
-        YapplrDbContext dbContext,
+        IAnalyticsService analyticsService,
         IUserCacheService userCacheService,
         ILogger<TrackUserActivityCommandHandler> logger) : base(logger)
     {
-        _dbContext = dbContext;
+        _analyticsService = analyticsService;
         _userCacheService = userCacheService;
     }
 
@@ -35,22 +36,24 @@ public class TrackUserActivityCommandHandler : BaseCommandHandler<TrackUserActiv
                 return;
             }
 
-            // Store detailed activity record for analytics
-            // Note: In a real implementation, you might want to use a separate analytics database
-            // or a time-series database like InfluxDB for better performance
-            
+            // Convert string activity type to enum
+            if (!Enum.TryParse<ActivityType>(command.ActivityType, true, out var activityType))
+            {
+                Logger.LogWarning("Unknown activity type: {ActivityType}", command.ActivityType);
+                return;
+            }
+
+            // Track the activity using the analytics service
+            await _analyticsService.TrackUserActivityAsync(
+                userId: command.TargetUserId,
+                activityType: activityType,
+                targetEntityType: null, // Not available in current command
+                targetEntityId: null, // Not available in current command
+                metadata: command.Metadata?.ToString(), // Convert dictionary to string
+                sessionId: null); // Not available in current command
+
             Logger.LogInformation("Tracked user activity: User {UserId} performed {ActivityType} at {Timestamp}",
                 command.TargetUserId, command.ActivityType, command.Timestamp);
-
-            // For high-volume activities like "view" or "scroll", you might want to batch these
-            // or use a different storage mechanism to avoid overwhelming the database
-            if (ShouldPersistActivity(command.ActivityType))
-            {
-                // Here you would typically insert into an analytics table
-                // For now, we'll just log it
-                Logger.LogDebug("Persisting activity record for user {UserId}: {ActivityType}",
-                    command.TargetUserId, command.ActivityType);
-            }
         }
         catch (Exception ex)
         {
@@ -59,22 +62,6 @@ public class TrackUserActivityCommandHandler : BaseCommandHandler<TrackUserActiv
             // Don't throw - analytics failures shouldn't break the main flow
         }
     }
-
-    private static bool ShouldPersistActivity(string activityType)
-    {
-        // Only persist significant activities to avoid database overload
-        return activityType switch
-        {
-            "login" => true,
-            "logout" => true,
-            "post_created" => true,
-            "comment_created" => true,
-            "like_given" => true,
-            "follow" => true,
-            "unfollow" => true,
-            _ => false
-        };
-    }
 }
 
 /// <summary>
@@ -82,60 +69,51 @@ public class TrackUserActivityCommandHandler : BaseCommandHandler<TrackUserActiv
 /// </summary>
 public class TrackContentEngagementCommandHandler : BaseCommandHandler<TrackContentEngagementCommand>
 {
-    private readonly YapplrDbContext _dbContext;
+    private readonly IAnalyticsService _analyticsService;
 
     public TrackContentEngagementCommandHandler(
-        YapplrDbContext dbContext,
+        IAnalyticsService analyticsService,
         ILogger<TrackContentEngagementCommandHandler> logger) : base(logger)
     {
-        _dbContext = dbContext;
+        _analyticsService = analyticsService;
     }
 
     protected override async Task HandleAsync(TrackContentEngagementCommand command, ConsumeContext<TrackContentEngagementCommand> context)
     {
         try
         {
-            // Update engagement metrics
-            // In a real implementation, you'd likely have dedicated analytics tables
-            
+            // Convert string types to enums
+            if (!Enum.TryParse<ContentType>(command.ContentType, true, out var contentType))
+            {
+                Logger.LogWarning("Unknown content type: {ContentType}", command.ContentType);
+                return;
+            }
+
+            if (!Enum.TryParse<EngagementType>(command.EngagementType, true, out var engagementType))
+            {
+                Logger.LogWarning("Unknown engagement type: {EngagementType}", command.EngagementType);
+                return;
+            }
+
+            // Track the engagement using the analytics service
+            await _analyticsService.TrackContentEngagementAsync(
+                userId: command.EngagingUserId ?? 0, // Use 0 for anonymous users
+                contentType: contentType,
+                contentId: command.ContentId,
+                engagementType: engagementType,
+                contentOwnerId: command.AuthorId, // Use AuthorId as ContentOwnerId
+                source: null, // Not available in current command
+                metadata: null, // Not available in current command
+                sessionId: null); // Not available in current command
+
             Logger.LogInformation("Tracked content engagement: {ContentType} {ContentId} received {EngagementType} from user {UserId}",
                 command.ContentType, command.ContentId, command.EngagementType, command.EngagingUserId);
-
-            // Update real-time engagement counters if needed
-            if (command.EngagementType == "like")
-            {
-                await UpdateLikeCountAsync(command.ContentType, command.ContentId);
-            }
-            else if (command.EngagementType == "comment")
-            {
-                await UpdateCommentCountAsync(command.ContentType, command.ContentId);
-            }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to track content engagement for {ContentType} {ContentId}: {Error}",
                 command.ContentType, command.ContentId, ex.Message);
             // Don't throw - analytics failures shouldn't break the main flow
-        }
-    }
-
-    private async Task UpdateLikeCountAsync(string contentType, int contentId)
-    {
-        if (contentType == "post")
-        {
-            // For now, just log the update since the counts are computed properties
-            // In a real implementation, you might cache these counts or update denormalized fields
-            Logger.LogInformation("Like count update requested for post {PostId}", contentId);
-        }
-    }
-
-    private async Task UpdateCommentCountAsync(string contentType, int contentId)
-    {
-        if (contentType == "post")
-        {
-            // For now, just log the update since the counts are computed properties
-            // In a real implementation, you might cache these counts or update denormalized fields
-            Logger.LogInformation("Comment count update requested for post {PostId}", contentId);
         }
     }
 }
@@ -180,36 +158,42 @@ public class UpdateTagAnalyticsCommandHandler : BaseCommandHandler<UpdateTagAnal
 /// </summary>
 public class UpdateUserTrustScoreCommandHandler : BaseCommandHandler<UpdateUserTrustScoreCommand>
 {
-    private readonly YapplrDbContext _dbContext;
+    private readonly IAnalyticsService _analyticsService;
 
     public UpdateUserTrustScoreCommandHandler(
-        YapplrDbContext dbContext,
+        IAnalyticsService analyticsService,
         ILogger<UpdateUserTrustScoreCommandHandler> logger) : base(logger)
     {
-        _dbContext = dbContext;
+        _analyticsService = analyticsService;
     }
 
     protected override async Task HandleAsync(UpdateUserTrustScoreCommand command, ConsumeContext<UpdateUserTrustScoreCommand> context)
     {
         try
         {
-            var user = await _dbContext.Users.FindAsync(command.TargetUserId);
-            if (user == null)
+            // Convert string reason to enum, or use action as fallback
+            var reasonText = command.Reason ?? command.Action;
+            if (!Enum.TryParse<TrustScoreChangeReason>(reasonText, true, out var reason))
             {
-                Logger.LogWarning("User {UserId} not found for trust score update", command.TargetUserId);
-                return;
+                Logger.LogWarning("Unknown trust score change reason: {Reason}", reasonText);
+                reason = TrustScoreChangeReason.AdminAdjustment; // Default fallback
             }
 
-            // Update trust score (assuming there's a TrustScore property on User)
-            // In a real implementation, you might have a separate UserTrustScore table
-            var currentScore = user.TrustScore ?? 1.0f;
-            var newScore = Math.Max(0.0f, Math.Min(1.0f, currentScore + command.ScoreChange));
-            
-            user.TrustScore = newScore;
-            await _dbContext.SaveChangesAsync();
+            // Update trust score using the analytics service
+            await _analyticsService.UpdateUserTrustScoreAsync(
+                userId: command.TargetUserId,
+                scoreChange: command.ScoreChange,
+                reason: reason,
+                details: command.Reason, // Use reason as details
+                relatedEntityType: null, // Not available in current command
+                relatedEntityId: null, // Not available in current command
+                triggeredByUserId: null, // Not available in current command
+                calculatedBy: "system", // Default to system
+                isAutomatic: true, // Default to automatic
+                confidence: null); // Not available in current command
 
-            Logger.LogInformation("Updated trust score for user {UserId}: {OldScore} -> {NewScore} (change: {Change}, reason: {Reason})",
-                command.TargetUserId, currentScore, newScore, command.ScoreChange, command.Reason);
+            Logger.LogInformation("Updated trust score for user {UserId}: change {Change}, reason: {Reason}",
+                command.TargetUserId, command.ScoreChange, command.Reason);
         }
         catch (Exception ex)
         {

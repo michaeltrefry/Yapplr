@@ -301,6 +301,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<ITagAnalyticsService, TagAnalyticsService>();
+        services.AddScoped<IAnalyticsService, AnalyticsService>();
         services.AddScoped<ILinkPreviewService, LinkPreviewService>();
 
         return services;
