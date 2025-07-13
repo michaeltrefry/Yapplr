@@ -7,6 +7,7 @@ using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 using Yapplr.Api.DTOs;
+using Yapplr.Api.Models.Analytics;
 using Yapplr.Api.CQRS.Consumers;
 using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
@@ -20,6 +21,7 @@ public class VideoProcessingTests : IDisposable
     private readonly Mock<ILogger<PostService>> _postServiceLogger;
     private readonly Mock<ILogger<VideoProcessingCompletedConsumer>> _consumerLogger;
     private readonly Mock<INotificationService> _notificationService;
+    private readonly Mock<IAnalyticsService> _analyticsService;
     private readonly Mock<IPublishEndpoint> _publishEndpoint;
     private readonly Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor> _httpContextAccessor;
     private readonly PostService _postService;
@@ -35,6 +37,7 @@ public class VideoProcessingTests : IDisposable
         _postServiceLogger = new Mock<ILogger<PostService>>();
         _consumerLogger = new Mock<ILogger<VideoProcessingCompletedConsumer>>();
         _notificationService = new Mock<INotificationService>();
+        _analyticsService = new Mock<IAnalyticsService>();
         _publishEndpoint = new Mock<IPublishEndpoint>();
         _httpContextAccessor = new Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor>();
 
@@ -55,7 +58,8 @@ public class VideoProcessingTests : IDisposable
         _consumer = new VideoProcessingCompletedConsumer(
             _context,
             _consumerLogger.Object,
-            _notificationService.Object
+            _notificationService.Object,
+            _analyticsService.Object
         );
     }
 
@@ -143,8 +147,6 @@ public class VideoProcessingTests : IDisposable
         {
             Id = 1,
             Content = "Test video post",
-            VideoFileName = "test-video.mp4",
-            VideoProcessingStatus = VideoProcessingStatus.Processing,
             IsHiddenDuringVideoProcessing = true,
             Privacy = PostPrivacy.Public,
             UserId = user.Id,
@@ -152,6 +154,15 @@ public class VideoProcessingTests : IDisposable
             UpdatedAt = DateTime.UtcNow
         };
         _context.Posts.Add(post);
+
+        var postMedia = new PostMedia
+        {
+            PostId = post.Id,
+            MediaType = MediaType.Video,
+            OriginalFileName = "test-video.mp4",
+            VideoProcessingStatus = VideoProcessingStatus.Processing
+        };
+        _context.PostMedia.Add(postMedia);
         await _context.SaveChangesAsync();
 
         var message = new VideoProcessingCompleted
@@ -226,13 +237,19 @@ public class VideoProcessingTests : IDisposable
         {
             Id = 1,
             Content = "User1's video post",
-            VideoFileName = "video1.mp4",
             IsHiddenDuringVideoProcessing = true,
-            VideoProcessingStatus = VideoProcessingStatus.Processing,
             Privacy = PostPrivacy.Public,
             UserId = user1.Id,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
+        };
+
+        var hiddenVideoPostMedia = new PostMedia
+        {
+            PostId = hiddenVideoPost.Id,
+            MediaType = MediaType.Video,
+            OriginalFileName = "video1.mp4",
+            VideoProcessingStatus = VideoProcessingStatus.Processing
         };
 
         // User2's video post (hidden during processing)
@@ -240,13 +257,19 @@ public class VideoProcessingTests : IDisposable
         {
             Id = 2,
             Content = "User2's video post",
-            VideoFileName = "video2.mp4",
             IsHiddenDuringVideoProcessing = true,
-            VideoProcessingStatus = VideoProcessingStatus.Processing,
             Privacy = PostPrivacy.Public,
             UserId = user2.Id,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
+        };
+
+        var otherUserVideoPostMedia = new PostMedia
+        {
+            PostId = otherUserVideoPost.Id,
+            MediaType = MediaType.Video,
+            OriginalFileName = "video2.mp4",
+            VideoProcessingStatus = VideoProcessingStatus.Processing
         };
 
         // Regular text post
@@ -261,6 +284,7 @@ public class VideoProcessingTests : IDisposable
         };
 
         _context.Posts.AddRange(hiddenVideoPost, otherUserVideoPost, textPost);
+        _context.PostMedia.AddRange(hiddenVideoPostMedia, otherUserVideoPostMedia);
         await _context.SaveChangesAsync();
 
         // Act - Get timeline for user1
