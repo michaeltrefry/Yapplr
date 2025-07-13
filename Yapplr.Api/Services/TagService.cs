@@ -153,8 +153,8 @@ public class TagService : ITagService
         var tags = post.PostTags.Select(pt => pt.Tag.ToDto()).ToList();
 
         // Generate video URLs
-        var videoUrl = MappingUtilities.GenerateVideoUrl(post.ProcessedVideoFileName, null);
-        var videoThumbnailUrl = MappingUtilities.GenerateVideoThumbnailUrl(post.VideoThumbnailFileName, null);
+        var videoUrl = MappingUtilities.GenerateVideoUrl(post.ProcessedVideoFileName, _httpContextAccessor.HttpContext);
+        var videoThumbnailUrl = MappingUtilities.GenerateVideoThumbnailUrl(post.VideoThumbnailFileName, _httpContextAccessor.HttpContext);
 
         return new PostDto(post.Id, post.Content, imageUrl, videoUrl, videoThumbnailUrl,
                           post.VideoFileName != null ? post.VideoProcessingStatus : null,
