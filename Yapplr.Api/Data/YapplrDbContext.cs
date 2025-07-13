@@ -400,6 +400,7 @@ public class YapplrDbContext : DbContext
             entity.Property(e => e.Description).HasMaxLength(1000);
             entity.Property(e => e.ImageUrl).HasMaxLength(2048);
             entity.Property(e => e.SiteName).HasMaxLength(100);
+            entity.Property(e => e.YouTubeVideoId).HasMaxLength(50);
             entity.Property(e => e.ErrorMessage).HasMaxLength(500);
             entity.Property(e => e.Status)
                   .HasConversion<int>()

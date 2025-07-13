@@ -94,16 +94,27 @@ public class LinkPreviewService : ILinkPreviewService
             Url = url,
             Status = LinkPreviewStatus.Pending
         };
-        
+
         try
         {
             // Validate URL
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || 
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != "http" && uri.Scheme != "https"))
             {
                 linkPreview.Status = LinkPreviewStatus.InvalidUrl;
                 linkPreview.ErrorMessage = "Invalid URL format";
                 return linkPreview;
+            }
+
+            // Check if this is a YouTube URL and extract video ID
+            var youTubeVideoId = ExtractYouTubeVideoId(url);
+            if (!string.IsNullOrEmpty(youTubeVideoId))
+            {
+                linkPreview.YouTubeVideoId = youTubeVideoId;
+                linkPreview.SiteName = "YouTube";
+
+                // For YouTube videos, we'll still fetch metadata but prioritize the video embed
+                // This allows us to get the title and description from YouTube's page
             }
             
             using var response = await _httpClient.GetAsync(uri);
@@ -235,7 +246,62 @@ public class LinkPreviewService : ILinkPreviewService
     {
         return doc.DocumentNode.SelectSingleNode("//title")?.InnerText?.Trim();
     }
-    
+
+    private static bool IsYouTubeUrl(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return false;
+
+        var host = uri.Host.ToLowerInvariant();
+        return host == "youtube.com" || host == "www.youtube.com" ||
+               host == "youtu.be" || host == "www.youtu.be" ||
+               host == "m.youtube.com";
+    }
+
+    private static string? ExtractYouTubeVideoId(string url)
+    {
+        if (!IsYouTubeUrl(url))
+            return null;
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return null;
+
+        // Handle youtu.be short URLs
+        if (uri.Host.ToLowerInvariant().Contains("youtu.be"))
+        {
+            var path = uri.AbsolutePath.TrimStart('/');
+            if (!string.IsNullOrEmpty(path) && path.Length == 11)
+            {
+                return path;
+            }
+        }
+
+        // Handle youtube.com URLs
+        if (uri.Host.ToLowerInvariant().Contains("youtube.com"))
+        {
+            // Parse query parameters
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            var videoId = query["v"];
+
+            if (!string.IsNullOrEmpty(videoId) && videoId.Length == 11)
+            {
+                return videoId;
+            }
+
+            // Handle embed URLs like youtube.com/embed/VIDEO_ID
+            if (uri.AbsolutePath.StartsWith("/embed/"))
+            {
+                var embedId = uri.AbsolutePath.Substring("/embed/".Length);
+                if (!string.IsNullOrEmpty(embedId) && embedId.Length == 11)
+                {
+                    return embedId;
+                }
+            }
+        }
+
+        return null;
+    }
+
     private static LinkPreviewDto MapToDto(LinkPreview linkPreview)
     {
         return new LinkPreviewDto(
@@ -245,6 +311,7 @@ public class LinkPreviewService : ILinkPreviewService
             linkPreview.Description,
             linkPreview.ImageUrl,
             linkPreview.SiteName,
+            linkPreview.YouTubeVideoId,
             linkPreview.Status,
             linkPreview.ErrorMessage,
             linkPreview.CreatedAt

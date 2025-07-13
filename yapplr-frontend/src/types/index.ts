@@ -39,6 +39,7 @@ export interface LinkPreview {
   description?: string;
   imageUrl?: string;
   siteName?: string;
+  youTubeVideoId?: string;
   status: LinkPreviewStatus;
   errorMessage?: string;
   createdAt: string;

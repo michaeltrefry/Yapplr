@@ -21,7 +21,10 @@ public class LinkPreview
     
     [StringLength(500)]
     public string? SiteName { get; set; }
-    
+
+    [StringLength(50)]
+    public string? YouTubeVideoId { get; set; }
+
     public LinkPreviewStatus Status { get; set; } = LinkPreviewStatus.Pending;
     
     [StringLength(500)]

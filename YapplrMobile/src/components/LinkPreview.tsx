@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, Linking, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Linking, StyleSheet, Dimensions } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { LinkPreview as LinkPreviewType, LinkPreviewStatus } from '../types';
 import { useThemeColors } from '../hooks/useThemeColors';
 
@@ -11,8 +12,8 @@ interface LinkPreviewProps {
 export default function LinkPreview({ linkPreview, style }: LinkPreviewProps) {
   const colors = useThemeColors();
   const styles = createStyles(colors);
-  
-  const { url, title, description, imageUrl, siteName, status, errorMessage } = linkPreview;
+
+  const { url, title, description, imageUrl, siteName, youTubeVideoId, status, errorMessage } = linkPreview;
 
   const handlePress = () => {
     Linking.openURL(url);
@@ -48,8 +49,51 @@ export default function LinkPreview({ linkPreview, style }: LinkPreviewProps) {
   }
 
   // Success state - render full preview
+  // If this is a YouTube video, render the embedded player instead of a regular preview
+  if (youTubeVideoId) {
+    const screenWidth = Dimensions.get('window').width;
+    const videoHeight = (screenWidth - 32) * 0.5625; // 16:9 aspect ratio, accounting for margins
+
+    return (
+      <View style={[styles.container, styles.youtubeContainer, style]}>
+        <WebView
+          source={{ uri: `https://www.youtube.com/embed/${youTubeVideoId}` }}
+          style={[styles.webview, { height: videoHeight }]}
+          allowsFullscreenVideo={true}
+          mediaPlaybackRequiresUserAction={false}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+        />
+
+        <View style={styles.content}>
+          <View style={styles.siteNameContainer}>
+            <Text style={styles.siteName} numberOfLines={1}>
+              YouTube
+            </Text>
+            <TouchableOpacity onPress={handlePress} style={styles.externalLinkButton}>
+              <Text style={styles.externalLinkText}>Open in YouTube</Text>
+            </TouchableOpacity>
+          </View>
+
+          {title && (
+            <Text style={styles.title} numberOfLines={2}>
+              {title}
+            </Text>
+          )}
+
+          {description && (
+            <Text style={styles.description} numberOfLines={2}>
+              {description}
+            </Text>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  // Regular link preview for non-YouTube links
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.container, styles.successContainer, style]}
       onPress={handlePress}
       activeOpacity={0.7}
@@ -64,24 +108,24 @@ export default function LinkPreview({ linkPreview, style }: LinkPreviewProps) {
           }}
         />
       )}
-      
+
       <View style={styles.content}>
         <Text style={styles.siteName} numberOfLines={1}>
           {siteName || new URL(url).hostname}
         </Text>
-        
+
         {title && (
           <Text style={styles.title} numberOfLines={2}>
             {title}
           </Text>
         )}
-        
+
         {description && (
           <Text style={styles.description} numberOfLines={2}>
             {description}
           </Text>
         )}
-        
+
         {!title && !description && (
           <Text style={styles.fallbackUrl} numberOfLines={1}>
             {url}
@@ -159,6 +203,14 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  youtubeContainer: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  webview: {
+    backgroundColor: colors.background,
+  },
   image: {
     width: '100%',
     height: 150,
@@ -167,10 +219,27 @@ const createStyles = (colors: any) => StyleSheet.create({
   content: {
     padding: 12,
   },
+  siteNameContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   siteName: {
     color: colors.textSecondary,
     fontSize: 12,
     marginBottom: 4,
+  },
+  externalLinkButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 4,
+  },
+  externalLinkText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '500',
   },
   title: {
     color: colors.text,

@@ -150,6 +150,7 @@ public static class MappingUtilities
             linkPreview.Description,
             linkPreview.ImageUrl,
             linkPreview.SiteName,
+            linkPreview.YouTubeVideoId,
             linkPreview.Status,
             linkPreview.ErrorMessage,
             linkPreview.CreatedAt

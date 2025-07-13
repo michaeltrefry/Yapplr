@@ -10,7 +10,7 @@ interface LinkPreviewProps {
 }
 
 export default function LinkPreview({ linkPreview, className = '' }: LinkPreviewProps) {
-  const { url, title, description, imageUrl, siteName, status, errorMessage } = linkPreview;
+  const { url, title, description, imageUrl, siteName, youTubeVideoId, status, errorMessage } = linkPreview;
 
   // Don't render anything for pending status
   if (status === LinkPreviewStatus.Pending) {
@@ -52,6 +52,60 @@ export default function LinkPreview({ linkPreview, className = '' }: LinkPreview
   }
 
   // Success state - render full preview
+  // If this is a YouTube video, render the embedded player instead of a regular preview
+  if (youTubeVideoId) {
+    return (
+      <div className={`border border-gray-200 rounded-lg overflow-hidden ${className}`}>
+        <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
+          <iframe
+            src={`https://www.youtube.com/embed/${youTubeVideoId}`}
+            title={title || 'YouTube video'}
+            className="absolute top-0 left-0 w-full h-full"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+
+        <div className="p-3">
+          <div className="flex items-center space-x-2 text-gray-500 text-xs mb-2">
+            <Globe className="w-3 h-3" />
+            <span className="truncate">YouTube</span>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
+          {title && (
+            <h3 className="font-semibold text-gray-900 text-sm mb-1 overflow-hidden" style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical'
+            }}>
+              {title}
+            </h3>
+          )}
+
+          {description && (
+            <p className="text-gray-600 text-xs overflow-hidden" style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical'
+            }}>
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Regular link preview for non-YouTube links
   return (
     <a
       href={url}
@@ -73,7 +127,7 @@ export default function LinkPreview({ linkPreview, className = '' }: LinkPreview
           />
         </div>
       )}
-      
+
       <div className="p-3">
         <div className="flex items-center space-x-2 text-gray-500 text-xs mb-2">
           <Globe className="w-3 h-3" />
@@ -82,7 +136,7 @@ export default function LinkPreview({ linkPreview, className = '' }: LinkPreview
           </span>
           <ExternalLink className="w-3 h-3" />
         </div>
-        
+
         {title && (
           <h3 className="font-semibold text-gray-900 text-sm mb-1 overflow-hidden" style={{
             display: '-webkit-box',
@@ -102,7 +156,7 @@ export default function LinkPreview({ linkPreview, className = '' }: LinkPreview
             {description}
           </p>
         )}
-        
+
         {!title && !description && (
           <p className="text-gray-600 text-xs truncate">
             {url}

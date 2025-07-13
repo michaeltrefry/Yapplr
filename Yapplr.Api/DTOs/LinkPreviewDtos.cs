@@ -9,6 +9,7 @@ public record LinkPreviewDto(
     string? Description,
     string? ImageUrl,
     string? SiteName,
+    string? YouTubeVideoId,
     LinkPreviewStatus Status,
     string? ErrorMessage,
     DateTime CreatedAt
