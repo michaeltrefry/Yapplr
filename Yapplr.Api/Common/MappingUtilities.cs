@@ -380,16 +380,8 @@ public static class MappingUtilities
 
         if (!string.IsNullOrEmpty(post.VideoFileName))
         {
-            var request = httpContext?.Request;
-            if (request != null)
-            {
-                var baseUrl = $"{request.Scheme}://{request.Host}";
-                videoUrl = $"{baseUrl}/uploads/processed/{post.VideoFileName}";
-
-                // Generate thumbnail URL
-                var thumbnailFileName = Path.GetFileNameWithoutExtension(post.VideoFileName) + "_thumbnail.jpg";
-                videoThumbnailUrl = $"{baseUrl}/uploads/thumbnails/{thumbnailFileName}";
-            }
+            videoUrl = GenerateVideoUrl(post.ProcessedVideoFileName, httpContext);
+            videoThumbnailUrl = GenerateVideoThumbnailUrl(post.VideoThumbnailFileName, httpContext);
 
             // Map video metadata if available
             if (post.PostMedia.Any(pm => pm.MediaType == MediaType.Video))
