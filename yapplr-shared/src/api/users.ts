@@ -36,6 +36,10 @@ export class UsersApi {
     return this.client.get('/users/me/following/online-status');
   }
 
+  async getTopFollowingWithOnlineStatus(limit: number = 10): Promise<UserWithOnlineStatus[]> {
+    return this.client.get(`/users/me/following/top?limit=${limit}`);
+  }
+
   async searchUsers(query: string): Promise<User[]> {
     return this.client.get(`/users/search?q=${encodeURIComponent(query)}`);
   }

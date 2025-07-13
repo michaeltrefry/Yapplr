@@ -242,6 +242,7 @@ public class NotificationQueueService : INotificationQueueService
                 .Where(n => n.DeliveredAt == null &&
                            n.RetryCount < n.MaxRetries &&
                            (n.NextRetryAt == null || n.NextRetryAt <= DateTime.UtcNow))
+                .OrderBy(n => n.CreatedAt) // Ensure deterministic ordering - process oldest first
                 .Take(100) // Process in batches to avoid overwhelming the system
                 .ToListAsync();
 

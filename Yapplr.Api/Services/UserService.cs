@@ -337,6 +337,107 @@ public class UserService : BaseService, IUserService
         return following;
     }
 
+    public async Task<IEnumerable<UserWithOnlineStatusDto>> GetTopFollowingWithOnlineStatusAsync(int userId, int limit = 10)
+    {
+        var onlineThreshold = DateTime.UtcNow.AddMinutes(-5); // Consider user online if seen within last 5 minutes
+        var recentActivityThreshold = DateTime.UtcNow.AddDays(-30); // Look at last 30 days of activity
+
+        // Get following users
+        var followingUsers = await _context.Follows
+            .Include(f => f.Following)
+            .Where(f => f.FollowerId == userId)
+            .Select(f => f.Following)
+            .ToListAsync();
+
+        // Calculate interaction scores for each user
+        var followingWithScores = new List<(User User, double InteractionScore)>();
+
+        foreach (var user in followingUsers)
+        {
+            var score = await CalculateInteractionScoreAsync(userId, user.Id, recentActivityThreshold);
+            followingWithScores.Add((user, score));
+        }
+
+        // Sort by interaction score (descending) and take top N
+        var topFollowing = followingWithScores
+            .OrderByDescending(f => f.InteractionScore)
+            .ThenByDescending(f => f.User.LastSeenAt) // Secondary sort by last seen
+            .Take(limit)
+            .Select(f => new UserWithOnlineStatusDto(
+                f.User.Id,
+                f.User.Email,
+                f.User.Username,
+                f.User.Bio,
+                f.User.Birthday,
+                f.User.Pronouns,
+                f.User.Tagline,
+                f.User.ProfileImageFileName,
+                f.User.CreatedAt,
+                f.User.LastSeenAt > onlineThreshold
+            ))
+            .ToList();
+
+        return topFollowing;
+    }
+
+    private async Task<double> CalculateInteractionScoreAsync(int currentUserId, int targetUserId, DateTime since)
+    {
+        // Calculate interaction score based on various activities
+        var score = 0.0;
+
+        // Messages sent to this user (high weight)
+        var messagesSent = await _context.Messages
+            .Where(m => m.SenderId == currentUserId &&
+                       m.Conversation.Participants.Any(p => p.UserId == targetUserId) &&
+                       m.CreatedAt >= since)
+            .CountAsync();
+        score += messagesSent * 10.0;
+
+        // Messages received from this user (high weight)
+        var messagesReceived = await _context.Messages
+            .Where(m => m.SenderId == targetUserId &&
+                       m.Conversation.Participants.Any(p => p.UserId == currentUserId) &&
+                       m.CreatedAt >= since)
+            .CountAsync();
+        score += messagesReceived * 8.0;
+
+        // Likes on their posts (medium weight)
+        var likesGiven = await _context.Likes
+            .Where(l => l.UserId == currentUserId &&
+                       l.Post.UserId == targetUserId &&
+                       l.CreatedAt >= since)
+            .CountAsync();
+        score += likesGiven * 3.0;
+
+        // Comments on their posts (medium weight)
+        var commentsGiven = await _context.Comments
+            .Where(c => c.UserId == currentUserId &&
+                       c.Post.UserId == targetUserId &&
+                       c.CreatedAt >= since)
+            .CountAsync();
+        score += commentsGiven * 4.0;
+
+        // Profile views (low weight)
+        var profileViews = await _context.UserActivities
+            .Where(ua => ua.UserId == currentUserId &&
+                        ua.ActivityType == Models.Analytics.ActivityType.ProfileViewed &&
+                        ua.TargetEntityType == "user" &&
+                        ua.TargetEntityId == targetUserId &&
+                        ua.CreatedAt >= since)
+            .CountAsync();
+        score += profileViews * 1.0;
+
+        // Reposts of their content (medium weight)
+        var reposts = await _context.Reposts
+            .Where(r => r.UserId == currentUserId &&
+                       r.Post.UserId == targetUserId &&
+                       r.CreatedAt >= since)
+            .CountAsync();
+        score += reposts * 5.0;
+
+        return score;
+    }
+
     public async Task<bool> UpdateFcmTokenAsync(int userId, string? fcmToken)
     {
         var user = await _context.Users.FindAsync(userId);

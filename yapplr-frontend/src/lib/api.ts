@@ -199,6 +199,11 @@ export const userApi = {
     return response.data;
   },
 
+  getTopFollowingWithOnlineStatus: async (limit: number = 10): Promise<UserWithOnlineStatus[]> => {
+    const response = await api.get(`/users/me/following/top?limit=${limit}`);
+    return response.data;
+  },
+
   getUserFollowing: async (userId: number): Promise<User[]> => {
     const response = await api.get(`/users/${userId}/following`);
     return response.data;

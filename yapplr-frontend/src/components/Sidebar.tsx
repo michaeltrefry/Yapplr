@@ -37,22 +37,23 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-2">
-          <Link
-            href="/"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
-          >
-            <Home className="w-6 h-6" />
-            <span className="text-lg hidden lg:block">Home</span>
-          </Link>
+        <nav className="flex-1 flex flex-col space-y-2 min-h-0">
+          <div className="space-y-2">
+            <Link
+              href="/"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+            >
+              <Home className="w-6 h-6" />
+              <span className="text-lg hidden lg:block">Home</span>
+            </Link>
 
-          <Link
-            href="/search"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
-          >
-            <Search className="w-6 h-6" />
-            <span className="text-lg hidden lg:block">Search</span>
-          </Link>
+            <Link
+              href="/search"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+            >
+              <Search className="w-6 h-6" />
+              <span className="text-lg hidden lg:block">Search</span>
+            </Link>
 
           <Link
             href="/trending"
@@ -124,12 +125,16 @@ export default function Sidebar() {
             </Link>
           )}
 
-          {/* Following Section */}
-          <div className="mt-4">
+          </div>
+
+          {/* Following Section - Flexible container */}
+          <div className="flex-1 flex flex-col mt-4 min-h-0">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 px-3 hidden lg:block">
               Following
             </h3>
-            <FollowingList />
+            <div className="flex-1 min-h-0">
+              <FollowingList />
+            </div>
           </div>
         </nav>
 

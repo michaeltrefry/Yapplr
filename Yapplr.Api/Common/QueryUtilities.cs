@@ -160,8 +160,27 @@ public static class QueryUtilities
         int pageSize,
         Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null) where T : class
     {
+        // Ensure we always have some ordering to avoid EF warning
         if (orderBy != null)
+        {
             query = orderBy(query);
+        }
+        else if (typeof(T).GetInterfaces().Contains(typeof(IEntity)))
+        {
+            // If T implements IEntity, order by Id as fallback
+            query = query.OrderBy(e => ((IEntity)e).Id);
+        }
+        else
+        {
+            // For other types, we need to ensure ordering exists
+            // This is a fallback that should ideally not be reached
+            // Log a warning that explicit ordering should be provided
+            throw new InvalidOperationException($"No ordering specified for query of type {typeof(T).Name}. " +
+                "Please provide an orderBy parameter or ensure the entity implements IEntity.");
+        }
+
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
 
         return query
             .Skip((page - 1) * pageSize)

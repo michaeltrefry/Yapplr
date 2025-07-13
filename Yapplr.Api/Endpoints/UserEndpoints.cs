@@ -172,6 +172,18 @@ public static class UserEndpoints
         .Produces<IEnumerable<UserWithOnlineStatusDto>>(200)
         .Produces(401);
 
+        users.MapGet("/me/following/top", async (ClaimsPrincipal user, IUserService userService, int limit = 10) =>
+        {
+            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var topFollowing = await userService.GetTopFollowingWithOnlineStatusAsync(currentUserId, limit);
+            return Results.Ok(topFollowing);
+        })
+        .WithName("GetTopFollowingWithOnlineStatus")
+        .WithSummary("Get top most interacted with users that the current user is following")
+        .RequireAuthorization("User")
+        .Produces<IEnumerable<UserWithOnlineStatusDto>>(200)
+        .Produces(401);
+
         users.MapGet("/{userId}/following", async (int userId, IUserService userService) =>
         {
             var following = await userService.GetFollowingAsync(userId);
