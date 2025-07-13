@@ -105,6 +105,7 @@ public abstract class BaseService
 
     /// <summary>
     /// Apply pagination to a queryable
+    /// WARNING: This method should only be used on queries that already have an OrderBy clause.
     /// </summary>
     protected static IQueryable<T> ApplyPagination<T>(IQueryable<T> query, int page, int pageSize)
     {

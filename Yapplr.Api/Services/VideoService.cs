@@ -115,16 +115,21 @@ public class VideoService : IVideoService
     {
         var videoUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/api/videos/{fileName}";
         var filePath = Path.Combine(_uploadPath, fileName);
-        
+
         var fileInfo = new FileInfo(filePath);
-        
-        // For now, return basic info. In a real implementation, you might want to 
-        // extract video metadata using FFMpeg or similar
+
+        // Return basic file info immediately after upload
+        // The VideoProcessor will extract detailed metadata during processing
+        // and store it in the Post model via the VideoProcessingCompleted message
         return new VideoUploadResponse
         {
             FileName = fileName,
             VideoUrl = videoUrl,
-            FileSizeBytes = fileInfo.Length
+            FileSizeBytes = fileInfo.Length,
+            // Duration, Width, Height will be populated after video processing completes
+            Duration = null,
+            Width = null,
+            Height = null
         };
     }
 

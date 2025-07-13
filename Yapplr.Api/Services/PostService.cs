@@ -46,9 +46,6 @@ public class PostService : BaseService, IPostService
         var post = new Post
         {
             Content = createDto.Content,
-            ImageFileName = createDto.ImageFileName,
-            VideoFileName = createDto.VideoFileName,
-            VideoProcessingStatus = createDto.VideoFileName != null ? VideoProcessingStatus.Pending : VideoProcessingStatus.Pending,
             Privacy = createDto.Privacy,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
@@ -59,6 +56,41 @@ public class PostService : BaseService, IPostService
 
         _context.Posts.Add(post);
         await _context.SaveChangesAsync();
+
+        // Create media records if present
+        if (!string.IsNullOrEmpty(createDto.ImageFileName))
+        {
+            var imageMedia = new PostMedia
+            {
+                PostId = post.Id,
+                MediaType = MediaType.Image,
+                ImageFileName = createDto.ImageFileName,
+                OriginalFileName = createDto.ImageFileName,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.PostMedia.Add(imageMedia);
+        }
+
+        if (!string.IsNullOrEmpty(createDto.VideoFileName))
+        {
+            var videoMedia = new PostMedia
+            {
+                PostId = post.Id,
+                MediaType = MediaType.Video,
+                VideoFileName = createDto.VideoFileName,
+                OriginalFileName = createDto.VideoFileName,
+                VideoProcessingStatus = VideoProcessingStatus.Pending,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.PostMedia.Add(videoMedia);
+        }
+
+        if (!string.IsNullOrEmpty(createDto.ImageFileName) || !string.IsNullOrEmpty(createDto.VideoFileName))
+        {
+            await _context.SaveChangesAsync();
+        }
 
         // Process hashtags in the post content
         await ProcessPostTagsAsync(post.Id, createDto.Content);
@@ -88,6 +120,7 @@ public class PostService : BaseService, IPostService
                 .ThenInclude(pt => pt.Tag)
             .Include(p => p.PostLinkPreviews)
                 .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
             .AsSplitQuery()
             .FirstAsync(p => p.Id == post.Id);
 
@@ -974,13 +1007,20 @@ public class PostService : BaseService, IPostService
             var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "videos");
             var videoPath = Path.Combine(uploadsPath, videoFileName);
 
-            // Update post status to processing
-            var post = await _context.Posts.FindAsync(postId);
+            // Update video media status to processing
+            var post = await _context.Posts
+                .Include(p => p.PostMedia)
+                .FirstOrDefaultAsync(p => p.Id == postId);
             if (post != null)
             {
-                post.VideoProcessingStatus = VideoProcessingStatus.Processing;
-                post.VideoProcessingStartedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+                var videoMedia = post.PostMedia.FirstOrDefault(m => m.MediaType == MediaType.Video);
+                if (videoMedia != null)
+                {
+                    videoMedia.VideoProcessingStatus = VideoProcessingStatus.Processing;
+                    videoMedia.VideoProcessingStartedAt = DateTime.UtcNow;
+                    videoMedia.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
             }
 
             // Publish video processing request to RabbitMQ
@@ -1002,15 +1042,22 @@ public class PostService : BaseService, IPostService
         {
             _logger.LogError(ex, "Error publishing video processing request for Post {PostId}", postId);
 
-            // Update post status to failed
+            // Update video media status to failed
             try
             {
-                var post = await _context.Posts.FindAsync(postId);
+                var post = await _context.Posts
+                    .Include(p => p.PostMedia)
+                    .FirstOrDefaultAsync(p => p.Id == postId);
                 if (post != null)
                 {
-                    post.VideoProcessingStatus = VideoProcessingStatus.Failed;
-                    post.VideoProcessingError = $"Failed to publish processing request: {ex.Message}";
-                    await _context.SaveChangesAsync();
+                    var videoMedia = post.PostMedia.FirstOrDefault(m => m.MediaType == MediaType.Video);
+                    if (videoMedia != null)
+                    {
+                        videoMedia.VideoProcessingStatus = VideoProcessingStatus.Failed;
+                        videoMedia.VideoProcessingError = $"Failed to publish processing request: {ex.Message}";
+                        videoMedia.UpdatedAt = DateTime.UtcNow;
+                        await _context.SaveChangesAsync();
+                    }
                 }
             }
             catch (Exception updateEx)

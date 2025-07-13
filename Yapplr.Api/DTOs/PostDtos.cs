@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Yapplr.Api.Models;
+using Yapplr.Shared.Models;
 using Yapplr.Api.Common;
 using Yapplr.Shared.Models;
 
@@ -36,7 +37,8 @@ public record PostDto(
     bool IsLikedByCurrentUser = false,
     bool IsRepostedByCurrentUser = false,
     bool IsEdited = false,
-    PostModerationInfoDto? ModerationInfo = null
+    PostModerationInfoDto? ModerationInfo = null,
+    VideoMetadata? VideoMetadata = null
 );
 
 public record PostModerationInfoDto(

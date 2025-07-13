@@ -56,7 +56,7 @@ public abstract class BaseCrudService<TEntity, TDto, TCreateDto, TUpdateDto> : B
             
             var totalCount = await query.CountAsync();
             var entities = await query
-                .ApplyPagination(page, pageSize)
+                .ApplyPaginationWithOrdering(page, pageSize)
                 .ToListAsync();
 
             var dtos = new List<TDto>();
@@ -349,7 +349,7 @@ public abstract class EnhancedCrudService<TEntity, TDto, TCreateDto, TUpdateDto>
 
             var totalCount = await query.CountAsync();
             var entities = await query
-                .ApplyPagination(page, pageSize)
+                .ApplyPaginationWithOrdering(page, pageSize)
                 .ToListAsync();
 
             var dtos = new List<TDto>();
@@ -570,7 +570,7 @@ public abstract class SoftDeletableCrudService<TEntity, TDto, TCreateDto, TUpdat
 
             var totalCount = await query.CountAsync();
             var entities = await query
-                .ApplyPagination(page, pageSize)
+                .ApplyPaginationWithOrdering(page, pageSize)
                 .ToListAsync();
 
             var dtos = new List<TDto>();

@@ -23,6 +23,7 @@ public static class QueryUtilities
                 .ThenInclude(pt => pt.Tag)
             .Include(p => p.PostLinkPreviews)
                 .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
             .Include(p => p.HiddenByUser)
             .Include(p => p.PostSystemTags)
                 .ThenInclude(pst => pst.SystemTag)
@@ -45,6 +46,7 @@ public static class QueryUtilities
                 .ThenInclude(pt => pt.Tag)
             .Include(p => p.PostLinkPreviews)
                 .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
             .AsSplitQuery();
     }
 
@@ -103,6 +105,8 @@ public static class QueryUtilities
             .Include(r => r.Post)
                 .ThenInclude(p => p.PostLinkPreviews)
                     .ThenInclude(plp => plp.LinkPreview)
+            .Include(r => r.Post)
+                .ThenInclude(p => p.PostMedia)
             .AsSplitQuery();
     }
 
@@ -320,13 +324,30 @@ public static class QueryUtilities
 
     /// <summary>
     /// Apply pagination with validation
+    /// WARNING: This method should only be used on queries that already have an OrderBy clause.
+    /// Use ApplyPaginationWithOrdering for queries without explicit ordering.
     /// </summary>
     public static IQueryable<T> ApplyPagination<T>(this IQueryable<T> query, int page, int pageSize)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
-        
+
         return query.Skip((page - 1) * pageSize).Take(pageSize);
+    }
+
+    /// <summary>
+    /// Apply pagination with default ordering by Id to ensure deterministic results
+    /// </summary>
+    public static IQueryable<T> ApplyPaginationWithOrdering<T>(this IQueryable<T> query, int page, int pageSize)
+        where T : class, IEntity
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        return query
+            .OrderBy(e => e.Id) // Ensure deterministic ordering
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize);
     }
 
     /// <summary>

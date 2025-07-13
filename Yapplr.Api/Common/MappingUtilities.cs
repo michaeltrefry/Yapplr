@@ -1,6 +1,7 @@
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
+using Yapplr.Shared.Models;
 
 namespace Yapplr.Api.Common;
 
@@ -268,6 +269,30 @@ public static class MappingUtilities
         var videoUrl = GenerateVideoUrl(post.ProcessedVideoFileName, httpContext);
         var videoThumbnailUrl = GenerateVideoThumbnailUrl(post.VideoThumbnailFileName, httpContext);
 
+        // Map video metadata if available
+        VideoMetadata? videoMetadata = null;
+        var videoMedia = post.VideoMedia;
+        if (videoMedia != null && videoMedia.VideoWidth.HasValue && videoMedia.VideoHeight.HasValue)
+        {
+            videoMetadata = new VideoMetadata
+            {
+                ProcessedWidth = videoMedia.VideoWidth.Value,
+                ProcessedHeight = videoMedia.VideoHeight.Value,
+                ProcessedDuration = videoMedia.VideoDuration ?? TimeSpan.Zero,
+                ProcessedFileSizeBytes = videoMedia.VideoFileSizeBytes ?? 0,
+                ProcessedFormat = videoMedia.VideoFormat ?? string.Empty,
+                ProcessedBitrate = videoMedia.VideoBitrate ?? 0,
+                CompressionRatio = videoMedia.VideoCompressionRatio ?? 0,
+                // Original metadata from PostMedia
+                OriginalWidth = videoMedia.OriginalVideoWidth ?? videoMedia.VideoWidth.Value,
+                OriginalHeight = videoMedia.OriginalVideoHeight ?? videoMedia.VideoHeight.Value,
+                OriginalDuration = videoMedia.OriginalVideoDuration ?? videoMedia.VideoDuration ?? TimeSpan.Zero,
+                OriginalFileSizeBytes = videoMedia.OriginalVideoFileSizeBytes ?? videoMedia.VideoFileSizeBytes ?? 0,
+                OriginalFormat = videoMedia.OriginalVideoFormat ?? videoMedia.VideoFormat ?? string.Empty,
+                OriginalBitrate = videoMedia.OriginalVideoBitrate ?? videoMedia.VideoBitrate ?? 0
+            };
+        }
+
         return new PostDto(
             post.Id,
             post.Content,
@@ -287,7 +312,8 @@ public static class MappingUtilities
             isLiked,
             isReposted,
             isEdited,
-            moderationInfo
+            moderationInfo,
+            videoMetadata
         );
     }
 

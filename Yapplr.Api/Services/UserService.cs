@@ -103,6 +103,7 @@ public class UserService : BaseService, IUserService
     {
         var users = await _context.Users
             .Where(u => EF.Functions.ILike(u.Username, $"%{query}%") || EF.Functions.ILike(u.Bio, $"%{query}%"))
+            .OrderBy(u => u.Username) // Add ordering for deterministic results
             .Take(20) // Limit results
             .ToListAsync();
 
@@ -113,6 +114,7 @@ public class UserService : BaseService, IUserService
     {
         var users = await _context.Users
             .Where(u => EF.Functions.ILike(u.Username, $"%{query}%") || EF.Functions.ILike(u.Bio, $"%{query}%"))
+            .OrderBy(u => u.Username) // Add ordering for deterministic results
             .Take(20) // Limit results
             .ToListAsync();
 

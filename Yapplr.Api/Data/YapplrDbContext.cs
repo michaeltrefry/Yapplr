@@ -13,6 +13,7 @@ public class YapplrDbContext : DbContext
     
     public DbSet<User> Users { get; set; }
     public DbSet<Post> Posts { get; set; }
+    public DbSet<PostMedia> PostMedia { get; set; }
     public DbSet<Like> Likes { get; set; }
     public DbSet<Comment> Comments { get; set; }
     public DbSet<Repost> Reposts { get; set; }
@@ -94,7 +95,22 @@ public class YapplrDbContext : DbContext
             entity.HasIndex(e => new { e.Privacy, e.CreatedAt }); // Public timeline queries
             entity.HasIndex(e => e.CreatedAt); // General timeline ordering
         });
-        
+
+        // PostMedia configuration
+        modelBuilder.Entity<PostMedia>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.PostId); // For efficient post-media queries
+            entity.HasIndex(e => new { e.PostId, e.MediaType }); // For specific media type queries
+            entity.HasIndex(e => e.MediaType); // For media type filtering
+            entity.HasIndex(e => e.VideoProcessingStatus); // For video processing queries
+            entity.HasIndex(e => e.CreatedAt); // For chronological queries
+            entity.HasOne(e => e.Post)
+                  .WithMany(e => e.PostMedia)
+                  .HasForeignKey(e => e.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // Like configuration
         modelBuilder.Entity<Like>(entity =>
         {

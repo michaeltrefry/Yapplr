@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Yapplr.Api.Data;
@@ -11,9 +12,11 @@ using Yapplr.Api.Data;
 namespace Yapplr.Api.Migrations
 {
     [DbContext(typeof(YapplrDbContext))]
-    partial class YapplrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250713122032_AddVideoMetadataToPost")]
+    partial class AddVideoMetadataToPost
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1462,6 +1465,10 @@ namespace Yapplr.Api.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<string>("ImageFileName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<bool>("IsDeletedByUser")
                         .HasColumnType("boolean");
 
@@ -1479,10 +1486,56 @@ namespace Yapplr.Api.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
+                    b.Property<string>("ProcessedVideoFileName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<double?>("VideoBitrate")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("VideoCompressionRatio")
+                        .HasColumnType("double precision");
+
+                    b.Property<TimeSpan?>("VideoDuration")
+                        .HasColumnType("interval");
+
+                    b.Property<string>("VideoFileName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<long?>("VideoFileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("VideoFormat")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("VideoHeight")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("VideoProcessingCompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VideoProcessingError")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("VideoProcessingStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VideoProcessingStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("VideoThumbnailFileName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int?>("VideoWidth")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -1525,128 +1578,6 @@ namespace Yapplr.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("PostLinkPreviews");
-                });
-
-            modelBuilder.Entity("Yapplr.Api.Models.PostMedia", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ImageFileName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<long?>("ImageFileSizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("ImageFormat")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<int?>("ImageHeight")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("ImageWidth")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MediaType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("OriginalFileName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<double?>("OriginalVideoBitrate")
-                        .HasColumnType("double precision");
-
-                    b.Property<TimeSpan?>("OriginalVideoDuration")
-                        .HasColumnType("interval");
-
-                    b.Property<long?>("OriginalVideoFileSizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("OriginalVideoFormat")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<int?>("OriginalVideoHeight")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("OriginalVideoWidth")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PostId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ProcessedVideoFileName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<double?>("VideoBitrate")
-                        .HasColumnType("double precision");
-
-                    b.Property<double?>("VideoCompressionRatio")
-                        .HasColumnType("double precision");
-
-                    b.Property<TimeSpan?>("VideoDuration")
-                        .HasColumnType("interval");
-
-                    b.Property<string>("VideoFileName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<long?>("VideoFileSizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("VideoFormat")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<int?>("VideoHeight")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("VideoProcessingCompletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("VideoProcessingError")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime?>("VideoProcessingStartedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("VideoProcessingStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("VideoThumbnailFileName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<int?>("VideoWidth")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("MediaType");
-
-                    b.HasIndex("PostId");
-
-                    b.HasIndex("VideoProcessingStatus");
-
-                    b.HasIndex("PostId", "MediaType");
-
-                    b.ToTable("PostMedia");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PostSystemTag", b =>
@@ -2722,17 +2653,6 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Post");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Models.PostMedia", b =>
-                {
-                    b.HasOne("Yapplr.Api.Models.Post", "Post")
-                        .WithMany("PostMedia")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Post");
-                });
-
             modelBuilder.Entity("Yapplr.Api.Models.PostSystemTag", b =>
                 {
                     b.HasOne("Yapplr.Api.Models.User", "AppliedByUser")
@@ -2947,8 +2867,6 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Likes");
 
                     b.Navigation("PostLinkPreviews");
-
-                    b.Navigation("PostMedia");
 
                     b.Navigation("PostSystemTags");
 

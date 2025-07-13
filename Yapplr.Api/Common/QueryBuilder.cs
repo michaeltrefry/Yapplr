@@ -78,6 +78,7 @@ public class QueryBuilder<T> where T : class
 
     /// <summary>
     /// Apply pagination
+    /// WARNING: Ensure the query has an OrderBy clause before calling this method
     /// </summary>
     public QueryBuilder<T> Paginate(int page, int pageSize)
     {
@@ -86,6 +87,8 @@ public class QueryBuilder<T> where T : class
         _query = _query.Skip((page - 1) * pageSize).Take(pageSize);
         return this;
     }
+
+
 
     /// <summary>
     /// Use split query for better performance with multiple includes
