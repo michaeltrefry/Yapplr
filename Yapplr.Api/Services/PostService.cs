@@ -375,6 +375,7 @@ public class PostService : BaseService, IPostService
                 .ThenInclude(pt => pt.Tag)
             .Include(p => p.PostLinkPreviews)
                 .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
             .AsSplitQuery()
             .Where(p => p.UserId == userId &&
                 !p.IsDeletedByUser && // Filter out user-deleted posts
@@ -424,6 +425,7 @@ public class PostService : BaseService, IPostService
                 .ThenInclude(pt => pt.Tag)
             .Include(p => p.PostLinkPreviews)
                 .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
             .AsSplitQuery()
             .Where(p => p.UserId == userId &&
                 !p.IsDeletedByUser && // Filter out user-deleted posts
