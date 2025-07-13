@@ -1,5 +1,3 @@
-using MassTransit;
-
 namespace Yapplr.Api.CQRS;
 
 /// <summary>

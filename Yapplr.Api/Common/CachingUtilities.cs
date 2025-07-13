@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Caching.Memory;
-using System.Text.Json;
 
 namespace Yapplr.Api.Common;
 

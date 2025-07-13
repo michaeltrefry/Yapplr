@@ -1,9 +1,7 @@
 using MassTransit;
 using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.Services;
-using Yapplr.Api.Data;
 using Yapplr.Api.Models.Analytics;
-using Microsoft.EntityFrameworkCore;
 
 namespace Yapplr.Api.CQRS.Handlers;
 

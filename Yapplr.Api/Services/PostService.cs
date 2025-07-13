@@ -21,6 +21,8 @@ public class PostService : BaseService, IPostService
     private readonly IConfiguration _configuration;
     private readonly IPublishEndpoint _publishEndpoint;
     private readonly ICountCacheService _countCache;
+    private readonly ITrustScoreService _trustScoreService;
+    private readonly ITrustBasedModerationService _trustBasedModerationService;
 
     public PostService(
         YapplrDbContext context,
@@ -32,6 +34,8 @@ public class PostService : BaseService, IPostService
         IConfiguration configuration,
         IPublishEndpoint publishEndpoint,
         ICountCacheService countCache,
+        ITrustScoreService trustScoreService,
+        ITrustBasedModerationService trustBasedModerationService,
         ILogger<PostService> logger) : base(context, logger)
     {
         _httpContextAccessor = httpContextAccessor;
@@ -42,10 +46,18 @@ public class PostService : BaseService, IPostService
         _configuration = configuration;
         _publishEndpoint = publishEndpoint;
         _countCache = countCache;
+        _trustScoreService = trustScoreService;
+        _trustBasedModerationService = trustBasedModerationService;
     }
 
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
     {
+        // Check trust-based permissions
+        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.CreatePost))
+        {
+            throw new InvalidOperationException("Insufficient trust score to create posts");
+        }
+
         var post = new Post
         {
             Content = createDto.Content,
@@ -115,6 +127,42 @@ public class PostService : BaseService, IPostService
 
         // Invalidate user post count cache
         await _countCache.InvalidateUserCountsAsync(userId);
+
+        // Update trust score for post creation
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.PostCreated,
+                "post",
+                post.Id,
+                $"Created post with {createDto.Content.Length} characters"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for post creation by user {UserId}", userId);
+            // Don't fail the post creation if trust score update fails
+        }
+
+        // Check if post should be auto-hidden based on trust score
+        try
+        {
+            if (await _trustBasedModerationService.ShouldAutoHideContentAsync(userId, "post"))
+            {
+                post.IsHidden = true;
+                post.HiddenAt = DateTime.UtcNow;
+                post.HiddenReason = "Auto-hidden due to low trust score";
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Auto-hidden post {PostId} from low trust user {UserId}", post.Id, userId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check auto-hide for post {PostId} by user {UserId}", post.Id, userId);
+            // Don't fail the post creation if auto-hide check fails
+        }
 
         // Load the post with user data
         var createdPost = await _context.Posts
@@ -468,6 +516,12 @@ public class PostService : BaseService, IPostService
 
     public async Task<bool> LikePostAsync(int postId, int userId)
     {
+        // Check trust-based permissions
+        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.LikeContent))
+        {
+            throw new InvalidOperationException("Insufficient trust score to like content");
+        }
+
         // Check if already liked
         if (await _context.Likes.AnyAsync(l => l.PostId == postId && l.UserId == userId))
             return false;
@@ -490,6 +544,23 @@ public class PostService : BaseService, IPostService
         if (post != null)
         {
             await _notificationService.CreateLikeNotificationAsync(post.UserId, userId, postId);
+        }
+
+        // Update trust score for like given
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.LikeGiven,
+                "post",
+                postId,
+                "Liked a post"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for like by user {UserId}", userId);
+            // Don't fail the like action if trust score update fails
         }
 
         return true;
@@ -558,6 +629,12 @@ public class PostService : BaseService, IPostService
 
     public async Task<CommentDto?> AddCommentAsync(int postId, int userId, CreateCommentDto createDto)
     {
+        // Check trust-based permissions
+        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.CreateComment))
+        {
+            throw new InvalidOperationException("Insufficient trust score to create comments");
+        }
+
         var comment = new Comment
         {
             Content = createDto.Content,
@@ -585,6 +662,42 @@ public class PostService : BaseService, IPostService
 
         // Perform content moderation analysis on comment
         await ProcessCommentModerationAsync(comment.Id, createDto.Content, userId);
+
+        // Update trust score for comment creation
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.CommentCreated,
+                "comment",
+                comment.Id,
+                $"Created comment with {createDto.Content.Length} characters"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for comment creation by user {UserId}", userId);
+            // Don't fail the comment creation if trust score update fails
+        }
+
+        // Check if comment should be auto-hidden based on trust score
+        try
+        {
+            if (await _trustBasedModerationService.ShouldAutoHideContentAsync(userId, "comment"))
+            {
+                comment.IsHidden = true;
+                comment.HiddenAt = DateTime.UtcNow;
+                comment.HiddenReason = "Auto-hidden due to low trust score";
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Auto-hidden comment {CommentId} from low trust user {UserId}", comment.Id, userId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check auto-hide for comment {CommentId} by user {UserId}", comment.Id, userId);
+            // Don't fail the comment creation if auto-hide check fails
+        }
 
         // Load the comment with user data
         var createdComment = await _context.Comments

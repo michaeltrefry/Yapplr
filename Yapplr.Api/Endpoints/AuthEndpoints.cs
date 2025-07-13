@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
-using Yapplr.Api.Exceptions;
 using Yapplr.Api.Common;
-using System.ComponentModel.DataAnnotations;
 
 namespace Yapplr.Api.Endpoints;
 

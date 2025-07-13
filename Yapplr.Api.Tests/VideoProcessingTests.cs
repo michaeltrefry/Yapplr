@@ -1,16 +1,15 @@
 using Xunit;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Yapplr.Api.Data;
-using Yapplr.Api.Models;
 using Yapplr.Api.Services;
-using Yapplr.Api.DTOs;
-using Yapplr.Api.Models.Analytics;
 using Yapplr.Api.CQRS.Consumers;
+using Yapplr.Api.Models;
+using Yapplr.Api.DTOs;
 using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
+using FluentAssertions;
 using MassTransit;
 
 namespace Yapplr.Api.Tests;
@@ -24,6 +23,7 @@ public class VideoProcessingTests : IDisposable
     private readonly Mock<IAnalyticsService> _analyticsService;
     private readonly Mock<IPublishEndpoint> _publishEndpoint;
     private readonly Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor> _httpContextAccessor;
+    private readonly Mock<ITrustBasedModerationService> _trustBasedModerationService;
     private readonly PostService _postService;
     private readonly VideoProcessingCompletedConsumer _consumer;
 
@@ -40,6 +40,11 @@ public class VideoProcessingTests : IDisposable
         _analyticsService = new Mock<IAnalyticsService>();
         _publishEndpoint = new Mock<IPublishEndpoint>();
         _httpContextAccessor = new Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor>();
+        _trustBasedModerationService = new Mock<ITrustBasedModerationService>();
+
+        // Set up trust-based moderation service to allow all actions for tests
+        _trustBasedModerationService.Setup(x => x.CanPerformActionAsync(It.IsAny<int>(), It.IsAny<TrustRequiredAction>()))
+            .ReturnsAsync(true);
 
         // Create PostService with mocked dependencies
         _postService = new PostService(
@@ -52,6 +57,8 @@ public class VideoProcessingTests : IDisposable
             Mock.Of<Microsoft.Extensions.Configuration.IConfiguration>(),
             _publishEndpoint.Object,
             Mock.Of<ICountCacheService>(),
+            Mock.Of<ITrustScoreService>(),
+            _trustBasedModerationService.Object,
             _postServiceLogger.Object
         );
 
@@ -73,12 +80,13 @@ public class VideoProcessingTests : IDisposable
     public async Task CreatePostAsync_WithVideo_SetsIsHiddenDuringVideoProcessing()
     {
         // Arrange
-        var user = new User 
-        { 
-            Id = 1, 
-            Username = "testuser", 
+        var user = new User
+        {
+            Id = 1,
+            Username = "testuser",
             Email = "test@example.com",
-            EmailVerified = true
+            EmailVerified = true,
+            TrustScore = 0.8f // Sufficient trust score for creating posts
         };
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
@@ -105,12 +113,13 @@ public class VideoProcessingTests : IDisposable
     public async Task CreatePostAsync_WithoutVideo_DoesNotSetIsHiddenDuringVideoProcessing()
     {
         // Arrange
-        var user = new User 
-        { 
-            Id = 1, 
-            Username = "testuser", 
+        var user = new User
+        {
+            Id = 1,
+            Username = "testuser",
             Email = "test@example.com",
-            EmailVerified = true
+            EmailVerified = true,
+            TrustScore = 0.8f // Sufficient trust score for creating posts
         };
         _context.Users.Add(user);
         await _context.SaveChangesAsync();

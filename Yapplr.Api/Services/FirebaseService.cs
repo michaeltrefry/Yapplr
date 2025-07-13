@@ -1,13 +1,10 @@
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
-using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Yapplr.Api.Data;
-using Yapplr.Api.Models;
 using Yapplr.Api.Configuration;
-using System.Text.Json;
 
 namespace Yapplr.Api.Services;
 

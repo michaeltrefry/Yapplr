@@ -1,6 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Yapplr.Api.Authorization;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Endpoints;

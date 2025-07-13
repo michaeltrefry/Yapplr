@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
@@ -15,14 +14,16 @@ public class UserService : BaseService, IUserService
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
     private readonly ICountCacheService _countCache;
+    private readonly ITrustScoreService _trustScoreService;
 
-    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService, IEmailService emailService, IConfiguration configuration, ICountCacheService countCache, ILogger<UserService> logger) : base(context, logger)
+    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService, IEmailService emailService, IConfiguration configuration, ICountCacheService countCache, ITrustScoreService trustScoreService, ILogger<UserService> logger) : base(context, logger)
     {
         _blockService = blockService;
         _notificationService = notificationService;
         _emailService = emailService;
         _configuration = configuration;
         _countCache = countCache;
+        _trustScoreService = trustScoreService;
     }
 
     public new async Task<UserDto?> GetUserByIdAsync(int userId)
@@ -554,6 +555,23 @@ public class UserService : BaseService, IUserService
         {
             _logger.LogError(ex, "Failed to send suspension email to user {UserId} ({Email})", userId, user.Email);
             // Don't fail the suspension if email fails
+        }
+
+        // Update trust score for user suspension (significant negative impact)
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.UserSuspended,
+                "user",
+                userId,
+                $"User suspended: {reason}"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for user suspension {UserId}", userId);
+            // Don't fail the suspension if trust score update fails
         }
 
         return true;

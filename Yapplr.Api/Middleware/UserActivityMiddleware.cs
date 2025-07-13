@@ -1,6 +1,4 @@
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
-using Yapplr.Api.Data;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Middleware;

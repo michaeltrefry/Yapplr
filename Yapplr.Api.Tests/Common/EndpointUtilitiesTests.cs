@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using System.Security.Claims;
 using Xunit;
 using Yapplr.Api.Common;

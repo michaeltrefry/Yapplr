@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Extensions

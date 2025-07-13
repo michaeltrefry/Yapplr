@@ -1,8 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Yapplr.Api.Models;
 using Yapplr.Shared.Models;
-using Yapplr.Api.Common;
-using Yapplr.Shared.Models;
 
 namespace Yapplr.Api.DTOs;
 

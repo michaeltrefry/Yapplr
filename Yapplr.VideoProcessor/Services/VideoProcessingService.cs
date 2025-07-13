@@ -1,6 +1,4 @@
 using FFMpegCore;
-using FFMpegCore.Enums;
-using FFMpegCore.Pipes;
 using Yapplr.Shared.Models;
 
 namespace Yapplr.VideoProcessor.Services;
@@ -19,7 +17,7 @@ public class VideoProcessingService : IVideoProcessingService
         var ffmpegPath = _configuration["FFmpeg:BinaryPath"];
         if (!string.IsNullOrEmpty(ffmpegPath) && File.Exists(ffmpegPath))
         {
-            GlobalFFOptions.Configure(new FFOptions { BinaryFolder = Path.GetDirectoryName(ffmpegPath) });
+            GlobalFFOptions.Configure(new FFOptions { BinaryFolder = Path.GetDirectoryName(ffmpegPath) ?? throw new InvalidOperationException() });
         }
     }
 

@@ -1,13 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Amazon.SimpleEmail;
 using Yapplr.Api.Data;
 using Yapplr.Api.Services;
-using Yapplr.Api.Hubs;
 using Yapplr.Api.Configuration;
 using SendGrid;
 using Yapplr.Api.Models;
@@ -15,7 +13,6 @@ using Yapplr.Api.Authorization;
 using MassTransit;
 using Yapplr.Api.CQRS;
 using Yapplr.Api.Common;
-using StackExchange.Redis;
 
 namespace Yapplr.Api.Extensions;
 
@@ -308,6 +305,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITagAnalyticsService, TagAnalyticsService>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
         services.AddScoped<ILinkPreviewService, LinkPreviewService>();
+        services.AddScoped<ITrustScoreService, TrustScoreService>();
+        services.AddScoped<ITrustBasedModerationService, TrustBasedModerationService>();
+
+        // Add trust score background service
+        services.AddHostedService<TrustScoreBackgroundService>();
 
         // Add caching services
         services.AddScoped<ICountCacheService, CountCacheService>();
@@ -400,6 +402,10 @@ public static class ServiceCollectionExtensions
         // Configure Uploads
         services.Configure<UploadsConfiguration>(
             configuration.GetSection(UploadsConfiguration.SectionName));
+
+        // Configure Trust Score Background Service
+        services.Configure<TrustScoreBackgroundOptions>(
+            configuration.GetSection(TrustScoreBackgroundOptions.SectionName));
 
         // Add provider-specific services
         if (notificationConfig.Firebase.Enabled)

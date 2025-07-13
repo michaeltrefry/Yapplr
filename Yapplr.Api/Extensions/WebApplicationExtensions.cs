@@ -5,7 +5,6 @@ using Yapplr.Api.Endpoints;
 using Yapplr.Api.Middleware;
 using Yapplr.Api.Hubs;
 using Yapplr.Api.Configuration;
-using Yapplr.Api.Models;
 
 namespace Yapplr.Api.Extensions;
 

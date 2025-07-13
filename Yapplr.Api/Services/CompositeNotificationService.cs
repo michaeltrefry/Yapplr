@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 
 namespace Yapplr.Api.Services;

@@ -67,4 +67,12 @@ public interface IAdminService
     Task<bool> CreateSystemAnnouncementAsync(string title, string content, int createdByUserId, DateTime? expiresAt = null);
     Task<bool> ToggleFeatureFlagAsync(string featureName, bool isEnabled, int changedByUserId);
     Task<Dictionary<string, bool>> GetFeatureFlagsAsync();
+
+    // Trust Score Management
+    Task<IEnumerable<UserTrustScoreDto>> GetUserTrustScoresAsync(int page = 1, int pageSize = 25, float? minScore = null, float? maxScore = null);
+    Task<UserTrustScoreDto?> GetUserTrustScoreAsync(int userId);
+    Task<IEnumerable<TrustScoreHistoryDto>> GetUserTrustScoreHistoryAsync(int userId, int page = 1, int pageSize = 25);
+    Task<TrustScoreStatsDto> GetTrustScoreStatisticsAsync();
+    Task<TrustScoreFactorsDto?> GetUserTrustScoreFactorsAsync(int userId);
+    Task<bool> UpdateUserTrustScoreAsync(int userId, int adjustedByUserId, UpdateTrustScoreDto updateDto);
 }

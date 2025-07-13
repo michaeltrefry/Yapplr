@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Yapplr.Api.Data;
 using Yapplr.Api.Hubs;
-using Yapplr.Api.Models;
 using Yapplr.Api.Configuration;
 
 namespace Yapplr.Api.Services;

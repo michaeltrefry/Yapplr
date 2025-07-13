@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 

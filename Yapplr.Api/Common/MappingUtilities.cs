@@ -1,6 +1,5 @@
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
-using Yapplr.Api.Extensions;
 using Yapplr.Shared.Models;
 
 namespace Yapplr.Api.Common;

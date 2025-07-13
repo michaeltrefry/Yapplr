@@ -12,14 +12,16 @@ public class AdminService : IAdminService
     private readonly IAuditService _auditService;
     private readonly INotificationService _notificationService;
     private readonly IModerationMessageService _moderationMessageService;
+    private readonly ITrustScoreService _trustScoreService;
     private readonly ILogger<AdminService> _logger;
 
-    public AdminService(YapplrDbContext context, IAuditService auditService, INotificationService notificationService, IModerationMessageService moderationMessageService, ILogger<AdminService> logger)
+    public AdminService(YapplrDbContext context, IAuditService auditService, INotificationService notificationService, IModerationMessageService moderationMessageService, ITrustScoreService trustScoreService, ILogger<AdminService> logger)
     {
         _context = context;
         _auditService = auditService;
         _notificationService = notificationService;
         _moderationMessageService = moderationMessageService;
+        _trustScoreService = trustScoreService;
         _logger = logger;
     }
 
@@ -210,6 +212,23 @@ public class AdminService : IAdminService
         // Send notification to the post owner
         await _notificationService.CreateContentHiddenNotificationAsync(post.UserId, "post", postId, reason, moderator.Username);
 
+        // Update trust score for content being hidden (negative impact)
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                post.UserId,
+                TrustScoreAction.ContentHidden,
+                "post",
+                postId,
+                $"Post hidden by moderator: {reason}"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for hidden post by user {UserId}", post.UserId);
+            // Don't fail the moderation action if trust score update fails
+        }
+
         return true;
     }
 
@@ -251,6 +270,23 @@ public class AdminService : IAdminService
 
         // Send notification to the comment owner
         await _notificationService.CreateContentHiddenNotificationAsync(comment.UserId, "comment", commentId, reason, moderator.Username);
+
+        // Update trust score for content being hidden (negative impact)
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                comment.UserId,
+                TrustScoreAction.ContentHidden,
+                "comment",
+                commentId,
+                $"Comment hidden by moderator: {reason}"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for hidden comment by user {UserId}", comment.UserId);
+            // Don't fail the moderation action if trust score update fails
+        }
 
         return true;
     }
@@ -1423,6 +1459,162 @@ public class AdminService : IAdminService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error bulk rejecting AI suggested tags");
+            return false;
+        }
+    }
+
+    // Trust Score Management
+    public async Task<IEnumerable<UserTrustScoreDto>> GetUserTrustScoresAsync(int page = 1, int pageSize = 25, float? minScore = null, float? maxScore = null)
+    {
+        var query = _context.Users.AsQueryable();
+
+        if (minScore.HasValue)
+            query = query.Where(u => u.TrustScore >= minScore.Value);
+
+        if (maxScore.HasValue)
+            query = query.Where(u => u.TrustScore <= maxScore.Value);
+
+        var users = await query
+            .OrderBy(u => u.TrustScore)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(u => new UserTrustScoreDto
+            {
+                UserId = u.Id,
+                Username = u.Username,
+                Email = u.Email,
+                TrustScore = u.TrustScore ?? 1.0f,
+                CreatedAt = u.CreatedAt,
+                LastSeenAt = u.LastSeenAt,
+                Status = u.Status,
+                Role = u.Role,
+                PostCount = u.Posts.Count,
+                CommentCount = u.Comments.Count,
+                LikeCount = u.Likes.Count,
+                ReportCount = _context.UserReports.Count(ur => ur.ReportedByUserId == u.Id),
+                ModerationActionCount = _context.AuditLogs.Count(al => al.TargetUserId == u.Id &&
+                    (al.Action == AuditAction.PostHidden || al.Action == AuditAction.CommentHidden || al.Action == AuditAction.UserSuspended))
+            })
+            .ToListAsync();
+
+        return users;
+    }
+
+    public async Task<UserTrustScoreDto?> GetUserTrustScoreAsync(int userId)
+    {
+        var user = await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new UserTrustScoreDto
+            {
+                UserId = u.Id,
+                Username = u.Username,
+                Email = u.Email,
+                TrustScore = u.TrustScore ?? 1.0f,
+                CreatedAt = u.CreatedAt,
+                LastSeenAt = u.LastSeenAt,
+                Status = u.Status,
+                Role = u.Role,
+                PostCount = u.Posts.Count,
+                CommentCount = u.Comments.Count,
+                LikeCount = u.Likes.Count,
+                ReportCount = _context.UserReports.Count(ur => ur.ReportedByUserId == u.Id),
+                ModerationActionCount = _context.AuditLogs.Count(al => al.TargetUserId == u.Id &&
+                    (al.Action == AuditAction.PostHidden || al.Action == AuditAction.CommentHidden || al.Action == AuditAction.UserSuspended))
+            })
+            .FirstOrDefaultAsync();
+
+        return user;
+    }
+
+    public async Task<IEnumerable<TrustScoreHistoryDto>> GetUserTrustScoreHistoryAsync(int userId, int page = 1, int pageSize = 25)
+    {
+        var history = await _context.UserTrustScoreHistories
+            .Include(h => h.User)
+            .Include(h => h.TriggeredByUser)
+            .Where(h => h.UserId == userId)
+            .OrderByDescending(h => h.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(h => new TrustScoreHistoryDto
+            {
+                Id = h.Id,
+                UserId = h.UserId,
+                Username = h.User.Username,
+                PreviousScore = h.PreviousScore,
+                NewScore = h.NewScore,
+                ScoreChange = h.ScoreChange,
+                Reason = h.Reason.ToString(),
+                Details = h.Details,
+                RelatedEntityType = h.RelatedEntityType,
+                RelatedEntityId = h.RelatedEntityId,
+                TriggeredByUsername = h.TriggeredByUser != null ? h.TriggeredByUser.Username : null,
+                CalculatedBy = h.CalculatedBy,
+                IsAutomatic = h.IsAutomatic,
+                Confidence = h.Confidence,
+                CreatedAt = h.CreatedAt
+            })
+            .ToListAsync();
+
+        return history;
+    }
+
+    public async Task<TrustScoreStatsDto> GetTrustScoreStatisticsAsync()
+    {
+        var stats = await _trustScoreService.GetTrustScoreStatisticsAsync();
+
+        return new TrustScoreStatsDto
+        {
+            TotalUsers = (int)(stats.GetValueOrDefault("totalUsers", 0)),
+            AverageScore = (float)(stats.GetValueOrDefault("averageScore", 0.0)),
+            MedianScore = (float)(stats.GetValueOrDefault("medianScore", 0.0)),
+            MinScore = (float)(stats.GetValueOrDefault("minScore", 0.0)),
+            MaxScore = (float)(stats.GetValueOrDefault("maxScore", 1.0)),
+            Distribution = stats.GetValueOrDefault("distribution", new Dictionary<string, int>()) as Dictionary<string, int> ?? new()
+        };
+    }
+
+    public async Task<TrustScoreFactorsDto?> GetUserTrustScoreFactorsAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return null;
+
+        var factors = await _trustScoreService.GetTrustScoreFactorsAsync(userId);
+
+        return new TrustScoreFactorsDto
+        {
+            UserId = userId,
+            Username = user.Username,
+            CurrentScore = user.TrustScore ?? 1.0f,
+            Factors = factors
+        };
+    }
+
+    public async Task<bool> UpdateUserTrustScoreAsync(int userId, int adjustedByUserId, UpdateTrustScoreDto updateDto)
+    {
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.AdminAdjustment,
+                "user",
+                userId,
+                updateDto.Details ?? updateDto.Reason
+            );
+
+            // Log the manual adjustment
+            await _auditService.LogActionAsync(
+                AuditAction.UserRoleChanged, // Using closest available action
+                adjustedByUserId,
+                targetUserId: userId,
+                reason: $"Trust score manually adjusted: {updateDto.Reason}",
+                details: $"Score change: {updateDto.ScoreChange}, Details: {updateDto.Details}"
+            );
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for user {UserId}", userId);
             return false;
         }
     }

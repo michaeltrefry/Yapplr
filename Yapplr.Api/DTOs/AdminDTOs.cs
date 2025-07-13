@@ -395,6 +395,68 @@ public class UserReportDto
     public List<SystemTagDto> SystemTags { get; set; } = new();
 }
 
+// Trust Score DTOs
+public class UserTrustScoreDto
+{
+    public int UserId { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public float TrustScore { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime LastSeenAt { get; set; }
+    public UserStatus Status { get; set; }
+    public UserRole Role { get; set; }
+    public int PostCount { get; set; }
+    public int CommentCount { get; set; }
+    public int LikeCount { get; set; }
+    public int ReportCount { get; set; }
+    public int ModerationActionCount { get; set; }
+}
+
+public class TrustScoreHistoryDto
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public float PreviousScore { get; set; }
+    public float NewScore { get; set; }
+    public float ScoreChange { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public string? Details { get; set; }
+    public string? RelatedEntityType { get; set; }
+    public int? RelatedEntityId { get; set; }
+    public string? TriggeredByUsername { get; set; }
+    public string? CalculatedBy { get; set; }
+    public bool IsAutomatic { get; set; }
+    public float? Confidence { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class TrustScoreStatsDto
+{
+    public int TotalUsers { get; set; }
+    public float AverageScore { get; set; }
+    public float MedianScore { get; set; }
+    public float MinScore { get; set; }
+    public float MaxScore { get; set; }
+    public Dictionary<string, int> Distribution { get; set; } = new();
+}
+
+public class TrustScoreFactorsDto
+{
+    public int UserId { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public float CurrentScore { get; set; }
+    public Dictionary<string, object> Factors { get; set; } = new();
+}
+
+public class UpdateTrustScoreDto
+{
+    public float ScoreChange { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public string? Details { get; set; }
+}
+
 public class CreateUserReportDto
 {
     public int? PostId { get; set; }

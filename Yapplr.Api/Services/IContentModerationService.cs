@@ -1,5 +1,3 @@
-using Yapplr.Api.DTOs;
-
 namespace Yapplr.Api.Services;
 
 public interface IContentModerationService

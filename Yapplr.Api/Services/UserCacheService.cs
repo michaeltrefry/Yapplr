@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using System.Collections.Concurrent;

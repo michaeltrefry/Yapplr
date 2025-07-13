@@ -12,25 +12,37 @@ public class UserReportService : IUserReportService
     private readonly IAuditService _auditService;
     private readonly IAdminService _adminService;
     private readonly IModerationMessageService _moderationMessageService;
+    private readonly ITrustScoreService _trustScoreService;
+    private readonly ITrustBasedModerationService _trustBasedModerationService;
 
     public UserReportService(
         YapplrDbContext context,
         ILogger<UserReportService> logger,
         IAuditService auditService,
         IAdminService adminService,
-        IModerationMessageService moderationMessageService)
+        IModerationMessageService moderationMessageService,
+        ITrustScoreService trustScoreService,
+        ITrustBasedModerationService trustBasedModerationService)
     {
         _context = context;
         _logger = logger;
         _auditService = auditService;
         _adminService = adminService;
         _moderationMessageService = moderationMessageService;
+        _trustScoreService = trustScoreService;
+        _trustBasedModerationService = trustBasedModerationService;
     }
 
     public async Task<UserReportDto?> CreateReportAsync(int reportedByUserId, CreateUserReportDto dto)
     {
         try
         {
+            // Check trust-based permissions
+            if (!await _trustBasedModerationService.CanPerformActionAsync(reportedByUserId, TrustRequiredAction.ReportContent))
+            {
+                throw new InvalidOperationException("Insufficient trust score to report content");
+            }
+
             // Validate that the content exists
             if (dto.PostId.HasValue)
             {
@@ -113,6 +125,23 @@ public class UserReportService : IUserReportService
 
             _logger.LogInformation("User {UserId} created report {ReportId} for {ContentType} {ContentId}",
                 reportedByUserId, report.Id, contentType, contentId);
+
+            // Update trust score for submitting a report (small positive for community participation)
+            try
+            {
+                await _trustScoreService.UpdateTrustScoreForActionAsync(
+                    reportedByUserId,
+                    TrustScoreAction.HelpfulReport,
+                    contentType,
+                    contentId,
+                    $"Submitted report: {dto.Reason}"
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update trust score for report submission by user {UserId}", reportedByUserId);
+                // Don't fail the report creation if trust score update fails
+            }
 
             return await GetReportByIdAsync(report.Id);
         }

@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using Yapplr.Api.Data;
-using Yapplr.Api.Models;
 
 namespace Yapplr.Api.Services;
 

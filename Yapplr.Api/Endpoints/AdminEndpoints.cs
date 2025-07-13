@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Yapplr.Api.Authorization;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Extensions;
@@ -741,6 +739,9 @@ public static class AdminEndpoints
         .Produces(200)
         .Produces(400)
         .Produces(401);
+
+        // Map trust score endpoints
+        MapTrustScoreEndpoints(app);
     }
 
     // Additional DTOs for bulk actions
@@ -766,5 +767,85 @@ public static class AdminEndpoints
     {
         public IEnumerable<int> SuggestedTagIds { get; set; } = new List<int>();
         public string? Reason { get; set; }
+    }
+
+    // Trust Score Management Endpoints
+    private static void MapTrustScoreEndpoints(WebApplication app)
+    {
+        var trustScore = app.MapGroup("/api/admin/trust-scores").WithTags("Admin - Trust Scores");
+
+        // Get all user trust scores with filtering
+        trustScore.MapGet("/", async (IAdminService adminService, int page = 1, int pageSize = 25, float? minScore = null, float? maxScore = null) =>
+        {
+            var scores = await adminService.GetUserTrustScoresAsync(page, pageSize, minScore, maxScore);
+            return Results.Ok(scores);
+        })
+        .WithName("GetUserTrustScores")
+        .WithSummary("Get user trust scores with optional filtering")
+        .RequireAuthorization("Admin")
+        .Produces<IEnumerable<UserTrustScoreDto>>(200);
+
+        // Get specific user trust score
+        trustScore.MapGet("/{userId:int}", async (int userId, IAdminService adminService) =>
+        {
+            var score = await adminService.GetUserTrustScoreAsync(userId);
+            return score == null ? Results.NotFound() : Results.Ok(score);
+        })
+        .WithName("GetUserTrustScore")
+        .WithSummary("Get trust score for a specific user")
+        .RequireAuthorization("Admin")
+        .Produces<UserTrustScoreDto>(200)
+        .Produces(404);
+
+        // Get user trust score history
+        trustScore.MapGet("/{userId:int}/history", async (int userId, IAdminService adminService, int page = 1, int pageSize = 25) =>
+        {
+            var history = await adminService.GetUserTrustScoreHistoryAsync(userId, page, pageSize);
+            return Results.Ok(history);
+        })
+        .WithName("GetUserTrustScoreHistory")
+        .WithSummary("Get trust score change history for a user")
+        .RequireAuthorization("Admin")
+        .Produces<IEnumerable<TrustScoreHistoryDto>>(200);
+
+        // Get trust score statistics
+        trustScore.MapGet("/statistics", async (IAdminService adminService) =>
+        {
+            var stats = await adminService.GetTrustScoreStatisticsAsync();
+            return Results.Ok(stats);
+        })
+        .WithName("GetTrustScoreStatistics")
+        .WithSummary("Get platform-wide trust score statistics")
+        .RequireAuthorization("Admin")
+        .Produces<TrustScoreStatsDto>(200);
+
+        // Get user trust score factors breakdown
+        trustScore.MapGet("/{userId:int}/factors", async (int userId, IAdminService adminService) =>
+        {
+            var factors = await adminService.GetUserTrustScoreFactorsAsync(userId);
+            return factors == null ? Results.NotFound() : Results.Ok(factors);
+        })
+        .WithName("GetUserTrustScoreFactors")
+        .WithSummary("Get detailed breakdown of factors affecting user's trust score")
+        .RequireAuthorization("Admin")
+        .Produces<TrustScoreFactorsDto>(200)
+        .Produces(404);
+
+        // Manually adjust user trust score
+        trustScore.MapPut("/{userId:int}", async (int userId, [FromBody] UpdateTrustScoreDto updateDto, ClaimsPrincipal user, IAdminService adminService) =>
+        {
+            var currentUserId = GetCurrentUserId(user);
+            if (!currentUserId.HasValue)
+                return Results.Unauthorized();
+
+            var success = await adminService.UpdateUserTrustScoreAsync(userId, currentUserId.Value, updateDto);
+            return success ? Results.Ok(new { message = "Trust score updated successfully" }) : Results.BadRequest(new { message = "Failed to update trust score" });
+        })
+        .WithName("UpdateUserTrustScore")
+        .WithSummary("Manually adjust a user's trust score")
+        .RequireAuthorization("Admin")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
     }
 }

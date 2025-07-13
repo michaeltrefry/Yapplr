@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace Yapplr.Api.Models;
 
 public enum MessageStatusType
