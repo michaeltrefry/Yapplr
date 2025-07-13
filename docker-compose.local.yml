@@ -34,6 +34,8 @@ services:
       - RabbitMQ__VirtualHost=/
       # Upload configuration - override to use Docker volume path
       - Uploads__BasePath=/app/uploads
+      # Redis configuration
+      - Redis__ConnectionString=redis:6379
     volumes:
       - yapplr_uploads:/app/uploads
     restart: unless-stopped
@@ -45,6 +47,8 @@ services:
       content-moderation:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -174,10 +178,28 @@ services:
       retries: 5
       start_period: 30s
 
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6380:6379"  # Use different external port to avoid conflict with local Redis
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
 volumes:
   yapplr_uploads:
   postgres_data:
   rabbitmq_data:
+  redis_data:
 
 networks:
   yapplr-network:

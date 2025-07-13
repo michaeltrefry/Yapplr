@@ -51,6 +51,7 @@ public class VideoProcessingTests : IDisposable
             Mock.Of<IContentModerationService>(),
             Mock.Of<Microsoft.Extensions.Configuration.IConfiguration>(),
             _publishEndpoint.Object,
+            Mock.Of<ICountCacheService>(),
             _postServiceLogger.Object
         );
 

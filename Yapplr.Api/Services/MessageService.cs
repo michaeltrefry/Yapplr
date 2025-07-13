@@ -11,12 +11,14 @@ public class MessageService : IMessageService
     private readonly YapplrDbContext _context;
     private readonly IUserService _userService;
     private readonly ICompositeNotificationService _notificationService;
+    private readonly ICountCacheService _countCache;
 
-    public MessageService(YapplrDbContext context, IUserService userService, ICompositeNotificationService notificationService)
+    public MessageService(YapplrDbContext context, IUserService userService, ICompositeNotificationService notificationService, ICountCacheService countCache)
     {
         _context = context;
         _userService = userService;
         _notificationService = notificationService;
+        _countCache = countCache;
     }
 
     public async Task<bool> CanUserMessageAsync(int senderId, int recipientId)
@@ -160,6 +162,9 @@ public class MessageService : IMessageService
         _context.MessageStatuses.Add(recipientStatus);
 
         await _context.SaveChangesAsync();
+
+        // Invalidate message count cache for recipient
+        await _countCache.InvalidateNotificationCountsAsync(createDto.RecipientId);
 
         // Send real-time notification to recipient (Firebase with SignalR fallback)
         var sender = await _context.Users.FindAsync(senderId);
@@ -427,6 +432,10 @@ public class MessageService : IMessageService
         {
             participant.LastReadAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
+            // Invalidate message count cache
+            await _countCache.InvalidateNotificationCountsAsync(userId);
+
             return true;
         }
 
@@ -566,20 +575,6 @@ public class MessageService : IMessageService
 
     public async Task<int> GetTotalUnreadMessageCountAsync(int userId)
     {
-        // Get all conversations where the user is a participant
-        var conversationIds = await _context.ConversationParticipants
-            .Where(cp => cp.UserId == userId)
-            .Select(cp => cp.ConversationId)
-            .ToListAsync();
-
-        var totalUnreadCount = 0;
-
-        // Calculate unread count for each conversation
-        foreach (var conversationId in conversationIds)
-        {
-            totalUnreadCount += await GetUnreadMessageCountAsync(conversationId, userId);
-        }
-
-        return totalUnreadCount;
+        return await _countCache.GetUnreadMessageCountAsync(userId);
     }
 }

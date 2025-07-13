@@ -20,6 +20,7 @@ public class PostService : BaseService, IPostService
     private readonly IContentModerationService _contentModerationService;
     private readonly IConfiguration _configuration;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly ICountCacheService _countCache;
 
     public PostService(
         YapplrDbContext context,
@@ -30,6 +31,7 @@ public class PostService : BaseService, IPostService
         IContentModerationService contentModerationService,
         IConfiguration configuration,
         IPublishEndpoint publishEndpoint,
+        ICountCacheService countCache,
         ILogger<PostService> logger) : base(context, logger)
     {
         _httpContextAccessor = httpContextAccessor;
@@ -39,6 +41,7 @@ public class PostService : BaseService, IPostService
         _contentModerationService = contentModerationService;
         _configuration = configuration;
         _publishEndpoint = publishEndpoint;
+        _countCache = countCache;
     }
 
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
@@ -109,6 +112,9 @@ public class PostService : BaseService, IPostService
         {
             await ProcessVideoAsync(post.Id, userId, createDto.VideoFileName, createDto.Content);
         }
+
+        // Invalidate user post count cache
+        await _countCache.InvalidateUserCountsAsync(userId);
 
         // Load the post with user data
         var createdPost = await _context.Posts
@@ -476,6 +482,9 @@ public class PostService : BaseService, IPostService
         _context.Likes.Add(like);
         await _context.SaveChangesAsync();
 
+        // Invalidate post like count cache
+        await _countCache.InvalidatePostCountsAsync(postId);
+
         // Get the post owner to create notification
         var post = await _context.Posts.FindAsync(postId);
         if (post != null)
@@ -495,6 +504,10 @@ public class PostService : BaseService, IPostService
 
         _context.Likes.Remove(like);
         await _context.SaveChangesAsync();
+
+        // Invalidate post like count cache
+        await _countCache.InvalidatePostCountsAsync(postId);
+
         return true;
     }
 
@@ -513,6 +526,9 @@ public class PostService : BaseService, IPostService
 
         _context.Reposts.Add(repost);
         await _context.SaveChangesAsync();
+
+        // Invalidate post repost count cache
+        await _countCache.InvalidatePostCountsAsync(postId);
 
         // Get the post owner to create notification
         var post = await _context.Posts.FindAsync(postId);
@@ -533,6 +549,10 @@ public class PostService : BaseService, IPostService
 
         _context.Reposts.Remove(repost);
         await _context.SaveChangesAsync();
+
+        // Invalidate post repost count cache
+        await _countCache.InvalidatePostCountsAsync(postId);
+
         return true;
     }
 
@@ -549,6 +569,9 @@ public class PostService : BaseService, IPostService
 
         _context.Comments.Add(comment);
         await _context.SaveChangesAsync();
+
+        // Invalidate post comment count cache
+        await _countCache.InvalidatePostCountsAsync(postId);
 
         // Get the post owner to create comment notification
         var post = await _context.Posts.FindAsync(postId);
@@ -740,6 +763,12 @@ public class PostService : BaseService, IPostService
 
         _context.PostTags.AddRange(postTags);
         await _context.SaveChangesAsync();
+
+        // Invalidate tag count caches for all affected tags
+        foreach (var tag in allTags)
+        {
+            await _countCache.InvalidateTagCountsAsync(tag.Name);
+        }
     }
 
     private async Task ProcessPostLinkPreviewsAsync(int postId, string content)

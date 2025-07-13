@@ -15,6 +15,7 @@ public class MessageServiceTests : IDisposable
     private readonly MessageService _messageService;
     private readonly Mock<IUserService> _mockUserService;
     private readonly Mock<ICompositeNotificationService> _mockNotificationService;
+    private readonly Mock<ICountCacheService> _mockCountCache;
 
     public MessageServiceTests()
     {
@@ -25,8 +26,9 @@ public class MessageServiceTests : IDisposable
         _context = new TestYapplrDbContext(options);
         _mockUserService = new Mock<IUserService>();
         _mockNotificationService = new Mock<ICompositeNotificationService>();
+        _mockCountCache = new Mock<ICountCacheService>();
 
-        _messageService = new MessageService(_context, _mockUserService.Object, _mockNotificationService.Object);
+        _messageService = new MessageService(_context, _mockUserService.Object, _mockNotificationService.Object, _mockCountCache.Object);
     }
 
     public void Dispose()
@@ -613,6 +615,10 @@ public class MessageServiceTests : IDisposable
         _context.MessageStatuses.AddRange(status1, status2);
 
         await _context.SaveChangesAsync();
+
+        // Setup mock count cache to return expected count
+        _mockCountCache.Setup(x => x.GetUnreadMessageCountAsync(1))
+            .ReturnsAsync(2);
 
         // Act
         var result = await _messageService.GetTotalUnreadMessageCountAsync(1);

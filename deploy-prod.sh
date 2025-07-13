@@ -60,6 +60,7 @@ docker rm -f yapplrapi_yapplr-frontend_1 || true
 docker rm -f yapplr-video-processor_1 || true
 docker rm -f yapplrapi_content-moderation_1 || true
 docker rm -f yapplrapi_rabbitmq_1 || true
+docker rm -f yapplrapi_redis_1 || true
 
 # Stop and remove all containers with yapplr in the name
 docker ps -a --filter "name=yapplr" --format "{{.Names}}" | xargs -r docker stop || true
@@ -81,6 +82,7 @@ docker image rm yapplr-frontend:latest || true
 docker image rm content-moderation:latest || true
 docker image rm yapplr-video-processor:latest || true
 docker image rm rabbitmq:latest || true
+docker image rm redis:latest || true
 docker image prune -f || true
 
 # Set cache bust variable to force frontend rebuild

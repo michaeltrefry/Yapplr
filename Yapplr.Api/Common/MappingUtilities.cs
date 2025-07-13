@@ -318,6 +318,131 @@ public static class MappingUtilities
     }
 
     /// <summary>
+    /// Map Post to PostDto with cached counts (for performance when collections aren't loaded)
+    /// </summary>
+    public static PostDto MapToPostDtoWithCachedCounts(
+        this Post post,
+        int? currentUserId,
+        int likeCount,
+        int commentCount,
+        int repostCount,
+        HttpContext? httpContext = null,
+        bool includeModeration = false)
+    {
+        var userDto = post.User.MapToUserDto();
+        var isLiked = currentUserId.HasValue && post.Likes.Any(l => l.UserId == currentUserId.Value);
+        var isReposted = currentUserId.HasValue && post.Reposts.Any(r => r.UserId == currentUserId.Value);
+        var imageUrl = GenerateImageUrl(post.ImageFileName, httpContext);
+        var isEdited = IsEdited(post.CreatedAt, post.UpdatedAt);
+
+        // Map tags
+        var tags = post.PostTags.Select(pt => pt.Tag.MapToTagDto()).ToList();
+
+        // Map link previews
+        var linkPreviews = post.PostLinkPreviews.Select(plp => plp.LinkPreview.MapToLinkPreviewDto()).ToList();
+
+        // Map moderation info if requested and available
+        PostModerationInfoDto? moderationInfo = null;
+        if (includeModeration && post.IsHidden)
+        {
+            var systemTags = post.PostSystemTags.Select(pst => new PostSystemTagDto(
+                pst.SystemTag.Id,
+                pst.SystemTag.Name,
+                pst.SystemTag.Description,
+                pst.SystemTag.Category.ToString(),
+                pst.SystemTag.IsVisibleToUsers,
+                pst.SystemTag.Color,
+                pst.SystemTag.Icon,
+                pst.Reason,
+                pst.AppliedAt,
+                pst.AppliedByUser?.MapToUserDto() ?? CreateSystemUserDto()
+            )).ToList();
+
+            PostAppealInfoDto? appealInfo = null;
+            // Add appeal info mapping if needed
+
+            moderationInfo = new PostModerationInfoDto(
+                post.IsHidden,
+                post.HiddenReason,
+                post.HiddenAt,
+                post.HiddenByUser?.MapToUserDto(),
+                systemTags,
+                null, // Risk score
+                null, // Risk level
+                appealInfo
+            );
+        }
+
+        // Generate video URLs
+        string? videoUrl = null;
+        string? videoThumbnailUrl = null;
+        VideoMetadata? videoMetadata = null;
+
+        if (!string.IsNullOrEmpty(post.VideoFileName))
+        {
+            var request = httpContext?.Request;
+            if (request != null)
+            {
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                videoUrl = $"{baseUrl}/uploads/processed/{post.VideoFileName}";
+
+                // Generate thumbnail URL
+                var thumbnailFileName = Path.GetFileNameWithoutExtension(post.VideoFileName) + "_thumbnail.jpg";
+                videoThumbnailUrl = $"{baseUrl}/uploads/thumbnails/{thumbnailFileName}";
+            }
+
+            // Map video metadata if available
+            if (post.PostMedia.Any(pm => pm.MediaType == MediaType.Video))
+            {
+                var videoMedia = post.PostMedia.First(pm => pm.MediaType == MediaType.Video);
+                if (videoMedia.VideoWidth.HasValue && videoMedia.VideoHeight.HasValue)
+                {
+                    videoMetadata = new VideoMetadata
+                    {
+                        ProcessedWidth = videoMedia.VideoWidth.Value,
+                        ProcessedHeight = videoMedia.VideoHeight.Value,
+                        ProcessedDuration = videoMedia.VideoDuration ?? TimeSpan.Zero,
+                        ProcessedFileSizeBytes = videoMedia.VideoFileSizeBytes ?? 0,
+                        ProcessedFormat = videoMedia.VideoFormat ?? string.Empty,
+                        ProcessedBitrate = videoMedia.VideoBitrate ?? 0,
+                        CompressionRatio = videoMedia.VideoCompressionRatio ?? 0,
+                        // Original metadata from PostMedia
+                        OriginalWidth = videoMedia.OriginalVideoWidth ?? videoMedia.VideoWidth.Value,
+                        OriginalHeight = videoMedia.OriginalVideoHeight ?? videoMedia.VideoHeight.Value,
+                        OriginalDuration = videoMedia.OriginalVideoDuration ?? videoMedia.VideoDuration ?? TimeSpan.Zero,
+                        OriginalFileSizeBytes = videoMedia.OriginalVideoFileSizeBytes ?? videoMedia.VideoFileSizeBytes ?? 0,
+                        OriginalFormat = videoMedia.OriginalVideoFormat ?? videoMedia.VideoFormat ?? string.Empty,
+                        OriginalBitrate = videoMedia.OriginalVideoBitrate ?? videoMedia.VideoBitrate ?? 0
+                    };
+                }
+            }
+        }
+
+        return new PostDto(
+            post.Id,
+            post.Content,
+            imageUrl,
+            videoUrl,
+            videoThumbnailUrl,
+            post.VideoFileName != null ? post.VideoProcessingStatus : null,
+            post.Privacy,
+            post.CreatedAt,
+            post.UpdatedAt,
+            userDto,
+            likeCount,
+            commentCount,
+            repostCount,
+            tags,
+            linkPreviews,
+            isLiked,
+            isReposted,
+            isEdited,
+            moderationInfo,
+            videoMetadata
+        );
+    }
+
+    /// <summary>
     /// Map Message to MessageDto
     /// </summary>
     public static MessageDto MapToMessageDto(

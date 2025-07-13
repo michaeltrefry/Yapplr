@@ -14,6 +14,8 @@ using Yapplr.Api.Models;
 using Yapplr.Api.Authorization;
 using MassTransit;
 using Yapplr.Api.CQRS;
+using Yapplr.Api.Common;
+using StackExchange.Redis;
 
 namespace Yapplr.Api.Extensions;
 
@@ -59,6 +61,9 @@ public static class ServiceCollectionExtensions
 
         // Add memory cache
         services.AddMemoryCache();
+
+        // Add Redis caching
+        services.AddRedisCaching(configuration);
 
         // Add custom services
         services.AddApplicationServices();
@@ -304,6 +309,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAnalyticsService, AnalyticsService>();
         services.AddScoped<ILinkPreviewService, LinkPreviewService>();
 
+        // Add caching services
+        services.AddScoped<ICountCacheService, CountCacheService>();
+
         return services;
     }
 
@@ -524,6 +532,31 @@ public static class ServiceCollectionExtensions
 
         // Register CQRS services
         services.AddScoped<ICommandPublisher, CommandPublisher>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddRedisCaching(this IServiceCollection services, IConfiguration configuration)
+    {
+        var redisConnectionString = configuration.GetSection("Redis:ConnectionString").Value;
+
+        if (!string.IsNullOrEmpty(redisConnectionString))
+        {
+            // Add Redis connection
+            services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(provider =>
+            {
+                var connectionString = redisConnectionString;
+                return StackExchange.Redis.ConnectionMultiplexer.Connect(connectionString);
+            });
+
+            // Register Redis-based caching service
+            services.AddSingleton<ICachingService, RedisCachingService>();
+        }
+        else
+        {
+            // Fallback to memory caching if Redis is not configured
+            services.AddSingleton<ICachingService, MemoryCachingService>();
+        }
 
         return services;
     }

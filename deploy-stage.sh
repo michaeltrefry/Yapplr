@@ -63,6 +63,7 @@ docker rm -f yapplr-video-processor_1 || true
 docker rm -f yapplrapi_content-moderation_1 || true
 docker rm -f yapplrapi_rabbitmq_1 || true
 docker rm -f yapplrapi_postgres_1 || true
+docker rm -f yapplrapi_redis_1 || true
 
 # Stop and remove all containers with yapplr in the name
 docker ps -a --filter "name=yapplr" --format "{{.Names}}" | xargs -r docker stop || true
@@ -86,7 +87,10 @@ docker volume rm yapplrapi_yapplr_uploads || true
 docker volume rm yapplr-video-processor_yapplr_uploads || true
 docker volume rm rabbitmq_data || true
 docker volume rm rabbitmq_rabbitmq_data || true
+docker volume rm redis_data || true
+docker volume rm yapplrapi_redis_data || true
 docker volume ls -q | grep postgres | xargs -r docker volume rm || true
+docker volume ls -q | grep redis | xargs -r docker volume rm || true
 
 # Remove old images to force complete rebuild
 echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"
@@ -96,6 +100,7 @@ docker image rm content-moderation:latest || true
 docker image rm yapplr-video-processor:latest || true
 docker image rm rabbitmq:latest || true
 docker image rm postgres:latest || true
+docker image rm redis:latest || true
 docker image prune -f || true
 
 # Set cache bust variable to force frontend rebuild

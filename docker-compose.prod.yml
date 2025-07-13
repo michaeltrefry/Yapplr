@@ -39,6 +39,8 @@ services:
       - NotificationProviders__SignalR__EnableDetailedErrors=false
       # Upload configuration - override to use Docker volume path
       - Uploads__BasePath=/app/uploads
+      # Redis configuration
+      - Redis__ConnectionString=${PROD_REDIS_CONNECTION_STRING}
     volumes:
       - yapplr_uploads:/app/uploads
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -49,6 +51,8 @@ services:
       content-moderation:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -173,9 +177,31 @@ services:
       retries: 5
       start_period: 30s
 
+  redis:
+    image: redis:7.2-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save 300 100 --save 60 1000
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 512M
+
 volumes:
   yapplr_uploads:
   rabbitmq_data:
+  redis_data:
 
 networks:
   yapplr-network:

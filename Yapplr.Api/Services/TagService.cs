@@ -12,12 +12,14 @@ public class TagService : ITagService
     private readonly YapplrDbContext _context;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IBlockService _blockService;
+    private readonly ICountCacheService _countCache;
 
-    public TagService(YapplrDbContext context, IHttpContextAccessor httpContextAccessor, IBlockService blockService)
+    public TagService(YapplrDbContext context, IHttpContextAccessor httpContextAccessor, IBlockService blockService, ICountCacheService countCache)
     {
         _context = context;
         _httpContextAccessor = httpContextAccessor;
         _blockService = blockService;
+        _countCache = countCache;
     }
 
     public async Task<IEnumerable<TagDto>> SearchTagsAsync(string query, int? currentUserId = null, int limit = 20)
@@ -41,18 +43,11 @@ public class TagService : ITagService
             .Take(limit)
             .ToListAsync();
 
-        // Calculate actual visible post counts for each tag
+        // Calculate actual visible post counts for each tag using cache
         var result = new List<TagDto>();
         foreach (var tag in tags)
         {
-            var actualPostCount = await _context.PostTags
-                .Where(pt => pt.TagId == tag.Id &&
-                            !blockedUserIds.Contains(pt.Post.UserId) &&
-                            (!pt.Post.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)) &&
-                            (pt.Post.Privacy == PostPrivacy.Public ||
-                             (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)))
-                .CountAsync();
-
+            var actualPostCount = await _countCache.GetTagPostCountAsync(tag.Name, currentUserId);
             result.Add(new TagDto(tag.Id, tag.Name, actualPostCount));
         }
 
@@ -127,14 +122,8 @@ public class TagService : ITagService
             blockedUserIds = await GetBlockedUserIdsAsync(currentUserId.Value);
         }
 
-        // Calculate the actual visible post count based on user permissions
-        var actualPostCount = await _context.PostTags
-            .Where(pt => pt.Tag.Name == normalizedTagName &&
-                        !blockedUserIds.Contains(pt.Post.UserId) &&
-                        (!pt.Post.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)) &&
-                        (pt.Post.Privacy == PostPrivacy.Public ||
-                         (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)))
-            .CountAsync();
+        // Get the actual visible post count using cache
+        var actualPostCount = await _countCache.GetTagPostCountAsync(normalizedTagName, currentUserId);
 
         // Create a new TagDto with the actual visible count
         return new TagDto(tag.Id, tag.Name, actualPostCount);

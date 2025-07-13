@@ -11,11 +11,13 @@ public class NotificationService : INotificationService
 {
     private readonly YapplrDbContext _context;
     private readonly ICompositeNotificationService _notificationService;
+    private readonly ICountCacheService _countCache;
 
-    public NotificationService(YapplrDbContext context, ICompositeNotificationService notificationService)
+    public NotificationService(YapplrDbContext context, ICompositeNotificationService notificationService, ICountCacheService countCache)
     {
         _context = context;
         _notificationService = notificationService;
+        _countCache = countCache;
     }
 
     public async Task<NotificationDto?> CreateNotificationAsync(CreateNotificationDto createDto)
@@ -33,6 +35,9 @@ public class NotificationService : INotificationService
 
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(createDto.UserId);
 
         return await GetNotificationByIdAsync(notification.Id);
     }
@@ -148,9 +153,7 @@ public class NotificationService : INotificationService
 
     public async Task<int> GetUnreadNotificationCountAsync(int userId)
     {
-        return await _context.Notifications
-            .Where(n => n.UserId == userId && !n.IsRead)
-            .CountAsync();
+        return await _countCache.GetUnreadNotificationCountAsync(userId);
     }
 
     public async Task<bool> MarkNotificationAsReadAsync(int notificationId, int userId)
@@ -165,6 +168,10 @@ public class NotificationService : INotificationService
         notification.ReadAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
         return true;
     }
 
@@ -184,6 +191,10 @@ public class NotificationService : INotificationService
         }
 
         await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
         return true;
     }
 

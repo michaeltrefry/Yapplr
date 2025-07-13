@@ -14,13 +14,15 @@ public class UserService : BaseService, IUserService
     private readonly INotificationService _notificationService;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
+    private readonly ICountCacheService _countCache;
 
-    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService, IEmailService emailService, IConfiguration configuration, ILogger<UserService> logger) : base(context, logger)
+    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService, IEmailService emailService, IConfiguration configuration, ICountCacheService countCache, ILogger<UserService> logger) : base(context, logger)
     {
         _blockService = blockService;
         _notificationService = notificationService;
         _emailService = emailService;
         _configuration = configuration;
+        _countCache = countCache;
     }
 
     public new async Task<UserDto?> GetUserByIdAsync(int userId)
@@ -36,9 +38,6 @@ public class UserService : BaseService, IUserService
     public async Task<UserProfileDto?> GetUserProfileAsync(string username, int? currentUserId = null)
     {
         var user = await _context.Users
-            .Include(u => u.Posts)
-            .Include(u => u.Followers)
-            .Include(u => u.Following)
             .FirstOrDefaultAsync(u => u.Username == username);
 
         if (user == null)
@@ -66,9 +65,14 @@ public class UserService : BaseService, IUserService
             .FirstOrDefaultAsync(p => p.UserId == user.Id);
         var requiresFollowApproval = userPreferences?.RequireFollowApproval ?? false;
 
+        // Get cached counts
+        var postCount = await _countCache.GetPostCountAsync(user.Id);
+        var followerCount = await _countCache.GetFollowerCountAsync(user.Id);
+        var followingCount = await _countCache.GetFollowingCountAsync(user.Id);
+
         return new UserProfileDto(user.Id, user.Username, user.Bio, user.Birthday,
                                  user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt,
-                                 user.Posts.Count, user.Followers.Count, user.Following.Count,
+                                 postCount, followerCount, followingCount,
                                  isFollowedByCurrentUser, hasPendingFollowRequest, requiresFollowApproval);
     }
 
@@ -196,8 +200,7 @@ public class UserService : BaseService, IUserService
         if (existingFollow != null)
         {
             // Already following, return current status
-            var currentFollowerCount = await _context.Follows
-                .CountAsync(f => f.FollowingId == followingId);
+            var currentFollowerCount = await _countCache.GetFollowerCountAsync(followingId);
             return new FollowResponseDto(true, currentFollowerCount);
         }
 
@@ -210,8 +213,7 @@ public class UserService : BaseService, IUserService
         if (existingPendingRequest != null)
         {
             // Already has pending request, return current status
-            var currentFollowerCount = await _context.Follows
-                .CountAsync(f => f.FollowingId == followingId);
+            var currentFollowerCount = await _countCache.GetFollowerCountAsync(followingId);
             return new FollowResponseDto(false, currentFollowerCount, true);
         }
 
@@ -237,8 +239,7 @@ public class UserService : BaseService, IUserService
             // Create follow request notification
             await _notificationService.CreateFollowRequestNotificationAsync(followingId, followerId);
 
-            var followerCount = await _context.Follows
-                .CountAsync(f => f.FollowingId == followingId);
+            var followerCount = await _countCache.GetFollowerCountAsync(followingId);
 
             return new FollowResponseDto(false, followerCount, true);
         }
@@ -255,11 +256,13 @@ public class UserService : BaseService, IUserService
             _context.Follows.Add(follow);
             await _context.SaveChangesAsync();
 
+            // Invalidate follow counts cache
+            await _countCache.InvalidateFollowCountsAsync(followerId, followingId);
+
             // Create follow notification
             await _notificationService.CreateFollowNotificationAsync(followingId, followerId);
 
-            var followerCount = await _context.Follows
-                .CountAsync(f => f.FollowingId == followingId);
+            var followerCount = await _countCache.GetFollowerCountAsync(followingId);
 
             return new FollowResponseDto(true, followerCount);
         }
@@ -274,10 +277,12 @@ public class UserService : BaseService, IUserService
         {
             _context.Follows.Remove(follow);
             await _context.SaveChangesAsync();
+
+            // Invalidate follow counts cache
+            await _countCache.InvalidateFollowCountsAsync(followerId, followingId);
         }
 
-        var followerCount = await _context.Follows
-            .CountAsync(f => f.FollowingId == followingId);
+        var followerCount = await _countCache.GetFollowerCountAsync(followingId);
 
         return new FollowResponseDto(false, followerCount);
     }

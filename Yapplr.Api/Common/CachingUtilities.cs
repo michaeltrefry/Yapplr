@@ -4,6 +4,21 @@ using System.Text.Json;
 namespace Yapplr.Api.Common;
 
 /// <summary>
+/// Wrapper class for caching value types
+/// </summary>
+public class ValueWrapper<T> where T : struct
+{
+    public T Value { get; set; }
+
+    public ValueWrapper() { }
+
+    public ValueWrapper(T value)
+    {
+        Value = value;
+    }
+}
+
+/// <summary>
 /// Utilities for caching database query results and other data
 /// </summary>
 public interface ICachingService
@@ -215,6 +230,26 @@ public static class CachingExtensions
         {
             await cache.SetAsync(key, value, expiration);
         }
+
+        return value;
+    }
+
+    /// <summary>
+    /// Get or set cached value type with a factory function
+    /// </summary>
+    public static async Task<T> GetOrSetValueAsync<T>(
+        this ICachingService cache,
+        string key,
+        Func<Task<T>> factory,
+        TimeSpan? expiration = null) where T : struct
+    {
+        // For value types, we wrap them in a nullable wrapper class
+        var wrapper = await cache.GetAsync<ValueWrapper<T>>(key);
+        if (wrapper != null)
+            return wrapper.Value;
+
+        var value = await factory();
+        await cache.SetAsync(key, new ValueWrapper<T>(value), expiration);
 
         return value;
     }
