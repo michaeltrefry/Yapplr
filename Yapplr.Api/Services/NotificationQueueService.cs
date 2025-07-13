@@ -1,36 +1,20 @@
 using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using Yapplr.Api.Data;
+using Yapplr.Api.Models;
+using Yapplr.Api.DTOs;
 
 namespace Yapplr.Api.Services;
-
-/// <summary>
-/// Queued notification for offline delivery
-/// </summary>
-public class QueuedNotification
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public int UserId { get; set; }
-    public string Type { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string Body { get; set; } = string.Empty;
-    public Dictionary<string, string>? Data { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? DeliveredAt { get; set; }
-    public int RetryCount { get; set; } = 0;
-    public int MaxRetries { get; set; } = 3;
-    public TimeSpan RetryDelay { get; set; } = TimeSpan.FromMinutes(1);
-    public DateTime? NextRetryAt { get; set; }
-    public string? LastError { get; set; }
-}
 
 /// <summary>
 /// Service for queuing notifications when users are offline
 /// </summary>
 public interface INotificationQueueService
 {
-    Task QueueNotificationAsync(QueuedNotification notification);
-    Task<List<QueuedNotification>> GetPendingNotificationsAsync(int userId);
-    Task<List<QueuedNotification>> GetAllPendingNotificationsAsync();
+    Task QueueNotificationAsync(QueuedNotificationDto notification);
+    Task<List<QueuedNotificationDto>> GetPendingNotificationsAsync(int userId);
+    Task<List<QueuedNotificationDto>> GetAllPendingNotificationsAsync();
     Task MarkAsDeliveredAsync(string notificationId);
     Task MarkAsFailedAsync(string notificationId, string error);
     Task ProcessPendingNotificationsAsync();
@@ -44,11 +28,11 @@ public class NotificationQueueService : INotificationQueueService
     private readonly ICompositeNotificationService _notificationService;
     private readonly ISignalRConnectionPool _connectionPool;
     private readonly ILogger<NotificationQueueService> _logger;
-    
-    // In-memory queue for high-performance scenarios
-    private readonly ConcurrentQueue<QueuedNotification> _memoryQueue = new();
-    private readonly ConcurrentDictionary<string, QueuedNotification> _pendingNotifications = new();
-    
+
+    // In-memory queue for high-performance scenarios (using DTO)
+    private readonly ConcurrentQueue<QueuedNotificationDto> _memoryQueue = new();
+    private readonly ConcurrentDictionary<string, QueuedNotificationDto> _pendingNotifications = new();
+
     // Statistics
     private long _totalQueued = 0;
     private long _totalDelivered = 0;
@@ -66,13 +50,13 @@ public class NotificationQueueService : INotificationQueueService
         _logger = logger;
     }
 
-    public async Task QueueNotificationAsync(QueuedNotification notification)
+    public async Task QueueNotificationAsync(QueuedNotificationDto notification)
     {
         try
         {
             // Check if user is online first
             var isOnline = await _connectionPool.IsUserOnlineAsync(notification.UserId);
-            
+
             if (isOnline)
             {
                 // Try immediate delivery
@@ -87,12 +71,12 @@ public class NotificationQueueService : INotificationQueueService
             // Queue for later delivery
             _memoryQueue.Enqueue(notification);
             _pendingNotifications[notification.Id] = notification;
-            
+
             // Also persist to database for durability
             await PersistNotificationAsync(notification);
-            
+
             Interlocked.Increment(ref _totalQueued);
-            
+
             _logger.LogInformation("Queued notification {NotificationId} for user {UserId} (type: {Type})",
                 notification.Id, notification.UserId, notification.Type);
         }
@@ -103,7 +87,7 @@ public class NotificationQueueService : INotificationQueueService
         }
     }
 
-    public async Task<List<QueuedNotification>> GetPendingNotificationsAsync(int userId)
+    public async Task<List<QueuedNotificationDto>> GetPendingNotificationsAsync(int userId)
     {
         try
         {
@@ -114,7 +98,7 @@ public class NotificationQueueService : INotificationQueueService
 
             // Also check database for any missed notifications
             var dbNotifications = await GetPersistedNotificationsAsync(userId);
-            
+
             // Merge and deduplicate
             var allNotifications = memoryNotifications
                 .Concat(dbNotifications)
@@ -128,11 +112,11 @@ public class NotificationQueueService : INotificationQueueService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get pending notifications for user {UserId}", userId);
-            return new List<QueuedNotification>();
+            return new List<QueuedNotificationDto>();
         }
     }
 
-    public async Task<List<QueuedNotification>> GetAllPendingNotificationsAsync()
+    public async Task<List<QueuedNotificationDto>> GetAllPendingNotificationsAsync()
     {
         try
         {
@@ -141,7 +125,7 @@ public class NotificationQueueService : INotificationQueueService
                 .ToList();
 
             var dbNotifications = await GetAllPersistedNotificationsAsync();
-            
+
             var allNotifications = memoryNotifications
                 .Concat(dbNotifications)
                 .GroupBy(n => n.Id)
@@ -154,7 +138,7 @@ public class NotificationQueueService : INotificationQueueService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get all pending notifications");
-            return new List<QueuedNotification>();
+            return new List<QueuedNotificationDto>();
         }
     }
 
@@ -216,7 +200,7 @@ public class NotificationQueueService : INotificationQueueService
             var deliveredCount = 0;
             var failedCount = 0;
 
-            // Process memory queue
+            // Process memory queue first
             while (_memoryQueue.TryDequeue(out var notification))
             {
                 processedCount++;
@@ -231,7 +215,7 @@ public class NotificationQueueService : INotificationQueueService
 
                 // Check if user is now online
                 var isOnline = await _connectionPool.IsUserOnlineAsync(notification.UserId);
-                
+
                 if (isOnline)
                 {
                     var delivered = await TryDeliverNotificationAsync(notification);
@@ -250,6 +234,47 @@ public class NotificationQueueService : INotificationQueueService
                 {
                     // User still offline, re-queue
                     _memoryQueue.Enqueue(notification);
+                }
+            }
+
+            // Process database notifications that are ready for retry
+            var dbNotificationsToProcess = await _context.QueuedNotifications
+                .Where(n => n.DeliveredAt == null &&
+                           n.RetryCount < n.MaxRetries &&
+                           (n.NextRetryAt == null || n.NextRetryAt <= DateTime.UtcNow))
+                .Take(100) // Process in batches to avoid overwhelming the system
+                .ToListAsync();
+
+            foreach (var dbNotification in dbNotificationsToProcess)
+            {
+                processedCount++;
+                var notificationDto = ConvertToDto(dbNotification);
+
+                // Check if user is now online
+                var isOnline = await _connectionPool.IsUserOnlineAsync(notificationDto.UserId);
+
+                if (isOnline)
+                {
+                    var delivered = await TryDeliverNotificationAsync(notificationDto);
+                    if (delivered)
+                    {
+                        await MarkAsDeliveredAsync(notificationDto.Id);
+                        deliveredCount++;
+                    }
+                    else
+                    {
+                        await MarkAsFailedAsync(notificationDto.Id, "Delivery failed");
+                        failedCount++;
+                    }
+                }
+                else
+                {
+                    // User still offline, update next retry time if needed
+                    if (dbNotification.NextRetryAt == null || dbNotification.NextRetryAt <= DateTime.UtcNow)
+                    {
+                        dbNotification.NextRetryAt = DateTime.UtcNow.AddMinutes(Math.Pow(2, dbNotification.RetryCount));
+                        await _context.SaveChangesAsync();
+                    }
                 }
             }
 
@@ -281,11 +306,28 @@ public class NotificationQueueService : INotificationQueueService
                 _pendingNotifications.TryRemove(notification.Id, out _);
             }
 
-            // Note: Database persistence is not implemented yet, so we only clean up memory
-            // TODO: Implement QueuedNotifications table and migration if persistent queuing is needed
+            // Clean up database - remove old delivered or failed notifications
+            var notificationsToDelete = await _context.QueuedNotifications
+                .Where(n => n.CreatedAt < cutoffTime &&
+                           (n.DeliveredAt != null || n.RetryCount >= n.MaxRetries))
+                .ToListAsync();
 
-            _logger.LogInformation("Cleaned up {MemoryCount} memory notifications older than {MaxAge}",
-                oldNotifications.Count, maxAge);
+            _context.QueuedNotifications.RemoveRange(notificationsToDelete);
+            var deletedCount = notificationsToDelete.Count;
+
+            // Also clean up very old undelivered notifications (older than 2x maxAge)
+            var veryOldCutoff = DateTime.UtcNow - TimeSpan.FromTicks(maxAge.Ticks * 2);
+            var veryOldNotifications = await _context.QueuedNotifications
+                .Where(n => n.CreatedAt < veryOldCutoff)
+                .ToListAsync();
+
+            _context.QueuedNotifications.RemoveRange(veryOldNotifications);
+            var veryOldDeletedCount = veryOldNotifications.Count;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Cleaned up {MemoryCount} memory notifications and {DbCount} database notifications older than {MaxAge}. Also removed {VeryOldCount} very old notifications.",
+                oldNotifications.Count, deletedCount, maxAge, veryOldDeletedCount);
         }
         catch (Exception ex)
         {
@@ -293,21 +335,51 @@ public class NotificationQueueService : INotificationQueueService
         }
     }
 
-    public Task<NotificationQueueStats> GetStatsAsync()
+    public async Task<NotificationQueueStats> GetStatsAsync()
     {
-        var stats = new NotificationQueueStats
+        try
         {
-            TotalQueued = _totalQueued,
-            TotalDelivered = _totalDelivered,
-            TotalFailed = _totalFailed,
-            PendingInMemory = _pendingNotifications.Count,
-            QueueSize = _memoryQueue.Count
-        };
+            // Get database statistics
+            var pendingInDb = await _context.QueuedNotifications
+                .CountAsync(n => n.DeliveredAt == null && n.RetryCount < n.MaxRetries);
 
-        return Task.FromResult(stats);
+            var deliveredInDb = await _context.QueuedNotifications
+                .CountAsync(n => n.DeliveredAt != null);
+
+            var failedInDb = await _context.QueuedNotifications
+                .CountAsync(n => n.RetryCount >= n.MaxRetries);
+
+            var stats = new NotificationQueueStats
+            {
+                TotalQueued = _totalQueued,
+                TotalDelivered = _totalDelivered,
+                TotalFailed = _totalFailed,
+                PendingInMemory = _pendingNotifications.Count,
+                QueueSize = _memoryQueue.Count,
+                PendingInDatabase = pendingInDb,
+                DeliveredInDatabase = deliveredInDb,
+                FailedInDatabase = failedInDb
+            };
+
+            return stats;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get notification queue stats");
+
+            // Return basic stats if database query fails
+            return new NotificationQueueStats
+            {
+                TotalQueued = _totalQueued,
+                TotalDelivered = _totalDelivered,
+                TotalFailed = _totalFailed,
+                PendingInMemory = _pendingNotifications.Count,
+                QueueSize = _memoryQueue.Count
+            };
+        }
     }
 
-    private async Task<bool> TryDeliverNotificationAsync(QueuedNotification notification)
+    private async Task<bool> TryDeliverNotificationAsync(QueuedNotificationDto notification)
     {
         try
         {
@@ -324,42 +396,157 @@ public class NotificationQueueService : INotificationQueueService
         }
     }
 
-    private async Task PersistNotificationAsync(QueuedNotification notification)
+    private async Task PersistNotificationAsync(QueuedNotificationDto notification)
     {
-        // TODO: Implement database persistence for QueuedNotification
-        // This would require:
-        // 1. Adding DbSet<QueuedNotification> to YapplrDbContext
-        // 2. Creating a migration for the QueuedNotifications table
-        // 3. Implementing the actual persistence logic here
-        await Task.CompletedTask;
+        try
+        {
+            // Convert Dictionary to JSON string
+            string? dataJson = null;
+            if (notification.Data != null)
+            {
+                dataJson = JsonSerializer.Serialize(notification.Data);
+            }
+
+            // Create database entity
+            var dbNotification = new QueuedNotification
+            {
+                Id = notification.Id,
+                UserId = notification.UserId,
+                Type = notification.Type,
+                Title = notification.Title,
+                Body = notification.Body,
+                Data = dataJson,
+                CreatedAt = notification.CreatedAt,
+                DeliveredAt = notification.DeliveredAt,
+                RetryCount = notification.RetryCount,
+                MaxRetries = notification.MaxRetries,
+                RetryDelayMinutes = (int)notification.RetryDelay.TotalMinutes,
+                NextRetryAt = notification.NextRetryAt,
+                LastError = notification.LastError
+            };
+
+            _context.QueuedNotifications.Add(dbNotification);
+            await _context.SaveChangesAsync();
+
+            _logger.LogDebug("Persisted notification {NotificationId} to database", notification.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to persist notification {NotificationId} to database", notification.Id);
+            // Don't throw - we still have the in-memory queue as fallback
+        }
     }
 
-    private async Task<List<QueuedNotification>> GetPersistedNotificationsAsync(int userId)
+    private async Task<List<QueuedNotificationDto>> GetPersistedNotificationsAsync(int userId)
     {
-        // TODO: Implement database retrieval for user's queued notifications
-        // This would query the QueuedNotifications table for the specific user
-        await Task.CompletedTask;
-        return new List<QueuedNotification>();
+        try
+        {
+            var dbNotifications = await _context.QueuedNotifications
+                .Where(n => n.UserId == userId && n.DeliveredAt == null)
+                .OrderBy(n => n.CreatedAt)
+                .ToListAsync();
+
+            return dbNotifications.Select(ConvertToDto).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get persisted notifications for user {UserId}", userId);
+            return new List<QueuedNotificationDto>();
+        }
     }
 
-    private async Task<List<QueuedNotification>> GetAllPersistedNotificationsAsync()
+    private async Task<List<QueuedNotificationDto>> GetAllPersistedNotificationsAsync()
     {
-        // TODO: Implement database retrieval for all queued notifications
-        // This would query the QueuedNotifications table for all pending notifications
-        await Task.CompletedTask;
-        return new List<QueuedNotification>();
+        try
+        {
+            var dbNotifications = await _context.QueuedNotifications
+                .Where(n => n.DeliveredAt == null)
+                .OrderBy(n => n.CreatedAt)
+                .ToListAsync();
+
+            return dbNotifications.Select(ConvertToDto).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get all persisted notifications");
+            return new List<QueuedNotificationDto>();
+        }
     }
 
     private async Task UpdatePersistedNotificationStatusAsync(string notificationId, bool delivered)
     {
-        // Implementation would depend on your database schema
-        await Task.CompletedTask;
+        try
+        {
+            var notification = await _context.QueuedNotifications
+                .FirstOrDefaultAsync(n => n.Id == notificationId);
+
+            if (notification != null)
+            {
+                if (delivered)
+                {
+                    notification.DeliveredAt = DateTime.UtcNow;
+                }
+                await _context.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update notification status for {NotificationId}", notificationId);
+        }
     }
 
     private async Task UpdatePersistedNotificationErrorAsync(string notificationId, string error)
     {
-        // Implementation would depend on your database schema
-        await Task.CompletedTask;
+        try
+        {
+            var notification = await _context.QueuedNotifications
+                .FirstOrDefaultAsync(n => n.Id == notificationId);
+
+            if (notification != null)
+            {
+                notification.RetryCount++;
+                notification.LastError = error;
+                notification.NextRetryAt = DateTime.UtcNow.AddMinutes(Math.Pow(2, notification.RetryCount));
+                await _context.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update notification error for {NotificationId}", notificationId);
+        }
+    }
+
+    private QueuedNotificationDto ConvertToDto(QueuedNotification dbNotification)
+    {
+        Dictionary<string, string>? data = null;
+        if (!string.IsNullOrEmpty(dbNotification.Data))
+        {
+            try
+            {
+                data = JsonSerializer.Deserialize<Dictionary<string, string>>(dbNotification.Data);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Failed to deserialize notification data for {NotificationId}", dbNotification.Id);
+            }
+        }
+
+        return new QueuedNotificationDto
+        {
+            Id = dbNotification.Id,
+            UserId = dbNotification.UserId,
+            Type = dbNotification.Type,
+            Title = dbNotification.Title,
+            Body = dbNotification.Body,
+            Data = data,
+            CreatedAt = dbNotification.CreatedAt,
+            DeliveredAt = dbNotification.DeliveredAt,
+            RetryCount = dbNotification.RetryCount,
+            MaxRetries = dbNotification.MaxRetries,
+            RetryDelay = TimeSpan.FromMinutes(dbNotification.RetryDelayMinutes),
+            NextRetryAt = dbNotification.NextRetryAt,
+            LastError = dbNotification.LastError
+        };
     }
 }
 
@@ -373,6 +560,15 @@ public class NotificationQueueStats
     public long TotalFailed { get; set; }
     public int PendingInMemory { get; set; }
     public int QueueSize { get; set; }
+
+    // Database statistics
+    public int PendingInDatabase { get; set; }
+    public int DeliveredInDatabase { get; set; }
+    public int FailedInDatabase { get; set; }
+
+    // Calculated properties
     public double DeliveryRate => TotalQueued > 0 ? (double)TotalDelivered / TotalQueued * 100 : 0;
     public double FailureRate => TotalQueued > 0 ? (double)TotalFailed / TotalQueued * 100 : 0;
+    public int TotalPending => PendingInMemory + PendingInDatabase;
+    public int TotalInDatabase => PendingInDatabase + DeliveredInDatabase + FailedInDatabase;
 }

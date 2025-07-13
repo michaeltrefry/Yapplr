@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
+using Yapplr.Api.Models;
+using Yapplr.Api.DTOs;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -55,7 +57,7 @@ public static class MetricsEndpoints
         metrics.MapGet("/queue/pending", GetPendingNotifications)
             .WithName("GetPendingNotifications")
             .WithSummary("Get pending notifications in queue")
-            .Produces<List<QueuedNotification>>(200)
+            .Produces<List<QueuedNotificationDto>>(200)
             .Produces(401);
 
         // Health check endpoint

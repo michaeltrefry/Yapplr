@@ -87,6 +87,9 @@ public class TagService : ITagService
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
             .AsSplitQuery()
             .Where(p => p.PostTags.Any(pt => pt.Tag.Name == normalizedTagName) &&
                        !p.IsDeletedByUser && // Filter out user-deleted posts
@@ -99,7 +102,7 @@ public class TagService : ITagService
             .Take(pageSize)
             .ToListAsync();
 
-        return posts.Select(p => MapToPostDto(p, currentUserId));
+        return posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext));
     }
 
     public async Task<TagDto?> GetTagByNameAsync(string tagName, int? currentUserId = null)
@@ -127,39 +130,6 @@ public class TagService : ITagService
 
         // Create a new TagDto with the actual visible count
         return new TagDto(tag.Id, tag.Name, actualPostCount);
-    }
-
-    private PostDto MapToPostDto(Post post, int? currentUserId)
-    {
-        var userDto = post.User.ToDto();
-
-        var isLiked = currentUserId.HasValue && post.Likes.Any(l => l.UserId == currentUserId.Value);
-        var isReposted = currentUserId.HasValue && post.Reposts.Any(r => r.UserId == currentUserId.Value);
-
-        // Generate image URL from filename
-        string? imageUrl = null;
-        if (!string.IsNullOrEmpty(post.ImageFileName))
-        {
-            var request = _httpContextAccessor.HttpContext?.Request;
-            if (request != null)
-            {
-                imageUrl = $"{request.Scheme}://{request.Host}/api/images/{post.ImageFileName}";
-            }
-        }
-
-        var isEdited = post.UpdatedAt > post.CreatedAt.AddMinutes(1);
-
-        // Map tags to DTOs
-        var tags = post.PostTags.Select(pt => pt.Tag.ToDto()).ToList();
-
-        // Generate video URLs
-        var videoUrl = MappingUtilities.GenerateVideoUrl(post.ProcessedVideoFileName, _httpContextAccessor.HttpContext);
-        var videoThumbnailUrl = MappingUtilities.GenerateVideoThumbnailUrl(post.VideoThumbnailFileName, _httpContextAccessor.HttpContext);
-
-        return new PostDto(post.Id, post.Content, imageUrl, videoUrl, videoThumbnailUrl,
-                          post.VideoFileName != null ? post.VideoProcessingStatus : null,
-                          post.Privacy, post.CreatedAt, post.UpdatedAt, userDto,
-                          post.Likes.Count, post.Comments.Count, post.Reposts.Count, tags, new List<LinkPreviewDto>(), isLiked, isReposted, isEdited);
     }
 
     private async Task<List<int>> GetBlockedUserIdsAsync(int userId)

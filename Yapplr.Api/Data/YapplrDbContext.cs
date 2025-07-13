@@ -28,6 +28,7 @@ public class YapplrDbContext : DbContext
     public DbSet<Message> Messages { get; set; }
     public DbSet<MessageStatus> MessageStatuses { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<QueuedNotification> QueuedNotifications { get; set; }
     public DbSet<Mention> Mentions { get; set; }
     public DbSet<NotificationPreferences> NotificationPreferences { get; set; }
     public DbSet<Tag> Tags { get; set; }
@@ -736,6 +737,21 @@ public class YapplrDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // QueuedNotification configuration
+        modelBuilder.Entity<QueuedNotification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.DeliveredAt }); // Primary query pattern: pending notifications for user
+            entity.HasIndex(e => e.DeliveredAt); // All pending notifications
+            entity.HasIndex(e => e.NextRetryAt); // Retry processing
+            entity.HasIndex(e => e.CreatedAt); // Cleanup old notifications
+            entity.HasIndex(e => new { e.Type, e.CreatedAt }); // Analytics by notification type
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
