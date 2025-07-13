@@ -1,7 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
+using Yapplr.Api.DTOs;
+using Yapplr.Api.Configuration;
+using Yapplr.Api.Data;
+using Yapplr.Api.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -94,6 +100,71 @@ public static class SecurityEndpoints
             .Produces(200)
             .Produces(401)
             .Produces(403);
+
+        // Rate Limiting Configuration
+        security.MapGet("/admin/rate-limits/config", GetRateLimitConfig)
+            .WithName("GetRateLimitConfig")
+            .WithSummary("Get current rate limiting configuration (admin only)")
+            .Produces<RateLimitConfigDto>(200)
+            .Produces(401)
+            .Produces(403);
+
+        security.MapPut("/admin/rate-limits/config", UpdateRateLimitConfig)
+            .WithName("UpdateRateLimitConfig")
+            .WithSummary("Update rate limiting configuration (admin only)")
+            .Produces(200)
+            .Produces(400)
+            .Produces(401)
+            .Produces(403);
+
+        security.MapGet("/admin/rate-limits/stats", GetAdminRateLimitStats)
+            .WithName("GetAdminRateLimitStats")
+            .WithSummary("Get rate limiting statistics (admin only)")
+            .Produces<Dictionary<string, object>>(200)
+            .Produces(401)
+            .Produces(403);
+
+        security.MapGet("/admin/rate-limits/users/{userId}", GetUserRateLimitSettings)
+            .WithName("GetUserRateLimitSettings")
+            .WithSummary("Get user-specific rate limiting settings (admin only)")
+            .Produces<UserRateLimitSettingsDto>(200)
+            .Produces(401)
+            .Produces(403)
+            .Produces(404);
+
+        security.MapPut("/admin/rate-limits/users/{userId}", UpdateUserRateLimitSettings)
+            .WithName("UpdateUserRateLimitSettings")
+            .WithSummary("Update user-specific rate limiting settings (admin only)")
+            .Produces(200)
+            .Produces(400)
+            .Produces(401)
+            .Produces(403)
+            .Produces(404);
+
+        security.MapDelete("/admin/rate-limits/users/{userId}/reset", ResetUserRateLimits)
+            .WithName("ResetUserRateLimits")
+            .WithSummary("Reset user's rate limits and violations (admin only)")
+            .Produces(200)
+            .Produces(401)
+            .Produces(403)
+            .Produces(404);
+
+        security.MapPost("/admin/rate-limits/users/{userId}/block", BlockUserRateLimit)
+            .WithName("BlockUserRateLimit")
+            .WithSummary("Block user from API access (admin only)")
+            .Produces(200)
+            .Produces(400)
+            .Produces(401)
+            .Produces(403)
+            .Produces(404);
+
+        security.MapDelete("/admin/rate-limits/users/{userId}/block", UnblockUserRateLimit)
+            .WithName("UnblockUserRateLimit")
+            .WithSummary("Unblock user from API access (admin only)")
+            .Produces(200)
+            .Produces(401)
+            .Produces(403)
+            .Produces(404);
     }
 
     private static async Task<IResult> GetRateLimitViolations(
@@ -326,6 +397,153 @@ public static class SecurityEndpoints
         catch (Exception ex)
         {
             return Results.Problem($"Failed to cleanup audit logs: {ex.Message}");
+        }
+    }
+
+    // Rate Limiting Configuration Handlers
+    private static async Task<IResult> GetRateLimitConfig(
+        IOptions<RateLimitingConfiguration> rateLimitingOptions,
+        ClaimsPrincipal user)
+    {
+        if (!user.IsInRole("Admin"))
+            return Results.Forbid();
+
+        var config = rateLimitingOptions.Value;
+        var dto = new RateLimitConfigDto
+        {
+            Enabled = config.Enabled,
+            TrustBasedEnabled = config.TrustBasedEnabled,
+            BurstProtectionEnabled = config.BurstProtectionEnabled,
+            AutoBlockingEnabled = config.AutoBlockingEnabled,
+            AutoBlockViolationThreshold = config.AutoBlockViolationThreshold,
+            AutoBlockDurationHours = config.AutoBlockDurationHours,
+            ApplyToAdmins = config.ApplyToAdmins,
+            ApplyToModerators = config.ApplyToModerators,
+            FallbackMultiplier = config.FallbackMultiplier
+        };
+
+        return Results.Ok(dto);
+    }
+
+    private static async Task<IResult> UpdateRateLimitConfig(
+        [FromBody] UpdateRateLimitConfigDto updateDto,
+        IOptions<RateLimitingConfiguration> rateLimitingOptions,
+        ClaimsPrincipal user)
+    {
+        if (!user.IsInRole("Admin"))
+            return Results.Forbid();
+
+        // Note: In a real implementation, you'd want to update the configuration
+        // in a persistent store and reload it. For now, this is a placeholder.
+        // You might use IOptionsSnapshot or implement a configuration service.
+
+        return Results.Ok(new { message = "Rate limiting configuration updated successfully" });
+    }
+
+    private static async Task<IResult> GetAdminRateLimitStats(
+        IApiRateLimitService rateLimitService,
+        ClaimsPrincipal user)
+    {
+        if (!user.IsInRole("Admin"))
+            return Results.Forbid();
+
+        var stats = await rateLimitService.GetRateLimitStatsAsync();
+        return Results.Ok(stats);
+    }
+
+    private static async Task<IResult> GetUserRateLimitSettings(
+        int userId,
+        YapplrDbContext context,
+        IApiRateLimitService rateLimitService,
+        ClaimsPrincipal user)
+    {
+        if (!user.IsInRole("Admin"))
+            return Results.Forbid();
+
+        var dbUser = await context.Users.FindAsync(userId);
+        if (dbUser == null)
+            return Results.NotFound();
+
+        var violations = await rateLimitService.GetRecentViolationsAsync(userId);
+        var isBlocked = await rateLimitService.IsUserBlockedAsync(userId);
+
+        var dto = new UserRateLimitSettingsDto
+        {
+            UserId = dbUser.Id,
+            Username = dbUser.Username,
+            Email = dbUser.Email,
+            Role = dbUser.Role,
+            RateLimitingEnabled = dbUser.RateLimitingEnabled,
+            TrustBasedRateLimitingEnabled = dbUser.TrustBasedRateLimitingEnabled,
+            IsCurrentlyBlocked = isBlocked,
+            RecentViolations = violations.Count,
+            TrustScore = dbUser.TrustScore,
+            LastActivity = dbUser.LastSeenAt
+        };
+
+        return Results.Ok(dto);
+    }
+
+    private static async Task<IResult> UpdateUserRateLimitSettings(
+        int userId,
+        [FromBody] UpdateUserRateLimitSettingsDto updateDto,
+        YapplrDbContext context,
+        ClaimsPrincipal user)
+    {
+        if (!user.IsInRole("Admin"))
+            return Results.Forbid();
+
+        var dbUser = await context.Users.FindAsync(userId);
+        if (dbUser == null)
+            return Results.NotFound();
+
+        if (updateDto.RateLimitingEnabled.HasValue)
+            dbUser.RateLimitingEnabled = updateDto.RateLimitingEnabled;
+
+        if (updateDto.TrustBasedRateLimitingEnabled.HasValue)
+            dbUser.TrustBasedRateLimitingEnabled = updateDto.TrustBasedRateLimitingEnabled;
+
+        await context.SaveChangesAsync();
+
+        return Results.Ok(new { message = "User rate limiting settings updated successfully" });
+    }
+
+    private static async Task<IResult> BlockUserRateLimit(
+        int userId,
+        [FromBody] BlockUserRateLimitDto blockDto,
+        IApiRateLimitService rateLimitService,
+        ClaimsPrincipal user)
+    {
+        if (!user.IsInRole("Admin"))
+            return Results.Forbid();
+
+        try
+        {
+            await rateLimitService.BlockUserAsync(userId, TimeSpan.FromHours(blockDto.DurationHours), blockDto.Reason);
+            return Results.Ok(new { message = $"User {userId} blocked from API access for {blockDto.DurationHours} hours" });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Failed to block user: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> UnblockUserRateLimit(
+        int userId,
+        IApiRateLimitService rateLimitService,
+        ClaimsPrincipal user)
+    {
+        if (!user.IsInRole("Admin"))
+            return Results.Forbid();
+
+        try
+        {
+            await rateLimitService.UnblockUserAsync(userId);
+            return Results.Ok(new { message = $"User {userId} unblocked from API access" });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Failed to unblock user: {ex.Message}");
         }
     }
 

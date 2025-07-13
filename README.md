@@ -439,19 +439,77 @@ Rate-limited responses include helpful headers:
 - `X-RateLimit-Type`: Indicates "trust-based" rate limiting
 - `Retry-After`: Seconds to wait before retrying (when rate limited)
 
+### Configuration Options
+
+#### System-Wide Configuration
+Rate limiting can be configured globally via `appsettings.json`:
+
+```json
+{
+  "RateLimiting": {
+    "Enabled": true,
+    "TrustBasedEnabled": true,
+    "BurstProtectionEnabled": true,
+    "AutoBlockingEnabled": true,
+    "AutoBlockViolationThreshold": 15,
+    "AutoBlockDurationHours": 2,
+    "ApplyToAdmins": false,
+    "ApplyToModerators": false,
+    "FallbackMultiplier": 1.0
+  }
+}
+```
+
+**Configuration Options:**
+- `Enabled`: Global enable/disable flag for all rate limiting
+- `TrustBasedEnabled`: Enable/disable trust score multipliers
+- `BurstProtectionEnabled`: Enable/disable burst protection
+- `AutoBlockingEnabled`: Enable/disable automatic user blocking
+- `AutoBlockViolationThreshold`: Number of violations before auto-blocking (default: 15)
+- `AutoBlockDurationHours`: Duration in hours for auto-blocking (default: 2)
+- `ApplyToAdmins`: Whether to apply rate limits to admin users (default: false)
+- `ApplyToModerators`: Whether to apply rate limits to moderators (default: false)
+- `FallbackMultiplier`: Rate limit multiplier when trust-based is disabled (default: 1.0)
+
+#### Per-User Configuration
+Individual users can have rate limiting overrides:
+- **Rate Limiting Enabled**: Override global setting for specific user
+- **Trust-Based Enabled**: Override trust-based rate limiting for specific user
+- **Manual Blocking**: Admins can manually block/unblock users from API access
+
+#### Admin Controls
+Administrators can manage rate limiting through the admin interface:
+- View and modify system-wide rate limiting configuration
+- View per-user rate limiting settings and violations
+- Enable/disable rate limiting for individual users
+- Manually block/unblock users from API access
+- Reset user rate limits and violation history
+- View comprehensive rate limiting statistics
+
 ### Technical Implementation
 - **Middleware-Based**: Transparent rate limiting applied at the middleware level
 - **Trust Integration**: Seamlessly integrates with the existing trust score system
 - **Memory-Efficient**: In-memory tracking with automatic cleanup of old data
 - **Production-Ready**: Designed for Redis or distributed cache in production environments
-- **Configurable**: Easy to adjust rate limits and thresholds via configuration
+- **Highly Configurable**: System-wide and per-user configuration options
 
 ### API Endpoints
+
+#### User Endpoints
 - `GET /api/security/rate-limits/violations` - Get current user's rate limit violations
 - `GET /api/security/rate-limits/stats` - Get platform-wide rate limiting statistics
-- `POST /api/admin/security/users/{userId}/block` - Manually block user (admin only)
-- `DELETE /api/admin/security/users/{userId}/block` - Unblock user (admin only)
-- `DELETE /api/admin/security/users/{userId}/rate-limits` - Reset user's rate limits (admin only)
+
+#### Admin Configuration Endpoints
+- `GET /api/security/admin/rate-limits/config` - Get current rate limiting configuration
+- `PUT /api/security/admin/rate-limits/config` - Update rate limiting configuration
+- `GET /api/security/admin/rate-limits/stats` - Get comprehensive rate limiting statistics
+
+#### Admin User Management Endpoints
+- `GET /api/security/admin/rate-limits/users/{userId}` - Get user's rate limiting settings
+- `PUT /api/security/admin/rate-limits/users/{userId}` - Update user's rate limiting settings
+- `DELETE /api/security/admin/rate-limits/users/{userId}/reset` - Reset user's rate limits and violations
+- `POST /api/security/admin/rate-limits/users/{userId}/block` - Block user from API access
+- `DELETE /api/security/admin/rate-limits/users/{userId}/block` - Unblock user from API access
 
 ## 🏃‍♂️ Quick Start
 

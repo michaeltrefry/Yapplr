@@ -1,4 +1,9 @@
 using System.Collections.Concurrent;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Yapplr.Api.Configuration;
+using Yapplr.Api.Data;
+using Yapplr.Api.Models;
 
 namespace Yapplr.Api.Services;
 
@@ -39,7 +44,8 @@ public interface IApiRateLimitService
 public class ApiRateLimitService : IApiRateLimitService
 {
     private readonly ILogger<ApiRateLimitService> _logger;
-    private readonly ITrustBasedModerationService _trustBasedModerationService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly RateLimitingConfiguration _rateLimitingConfig;
     
     // Base rate limit configurations per API operation type
     private readonly Dictionary<ApiOperation, RateLimitConfig> _baseRateLimitConfigs = new()
@@ -142,14 +148,78 @@ public class ApiRateLimitService : IApiRateLimitService
 
     public ApiRateLimitService(
         ILogger<ApiRateLimitService> logger,
-        ITrustBasedModerationService trustBasedModerationService)
+        IServiceScopeFactory serviceScopeFactory,
+        IOptions<RateLimitingConfiguration> rateLimitingOptions)
     {
         _logger = logger;
-        _trustBasedModerationService = trustBasedModerationService;
+        _serviceScopeFactory = serviceScopeFactory;
+        _rateLimitingConfig = rateLimitingOptions.Value;
     }
 
     public async Task<RateLimitResult> CheckRateLimitAsync(int userId, ApiOperation operation)
     {
+        // Check if rate limiting is globally disabled
+        if (!_rateLimitingConfig.Enabled)
+        {
+            return new RateLimitResult
+            {
+                IsAllowed = true,
+                RemainingRequests = int.MaxValue
+            };
+        }
+
+        // Check user-specific and role-based rate limiting settings
+        bool shouldApplyRateLimit;
+        bool shouldUseTrustBased;
+
+        using (var scope = _serviceScopeFactory.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<YapplrDbContext>();
+            var user = await dbContext.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+                // Default to allowing if user not found
+                return new RateLimitResult
+                {
+                    IsAllowed = true,
+                    RemainingRequests = int.MaxValue
+                };
+            }
+
+            // Check role-based exemptions
+            if (user.Role == UserRole.Admin && !_rateLimitingConfig.ApplyToAdmins)
+            {
+                return new RateLimitResult
+                {
+                    IsAllowed = true,
+                    RemainingRequests = int.MaxValue
+                };
+            }
+
+            if (user.Role == UserRole.Moderator && !_rateLimitingConfig.ApplyToModerators)
+            {
+                return new RateLimitResult
+                {
+                    IsAllowed = true,
+                    RemainingRequests = int.MaxValue
+                };
+            }
+
+            // Check user-specific rate limiting override
+            shouldApplyRateLimit = user.RateLimitingEnabled ?? _rateLimitingConfig.Enabled;
+            shouldUseTrustBased = user.TrustBasedRateLimitingEnabled ?? _rateLimitingConfig.TrustBasedEnabled;
+        }
+
+        if (!shouldApplyRateLimit)
+        {
+            return new RateLimitResult
+            {
+                IsAllowed = true,
+                RemainingRequests = int.MaxValue
+            };
+        }
+
         // Check if user is blocked
         if (_blockedUsers.TryGetValue(userId, out var blockedUntil))
         {
@@ -171,7 +241,17 @@ public class ApiRateLimitService : IApiRateLimitService
 
         // Get base configuration and apply trust-based multiplier
         var baseConfig = GetBaseRateLimitConfig(operation);
-        var trustMultiplier = await _trustBasedModerationService.GetRateLimitMultiplierAsync(userId);
+        float trustMultiplier = _rateLimitingConfig.FallbackMultiplier;
+
+        if (shouldUseTrustBased)
+        {
+            using (var scope = _serviceScopeFactory.CreateScope())
+            {
+                var trustBasedModerationService = scope.ServiceProvider.GetRequiredService<ITrustBasedModerationService>();
+                trustMultiplier = await trustBasedModerationService.GetRateLimitMultiplierAsync(userId);
+            }
+        }
+
         var adjustedConfig = ApplyTrustMultiplier(baseConfig, trustMultiplier);
 
         var key = $"{userId}:{operation}";
@@ -184,7 +264,7 @@ public class ApiRateLimitService : IApiRateLimitService
             CleanOldRequests(tracker, now, TimeSpan.FromDays(1)); // Keep 24 hours for daily limits
 
             // Check burst protection (last 10 seconds)
-            if (adjustedConfig.EnableBurstProtection)
+            if (_rateLimitingConfig.BurstProtectionEnabled && adjustedConfig.EnableBurstProtection)
             {
                 var burstRequests = tracker.Requests.Count(r => r > now.AddSeconds(-10));
                 if (burstRequests >= adjustedConfig.BurstThreshold)
@@ -443,9 +523,10 @@ public class ApiRateLimitService : IApiRateLimitService
             userId, operationType, limitType, requestCount, limit);
 
         // Auto-block users with too many violations
-        if (userViolations.Count >= 15) // 15 violations in 24 hours (more lenient than notifications)
+        if (_rateLimitingConfig.AutoBlockingEnabled && userViolations.Count >= _rateLimitingConfig.AutoBlockViolationThreshold)
         {
-            _ = Task.Run(() => BlockUserAsync(userId, TimeSpan.FromHours(2), "Too many API rate limit violations"));
+            var blockDuration = TimeSpan.FromHours(_rateLimitingConfig.AutoBlockDurationHours);
+            _ = Task.Run(() => BlockUserAsync(userId, blockDuration, "Too many API rate limit violations"));
         }
     }
 }

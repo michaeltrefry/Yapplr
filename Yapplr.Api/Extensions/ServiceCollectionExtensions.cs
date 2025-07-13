@@ -408,6 +408,10 @@ public static class ServiceCollectionExtensions
         services.Configure<TrustScoreBackgroundOptions>(
             configuration.GetSection(TrustScoreBackgroundOptions.SectionName));
 
+        // Configure Rate Limiting
+        services.Configure<RateLimitingConfiguration>(
+            configuration.GetSection(RateLimitingConfiguration.SectionName));
+
         // Add provider-specific services
         if (notificationConfig.Firebase.Enabled)
         {

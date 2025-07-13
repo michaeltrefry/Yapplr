@@ -80,6 +80,10 @@ public class User : IEntity
     public string? LastLoginIp { get; set; }
     public float? TrustScore { get; set; } = 1.0f;
 
+    // Rate limiting settings
+    public bool? RateLimitingEnabled { get; set; } // null = use system default, true/false = override
+    public bool? TrustBasedRateLimitingEnabled { get; set; } // null = use system default, true/false = override
+
     // Analytics relationships
     public ICollection<UserActivity> UserActivities { get; set; } = new List<UserActivity>();
     public ICollection<UserTrustScoreHistory> TrustScoreHistory { get; set; } = new List<UserTrustScoreHistory>();
