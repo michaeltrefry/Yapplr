@@ -307,7 +307,7 @@ Yapplr features an advanced user trust score system that provides intelligent, b
 - **Dynamic Trust Calculation**: Real-time trust scores (0.0-1.0) based on user behavior and activity patterns
 - **Behavioral Analysis**: Considers profile completeness, posting activity, community engagement, and moderation history
 - **Trust-Based Moderation**: Automatic content visibility adjustments and rate limiting based on user trust levels
-- **Smart Rate Limiting**: Dynamic rate limits from 0.25x (low trust) to 2x (high trust) normal limits
+- **Smart API Rate Limiting**: Dynamic API rate limits from 0.25x (low trust) to 2x (high trust) normal limits across all endpoints
 - **Auto-Hide Protection**: Content from very low-trust users (< 0.1) automatically hidden from feeds
 - **Moderation Priority**: 1-5 priority levels for efficient moderation queue management
 
@@ -387,6 +387,71 @@ Yapplr features an advanced user trust score system that provides intelligent, b
 - `GET /api/admin/trust-scores/{userId}/factors` - Get trust score factor breakdown
 - `PUT /api/admin/trust-scores/{userId}` - Manually adjust user trust score
 - `GET /api/admin/trust-scores/statistics` - Get platform trust score statistics
+
+## 🚦 Smart API Rate Limiting
+
+Yapplr implements intelligent API rate limiting that dynamically adjusts based on user trust scores, providing a fair and secure experience for all users while preventing abuse.
+
+### Core Features
+- **Trust-Based Rate Limiting**: Dynamic rate limits that scale with user trust scores (0.25x to 2x normal limits)
+- **Operation-Specific Limits**: Different rate limits for different types of API operations
+- **Burst Protection**: Short-term burst detection to prevent rapid-fire requests
+- **Automatic Blocking**: Users with excessive violations are temporarily blocked
+- **Comprehensive Monitoring**: Real-time statistics and violation tracking
+
+### Rate Limit Configuration
+
+#### Base Rate Limits (per operation type)
+- **Create Post**: 5/minute, 50/hour, 500/day (burst: 3)
+- **Create Comment**: 10/minute, 100/hour, 1000/day (burst: 5)
+- **Like/Unlike Post**: 30/minute, 300/hour, 3000/day (burst: 15)
+- **Follow/Unfollow User**: 5-10/minute, 50-100/hour, 500-1000/day (burst: 3-5)
+- **Report Content**: 2/minute, 20/hour, 100/day (burst: 1)
+- **Send Message**: 10/minute, 100/hour, 1000/day (burst: 5)
+- **Upload Media**: 3/minute, 30/hour, 200/day (burst: 2)
+- **Search**: 20/minute, 200/hour, 2000/day (burst: 10)
+- **General Operations**: 60/minute, 600/hour, 6000/day (burst: 30)
+
+#### Trust Score Multipliers
+- **Very Low Trust** (< 0.2): 0.25x rate limits (quarter normal limits)
+- **Low Trust** (0.2-0.4): 0.5x rate limits (half normal limits)
+- **Medium Trust** (0.4-0.6): 1.0x rate limits (normal limits)
+- **High Trust** (0.6-0.8): 1.5x rate limits (50% more requests)
+- **Very High Trust** (0.8+): 2.0x rate limits (double normal limits)
+
+### Violation Handling
+- **Burst Violations**: 10-second cooldown period
+- **Rate Limit Violations**: Retry-after headers with appropriate wait times
+- **Auto-Blocking**: Users with 15+ violations in 24 hours are blocked for 2 hours
+- **Progressive Penalties**: Repeated violations result in longer blocking periods
+
+### Exempt Endpoints
+The following endpoints are exempt from rate limiting:
+- Authentication endpoints (`/api/auth/*`)
+- Health checks (`/api/health`)
+- User profile retrieval (`/api/users/me`)
+- Rate limit status endpoints (`/api/security/rate-limits/*`)
+
+### Response Headers
+Rate-limited responses include helpful headers:
+- `X-RateLimit-Remaining`: Number of requests remaining in current window
+- `X-RateLimit-Reset`: Unix timestamp when rate limit resets
+- `X-RateLimit-Type`: Indicates "trust-based" rate limiting
+- `Retry-After`: Seconds to wait before retrying (when rate limited)
+
+### Technical Implementation
+- **Middleware-Based**: Transparent rate limiting applied at the middleware level
+- **Trust Integration**: Seamlessly integrates with the existing trust score system
+- **Memory-Efficient**: In-memory tracking with automatic cleanup of old data
+- **Production-Ready**: Designed for Redis or distributed cache in production environments
+- **Configurable**: Easy to adjust rate limits and thresholds via configuration
+
+### API Endpoints
+- `GET /api/security/rate-limits/violations` - Get current user's rate limit violations
+- `GET /api/security/rate-limits/stats` - Get platform-wide rate limiting statistics
+- `POST /api/admin/security/users/{userId}/block` - Manually block user (admin only)
+- `DELETE /api/admin/security/users/{userId}/block` - Unblock user (admin only)
+- `DELETE /api/admin/security/users/{userId}/rate-limits` - Reset user's rate limits (admin only)
 
 ## 🏃‍♂️ Quick Start
 

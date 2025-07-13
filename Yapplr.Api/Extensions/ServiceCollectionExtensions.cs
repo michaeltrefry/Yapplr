@@ -381,6 +381,7 @@ public static class ServiceCollectionExtensions
 
         // Register security services
         services.AddSingleton<INotificationRateLimitService, NotificationRateLimitService>();
+        services.AddSingleton<IApiRateLimitService, ApiRateLimitService>();
         services.AddSingleton<INotificationContentFilterService, NotificationContentFilterService>();
         services.AddScoped<INotificationAuditService, NotificationAuditService>();
 

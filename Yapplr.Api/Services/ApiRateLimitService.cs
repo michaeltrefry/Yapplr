@@ -3,61 +3,31 @@ using System.Collections.Concurrent;
 namespace Yapplr.Api.Services;
 
 /// <summary>
-/// Rate limit configuration for different notification types
+/// API operation types for rate limiting
 /// </summary>
-public class RateLimitConfig
+public enum ApiOperation
 {
-    public int MaxRequestsPerMinute { get; set; } = 10;
-    public int MaxRequestsPerHour { get; set; } = 100;
-    public int MaxRequestsPerDay { get; set; } = 1000;
-    public TimeSpan WindowSize { get; set; } = TimeSpan.FromMinutes(1);
-    public bool EnableBurstProtection { get; set; } = true;
-    public int BurstThreshold { get; set; } = 5; // Max requests in 10 seconds
+    CreatePost,
+    CreateComment,
+    LikePost,
+    UnlikePost,
+    FollowUser,
+    UnfollowUser,
+    ReportContent,
+    SendMessage,
+    UploadMedia,
+    UpdateProfile,
+    Search,
+    General
 }
 
 /// <summary>
-/// Rate limit violation information
+/// Service for rate limiting API requests based on user trust scores
 /// </summary>
-public class RateLimitViolation
+public interface IApiRateLimitService
 {
-    public int UserId { get; set; }
-    public string NotificationType { get; set; } = string.Empty;
-    public DateTime ViolationTime { get; set; } = DateTime.UtcNow;
-    public string LimitType { get; set; } = string.Empty; // "minute", "hour", "day", "burst"
-    public int RequestCount { get; set; }
-    public int Limit { get; set; }
-    public TimeSpan RetryAfter { get; set; }
-}
-
-/// <summary>
-/// Rate limit result
-/// </summary>
-public class RateLimitResult
-{
-    public bool IsAllowed { get; set; }
-    public int RemainingRequests { get; set; }
-    public TimeSpan? RetryAfter { get; set; }
-    public string? ViolationType { get; set; }
-    public DateTime? ResetTime { get; set; }
-}
-
-/// <summary>
-/// Request tracking for rate limiting
-/// </summary>
-public class RequestTracker
-{
-    public Queue<DateTime> Requests { get; set; } = new();
-    public DateTime LastRequest { get; set; }
-    public int TotalRequests { get; set; }
-}
-
-/// <summary>
-/// Service for rate limiting notification requests to prevent spam
-/// </summary>
-public interface INotificationRateLimitService
-{
-    Task<RateLimitResult> CheckRateLimitAsync(int userId, string notificationType);
-    Task RecordRequestAsync(int userId, string notificationType);
+    Task<RateLimitResult> CheckRateLimitAsync(int userId, ApiOperation operation);
+    Task RecordRequestAsync(int userId, ApiOperation operation);
     Task<List<RateLimitViolation>> GetRecentViolationsAsync(int userId);
     Task<Dictionary<string, object>> GetRateLimitStatsAsync();
     Task ResetUserLimitsAsync(int userId);
@@ -66,54 +36,97 @@ public interface INotificationRateLimitService
     Task UnblockUserAsync(int userId);
 }
 
-public class NotificationRateLimitService : INotificationRateLimitService
+public class ApiRateLimitService : IApiRateLimitService
 {
-    private readonly ILogger<NotificationRateLimitService> _logger;
+    private readonly ILogger<ApiRateLimitService> _logger;
+    private readonly ITrustBasedModerationService _trustBasedModerationService;
     
-    // Rate limit configurations per notification type
-    private readonly Dictionary<string, RateLimitConfig> _rateLimitConfigs = new()
+    // Base rate limit configurations per API operation type
+    private readonly Dictionary<ApiOperation, RateLimitConfig> _baseRateLimitConfigs = new()
     {
-        ["message"] = new()
+        [ApiOperation.CreatePost] = new()
         {
-            MaxRequestsPerMinute = 20,
-            MaxRequestsPerHour = 200,
-            MaxRequestsPerDay = 2000,
-            BurstThreshold = 10
+            MaxRequestsPerMinute = 5,
+            MaxRequestsPerHour = 50,
+            MaxRequestsPerDay = 500,
+            BurstThreshold = 3
         },
-        ["mention"] = new()
+        [ApiOperation.CreateComment] = new()
         {
-            MaxRequestsPerMinute = 15,
-            MaxRequestsPerHour = 150,
-            MaxRequestsPerDay = 1500,
-            BurstThreshold = 8
+            MaxRequestsPerMinute = 10,
+            MaxRequestsPerHour = 100,
+            MaxRequestsPerDay = 1000,
+            BurstThreshold = 5
         },
-        ["comment"] = new()
+        [ApiOperation.LikePost] = new()
         {
             MaxRequestsPerMinute = 30,
             MaxRequestsPerHour = 300,
             MaxRequestsPerDay = 3000,
             BurstThreshold = 15
         },
-        ["like"] = new()
+        [ApiOperation.UnlikePost] = new()
+        {
+            MaxRequestsPerMinute = 30,
+            MaxRequestsPerHour = 300,
+            MaxRequestsPerDay = 3000,
+            BurstThreshold = 15
+        },
+        [ApiOperation.FollowUser] = new()
+        {
+            MaxRequestsPerMinute = 5,
+            MaxRequestsPerHour = 50,
+            MaxRequestsPerDay = 500,
+            BurstThreshold = 3
+        },
+        [ApiOperation.UnfollowUser] = new()
+        {
+            MaxRequestsPerMinute = 10,
+            MaxRequestsPerHour = 100,
+            MaxRequestsPerDay = 1000,
+            BurstThreshold = 5
+        },
+        [ApiOperation.ReportContent] = new()
+        {
+            MaxRequestsPerMinute = 2,
+            MaxRequestsPerHour = 20,
+            MaxRequestsPerDay = 100,
+            BurstThreshold = 1
+        },
+        [ApiOperation.SendMessage] = new()
+        {
+            MaxRequestsPerMinute = 10,
+            MaxRequestsPerHour = 100,
+            MaxRequestsPerDay = 1000,
+            BurstThreshold = 5
+        },
+        [ApiOperation.UploadMedia] = new()
+        {
+            MaxRequestsPerMinute = 3,
+            MaxRequestsPerHour = 30,
+            MaxRequestsPerDay = 200,
+            BurstThreshold = 2
+        },
+        [ApiOperation.UpdateProfile] = new()
+        {
+            MaxRequestsPerMinute = 2,
+            MaxRequestsPerHour = 20,
+            MaxRequestsPerDay = 100,
+            BurstThreshold = 1
+        },
+        [ApiOperation.Search] = new()
+        {
+            MaxRequestsPerMinute = 20,
+            MaxRequestsPerHour = 200,
+            MaxRequestsPerDay = 2000,
+            BurstThreshold = 10
+        },
+        [ApiOperation.General] = new()
         {
             MaxRequestsPerMinute = 60,
             MaxRequestsPerHour = 600,
             MaxRequestsPerDay = 6000,
             BurstThreshold = 30
-        },
-        ["follow"] = new()
-        {
-            MaxRequestsPerMinute = 10,
-            MaxRequestsPerHour = 100,
-            MaxRequestsPerDay = 1000,
-            BurstThreshold = 5
-        },
-        ["default"] = new()
-        {
-            MaxRequestsPerMinute = 10,
-            MaxRequestsPerHour = 100,
-            MaxRequestsPerDay = 1000,
-            BurstThreshold = 5
         }
     };
 
@@ -127,15 +140,16 @@ public class NotificationRateLimitService : INotificationRateLimitService
     private long _totalViolations = 0;
     private long _totalBlocked = 0;
 
-    public NotificationRateLimitService(ILogger<NotificationRateLimitService> logger)
+    public ApiRateLimitService(
+        ILogger<ApiRateLimitService> logger,
+        ITrustBasedModerationService trustBasedModerationService)
     {
         _logger = logger;
+        _trustBasedModerationService = trustBasedModerationService;
     }
 
-    public async Task<RateLimitResult> CheckRateLimitAsync(int userId, string notificationType)
+    public async Task<RateLimitResult> CheckRateLimitAsync(int userId, ApiOperation operation)
     {
-        await Task.CompletedTask;
-
         // Check if user is blocked
         if (_blockedUsers.TryGetValue(userId, out var blockedUntil))
         {
@@ -155,8 +169,12 @@ public class NotificationRateLimitService : INotificationRateLimitService
             }
         }
 
-        var config = GetRateLimitConfig(notificationType);
-        var key = $"{userId}:{notificationType}";
+        // Get base configuration and apply trust-based multiplier
+        var baseConfig = GetBaseRateLimitConfig(operation);
+        var trustMultiplier = await _trustBasedModerationService.GetRateLimitMultiplierAsync(userId);
+        var adjustedConfig = ApplyTrustMultiplier(baseConfig, trustMultiplier);
+
+        var key = $"{userId}:{operation}";
         var tracker = _requestTrackers.GetOrAdd(key, _ => new RequestTracker());
         var now = DateTime.UtcNow;
 
@@ -166,12 +184,12 @@ public class NotificationRateLimitService : INotificationRateLimitService
             CleanOldRequests(tracker, now, TimeSpan.FromDays(1)); // Keep 24 hours for daily limits
 
             // Check burst protection (last 10 seconds)
-            if (config.EnableBurstProtection)
+            if (adjustedConfig.EnableBurstProtection)
             {
                 var burstRequests = tracker.Requests.Count(r => r > now.AddSeconds(-10));
-                if (burstRequests >= config.BurstThreshold)
+                if (burstRequests >= adjustedConfig.BurstThreshold)
                 {
-                    RecordViolation(userId, notificationType, "burst", burstRequests, config.BurstThreshold);
+                    RecordViolation(userId, operation.ToString(), "burst", burstRequests, adjustedConfig.BurstThreshold);
                     return new RateLimitResult
                     {
                         IsAllowed = false,
@@ -183,9 +201,9 @@ public class NotificationRateLimitService : INotificationRateLimitService
 
             // Check minute limit
             var minuteRequests = tracker.Requests.Count(r => r > now.AddMinutes(-1));
-            if (minuteRequests >= config.MaxRequestsPerMinute)
+            if (minuteRequests >= adjustedConfig.MaxRequestsPerMinute)
             {
-                RecordViolation(userId, notificationType, "minute", minuteRequests, config.MaxRequestsPerMinute);
+                RecordViolation(userId, operation.ToString(), "minute", minuteRequests, adjustedConfig.MaxRequestsPerMinute);
                 return new RateLimitResult
                 {
                     IsAllowed = false,
@@ -198,9 +216,9 @@ public class NotificationRateLimitService : INotificationRateLimitService
 
             // Check hour limit
             var hourRequests = tracker.Requests.Count(r => r > now.AddHours(-1));
-            if (hourRequests >= config.MaxRequestsPerHour)
+            if (hourRequests >= adjustedConfig.MaxRequestsPerHour)
             {
-                RecordViolation(userId, notificationType, "hour", hourRequests, config.MaxRequestsPerHour);
+                RecordViolation(userId, operation.ToString(), "hour", hourRequests, adjustedConfig.MaxRequestsPerHour);
                 return new RateLimitResult
                 {
                     IsAllowed = false,
@@ -213,9 +231,9 @@ public class NotificationRateLimitService : INotificationRateLimitService
 
             // Check day limit
             var dayRequests = tracker.Requests.Count(r => r > now.AddDays(-1));
-            if (dayRequests >= config.MaxRequestsPerDay)
+            if (dayRequests >= adjustedConfig.MaxRequestsPerDay)
             {
-                RecordViolation(userId, notificationType, "day", dayRequests, config.MaxRequestsPerDay);
+                RecordViolation(userId, operation.ToString(), "day", dayRequests, adjustedConfig.MaxRequestsPerDay);
                 return new RateLimitResult
                 {
                     IsAllowed = false,
@@ -230,17 +248,17 @@ public class NotificationRateLimitService : INotificationRateLimitService
             return new RateLimitResult
             {
                 IsAllowed = true,
-                RemainingRequests = config.MaxRequestsPerMinute - minuteRequests - 1,
+                RemainingRequests = adjustedConfig.MaxRequestsPerMinute - minuteRequests - 1,
                 ResetTime = now.AddMinutes(1)
             };
         }
     }
 
-    public async Task RecordRequestAsync(int userId, string notificationType)
+    public async Task RecordRequestAsync(int userId, ApiOperation operation)
     {
         await Task.CompletedTask;
 
-        var key = $"{userId}:{notificationType}";
+        var key = $"{userId}:{operation}";
         var tracker = _requestTrackers.GetOrAdd(key, _ => new RequestTracker());
         var now = DateTime.UtcNow;
 
@@ -272,7 +290,7 @@ public class NotificationRateLimitService : INotificationRateLimitService
         await Task.CompletedTask;
 
         var activeTrackers = _requestTrackers.Count;
-        var blockedUsers = _blockedUsers.Count;
+        var blockedUsers = _blockedUsers.Count(kvp => kvp.Value > DateTime.UtcNow);
         var recentViolations = _violations.Values
             .SelectMany(v => v)
             .Count(v => v.ViolationTime > DateTime.UtcNow.AddHours(-1));
@@ -285,8 +303,8 @@ public class NotificationRateLimitService : INotificationRateLimitService
             ["active_trackers"] = activeTrackers,
             ["currently_blocked_users"] = blockedUsers,
             ["recent_violations_last_hour"] = recentViolations,
-            ["rate_limit_configs"] = _rateLimitConfigs.ToDictionary(
-                kvp => kvp.Key,
+            ["base_rate_limit_configs"] = _baseRateLimitConfigs.ToDictionary(
+                kvp => kvp.Key.ToString(),
                 kvp => new
                 {
                     max_per_minute = kvp.Value.MaxRequestsPerMinute,
@@ -301,11 +319,8 @@ public class NotificationRateLimitService : INotificationRateLimitService
     {
         await Task.CompletedTask;
 
-        // Remove all trackers for this user
-        var keysToRemove = _requestTrackers.Keys
-            .Where(k => k.StartsWith($"{userId}:"))
-            .ToList();
-
+        // Remove all tracking for this user
+        var keysToRemove = _requestTrackers.Keys.Where(k => k.StartsWith($"{userId}:")).ToList();
         foreach (var key in keysToRemove)
         {
             _requestTrackers.TryRemove(key, out _);
@@ -314,7 +329,7 @@ public class NotificationRateLimitService : INotificationRateLimitService
         // Clear violations
         _violations.TryRemove(userId, out _);
 
-        // Unblock user
+        // Unblock if blocked
         _blockedUsers.TryRemove(userId, out _);
 
         _logger.LogInformation("Reset rate limits for user {UserId}", userId);
@@ -350,7 +365,7 @@ public class NotificationRateLimitService : INotificationRateLimitService
 
         Interlocked.Increment(ref _totalBlocked);
 
-        _logger.LogWarning("Blocked user {UserId} for {Duration} due to: {Reason}", 
+        _logger.LogWarning("Blocked user {UserId} for {Duration} due to: {Reason}",
             userId, duration, reason);
     }
 
@@ -364,11 +379,24 @@ public class NotificationRateLimitService : INotificationRateLimitService
         }
     }
 
-    private RateLimitConfig GetRateLimitConfig(string notificationType)
+    private RateLimitConfig GetBaseRateLimitConfig(ApiOperation operation)
     {
-        return _rateLimitConfigs.TryGetValue(notificationType.ToLower(), out var config)
+        return _baseRateLimitConfigs.TryGetValue(operation, out var config)
             ? config
-            : _rateLimitConfigs["default"];
+            : _baseRateLimitConfigs[ApiOperation.General];
+    }
+
+    private RateLimitConfig ApplyTrustMultiplier(RateLimitConfig baseConfig, float multiplier)
+    {
+        return new RateLimitConfig
+        {
+            MaxRequestsPerMinute = Math.Max(1, (int)(baseConfig.MaxRequestsPerMinute * multiplier)),
+            MaxRequestsPerHour = Math.Max(1, (int)(baseConfig.MaxRequestsPerHour * multiplier)),
+            MaxRequestsPerDay = Math.Max(1, (int)(baseConfig.MaxRequestsPerDay * multiplier)),
+            BurstThreshold = Math.Max(1, (int)(baseConfig.BurstThreshold * multiplier)),
+            EnableBurstProtection = baseConfig.EnableBurstProtection,
+            WindowSize = baseConfig.WindowSize
+        };
     }
 
     private void CleanOldRequests(RequestTracker tracker, DateTime now, TimeSpan maxAge)
@@ -380,12 +408,12 @@ public class NotificationRateLimitService : INotificationRateLimitService
         }
     }
 
-    private void RecordViolation(int userId, string notificationType, string limitType, int requestCount, int limit)
+    private void RecordViolation(int userId, string operationType, string limitType, int requestCount, int limit)
     {
         var violation = new RateLimitViolation
         {
             UserId = userId,
-            NotificationType = notificationType,
+            NotificationType = operationType, // Reusing this field for operation type
             LimitType = limitType,
             RequestCount = requestCount,
             Limit = limit,
@@ -403,7 +431,7 @@ public class NotificationRateLimitService : INotificationRateLimitService
         lock (userViolations)
         {
             userViolations.Add(violation);
-            
+
             // Keep only recent violations (last 24 hours)
             var cutoff = DateTime.UtcNow.AddHours(-24);
             userViolations.RemoveAll(v => v.ViolationTime < cutoff);
@@ -411,13 +439,13 @@ public class NotificationRateLimitService : INotificationRateLimitService
 
         Interlocked.Increment(ref _totalViolations);
 
-        _logger.LogWarning("Rate limit violation for user {UserId}, type {NotificationType}, limit {LimitType}: {RequestCount}/{Limit}",
-            userId, notificationType, limitType, requestCount, limit);
+        _logger.LogWarning("API rate limit violation for user {UserId}, operation {OperationType}, limit {LimitType}: {RequestCount}/{Limit}",
+            userId, operationType, limitType, requestCount, limit);
 
         // Auto-block users with too many violations
-        if (userViolations.Count >= 10) // 10 violations in 24 hours
+        if (userViolations.Count >= 15) // 15 violations in 24 hours (more lenient than notifications)
         {
-            _ = Task.Run(() => BlockUserAsync(userId, TimeSpan.FromHours(1), "Too many rate limit violations"));
+            _ = Task.Run(() => BlockUserAsync(userId, TimeSpan.FromHours(2), "Too many API rate limit violations"));
         }
     }
 }

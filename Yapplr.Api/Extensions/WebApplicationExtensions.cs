@@ -37,6 +37,7 @@ public static class WebApplicationExtensions
         }
         app.UseAuthentication();
         app.UseMiddleware<UserActivityMiddleware>();
+        app.UseMiddleware<ApiRateLimitMiddleware>();
         app.UseAuthorization();
 
         return app;
