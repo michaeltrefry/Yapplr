@@ -33,7 +33,7 @@ public class ExpoNotificationService : IRealtimeNotificationProvider
         _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         _httpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
 
-        _logger.LogInformation("🚀 Expo notification service initialized. Enabled: {IsEnabled}", _isEnabled);
+        _logger.LogDebug("🚀 Expo notification service initialized. Enabled: {IsEnabled}", _isEnabled);
     }
 
     public Task<bool> IsAvailableAsync()

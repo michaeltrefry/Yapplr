@@ -40,15 +40,27 @@ builder.Services.AddMassTransit(x =>
         {
             h.Username(username);
             h.Password(password);
+
+            // Configure connection resilience
+            h.RequestedConnectionTimeout(TimeSpan.FromSeconds(30));
+            h.Heartbeat(TimeSpan.FromSeconds(60));
         });
 
-        // Configure retry policy
-        cfg.UseMessageRetry(r => r.Intervals(
-            TimeSpan.FromSeconds(1),
-            TimeSpan.FromSeconds(5),
-            TimeSpan.FromSeconds(15),
-            TimeSpan.FromMinutes(1)
-        ));
+        // Configure retry policy with exception filtering
+        cfg.UseMessageRetry(r =>
+        {
+            r.Intervals(
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(5),
+                TimeSpan.FromSeconds(15),
+                TimeSpan.FromMinutes(1)
+            );
+
+            // Don't retry on video processing failures - these are usually permanent
+            r.Ignore<FFMpegCore.Exceptions.FFMpegException>();
+            r.Ignore<InvalidOperationException>();
+            r.Ignore<FileNotFoundException>();
+        });
 
         // Configure endpoints for consumers
         cfg.ConfigureEndpoints(context);
