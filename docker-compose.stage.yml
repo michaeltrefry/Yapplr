@@ -174,7 +174,9 @@ services:
       - RABBITMQ_DEFAULT_USER=${STAGE_RABBITMQ_USERNAME:-yapplr}
       - RABBITMQ_DEFAULT_PASS=${STAGE_RABBITMQ_PASSWORD:-yapplr123}
       - RABBITMQ_DEFAULT_VHOST=/
-    # No external ports exposed - only accessible from Docker network
+    ports:
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI port (for staging debugging)
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: unless-stopped
