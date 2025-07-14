@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 using Yapplr.Api.DTOs;
 
 namespace Yapplr.Api.Endpoints;
@@ -18,20 +19,10 @@ public static class MetricsEndpoints
         metrics.MapGet("/notifications", GetNotificationMetrics)
             .WithName("GetNotificationMetrics")
             .WithSummary("Get notification delivery metrics")
-            .Produces<NotificationMetrics>(200)
+            .Produces<NotificationStats>(200)
             .Produces(401);
 
-        metrics.MapGet("/notifications/recent", GetRecentDeliveries)
-            .WithName("GetRecentDeliveries")
-            .WithSummary("Get recent notification deliveries")
-            .Produces<List<DeliveryMetric>>(200)
-            .Produces(401);
-
-        metrics.MapGet("/notifications/insights", GetPerformanceInsights)
-            .WithName("GetPerformanceInsights")
-            .WithSummary("Get performance insights and recommendations")
-            .Produces<Dictionary<string, object>>(200)
-            .Produces(401);
+        // Performance insights endpoint removed - functionality integrated into main metrics
 
         // Connection pool metrics
         metrics.MapGet("/connections", GetConnectionPoolStats)
@@ -50,13 +41,7 @@ public static class MetricsEndpoints
         metrics.MapGet("/queue", GetQueueStats)
             .WithName("GetQueueStats")
             .WithSummary("Get notification queue statistics")
-            .Produces<NotificationQueueStats>(200)
-            .Produces(401);
-
-        metrics.MapGet("/queue/pending", GetPendingNotifications)
-            .WithName("GetPendingNotifications")
-            .WithSummary("Get pending notifications in queue")
-            .Produces<List<QueuedNotificationDto>>(200)
+            .Produces<QueueStats>(200)
             .Produces(401);
 
         // Health check endpoint
@@ -83,17 +68,13 @@ public static class MetricsEndpoints
     }
 
     private static async Task<IResult> GetNotificationMetrics(
-        INotificationMetricsService metricsService,
+        IUnifiedNotificationService notificationService,
         [FromQuery] int? timeWindowMinutes = null)
     {
         try
         {
-            var timeWindow = timeWindowMinutes.HasValue 
-                ? TimeSpan.FromMinutes(timeWindowMinutes.Value) 
-                : (TimeSpan?)null;
-
-            var metrics = await metricsService.GetMetricsAsync(timeWindow);
-            return Results.Ok(metrics);
+            var stats = await notificationService.GetStatsAsync();
+            return Results.Ok(stats);
         }
         catch (Exception ex)
         {
@@ -101,34 +82,7 @@ public static class MetricsEndpoints
         }
     }
 
-    private static async Task<IResult> GetRecentDeliveries(
-        INotificationMetricsService metricsService,
-        [FromQuery] int count = 100)
-    {
-        try
-        {
-            var deliveries = await metricsService.GetRecentDeliveriesAsync(count);
-            return Results.Ok(deliveries);
-        }
-        catch (Exception ex)
-        {
-            return Results.Problem($"Failed to get recent deliveries: {ex.Message}");
-        }
-    }
 
-    private static async Task<IResult> GetPerformanceInsights(
-        INotificationMetricsService metricsService)
-    {
-        try
-        {
-            var insights = await metricsService.GetPerformanceInsightsAsync();
-            return Results.Ok(insights);
-        }
-        catch (Exception ex)
-        {
-            return Results.Problem($"Failed to get performance insights: {ex.Message}");
-        }
-    }
 
     private static async Task<IResult> GetConnectionPoolStats(
         ISignalRConnectionPool connectionPool)
@@ -159,11 +113,11 @@ public static class MetricsEndpoints
     }
 
     private static async Task<IResult> GetQueueStats(
-        INotificationQueueService queueService)
+        INotificationQueue queueService)
     {
         try
         {
-            var stats = await queueService.GetStatsAsync();
+            var stats = await queueService.GetQueueStatsAsync();
             return Results.Ok(stats);
         }
         catch (Exception ex)
@@ -172,34 +126,18 @@ public static class MetricsEndpoints
         }
     }
 
-    private static async Task<IResult> GetPendingNotifications(
-        INotificationQueueService queueService,
-        ClaimsPrincipal user)
-    {
-        try
-        {
-            var userId = user.GetUserId(true);
-            var notifications = await queueService.GetPendingNotificationsAsync(userId);
-            return Results.Ok(notifications);
-        }
-        catch (Exception ex)
-        {
-            return Results.Problem($"Failed to get pending notifications: {ex.Message}");
-        }
-    }
-
     private static async Task<IResult> GetHealthCheck(
-        INotificationMetricsService metricsService,
+        IUnifiedNotificationService notificationService,
         ISignalRConnectionPool connectionPool,
-        INotificationQueueService queueService)
+        INotificationQueue queueService)
     {
         try
         {
-            var healthData = await metricsService.GetHealthCheckDataAsync();
-            
+            var healthReport = await notificationService.GetHealthReportAsync();
+
             // Add connection pool health
             var connectionStats = await connectionPool.GetStatsAsync();
-            healthData["connection_pool"] = new
+            var connectionHealth = new
             {
                 active_users = connectionStats.ActiveUsers,
                 total_connections = connectionStats.TotalConnections,
@@ -207,14 +145,24 @@ public static class MetricsEndpoints
             };
 
             // Add queue health
-            var queueStats = await queueService.GetStatsAsync();
-            healthData["queue"] = new
+            var queueStats = await queueService.GetQueueStatsAsync();
+            var queueHealth = new
             {
-                pending_count = queueStats.PendingInMemory,
-                queue_size = queueStats.QueueSize,
-                delivery_rate = queueStats.DeliveryRate,
-                status = queueStats.DeliveryRate >= 95 ? "healthy" : 
-                        queueStats.DeliveryRate >= 80 ? "degraded" : "unhealthy"
+                currently_queued = queueStats.CurrentlyQueued,
+                total_delivered = queueStats.TotalDelivered,
+                delivery_success_rate = queueStats.DeliverySuccessRate,
+                status = queueStats.DeliverySuccessRate >= 95 ? "healthy" :
+                        queueStats.DeliverySuccessRate >= 80 ? "degraded" : "unhealthy"
+            };
+
+            var healthData = new Dictionary<string, object>
+            {
+                ["overall_health"] = healthReport.IsHealthy,
+                ["notification_system"] = healthReport.ComponentHealth,
+                ["connection_pool"] = connectionHealth,
+                ["queue"] = queueHealth,
+                ["last_checked"] = healthReport.LastChecked,
+                ["issues"] = healthReport.Issues
             };
 
             return Results.Ok(healthData);
@@ -226,7 +174,7 @@ public static class MetricsEndpoints
     }
 
     private static async Task<IResult> ResetMetrics(
-        INotificationMetricsService metricsService,
+        IUnifiedNotificationService notificationService,
         ClaimsPrincipal user)
     {
         // Simple admin check - in production, you'd want proper role-based authorization
@@ -238,17 +186,17 @@ public static class MetricsEndpoints
 
         try
         {
-            await metricsService.ResetMetricsAsync();
-            return Results.Ok(new { message = "Metrics reset successfully" });
+            await notificationService.RefreshSystemAsync();
+            return Results.Ok(new { message = "Notification system refreshed successfully" });
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Failed to reset metrics: {ex.Message}");
+            return Results.Problem($"Failed to refresh notification system: {ex.Message}");
         }
     }
 
     private static async Task<IResult> ProcessQueue(
-        INotificationQueueService queueService,
+        INotificationQueue queueService,
         ClaimsPrincipal user)
     {
         // Simple admin check - in production, you'd want proper role-based authorization

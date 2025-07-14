@@ -979,6 +979,82 @@ public class NotificationQueue : INotificationQueue
         }
     }
 
+    public async Task<int> CleanupOldNotificationsAsync(TimeSpan maxAge)
+    {
+        try
+        {
+            var cutoffTime = DateTime.UtcNow.Subtract(maxAge);
+            var cleanedCount = 0;
+
+            _logger.LogDebug("Starting cleanup of notifications older than {MaxAge}", maxAge);
+
+            // Clean memory collections
+            var oldIds = new List<string>();
+            foreach (var kvp in _pendingNotifications)
+            {
+                if (kvp.Value.CreatedAt < cutoffTime)
+                {
+                    oldIds.Add(kvp.Key);
+                }
+            }
+
+            foreach (var id in oldIds)
+            {
+                _pendingNotifications.TryRemove(id, out _);
+                cleanedCount++;
+            }
+
+            // Clean user queues
+            foreach (var userQueue in _userQueues.Values)
+            {
+                var tempQueue = new Queue<QueuedNotification>();
+                while (userQueue.TryDequeue(out var notification))
+                {
+                    if (notification.CreatedAt >= cutoffTime)
+                    {
+                        tempQueue.Enqueue(notification);
+                    }
+                    else
+                    {
+                        cleanedCount++;
+                    }
+                }
+
+                // Re-queue non-old notifications
+                while (tempQueue.Count > 0)
+                {
+                    userQueue.Enqueue(tempQueue.Dequeue());
+                }
+            }
+
+            // Clean database
+            var oldDbNotifications = await _context.QueuedNotifications
+                .Where(n => n.CreatedAt < cutoffTime)
+                .ToListAsync();
+
+            if (oldDbNotifications.Any())
+            {
+                _context.QueuedNotifications.RemoveRange(oldDbNotifications);
+                await _context.SaveChangesAsync();
+            }
+
+            var dbCleanedCount = oldDbNotifications.Count;
+            cleanedCount += dbCleanedCount;
+
+            if (cleanedCount > 0)
+            {
+                _logger.LogInformation("Cleaned up {CleanedCount} old notifications older than {MaxAge}", cleanedCount, maxAge);
+            }
+
+            return cleanedCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cleaning up old notifications");
+            return 0;
+        }
+    }
+
     public async Task<int> RetryFailedNotificationsAsync()
     {
         try
@@ -1294,15 +1370,4 @@ public class NotificationQueue : INotificationQueue
     }
 
     #endregion
-}
-
-/// <summary>
-/// Extension methods for QueuedNotification
-/// </summary>
-public static class QueuedNotificationExtensions
-{
-    public static bool IsExpired(this QueuedNotification notification)
-    {
-        return notification.ExpiresAt.HasValue && DateTime.UtcNow > notification.ExpiresAt.Value;
-    }
 }

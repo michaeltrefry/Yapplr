@@ -1,6 +1,7 @@
 using MassTransit;
 using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.CQRS.Handlers;
 
@@ -9,10 +10,10 @@ namespace Yapplr.Api.CQRS.Handlers;
 /// </summary>
 public class SendPostInteractionNotificationCommandHandler : BaseCommandHandler<SendPostInteractionNotificationCommand>
 {
-    private readonly ICompositeNotificationService _notificationService;
+    private readonly IUnifiedNotificationService _notificationService;
 
     public SendPostInteractionNotificationCommandHandler(
-        ICompositeNotificationService notificationService,
+        IUnifiedNotificationService notificationService,
         ILogger<SendPostInteractionNotificationCommandHandler> logger) : base(logger)
     {
         _notificationService = notificationService;
@@ -45,17 +46,49 @@ public class SendPostInteractionNotificationCommandHandler : BaseCommandHandler<
             ["actorUsername"] = command.ActorUsername
         };
 
-        var success = await _notificationService.SendNotificationWithPreferencesAsync(
-            command.TargetUserId,
-            "post_interaction",
-            title,
-            body,
-            data);
-
-        if (!success)
+        // Use specific notification methods based on interaction type
+        switch (command.InteractionType.ToLower())
         {
-            Logger.LogWarning("Failed to send post interaction notification to user {UserId} for post {PostId}", 
-                command.TargetUserId, command.PostId);
+            case "like":
+                await _notificationService.SendLikeNotificationAsync(
+                    command.TargetUserId,
+                    command.ActorUsername,
+                    command.PostId);
+                break;
+            case "comment":
+                await _notificationService.SendCommentNotificationAsync(
+                    command.TargetUserId,
+                    command.ActorUsername,
+                    command.PostId,
+                    0); // Comment ID would need to be passed in the command
+                break;
+            case "share":
+                await _notificationService.SendRepostNotificationAsync(
+                    command.TargetUserId,
+                    command.ActorUsername,
+                    command.PostId);
+                break;
+            default:
+                // For unknown interaction types, use the generic notification method
+                var request = new NotificationRequest
+                {
+                    UserId = command.TargetUserId,
+                    NotificationType = "post_interaction",
+                    Title = $"New {command.InteractionType}",
+                    Body = $"@{command.ActorUsername} {command.InteractionType}d your post",
+                    Data = new Dictionary<string, string>
+                    {
+                        ["type"] = "post_interaction",
+                        ["postId"] = command.PostId.ToString(),
+                        ["interactionType"] = command.InteractionType,
+                        ["actorUsername"] = command.ActorUsername
+                    }
+                };
+                await _notificationService.SendNotificationAsync(request);
+                break;
         }
+
+        Logger.LogInformation("Sent {InteractionType} notification to user {UserId} for post {PostId}",
+            command.InteractionType, command.TargetUserId, command.PostId);
     }
 }

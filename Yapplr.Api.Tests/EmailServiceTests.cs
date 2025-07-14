@@ -13,12 +13,12 @@ public class EmailServiceTests
     {
         // Arrange
         var mockEmailSender = new Mock<IEmailSender>();
-        var mockLogger = new Mock<ILogger<UnifiedEmailService>>();
+        var mockLogger = new Mock<ILogger<EmailService>>();
         
         mockEmailSender.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                       .ReturnsAsync(true);
 
-        var emailService = new UnifiedEmailService(mockEmailSender.Object, mockLogger.Object);
+        var emailService = new EmailService(mockEmailSender.Object, mockLogger.Object);
 
         var toEmail = "test@example.com";
         var username = "testuser";
@@ -43,12 +43,12 @@ public class EmailServiceTests
     {
         // Arrange
         var mockEmailSender = new Mock<IEmailSender>();
-        var mockLogger = new Mock<ILogger<UnifiedEmailService>>();
+        var mockLogger = new Mock<ILogger<EmailService>>();
         
         mockEmailSender.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                       .ReturnsAsync(true);
 
-        var emailService = new UnifiedEmailService(mockEmailSender.Object, mockLogger.Object);
+        var emailService = new EmailService(mockEmailSender.Object, mockLogger.Object);
 
         var toEmail = "test@example.com";
         var username = "testuser";
@@ -73,12 +73,12 @@ public class EmailServiceTests
     {
         // Arrange
         var mockEmailSender = new Mock<IEmailSender>();
-        var mockLogger = new Mock<ILogger<UnifiedEmailService>>();
+        var mockLogger = new Mock<ILogger<EmailService>>();
         
         mockEmailSender.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                       .ReturnsAsync(true);
 
-        var emailService = new UnifiedEmailService(mockEmailSender.Object, mockLogger.Object);
+        var emailService = new EmailService(mockEmailSender.Object, mockLogger.Object);
 
         var toEmail = "test@example.com";
         var username = "testuser";

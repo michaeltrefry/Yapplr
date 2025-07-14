@@ -7,7 +7,6 @@ using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 using Yapplr.Api.Services.Unified;
-using NotificationPriority = Yapplr.Api.Services.Unified.NotificationPriority;
 using QueuedNotification = Yapplr.Api.Services.Unified.QueuedNotification;
 
 namespace Yapplr.Tests.Services.Unified;

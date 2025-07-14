@@ -1,6 +1,7 @@
 using MassTransit;
 using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.CQRS.Handlers;
 
@@ -9,10 +10,10 @@ namespace Yapplr.Api.CQRS.Handlers;
 /// </summary>
 public class SendNotificationCommandHandler : BaseCommandHandler<SendNotificationCommand>
 {
-    private readonly ICompositeNotificationService _notificationService;
+    private readonly IUnifiedNotificationService _notificationService;
 
     public SendNotificationCommandHandler(
-        ICompositeNotificationService notificationService,
+        IUnifiedNotificationService notificationService,
         ILogger<SendNotificationCommandHandler> logger) : base(logger)
     {
         _notificationService = notificationService;
@@ -20,12 +21,16 @@ public class SendNotificationCommandHandler : BaseCommandHandler<SendNotificatio
 
     protected override async Task HandleAsync(SendNotificationCommand command, ConsumeContext<SendNotificationCommand> context)
     {
-        var success = await _notificationService.SendNotificationWithPreferencesAsync(
-            command.TargetUserId,
-            command.NotificationType,
-            command.Title,
-            command.Body,
-            command.Data);
+        var request = new NotificationRequest
+        {
+            UserId = command.TargetUserId,
+            NotificationType = command.NotificationType,
+            Title = command.Title,
+            Body = command.Body,
+            Data = command.Data
+        };
+
+        var success = await _notificationService.SendNotificationAsync(request);
 
         if (!success)
         {

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
+using Yapplr.Api.Services.Unified;
 using Yapplr.Api.Extensions;
 
 namespace Yapplr.Api.Services;
@@ -10,10 +11,10 @@ public class MessageService : IMessageService
 {
     private readonly YapplrDbContext _context;
     private readonly IUserService _userService;
-    private readonly ICompositeNotificationService _notificationService;
+    private readonly IUnifiedNotificationService _notificationService;
     private readonly ICountCacheService _countCache;
 
-    public MessageService(YapplrDbContext context, IUserService userService, ICompositeNotificationService notificationService, ICountCacheService countCache)
+    public MessageService(YapplrDbContext context, IUserService userService, IUnifiedNotificationService notificationService, ICountCacheService countCache)
     {
         _context = context;
         _userService = userService;

@@ -52,7 +52,7 @@ public class NotificationBackgroundService : BackgroundService
     private async Task ProcessNotificationQueueAsync()
     {
         using var scope = _serviceProvider.CreateScope();
-        var queueService = scope.ServiceProvider.GetRequiredService<INotificationQueueService>();
+        var queueService = scope.ServiceProvider.GetRequiredService<Yapplr.Api.Services.Unified.INotificationQueue>();
 
         try
         {
@@ -76,7 +76,7 @@ public class NotificationBackgroundService : BackgroundService
         try
         {
             // Cleanup old notifications
-            var queueService = scope.ServiceProvider.GetRequiredService<INotificationQueueService>();
+            var queueService = scope.ServiceProvider.GetRequiredService<Yapplr.Api.Services.Unified.INotificationQueue>();
             await queueService.CleanupOldNotificationsAsync(TimeSpan.FromDays(7)); // Keep 7 days
 
             // Cleanup inactive SignalR connections

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -84,7 +85,7 @@ public static class NotificationConfigurationEndpoints
 
     private static async Task<IResult> SendTestNotificationToUser(
         int userId,
-        ICompositeNotificationService notificationService)
+        IUnifiedNotificationService notificationService)
     {
         try
         {
@@ -111,7 +112,7 @@ public static class NotificationConfigurationEndpoints
 
     private static async Task<IResult> SendTestNotificationToCurrentUser(
         ClaimsPrincipal user,
-        ICompositeNotificationService notificationService)
+        IUnifiedNotificationService notificationService)
     {
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))

@@ -1038,6 +1038,253 @@ public class UnifiedNotificationService : IUnifiedNotificationService
 
     #endregion
 
+    #region Delivery Tracking and History
+
+    public async Task<List<NotificationDeliveryStatus>> GetDeliveryStatusAsync(int userId, int count)
+    {
+        try
+        {
+            var notifications = await _context.Notifications
+                .Where(n => n.UserId == userId)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(count)
+                .Select(n => new NotificationDeliveryStatus
+                {
+                    NotificationId = n.Id.ToString(),
+                    UserId = n.UserId,
+                    NotificationType = n.Type.ToString(),
+                    CreatedAt = n.CreatedAt,
+                    IsDelivered = n.IsRead, // Using IsRead as a proxy for delivered
+                    DeliveredAt = n.ReadAt,
+                    IsRead = n.IsRead,
+                    ReadAt = n.ReadAt,
+                    AttemptCount = 1 // Default value
+                })
+                .ToListAsync();
+
+            return notifications;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get delivery status for user {UserId}", userId);
+            return new List<NotificationDeliveryStatus>();
+        }
+    }
+
+    public async Task<List<NotificationHistoryEntry>> GetNotificationHistoryAsync(int userId, int count)
+    {
+        try
+        {
+            var notifications = await _context.Notifications
+                .Where(n => n.UserId == userId)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(count)
+                .Select(n => new NotificationHistoryEntry
+                {
+                    NotificationId = n.Id.ToString(),
+                    UserId = n.UserId,
+                    NotificationType = n.Type.ToString(),
+                    Title = n.Type.ToString(), // Use type as title since no separate title field
+                    Body = n.Message,
+                    CreatedAt = n.CreatedAt,
+                    DeliveredAt = n.ReadAt, // Using ReadAt as proxy for delivered
+                    ReadAt = n.ReadAt,
+                    Status = n.IsRead ? "Read" : "Unread"
+                })
+                .ToListAsync();
+
+            return notifications;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get notification history for user {UserId}", userId);
+            return new List<NotificationHistoryEntry>();
+        }
+    }
+
+    public async Task<List<UndeliveredNotification>> GetUndeliveredNotificationsAsync(int userId)
+    {
+        try
+        {
+            // Get unread notifications as undelivered
+            var notifications = await _context.Notifications
+                .Where(n => n.UserId == userId && !n.IsRead)
+                .OrderByDescending(n => n.CreatedAt)
+                .Select(n => new UndeliveredNotification
+                {
+                    NotificationId = n.Id.ToString(),
+                    UserId = n.UserId,
+                    NotificationType = n.Type.ToString(),
+                    Title = n.Type.ToString(), // Use type as title since no separate title field
+                    Body = n.Message,
+                    CreatedAt = n.CreatedAt,
+                    Priority = NotificationPriority.Normal, // Default priority
+                    AttemptCount = 1
+                })
+                .ToListAsync();
+
+            return notifications;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get undelivered notifications for user {UserId}", userId);
+            return new List<UndeliveredNotification>();
+        }
+    }
+
+    public async Task<int> ReplayMissedNotificationsAsync(int userId)
+    {
+        try
+        {
+            var undeliveredNotifications = await GetUndeliveredNotificationsAsync(userId);
+            int replayedCount = 0;
+
+            foreach (var notification in undeliveredNotifications)
+            {
+                var request = new NotificationRequest
+                {
+                    UserId = userId,
+                    NotificationType = notification.NotificationType,
+                    Title = notification.Title,
+                    Body = notification.Body,
+                    Data = notification.Data,
+                    Priority = notification.Priority
+                };
+
+                var success = await SendNotificationAsync(request);
+                if (success)
+                {
+                    replayedCount++;
+                }
+            }
+
+            _logger.LogInformation("Replayed {Count} notifications for user {UserId}", replayedCount, userId);
+            return replayedCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to replay missed notifications for user {UserId}", userId);
+            return 0;
+        }
+    }
+
+    public async Task<bool> ConfirmDeliveryAsync(string notificationId)
+    {
+        try
+        {
+            if (int.TryParse(notificationId, out int id))
+            {
+                var notification = await _context.Notifications.FindAsync(id);
+                if (notification != null)
+                {
+                    // Check if there's already a delivery confirmation record
+                    var deliveryConfirmation = await _context.NotificationDeliveryConfirmations
+                        .FirstOrDefaultAsync(dc => dc.NotificationId == notificationId);
+
+                    if (deliveryConfirmation != null)
+                    {
+                        // Update existing delivery confirmation
+                        deliveryConfirmation.IsDelivered = true;
+                        deliveryConfirmation.DeliveredAt = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        // Create new delivery confirmation record
+                        deliveryConfirmation = new Models.NotificationDeliveryConfirmation
+                        {
+                            UserId = notification.UserId,
+                            NotificationId = notificationId,
+                            NotificationType = notification.Type.ToString(),
+                            DeliveryMethod = NotificationDeliveryMethod.Auto, // Default to auto
+                            SentAt = notification.CreatedAt,
+                            DeliveredAt = DateTime.UtcNow,
+                            IsDelivered = true
+                        };
+                        _context.NotificationDeliveryConfirmations.Add(deliveryConfirmation);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Confirmed delivery for notification {NotificationId}", notificationId);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to confirm delivery for notification {NotificationId}", notificationId);
+            return false;
+        }
+    }
+
+    public async Task<bool> ConfirmReadAsync(string notificationId)
+    {
+        try
+        {
+            if (int.TryParse(notificationId, out int id))
+            {
+                var notification = await _context.Notifications.FindAsync(id);
+                if (notification != null)
+                {
+                    notification.IsRead = true;
+                    notification.ReadAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Confirmed read for notification {NotificationId}", notificationId);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to confirm read for notification {NotificationId}", notificationId);
+            return false;
+        }
+    }
+
+    public async Task<Dictionary<string, object>> GetDeliveryStatsAsync(int userId, TimeSpan? timeWindow)
+    {
+        try
+        {
+            var query = _context.Notifications.Where(n => n.UserId == userId);
+
+            if (timeWindow.HasValue)
+            {
+                var cutoffTime = DateTime.UtcNow - timeWindow.Value;
+                query = query.Where(n => n.CreatedAt >= cutoffTime);
+            }
+
+            var notifications = await query.ToListAsync();
+            var totalCount = notifications.Count;
+            var readCount = notifications.Count(n => n.IsRead);
+            var unreadCount = totalCount - readCount;
+
+            return new Dictionary<string, object>
+            {
+                ["total_notifications"] = totalCount,
+                ["delivered_notifications"] = readCount, // Using read as proxy for delivered
+                ["undelivered_notifications"] = unreadCount,
+                ["delivery_rate"] = totalCount > 0 ? (double)readCount / totalCount * 100 : 0,
+                ["time_window_hours"] = timeWindow?.TotalHours ?? 0,
+                ["last_updated"] = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get delivery stats for user {UserId}", userId);
+            return new Dictionary<string, object>
+            {
+                ["error"] = ex.Message,
+                ["last_updated"] = DateTime.UtcNow
+            };
+        }
+    }
+
+    #endregion
+
     #region Management and Monitoring
 
     public async Task<NotificationStats> GetStatsAsync()

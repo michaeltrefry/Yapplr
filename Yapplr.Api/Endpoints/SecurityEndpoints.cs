@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.Data;
@@ -160,12 +161,12 @@ public static class SecurityEndpoints
 
     private static async Task<IResult> GetRateLimitViolations(
         ClaimsPrincipal user,
-        INotificationRateLimitService rateLimitService)
+        INotificationEnhancementService enhancementService)
     {
         try
         {
             var userId = user.GetUserId(true);
-            var violations = await rateLimitService.GetRecentViolationsAsync(userId);
+            var violations = await enhancementService.GetRateLimitViolationsAsync(userId);
             return Results.Ok(violations);
         }
         catch (Exception ex)
@@ -175,11 +176,11 @@ public static class SecurityEndpoints
     }
 
     private static async Task<IResult> GetRateLimitStats(
-        INotificationRateLimitService rateLimitService)
+        INotificationEnhancementService enhancementService)
     {
         try
         {
-            var stats = await rateLimitService.GetRateLimitStatsAsync();
+            var stats = await enhancementService.GetRateLimitStatsAsync();
             return Results.Ok(stats);
         }
         catch (Exception ex)
@@ -190,12 +191,12 @@ public static class SecurityEndpoints
 
     private static async Task<IResult> ResetUserRateLimits(
         ClaimsPrincipal user,
-        INotificationRateLimitService rateLimitService)
+        INotificationEnhancementService enhancementService)
     {
         try
         {
             var userId = user.GetUserId(true);
-            await rateLimitService.ResetUserLimitsAsync(userId);
+            await enhancementService.ResetUserRateLimitsAsync(userId);
             return Results.Ok(new { message = "Rate limits reset successfully" });
         }
         catch (Exception ex)
@@ -206,11 +207,11 @@ public static class SecurityEndpoints
 
     private static async Task<IResult> ValidateContent(
         [FromBody] ValidateContentRequest request,
-        INotificationContentFilterService contentFilterService)
+        INotificationEnhancementService enhancementService)
     {
         try
         {
-            var result = await contentFilterService.ValidateContentAsync(request.Content, request.ContentType ?? "text");
+            var result = await enhancementService.ValidateContentAsync(request.Content, request.ContentType ?? "text");
             return Results.Ok(result);
         }
         catch (Exception ex)
@@ -220,11 +221,11 @@ public static class SecurityEndpoints
     }
 
     private static async Task<IResult> GetContentFilterStats(
-        INotificationContentFilterService contentFilterService)
+        INotificationEnhancementService enhancementService)
     {
         try
         {
-            var stats = await contentFilterService.GetFilterStatsAsync();
+            var stats = await enhancementService.GetContentFilterStatsAsync();
             return Results.Ok(stats);
         }
         catch (Exception ex)
@@ -235,13 +236,13 @@ public static class SecurityEndpoints
 
     private static async Task<IResult> GetAuditLogs(
         ClaimsPrincipal user,
-        INotificationAuditService auditService,
+        INotificationEnhancementService enhancementService,
         [FromQuery] int count = 100)
     {
         try
         {
             var userId = user.GetUserId(true);
-            var logs = await auditService.GetUserAuditLogsAsync(userId, count);
+            var logs = await enhancementService.GetUserAuditLogsAsync(userId, count);
             return Results.Ok(logs);
         }
         catch (Exception ex)
@@ -251,13 +252,13 @@ public static class SecurityEndpoints
     }
 
     private static async Task<IResult> GetAuditStats(
-        INotificationAuditService auditService,
+        INotificationEnhancementService enhancementService,
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null)
     {
         try
         {
-            var stats = await auditService.GetAuditStatsAsync(startDate, endDate);
+            var stats = await enhancementService.GetAuditStatsAsync(startDate, endDate);
             return Results.Ok(stats);
         }
         catch (Exception ex)
@@ -268,7 +269,7 @@ public static class SecurityEndpoints
 
     private static async Task<IResult> GetAllAuditLogs(
         ClaimsPrincipal user,
-        INotificationAuditService auditService,
+        INotificationEnhancementService enhancementService,
         [FromQuery] string? eventType = null,
         [FromQuery] int? userId = null,
         [FromQuery] DateTime? startDate = null,
@@ -295,7 +296,7 @@ public static class SecurityEndpoints
                 PageSize = pageSize
             };
 
-            var logs = await auditService.GetAuditLogsAsync(queryParams);
+            var logs = await enhancementService.GetAuditLogsAsync(queryParams);
             return Results.Ok(logs);
         }
         catch (Exception ex)
@@ -306,12 +307,12 @@ public static class SecurityEndpoints
 
     private static async Task<IResult> GetSecurityEvents(
         ClaimsPrincipal user,
-        INotificationAuditService auditService,
+        INotificationEnhancementService enhancementService,
         [FromQuery] DateTime? since = null)
     {
         try
         {
-            var events = await auditService.GetSecurityEventsAsync(since);
+            var events = await enhancementService.GetSecurityEventsAsync(since);
             return Results.Ok(events);
         }
         catch (Exception ex)
@@ -323,7 +324,7 @@ public static class SecurityEndpoints
     private static async Task<IResult> BlockUser(
         int userId,
         ClaimsPrincipal user,
-        INotificationRateLimitService rateLimitService,
+        INotificationEnhancementService enhancementService,
         [FromQuery] int durationHours = 1,
         [FromQuery] string reason = "Admin action")
     {
@@ -336,7 +337,7 @@ public static class SecurityEndpoints
 
         try
         {
-            await rateLimitService.BlockUserAsync(userId, TimeSpan.FromHours(durationHours), reason);
+            await enhancementService.BlockUserAsync(userId, TimeSpan.FromHours(durationHours), reason);
             return Results.Ok(new { message = $"User {userId} blocked for {durationHours} hours" });
         }
         catch (Exception ex)
@@ -348,7 +349,7 @@ public static class SecurityEndpoints
     private static async Task<IResult> UnblockUser(
         int userId,
         ClaimsPrincipal user,
-        INotificationRateLimitService rateLimitService)
+        INotificationEnhancementService enhancementService)
     {
         // Simple admin check - in production, you'd want proper role-based authorization
         var username = user.FindFirst(ClaimTypes.Name)?.Value;
@@ -359,7 +360,7 @@ public static class SecurityEndpoints
 
         try
         {
-            await rateLimitService.UnblockUserAsync(userId);
+            await enhancementService.UnblockUserAsync(userId);
             return Results.Ok(new { message = $"User {userId} unblocked successfully" });
         }
         catch (Exception ex)
@@ -370,7 +371,7 @@ public static class SecurityEndpoints
 
     private static async Task<IResult> CleanupAuditLogs(
         ClaimsPrincipal user,
-        INotificationAuditService auditService,
+        INotificationEnhancementService enhancementService,
         [FromQuery] int maxAgeDays = 90)
     {
         // Simple admin check - in production, you'd want proper role-based authorization
@@ -382,7 +383,7 @@ public static class SecurityEndpoints
 
         try
         {
-            await auditService.CleanupOldLogsAsync(TimeSpan.FromDays(maxAgeDays));
+            await enhancementService.CleanupOldLogsAsync(TimeSpan.FromDays(maxAgeDays));
             return Results.Ok(new { message = $"Cleaned up audit logs older than {maxAgeDays} days" });
         }
         catch (Exception ex)

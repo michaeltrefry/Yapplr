@@ -718,30 +718,4 @@ public class NotificationProviderManager : INotificationProviderManager
 
 #region Supporting Classes
 
-internal class ProviderStats
-{
-    public long TotalAttempts;
-    public long SuccessfulAttempts;
-    public long FailedAttempts;
-    public long TotalLatencyMs;
-    public int ConsecutiveFailures;
-    public DateTime? LastSuccessfulDelivery;
-    public DateTime? LastFailedDelivery;
-    public string? LastError;
-}
-
-internal class CircuitBreakerState
-{
-    public CircuitBreakerStateEnum State { get; set; } = CircuitBreakerStateEnum.Closed;
-    public int ConsecutiveFailures { get; set; }
-    public DateTime LastFailureTime { get; set; }
-}
-
-internal enum CircuitBreakerStateEnum
-{
-    Closed,
-    Open,
-    HalfOpen
-}
-
 #endregion

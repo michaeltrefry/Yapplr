@@ -5,6 +5,7 @@ using Moq;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 using Yapplr.Api.DTOs;
 
 namespace Yapplr.Api.Tests;
@@ -14,7 +15,7 @@ public class MessageServiceTests : IDisposable
     private readonly TestYapplrDbContext _context;
     private readonly MessageService _messageService;
     private readonly Mock<IUserService> _mockUserService;
-    private readonly Mock<ICompositeNotificationService> _mockNotificationService;
+    private readonly Mock<IUnifiedNotificationService> _mockNotificationService;
     private readonly Mock<ICountCacheService> _mockCountCache;
 
     public MessageServiceTests()
@@ -25,7 +26,7 @@ public class MessageServiceTests : IDisposable
 
         _context = new TestYapplrDbContext(options);
         _mockUserService = new Mock<IUserService>();
-        _mockNotificationService = new Mock<ICompositeNotificationService>();
+        _mockNotificationService = new Mock<IUnifiedNotificationService>();
         _mockCountCache = new Mock<ICountCacheService>();
 
         _messageService = new MessageService(_context, _mockUserService.Object, _mockNotificationService.Object, _mockCountCache.Object);
@@ -52,7 +53,7 @@ public class MessageServiceTests : IDisposable
         );
 
         _mockNotificationService.Setup(n => n.SendMessageNotificationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
-                                .ReturnsAsync(true);
+                                .Returns(Task.CompletedTask);
 
         // Act
         var result = await _messageService.SendMessageAsync(1, createDto);
@@ -193,7 +194,7 @@ public class MessageServiceTests : IDisposable
         );
 
         _mockNotificationService.Setup(n => n.SendMessageNotificationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
-                                .ReturnsAsync(true);
+                                .Returns(Task.CompletedTask);
 
         // Act
         var result = await _messageService.SendMessageAsync(1, createDto);
@@ -233,7 +234,7 @@ public class MessageServiceTests : IDisposable
         );
 
         _mockNotificationService.Setup(n => n.SendMessageNotificationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
-                                .ReturnsAsync(true);
+                                .Returns(Task.CompletedTask);
 
         // Act
         var result = await _messageService.SendMessageToConversationAsync(1, sendDto);

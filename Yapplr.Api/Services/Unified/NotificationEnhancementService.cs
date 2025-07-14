@@ -1213,6 +1213,360 @@ public class NotificationEnhancementService : INotificationEnhancementService
 
     #endregion
 
+    #region Additional Security and Audit Methods
+
+    public async Task<List<RateLimitViolation>> GetRateLimitViolationsAsync(int userId)
+    {
+        if (!_config.EnableRateLimiting)
+        {
+            return new List<RateLimitViolation>();
+        }
+
+        try
+        {
+            // Get violations from in-memory tracking
+            var violations = new List<RateLimitViolation>();
+
+            // Get violations from the violations collection
+            if (_violations.TryGetValue(userId, out var userViolations))
+            {
+                lock (userViolations)
+                {
+                    violations.AddRange(userViolations);
+                }
+            }
+
+            await Task.CompletedTask;
+            return violations;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get rate limit violations for user {UserId}", userId);
+            return new List<RateLimitViolation>();
+        }
+    }
+
+    public async Task<Dictionary<string, object>> GetRateLimitStatsAsync()
+    {
+        if (!_config.EnableRateLimiting)
+        {
+            return new Dictionary<string, object>();
+        }
+
+        try
+        {
+            await Task.CompletedTask;
+            return new Dictionary<string, object>
+            {
+                ["total_requests"] = _totalRequests,
+                ["total_violations"] = _totalViolations,
+                ["blocked_users_count"] = _blockedUsers.Count,
+                ["active_trackers_count"] = _requestTrackers.Count,
+                ["last_updated"] = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get rate limit stats");
+            return new Dictionary<string, object>
+            {
+                ["error"] = ex.Message,
+                ["last_updated"] = DateTime.UtcNow
+            };
+        }
+    }
+
+    public async Task<ContentValidationResult> ValidateContentAsync(string content, string contentType)
+    {
+        if (!_config.EnableContentFiltering)
+        {
+            return new ContentValidationResult
+            {
+                IsValid = true,
+                SanitizedContent = content
+            };
+        }
+
+        try
+        {
+            // Use the existing FilterContentAsync method
+            var result = await FilterContentAsync(content);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to validate content of type {ContentType}", contentType);
+            return new ContentValidationResult
+            {
+                IsValid = false,
+                SanitizedContent = content,
+                Violations = new List<string> { $"Validation failed: {ex.Message}" }
+            };
+        }
+    }
+
+    public async Task<Dictionary<string, object>> GetContentFilterStatsAsync()
+    {
+        if (!_config.EnableContentFiltering)
+        {
+            return new Dictionary<string, object>();
+        }
+
+        try
+        {
+            await Task.CompletedTask;
+            return new Dictionary<string, object>
+            {
+                ["total_validations"] = _totalValidations,
+                ["total_violations"] = _totalViolationsContent,
+                ["total_blocked"] = _totalBlocked,
+                ["total_sanitized"] = _totalSanitized,
+                ["last_updated"] = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get content filter stats");
+            return new Dictionary<string, object>
+            {
+                ["error"] = ex.Message,
+                ["last_updated"] = DateTime.UtcNow
+            };
+        }
+    }
+
+    public async Task<List<Models.NotificationAuditLog>> GetUserAuditLogsAsync(int userId, int count)
+    {
+        if (!_config.EnableAuditing)
+        {
+            return new List<Models.NotificationAuditLog>();
+        }
+
+        try
+        {
+            var auditLogs = await _context.NotificationAuditLogs
+                .Where(log => log.UserId == userId)
+                .OrderByDescending(log => log.Timestamp)
+                .Take(count)
+                .ToListAsync();
+
+            return auditLogs;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get audit logs for user {UserId}", userId);
+            return new List<Models.NotificationAuditLog>();
+        }
+    }
+
+    public async Task<Dictionary<string, object>> GetAuditStatsAsync(DateTime? startDate, DateTime? endDate)
+    {
+        if (!_config.EnableAuditing)
+        {
+            return new Dictionary<string, object>();
+        }
+
+        try
+        {
+            var query = _context.NotificationAuditLogs.AsQueryable();
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(log => log.Timestamp >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                query = query.Where(log => log.Timestamp <= endDate.Value);
+            }
+
+            var totalLogs = await query.CountAsync();
+            var eventTypeBreakdown = await query
+                .GroupBy(log => log.EventType)
+                .Select(g => new { EventType = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.EventType, x => x.Count);
+
+            return new Dictionary<string, object>
+            {
+                ["total_audit_logs"] = totalLogs,
+                ["event_type_breakdown"] = eventTypeBreakdown,
+                ["start_date"] = startDate,
+                ["end_date"] = endDate,
+                ["last_updated"] = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get audit stats");
+            return new Dictionary<string, object>
+            {
+                ["error"] = ex.Message,
+                ["last_updated"] = DateTime.UtcNow
+            };
+        }
+    }
+
+    public async Task<List<SecurityEvent>> GetSecurityEventsAsync(DateTime? since)
+    {
+        if (!_config.EnableAuditing)
+        {
+            return new List<SecurityEvent>();
+        }
+
+        try
+        {
+            var query = _context.NotificationAuditLogs.AsQueryable();
+
+            if (since.HasValue)
+            {
+                query = query.Where(log => log.Timestamp >= since.Value);
+            }
+
+            var auditLogs = await query
+                .Where(log => log.EventType.Contains("security") || log.EventType.Contains("violation") || log.EventType.Contains("block"))
+                .OrderByDescending(log => log.Timestamp)
+                .Take(100)
+                .ToListAsync();
+
+            var securityEvents = auditLogs.Select(log => new SecurityEvent
+            {
+                EventId = log.Id.ToString(),
+                Timestamp = log.Timestamp,
+                EventType = log.EventType,
+                UserId = log.UserId,
+                Description = log.Description ?? "Security event",
+                Severity = DetermineSecuritySeverity(log.EventType),
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["audit_log_id"] = log.Id,
+                    ["notification_type"] = "unknown" // NotificationAuditLog doesn't have NotificationType field
+                }
+            }).ToList();
+
+            return securityEvents;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get security events");
+            return new List<SecurityEvent>();
+        }
+    }
+
+    public async Task<bool> BlockUserAsync(int userId, TimeSpan duration, string reason)
+    {
+        if (!_config.EnableRateLimiting)
+        {
+            return false;
+        }
+
+        try
+        {
+            var blockUntil = DateTime.UtcNow.Add(duration);
+            _blockedUsers[userId] = blockUntil;
+
+            // Log the blocking action
+            await LogSecurityEventAsync(new SecurityEvent
+            {
+                EventType = "user_blocked",
+                UserId = userId,
+                Description = $"User blocked for {duration.TotalMinutes} minutes. Reason: {reason}",
+                Severity = SecurityEventSeverity.High,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["duration_minutes"] = duration.TotalMinutes,
+                    ["reason"] = reason,
+                    ["blocked_until"] = blockUntil
+                }
+            });
+
+            _logger.LogWarning("Blocked user {UserId} for {Duration} minutes. Reason: {Reason}", userId, duration.TotalMinutes, reason);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to block user {UserId}", userId);
+            return false;
+        }
+    }
+
+    public async Task<bool> UnblockUserAsync(int userId)
+    {
+        if (!_config.EnableRateLimiting)
+        {
+            return false;
+        }
+
+        try
+        {
+            var wasBlocked = _blockedUsers.TryRemove(userId, out _);
+
+            if (wasBlocked)
+            {
+                // Log the unblocking action
+                await LogSecurityEventAsync(new SecurityEvent
+                {
+                    EventType = "user_unblocked",
+                    UserId = userId,
+                    Description = "User manually unblocked",
+                    Severity = SecurityEventSeverity.Medium
+                });
+
+                _logger.LogInformation("Unblocked user {UserId}", userId);
+            }
+
+            return wasBlocked;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to unblock user {UserId}", userId);
+            return false;
+        }
+    }
+
+    public async Task<int> CleanupOldLogsAsync(TimeSpan maxAge)
+    {
+        if (!_config.EnableAuditing)
+        {
+            return 0;
+        }
+
+        try
+        {
+            var cutoffDate = DateTime.UtcNow - maxAge;
+            var oldLogs = await _context.NotificationAuditLogs
+                .Where(log => log.Timestamp < cutoffDate)
+                .ToListAsync();
+
+            if (oldLogs.Any())
+            {
+                _context.NotificationAuditLogs.RemoveRange(oldLogs);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Cleaned up {Count} old audit logs older than {MaxAge}", oldLogs.Count, maxAge);
+            }
+
+            return oldLogs.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to cleanup old audit logs");
+            return 0;
+        }
+    }
+
+    private static SecurityEventSeverity DetermineSecuritySeverity(string eventType)
+    {
+        return eventType.ToLower() switch
+        {
+            var type when type.Contains("critical") || type.Contains("attack") => SecurityEventSeverity.Critical,
+            var type when type.Contains("violation") || type.Contains("block") => SecurityEventSeverity.High,
+            var type when type.Contains("warning") || type.Contains("suspicious") => SecurityEventSeverity.Medium,
+            _ => SecurityEventSeverity.Low
+        };
+    }
+
+    #endregion
+
     #region Configuration and Health
 
     public async Task<EnhancementConfiguration> GetConfigurationAsync()

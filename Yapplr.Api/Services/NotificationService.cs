@@ -4,16 +4,17 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Utils;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.Services;
 
 public class NotificationService : INotificationService
 {
     private readonly YapplrDbContext _context;
-    private readonly ICompositeNotificationService _notificationService;
+    private readonly IUnifiedNotificationService _notificationService;
     private readonly ICountCacheService _countCache;
 
-    public NotificationService(YapplrDbContext context, ICompositeNotificationService notificationService, ICountCacheService countCache)
+    public NotificationService(YapplrDbContext context, IUnifiedNotificationService notificationService, ICountCacheService countCache)
     {
         _context = context;
         _notificationService = notificationService;
@@ -572,7 +573,7 @@ public class NotificationService : INotificationService
         await _context.SaveChangesAsync();
 
         // Send real-time notification
-        await _notificationService.SendNotificationAsync(userId, "Account Suspended", message);
+        await _notificationService.SendSystemMessageAsync(userId, "Account Suspended", message);
     }
 
     public async Task CreateUserBanNotificationAsync(int userId, string reason, bool isShadowBan, string moderatorUsername)
@@ -595,7 +596,7 @@ public class NotificationService : INotificationService
         // Send real-time notification (only for regular bans, not shadow bans)
         if (!isShadowBan)
         {
-            await _notificationService.SendNotificationAsync(userId, "Account Banned", message);
+            await _notificationService.SendSystemMessageAsync(userId, "Account Banned", message);
         }
     }
 
@@ -616,7 +617,7 @@ public class NotificationService : INotificationService
         await _context.SaveChangesAsync();
 
         // Send real-time notification
-        await _notificationService.SendNotificationAsync(userId, "Account Unsuspended", message);
+        await _notificationService.SendSystemMessageAsync(userId, "Account Unsuspended", message);
     }
 
     public async Task CreateUserUnbanNotificationAsync(int userId, string moderatorUsername)
@@ -636,7 +637,7 @@ public class NotificationService : INotificationService
         await _context.SaveChangesAsync();
 
         // Send real-time notification
-        await _notificationService.SendNotificationAsync(userId, "Account Unbanned", message);
+        await _notificationService.SendSystemMessageAsync(userId, "Account Unbanned", message);
     }
 
     public async Task CreateContentHiddenNotificationAsync(int userId, string contentType, int contentId, string reason, string moderatorUsername)
@@ -658,7 +659,7 @@ public class NotificationService : INotificationService
         await _context.SaveChangesAsync();
 
         // Send real-time notification
-        await _notificationService.SendNotificationAsync(userId, "Content Hidden", message);
+        await _notificationService.SendSystemMessageAsync(userId, "Content Hidden", message);
     }
 
     public async Task CreateContentDeletedNotificationAsync(int userId, string contentType, int contentId, string reason, string moderatorUsername)
@@ -678,7 +679,7 @@ public class NotificationService : INotificationService
         await _context.SaveChangesAsync();
 
         // Send real-time notification
-        await _notificationService.SendNotificationAsync(userId, "Content Deleted", message);
+        await _notificationService.SendSystemMessageAsync(userId, "Content Deleted", message);
     }
 
     public async Task CreateContentRestoredNotificationAsync(int userId, string contentType, int contentId, string moderatorUsername)
@@ -700,7 +701,7 @@ public class NotificationService : INotificationService
         await _context.SaveChangesAsync();
 
         // Send real-time notification
-        await _notificationService.SendNotificationAsync(userId, "Content Restored", message);
+        await _notificationService.SendSystemMessageAsync(userId, "Content Restored", message);
     }
 
     public async Task CreateAppealApprovedNotificationAsync(int userId, int appealId, string reviewNotes, string moderatorUsername)
@@ -720,7 +721,7 @@ public class NotificationService : INotificationService
         await _context.SaveChangesAsync();
 
         // Send real-time notification
-        await _notificationService.SendNotificationAsync(userId, "Appeal Approved", message);
+        await _notificationService.SendSystemMessageAsync(userId, "Appeal Approved", message);
     }
 
     public async Task CreateAppealDeniedNotificationAsync(int userId, int appealId, string reviewNotes, string moderatorUsername)
@@ -740,7 +741,7 @@ public class NotificationService : INotificationService
         await _context.SaveChangesAsync();
 
         // Send real-time notification
-        await _notificationService.SendNotificationAsync(userId, "Appeal Denied", message);
+        await _notificationService.SendSystemMessageAsync(userId, "Appeal Denied", message);
     }
 
     public async Task CreateSystemMessageNotificationAsync(int userId, string message)
@@ -758,7 +759,7 @@ public class NotificationService : INotificationService
         await _context.SaveChangesAsync();
 
         // Send real-time notification
-        await _notificationService.SendNotificationAsync(userId, "System Message", message);
+        await _notificationService.SendSystemMessageAsync(userId, "System Message", message);
     }
 
     public async Task CreateVideoProcessingCompletedNotificationAsync(int userId, int postId)
@@ -785,6 +786,6 @@ public class NotificationService : INotificationService
             ["postId"] = postId.ToString()
         };
 
-        await _notificationService.SendNotificationAsync(userId, "Video Ready", "Your video has finished processing and is ready for viewing.", notificationData);
+        await _notificationService.SendSystemMessageAsync(userId, "Video Ready", "Your video has finished processing and is ready for viewing.", notificationData);
     }
 }

@@ -96,6 +96,13 @@ public interface INotificationQueue
     /// <param name="maxAge">Maximum age of notifications to keep</param>
     /// <returns>Number of notifications cleaned up</returns>
     Task<int> CleanupExpiredNotificationsAsync(TimeSpan? maxAge = null);
+
+    /// <summary>
+    /// Removes old notifications from the queue (for background service cleanup)
+    /// </summary>
+    /// <param name="maxAge">Maximum age of notifications to keep</param>
+    /// <returns>Number of notifications cleaned up</returns>
+    Task<int> CleanupOldNotificationsAsync(TimeSpan maxAge);
     
     /// <summary>
     /// Retries failed notifications that are eligible for retry
@@ -144,71 +151,4 @@ public interface INotificationQueue
     Task RefreshHealthAsync();
     
     #endregion
-}
-
-/// <summary>
-/// Represents a notification in the queue system
-/// </summary>
-public class QueuedNotification
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public int UserId { get; set; }
-    public string NotificationType { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string Body { get; set; } = string.Empty;
-    public Dictionary<string, string>? Data { get; set; }
-    public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? ScheduledFor { get; set; }
-    public DateTime? ExpiresAt { get; set; }
-    public int AttemptCount { get; set; } = 0;
-    public int MaxAttempts { get; set; } = 5;
-    public DateTime? NextRetryAt { get; set; }
-    public string? LastError { get; set; }
-    public QueuedNotificationStatus Status { get; set; } = QueuedNotificationStatus.Pending;
-    public DateTime? DeliveredAt { get; set; }
-    public string? DeliveryProvider { get; set; }
-}
-
-/// <summary>
-/// Status of a queued notification
-/// </summary>
-public enum QueuedNotificationStatus
-{
-    Pending = 0,
-    Processing = 1,
-    Delivered = 2,
-    Failed = 3,
-    Expired = 4,
-    Cancelled = 5
-}
-
-/// <summary>
-/// Statistics about the notification queue
-/// </summary>
-public class QueueStats
-{
-    public long TotalQueued { get; set; }
-    public long TotalDelivered { get; set; }
-    public long TotalFailed { get; set; }
-    public long TotalExpired { get; set; }
-    public long CurrentlyQueued { get; set; }
-    public long CurrentlyProcessing { get; set; }
-    public double AverageQueueTime { get; set; }
-    public double DeliverySuccessRate { get; set; }
-    public Dictionary<string, long> QueuedByPriority { get; set; } = new();
-    public Dictionary<string, long> QueuedByType { get; set; } = new();
-    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
-}
-
-/// <summary>
-/// Health report for the queue system
-/// </summary>
-public class QueueHealthReport
-{
-    public bool IsHealthy { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public List<string> Issues { get; set; } = new();
-    public Dictionary<string, object> Metrics { get; set; } = new();
-    public DateTime LastChecked { get; set; } = DateTime.UtcNow;
 }

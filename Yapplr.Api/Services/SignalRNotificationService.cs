@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Yapplr.Api.Data;
 using Yapplr.Api.Hubs;
 using Yapplr.Api.Configuration;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.Services;
 
@@ -14,20 +15,20 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
     private readonly IHubContext<NotificationHub> _hubContext;
     private readonly YapplrDbContext _context;
     private readonly ILogger<SignalRNotificationService> _logger;
-    private readonly INotificationMetricsService _metricsService;
+
     private readonly bool _isEnabled;
 
     public SignalRNotificationService(
         IHubContext<NotificationHub> hubContext,
         YapplrDbContext context,
         ILogger<SignalRNotificationService> logger,
-        INotificationMetricsService metricsService,
+
         IOptions<NotificationProvidersConfiguration> notificationOptions)
     {
         _hubContext = hubContext;
         _context = context;
         _logger = logger;
-        _metricsService = metricsService;
+
         _isEnabled = notificationOptions.Value.SignalR.Enabled;
 
         if (!_isEnabled)
@@ -80,9 +81,6 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
             return false;
         }
 
-        // Start metrics tracking
-        var trackingId = _metricsService.StartDeliveryTracking(userId, data?["type"] ?? "generic", "SignalR");
-
         try
         {
             await _hubContext.SendNotificationToUserAsync(
@@ -93,17 +91,11 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
                 data
             );
 
-            // Record successful delivery
-            await _metricsService.CompleteDeliveryTrackingAsync(trackingId, true);
-
             _logger.LogInformation("SignalR notification sent to user {UserId}: {Title}", userId, title);
             return true;
         }
         catch (Exception ex)
         {
-            // Record failed delivery
-            await _metricsService.CompleteDeliveryTrackingAsync(trackingId, false, ex.Message);
-
             _logger.LogError(ex, "Failed to send SignalR notification to user {UserId}: {Title}", userId, title);
             return false;
         }

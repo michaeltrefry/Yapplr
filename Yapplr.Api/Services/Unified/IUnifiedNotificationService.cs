@@ -112,95 +112,84 @@ public interface IUnifiedNotificationService
     Task SendAppealDeniedNotificationAsync(int userId, string appealType, int appealId, string reason);
     
     #endregion
-    
+
+    #region Delivery Tracking and History
+
+    /// <summary>
+    /// Gets delivery status for recent notifications for a user
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <param name="count">Number of recent notifications to check</param>
+    /// <returns>List of delivery statuses</returns>
+    Task<List<NotificationDeliveryStatus>> GetDeliveryStatusAsync(int userId, int count);
+
+    /// <summary>
+    /// Gets notification history for a user
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <param name="count">Number of notifications to return</param>
+    /// <returns>List of notification history entries</returns>
+    Task<List<NotificationHistoryEntry>> GetNotificationHistoryAsync(int userId, int count);
+
+    /// <summary>
+    /// Gets undelivered notifications for a user
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <returns>List of undelivered notifications</returns>
+    Task<List<UndeliveredNotification>> GetUndeliveredNotificationsAsync(int userId);
+
+    /// <summary>
+    /// Replays missed notifications for a user
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <returns>Number of notifications replayed</returns>
+    Task<int> ReplayMissedNotificationsAsync(int userId);
+
+    /// <summary>
+    /// Confirms that a notification was delivered
+    /// </summary>
+    /// <param name="notificationId">The notification ID</param>
+    /// <returns>True if confirmation was successful</returns>
+    Task<bool> ConfirmDeliveryAsync(string notificationId);
+
+    /// <summary>
+    /// Confirms that a notification was read
+    /// </summary>
+    /// <param name="notificationId">The notification ID</param>
+    /// <returns>True if confirmation was successful</returns>
+    Task<bool> ConfirmReadAsync(string notificationId);
+
+    /// <summary>
+    /// Gets delivery statistics for a user
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <param name="timeWindow">Optional time window to filter statistics</param>
+    /// <returns>Delivery statistics</returns>
+    Task<Dictionary<string, object>> GetDeliveryStatsAsync(int userId, TimeSpan? timeWindow);
+
+    #endregion
+
     #region Management and Monitoring
-    
+
     /// <summary>
     /// Gets comprehensive statistics about the notification system
     /// </summary>
     Task<NotificationStats> GetStatsAsync();
-    
+
     /// <summary>
     /// Checks if the notification system is healthy and operational
     /// </summary>
     Task<bool> IsHealthyAsync();
-    
+
     /// <summary>
     /// Gets detailed health information about all notification components
     /// </summary>
     Task<NotificationHealthReport> GetHealthReportAsync();
-    
+
     /// <summary>
     /// Forces a refresh of all notification system components
     /// </summary>
     Task RefreshSystemAsync();
-    
+
     #endregion
-}
-
-/// <summary>
-/// Request object for sending notifications through the unified system
-/// </summary>
-public class NotificationRequest
-{
-    public int UserId { get; set; }
-    public string NotificationType { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string Body { get; set; } = string.Empty;
-    public Dictionary<string, string>? Data { get; set; }
-    public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
-    public DateTime? ScheduledFor { get; set; }
-    public bool RequireDeliveryConfirmation { get; set; } = false;
-    public TimeSpan? ExpiresAfter { get; set; }
-}
-
-/// <summary>
-/// Comprehensive statistics about the notification system
-/// </summary>
-public class NotificationStats
-{
-    public long TotalNotificationsSent { get; set; }
-    public long TotalNotificationsDelivered { get; set; }
-    public long TotalNotificationsFailed { get; set; }
-    public long TotalNotificationsQueued { get; set; }
-    public double DeliverySuccessRate { get; set; }
-    public double AverageDeliveryTimeMs { get; set; }
-    public Dictionary<string, long> NotificationTypeBreakdown { get; set; } = new();
-    public Dictionary<string, long> ProviderBreakdown { get; set; } = new();
-    public Dictionary<string, double> ProviderSuccessRates { get; set; } = new();
-    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
-}
-
-/// <summary>
-/// Health report for the notification system
-/// </summary>
-public class NotificationHealthReport
-{
-    public bool IsHealthy { get; set; }
-    public Dictionary<string, ComponentHealth> ComponentHealth { get; set; } = new();
-    public List<string> Issues { get; set; } = new();
-    public DateTime LastChecked { get; set; } = DateTime.UtcNow;
-}
-
-/// <summary>
-/// Health status for individual notification system components
-/// </summary>
-public class ComponentHealth
-{
-    public bool IsHealthy { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public string? ErrorMessage { get; set; }
-    public DateTime LastChecked { get; set; } = DateTime.UtcNow;
-    public Dictionary<string, object> Metrics { get; set; } = new();
-}
-
-/// <summary>
-/// Priority levels for notifications
-/// </summary>
-public enum NotificationPriority
-{
-    Low = 0,
-    Normal = 1,
-    High = 2,
-    Critical = 3
 }

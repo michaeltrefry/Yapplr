@@ -2,12 +2,12 @@ using Yapplr.Api.Services.EmailTemplates;
 
 namespace Yapplr.Api.Services;
 
-public class UnifiedEmailService : IEmailService
+public class EmailService : IEmailService
 {
     private readonly IEmailSender _emailSender;
-    private readonly ILogger<UnifiedEmailService> _logger;
+    private readonly ILogger<EmailService> _logger;
 
-    public UnifiedEmailService(IEmailSender emailSender, ILogger<UnifiedEmailService> logger)
+    public EmailService(IEmailSender emailSender, ILogger<EmailService> logger)
     {
         _emailSender = emailSender;
         _logger = logger;

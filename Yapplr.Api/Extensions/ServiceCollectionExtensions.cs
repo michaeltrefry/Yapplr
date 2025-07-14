@@ -367,23 +367,12 @@ public static class ServiceCollectionExtensions
         // Register performance and monitoring services
         services.AddSingleton<ISignalRConnectionPool, SignalRConnectionPool>();
         services.AddHostedService<SignalRCleanupService>();
-        services.AddSingleton<INotificationMetricsService, NotificationMetricsService>();
-        services.AddScoped<INotificationQueueService, NotificationQueueService>();
 
         // Register advanced notification services
         services.AddScoped<INotificationPreferencesService, NotificationPreferencesService>();
-        services.AddScoped<INotificationDeliveryService, NotificationDeliveryService>();
-
-        // Register UX enhancement services
-        services.AddSingleton<ISmartRetryService, SmartRetryService>();
-        services.AddSingleton<INotificationCompressionService, NotificationCompressionService>();
-        services.AddScoped<IOfflineNotificationService, OfflineNotificationService>();
 
         // Register security services
-        services.AddSingleton<INotificationRateLimitService, NotificationRateLimitService>();
         services.AddSingleton<IApiRateLimitService, ApiRateLimitService>();
-        services.AddSingleton<INotificationContentFilterService, NotificationContentFilterService>();
-        services.AddScoped<INotificationAuditService, NotificationAuditService>();
 
         // Register background services
         services.AddHostedService<NotificationBackgroundService>();
@@ -460,32 +449,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationEnhancementService, NotificationEnhancementService>();
         services.AddScoped<IUnifiedNotificationService, UnifiedNotificationService>();
 
-        // Register the composite notification service with explicit provider collection (legacy)
-        services.AddScoped<ICompositeNotificationService>(provider =>
-        {
-            var logger = provider.GetRequiredService<ILogger<CompositeNotificationService>>();
-            var providers = provider.GetRequiredService<IEnumerable<IRealtimeNotificationProvider>>();
-            var preferencesService = provider.GetRequiredService<INotificationPreferencesService>();
-            var deliveryService = provider.GetRequiredService<INotificationDeliveryService>();
-            var retryService = provider.GetRequiredService<ISmartRetryService>();
-            var compressionService = provider.GetRequiredService<INotificationCompressionService>();
-            var offlineService = provider.GetRequiredService<IOfflineNotificationService>();
-            var rateLimitService = provider.GetRequiredService<INotificationRateLimitService>();
-            var contentFilterService = provider.GetRequiredService<INotificationContentFilterService>();
-            var auditService = provider.GetRequiredService<INotificationAuditService>();
 
-            return new CompositeNotificationService(
-                logger,
-                providers,
-                preferencesService,
-                deliveryService,
-                retryService,
-                compressionService,
-                offlineService,
-                rateLimitService,
-                contentFilterService,
-                auditService);
-        });
 
         return services;
     }
@@ -506,7 +470,7 @@ public static class ServiceCollectionExtensions
         });
 
         // Register UnifiedEmailService directly with IEmailSender
-        services.AddScoped<IEmailService, UnifiedEmailService>();
+        services.AddScoped<IEmailService, EmailService>();
 
         return services;
     }

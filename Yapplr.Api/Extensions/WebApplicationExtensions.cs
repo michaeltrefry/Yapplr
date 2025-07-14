@@ -59,7 +59,6 @@ public static class WebApplicationExtensions
         app.MapUserPreferencesEndpoints();
         app.MapNotificationEndpoints();
         app.MapNotificationPreferencesEndpoints();
-        app.MapUXEnhancementEndpoints();
         app.MapSecurityEndpoints();
         app.MapMetricsEndpoints();
         app.MapNotificationConfigurationEndpoints();
@@ -108,46 +107,38 @@ public static class WebApplicationExtensions
         {
             var context = scope.ServiceProvider.GetRequiredService<YapplrDbContext>();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-            var retryService = scope.ServiceProvider.GetRequiredService<ISmartRetryService>();
-
             try
             {
                 logger.LogInformation("🗄️ Running database migrations at startup...");
-                
-                await retryService.ExecuteWithRetryAsync(
-                    async () => {
-                        // Test database connection first
-                        await context.Database.CanConnectAsync();
 
-                        // Run migrations
-                        await context.Database.MigrateAsync();
+                // Test database connection first
+                await context.Database.CanConnectAsync();
 
-                        // Seed essential users
-                        logger.LogInformation("👤 Seeding essential users...");
-                        var essentialUserSeedService = scope.ServiceProvider.GetRequiredService<EssentialUserSeedService>();
-                        await essentialUserSeedService.SeedEssentialUsersAsync();
+                // Run migrations
+                await context.Database.MigrateAsync();
 
-                        // Seed system tags
-                        logger.LogInformation("🏷️ Seeding system tags...");
-                        var systemTagSeedService = scope.ServiceProvider.GetRequiredService<SystemTagSeedService>();
-                        await systemTagSeedService.SeedDefaultSystemTagsAsync();
+                // Seed essential users
+                logger.LogInformation("👤 Seeding essential users...");
+                var essentialUserSeedService = scope.ServiceProvider.GetRequiredService<EssentialUserSeedService>();
+                await essentialUserSeedService.SeedEssentialUsersAsync();
 
-                        // Seed content pages
-                        logger.LogInformation("📄 Seeding content pages...");
-                        var contentSeedService = scope.ServiceProvider.GetRequiredService<ContentSeedService>();
-                        await contentSeedService.SeedContentPagesAsync();
+                // Seed system tags
+                logger.LogInformation("🏷️ Seeding system tags...");
+                var systemTagSeedService = scope.ServiceProvider.GetRequiredService<SystemTagSeedService>();
+                await systemTagSeedService.SeedDefaultSystemTagsAsync();
 
-                        // Seed test data for non-production environments
-                        var stagingSeedService = scope.ServiceProvider.GetService<StagingSeedService>();
-                        if (stagingSeedService != null)
-                        {
-                            logger.LogInformation("🌱 Seeding test data for non-production environment...");
-                            await stagingSeedService.SeedStagingDataAsync();
-                        }
+                // Seed content pages
+                logger.LogInformation("📄 Seeding content pages...");
+                var contentSeedService = scope.ServiceProvider.GetRequiredService<ContentSeedService>();
+                await contentSeedService.SeedContentPagesAsync();
 
-                        return true;
-                    },
-                    "DatabaseMigrationAndSeeding");
+                // Seed test data for non-production environments
+                var stagingSeedService = scope.ServiceProvider.GetService<StagingSeedService>();
+                if (stagingSeedService != null)
+                {
+                    logger.LogInformation("🌱 Seeding test data for non-production environment...");
+                    await stagingSeedService.SeedStagingDataAsync();
+                }
                     
                 logger.LogInformation("✅ Database migrations and all seeding operations completed successfully");
             }

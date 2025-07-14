@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -91,8 +92,8 @@ public static class NotificationEndpoints
         // Test notification endpoints - only available in development
         if (app.Environment.IsDevelopment())
         {
-            // Test notification endpoint (Firebase + SignalR fallback)
-            notifications.MapPost("/test", async (ClaimsPrincipal user, ICompositeNotificationService notificationService) =>
+            // Test notification endpoint (using unified notification system)
+            notifications.MapPost("/test", async (ClaimsPrincipal user, IUnifiedNotificationService notificationService) =>
             {
                 var userId = user.GetUserId(true);
 
@@ -100,9 +101,7 @@ public static class NotificationEndpoints
 
                 return Results.Ok(new {
                     success = success,
-                    message = success ? "Test notification sent successfully" : "Failed to send test notification",
-                    activeProvider = notificationService.ActiveProvider?.ProviderName ?? "None",
-                    availableProviders = (await notificationService.GetProviderStatusAsync()).Select(kvp => new { name = kvp.Key, available = kvp.Value })
+                    message = success ? "Test notification sent successfully" : "Failed to send test notification"
                 });
             })
             .WithName("TestNotification")

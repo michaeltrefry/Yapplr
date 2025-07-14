@@ -68,6 +68,52 @@ public interface INotificationEnhancementService
     /// </summary>
     /// <returns>Security statistics</returns>
     Task<SecurityStats> GetSecurityStatsAsync();
+
+    /// <summary>
+    /// Gets audit logs for a specific user
+    /// </summary>
+    /// <param name="userId">The user ID to get audit logs for</param>
+    /// <param name="count">Number of audit logs to return</param>
+    /// <returns>List of audit log entries</returns>
+    Task<List<Models.NotificationAuditLog>> GetUserAuditLogsAsync(int userId, int count);
+
+    /// <summary>
+    /// Gets audit statistics
+    /// </summary>
+    /// <param name="startDate">Optional start date for filtering</param>
+    /// <param name="endDate">Optional end date for filtering</param>
+    /// <returns>Audit statistics</returns>
+    Task<Dictionary<string, object>> GetAuditStatsAsync(DateTime? startDate, DateTime? endDate);
+
+    /// <summary>
+    /// Gets security events since a specific time
+    /// </summary>
+    /// <param name="since">Optional timestamp to filter events since</param>
+    /// <returns>List of security events</returns>
+    Task<List<SecurityEvent>> GetSecurityEventsAsync(DateTime? since);
+
+    /// <summary>
+    /// Blocks a user for a specified duration
+    /// </summary>
+    /// <param name="userId">The user ID to block</param>
+    /// <param name="duration">Duration of the block</param>
+    /// <param name="reason">Reason for blocking</param>
+    /// <returns>True if blocking was successful</returns>
+    Task<bool> BlockUserAsync(int userId, TimeSpan duration, string reason);
+
+    /// <summary>
+    /// Unblocks a previously blocked user
+    /// </summary>
+    /// <param name="userId">The user ID to unblock</param>
+    /// <returns>True if unblocking was successful</returns>
+    Task<bool> UnblockUserAsync(int userId);
+
+    /// <summary>
+    /// Cleans up old audit logs
+    /// </summary>
+    /// <param name="maxAge">Maximum age of logs to keep</param>
+    /// <returns>Number of logs cleaned up</returns>
+    Task<int> CleanupOldLogsAsync(TimeSpan maxAge);
     
     #endregion
     
@@ -94,7 +140,20 @@ public interface INotificationEnhancementService
     /// <param name="userId">Optional user ID to filter by</param>
     /// <returns>List of recent violations</returns>
     Task<List<RateLimitViolation>> GetRecentViolationsAsync(int? userId = null);
-    
+
+    /// <summary>
+    /// Gets rate limit violations for a specific user
+    /// </summary>
+    /// <param name="userId">The user ID to get violations for</param>
+    /// <returns>List of rate limit violations</returns>
+    Task<List<RateLimitViolation>> GetRateLimitViolationsAsync(int userId);
+
+    /// <summary>
+    /// Gets rate limiting statistics
+    /// </summary>
+    /// <returns>Rate limiting statistics</returns>
+    Task<Dictionary<string, object>> GetRateLimitStatsAsync();
+
     /// <summary>
     /// Resets rate limits for a specific user
     /// </summary>
@@ -111,6 +170,20 @@ public interface INotificationEnhancementService
     /// <param name="content">The content to filter</param>
     /// <returns>Content filter result</returns>
     Task<ContentValidationResult> FilterContentAsync(string content);
+
+    /// <summary>
+    /// Validates content for security and policy compliance
+    /// </summary>
+    /// <param name="content">The content to validate</param>
+    /// <param name="contentType">The type of content being validated</param>
+    /// <returns>Content validation result</returns>
+    Task<ContentValidationResult> ValidateContentAsync(string content, string contentType);
+
+    /// <summary>
+    /// Gets content filtering statistics
+    /// </summary>
+    /// <returns>Content filtering statistics</returns>
+    Task<Dictionary<string, object>> GetContentFilterStatsAsync();
     
     /// <summary>
     /// Compresses a notification payload for efficient transmission
@@ -165,128 +238,3 @@ public interface INotificationEnhancementService
     
     #endregion
 }
-
-/// <summary>
-/// Represents a notification event for metrics tracking
-/// </summary>
-public class NotificationEvent
-{
-    public string EventId { get; set; } = Guid.NewGuid().ToString();
-    public string? TrackingId { get; set; }
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-    public string EventType { get; set; } = string.Empty; // sent, delivered, failed, queued, etc.
-    public int UserId { get; set; }
-    public string NotificationType { get; set; } = string.Empty;
-    public string Provider { get; set; } = string.Empty;
-    public bool Success { get; set; }
-    public TimeSpan? ProcessingTime { get; set; }
-    public double? LatencyMs { get; set; }
-    public string? ErrorMessage { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
-}
-
-/// <summary>
-/// Represents a delivery event for monitoring
-/// </summary>
-public class DeliveryEvent
-{
-    public string Id { get; set; } = string.Empty;
-    public string EventId { get; set; } = string.Empty;
-    public DateTime Timestamp { get; set; }
-    public DateTime StartTime { get; set; }
-    public int UserId { get; set; }
-    public string NotificationType { get; set; } = string.Empty;
-    public string Provider { get; set; } = string.Empty;
-    public bool Success { get; set; }
-    public TimeSpan ProcessingTime { get; set; }
-    public double LatencyMs { get; set; }
-    public string? ErrorMessage { get; set; }
-}
-
-/// <summary>
-/// Performance insights and recommendations
-/// </summary>
-public class PerformanceInsights
-{
-    public double OverallSuccessRate { get; set; }
-    public double AverageDeliveryTime { get; set; }
-    public string BestPerformingProvider { get; set; } = string.Empty;
-    public string WorstPerformingProvider { get; set; } = string.Empty;
-    public List<string> Recommendations { get; set; } = new();
-    public Dictionary<string, object> DetailedMetrics { get; set; } = new();
-}
-
-/// <summary>
-/// Security event for auditing
-/// </summary>
-public class SecurityEvent
-{
-    public string EventId { get; set; } = Guid.NewGuid().ToString();
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-    public string EventType { get; set; } = string.Empty;
-    public int? UserId { get; set; }
-    public string Description { get; set; } = string.Empty;
-    public SecurityEventSeverity Severity { get; set; } = SecurityEventSeverity.Low;
-    public string? IpAddress { get; set; }
-    public string? UserAgent { get; set; }
-    public Dictionary<string, object>? AdditionalData { get; set; }
-}
-
-/// <summary>
-/// Security event severity levels
-/// </summary>
-public enum SecurityEventSeverity
-{
-    Low,
-    Medium,
-    High,
-    Critical
-}
-
-/// <summary>
-/// Security statistics
-/// </summary>
-public class SecurityStats
-{
-    public long TotalSecurityEvents { get; set; }
-    public long BlockedNotifications { get; set; }
-    public long RateLimitViolations { get; set; }
-    public long ContentFilterViolations { get; set; }
-    public Dictionary<string, long> ThreatBreakdown { get; set; } = new();
-    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
-    public long TotalEvents24h { get; set; }
-    public Dictionary<string, int> EventTypeBreakdown { get; set; } = new();
-    public Dictionary<string, int> SeverityBreakdown { get; set; } = new();
-    public int CurrentlyBlockedUsers { get; set; }
-    public long TotalViolations { get; set; }
-}
-
-/// <summary>
-/// Configuration for enhancement features
-/// </summary>
-public class EnhancementConfiguration
-{
-    public bool EnableMetrics { get; set; } = true;
-    public bool EnableAuditing { get; set; } = true;
-    public bool EnableRateLimiting { get; set; } = true;
-    public bool EnableContentFiltering { get; set; } = true;
-    public bool EnableCompression { get; set; } = true;
-    public Dictionary<string, object> FeatureSettings { get; set; } = new();
-}
-
-/// <summary>
-/// Enhancement health report
-/// </summary>
-public class EnhancementHealthReport
-{
-    public bool IsHealthy { get; set; }
-    public DateTime LastChecked { get; set; } = DateTime.UtcNow;
-    public Dictionary<string, bool> FeaturesEnabled { get; set; } = new();
-    public List<string> Issues { get; set; } = new();
-    public Dictionary<string, object>? MetricsStats { get; set; }
-    public Dictionary<string, object>? RateLimitStats { get; set; }
-    public Dictionary<string, object>? ContentFilterStats { get; set; }
-    public Dictionary<string, object>? CompressionStats { get; set; }
-}
-
-

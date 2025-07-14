@@ -4,6 +4,7 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -117,13 +118,13 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> GetDeliveryStatus(
         ClaimsPrincipal user,
-        INotificationDeliveryService deliveryService,
+        IUnifiedNotificationService notificationService,
         [FromQuery] int count = 50)
     {
         try
         {
             var userId = user.GetUserId(true);
-            var status = await deliveryService.GetDeliveryStatusAsync(userId, count);
+            var status = await notificationService.GetDeliveryStatusAsync(userId, count);
             return Results.Ok(status);
         }
         catch (Exception ex)
@@ -134,13 +135,13 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> GetNotificationHistory(
         ClaimsPrincipal user,
-        INotificationDeliveryService deliveryService,
+        IUnifiedNotificationService notificationService,
         [FromQuery] int count = 100)
     {
         try
         {
             var userId = user.GetUserId(true);
-            var history = await deliveryService.GetNotificationHistoryAsync(userId, count);
+            var history = await notificationService.GetNotificationHistoryAsync(userId, count);
             return Results.Ok(history);
         }
         catch (Exception ex)
@@ -151,12 +152,12 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> GetUndeliveredNotifications(
         ClaimsPrincipal user,
-        INotificationDeliveryService deliveryService)
+        IUnifiedNotificationService notificationService)
     {
         try
         {
             var userId = user.GetUserId(true);
-            var undelivered = await deliveryService.GetUndeliveredNotificationsAsync(userId);
+            var undelivered = await notificationService.GetUndeliveredNotificationsAsync(userId);
             return Results.Ok(undelivered);
         }
         catch (Exception ex)
@@ -167,12 +168,12 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> ReplayMissedNotifications(
         ClaimsPrincipal user,
-        INotificationDeliveryService deliveryService)
+        IUnifiedNotificationService notificationService)
     {
         try
         {
             var userId = user.GetUserId(true);
-            await deliveryService.ReplayMissedNotificationsAsync(userId);
+            await notificationService.ReplayMissedNotificationsAsync(userId);
             return Results.Ok(new { message = "Missed notifications replayed successfully" });
         }
         catch (Exception ex)
@@ -183,11 +184,11 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> ConfirmDelivery(
         string notificationId,
-        INotificationDeliveryService deliveryService)
+        IUnifiedNotificationService notificationService)
     {
         try
         {
-            await deliveryService.ConfirmDeliveryAsync(notificationId);
+            await notificationService.ConfirmDeliveryAsync(notificationId);
             return Results.Ok(new { message = "Delivery confirmed" });
         }
         catch (Exception ex)
@@ -198,11 +199,11 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> ConfirmRead(
         string notificationId,
-        INotificationDeliveryService deliveryService)
+        IUnifiedNotificationService notificationService)
     {
         try
         {
-            await deliveryService.ConfirmReadAsync(notificationId);
+            await notificationService.ConfirmReadAsync(notificationId);
             return Results.Ok(new { message = "Read confirmed" });
         }
         catch (Exception ex)
@@ -213,14 +214,14 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> GetDeliveryStats(
         ClaimsPrincipal user,
-        INotificationDeliveryService deliveryService,
+        IUnifiedNotificationService notificationService,
         [FromQuery] int? timeWindowHours = null)
     {
         try
         {
             var userId = user.GetUserId(true);
             var timeWindow = timeWindowHours.HasValue ? TimeSpan.FromHours(timeWindowHours.Value) : (TimeSpan?)null;
-            var stats = await deliveryService.GetDeliveryStatsAsync(userId, timeWindow);
+            var stats = await notificationService.GetDeliveryStatsAsync(userId, timeWindow);
             return Results.Ok(stats);
         }
         catch (Exception ex)
