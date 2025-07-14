@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.Data;

@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Yapplr.Api.Services;
 using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Middleware;

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
-using Yapplr.Api.Models;
 using Yapplr.Api.DTOs;
 
 namespace Yapplr.Api.Endpoints;

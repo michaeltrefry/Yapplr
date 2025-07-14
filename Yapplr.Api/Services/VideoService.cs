@@ -35,9 +35,9 @@ public class VideoService : IVideoService
             _uploadPath, _processedPath, _thumbnailPath);
     }
 
-    public async Task<string> SaveVideoAsync(IFormFile file)
+    public async Task<string> SaveVideoAsync(IFormFile? file)
     {
-        if (!IsValidVideoFile(file))
+        if (file == null || !IsValidVideoFile(file))
         {
             throw new ArgumentException("Invalid video file");
         }
@@ -84,7 +84,7 @@ public class VideoService : IVideoService
         return DeleteFileIfExists(filePath);
     }
 
-    public bool IsValidVideoFile(IFormFile file)
+    public bool IsValidVideoFile(IFormFile? file)
     {
         if (file == null || file.Length == 0)
             return false;
@@ -111,7 +111,7 @@ public class VideoService : IVideoService
         return true;
     }
 
-    public async Task<VideoUploadResponse> GetVideoUploadResponseAsync(string fileName, HttpContext httpContext)
+    public Task<VideoUploadResponse> GetVideoUploadResponseAsync(string fileName, HttpContext httpContext)
     {
         var videoUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/api/videos/{fileName}";
         var filePath = Path.Combine(_uploadPath, fileName);
@@ -121,7 +121,7 @@ public class VideoService : IVideoService
         // Return basic file info immediately after upload
         // The VideoProcessor will extract detailed metadata during processing
         // and store it in the Post model via the VideoProcessingCompleted message
-        return new VideoUploadResponse
+        return Task.FromResult(new VideoUploadResponse
         {
             FileName = fileName,
             VideoUrl = videoUrl,
@@ -130,7 +130,7 @@ public class VideoService : IVideoService
             Duration = null,
             Width = null,
             Height = null
-        };
+        });
     }
 
     private bool DeleteFileIfExists(string filePath)

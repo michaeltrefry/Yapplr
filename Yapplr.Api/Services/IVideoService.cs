@@ -9,7 +9,7 @@ public interface IVideoService
     /// </summary>
     /// <param name="file">The uploaded video file</param>
     /// <returns>The filename of the saved video</returns>
-    Task<string> SaveVideoAsync(IFormFile file);
+    Task<string> SaveVideoAsync(IFormFile? file);
 
     /// <summary>
     /// Delete a video file
@@ -37,7 +37,7 @@ public interface IVideoService
     /// </summary>
     /// <param name="file">The file to validate</param>
     /// <returns>True if valid video file</returns>
-    bool IsValidVideoFile(IFormFile file);
+    bool IsValidVideoFile(IFormFile? file);
 
     /// <summary>
     /// Get video upload response with metadata

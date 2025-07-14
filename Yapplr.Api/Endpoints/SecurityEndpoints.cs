@@ -6,8 +6,6 @@ using Yapplr.Api.Services;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.Data;
-using Yapplr.Api.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -23,13 +21,13 @@ public static class SecurityEndpoints
         security.MapGet("/rate-limits/violations", GetRateLimitViolations)
             .WithName("GetRateLimitViolations")
             .WithSummary("Get rate limit violations for the current user")
-            .Produces<List<RateLimitViolation>>(200)
+            .Produces<List<RateLimitViolation>>()
             .Produces(401);
 
         security.MapGet("/rate-limits/stats", GetRateLimitStats)
             .WithName("GetRateLimitStats")
             .WithSummary("Get rate limiting statistics")
-            .Produces<Dictionary<string, object>>(200)
+            .Produces<Dictionary<string, object>>()
             .Produces(401);
 
         security.MapPost("/rate-limits/reset", ResetUserRateLimits)
@@ -42,41 +40,41 @@ public static class SecurityEndpoints
         security.MapPost("/content/validate", ValidateContent)
             .WithName("ValidateContent")
             .WithSummary("Validate content against security filters")
-            .Produces<ContentValidationResult>(200)
+            .Produces<ContentValidationResult>()
             .Produces(400)
             .Produces(401);
 
         security.MapGet("/content/filter-stats", GetContentFilterStats)
             .WithName("GetContentFilterStats")
             .WithSummary("Get content filtering statistics")
-            .Produces<Dictionary<string, object>>(200)
+            .Produces<Dictionary<string, object>>()
             .Produces(401);
 
         // Audit endpoints
         security.MapGet("/audit/logs", GetAuditLogs)
             .WithName("GetAuditLogs")
             .WithSummary("Get audit logs for the current user")
-            .Produces<List<NotificationAuditLog>>(200)
+            .Produces<List<NotificationAuditLog>>()
             .Produces(401);
 
         security.MapGet("/audit/stats", GetAuditStats)
             .WithName("GetAuditStats")
             .WithSummary("Get audit statistics")
-            .Produces<Dictionary<string, object>>(200)
+            .Produces<Dictionary<string, object>>()
             .Produces(401);
 
         // Admin endpoints
         security.MapGet("/admin/audit/all", GetAllAuditLogs)
             .WithName("GetAllAuditLogs")
             .WithSummary("Get all audit logs (admin only)")
-            .Produces<List<NotificationAuditLog>>(200)
+            .Produces<List<NotificationAuditLog>>()
             .Produces(401)
             .Produces(403);
 
         security.MapGet("/admin/security-events", GetSecurityEvents)
             .WithName("GetSecurityEvents")
             .WithSummary("Get security events (admin only)")
-            .Produces<List<NotificationAuditLog>>(200)
+            .Produces<List<NotificationAuditLog>>()
             .Produces(401)
             .Produces(403);
 
@@ -105,7 +103,7 @@ public static class SecurityEndpoints
         security.MapGet("/admin/rate-limits/config", GetRateLimitConfig)
             .WithName("GetRateLimitConfig")
             .WithSummary("Get current rate limiting configuration (admin only)")
-            .Produces<RateLimitConfigDto>(200)
+            .Produces<RateLimitConfigDto>()
             .Produces(401)
             .Produces(403);
 
@@ -120,14 +118,14 @@ public static class SecurityEndpoints
         security.MapGet("/admin/rate-limits/stats", GetAdminRateLimitStats)
             .WithName("GetAdminRateLimitStats")
             .WithSummary("Get rate limiting statistics (admin only)")
-            .Produces<Dictionary<string, object>>(200)
+            .Produces<Dictionary<string, object>>()
             .Produces(401)
             .Produces(403);
 
         security.MapGet("/admin/rate-limits/users/{userId}", GetUserRateLimitSettings)
             .WithName("GetUserRateLimitSettings")
             .WithSummary("Get user-specific rate limiting settings (admin only)")
-            .Produces<UserRateLimitSettingsDto>(200)
+            .Produces<UserRateLimitSettingsDto>()
             .Produces(401)
             .Produces(403)
             .Produces(404);
@@ -394,12 +392,12 @@ public static class SecurityEndpoints
     }
 
     // Rate Limiting Configuration Handlers
-    private static async Task<IResult> GetRateLimitConfig(
+    private static Task<IResult> GetRateLimitConfig(
         IOptions<RateLimitingConfiguration> rateLimitingOptions,
         ClaimsPrincipal user)
     {
         if (!user.IsInRole("Admin"))
-            return Results.Forbid();
+            return Task.FromResult(Results.Forbid());
 
         var config = rateLimitingOptions.Value;
         var dto = new RateLimitConfigDto
@@ -415,22 +413,22 @@ public static class SecurityEndpoints
             FallbackMultiplier = config.FallbackMultiplier
         };
 
-        return Results.Ok(dto);
+        return Task.FromResult(Results.Ok(dto));
     }
 
-    private static async Task<IResult> UpdateRateLimitConfig(
+    private static Task<IResult> UpdateRateLimitConfig(
         [FromBody] UpdateRateLimitConfigDto updateDto,
         IOptions<RateLimitingConfiguration> rateLimitingOptions,
         ClaimsPrincipal user)
     {
         if (!user.IsInRole("Admin"))
-            return Results.Forbid();
+            return Task.FromResult(Results.Forbid());
 
         // Note: In a real implementation, you'd want to update the configuration
         // in a persistent store and reload it. For now, this is a placeholder.
         // You might use IOptionsSnapshot or implement a configuration service.
 
-        return Results.Ok(new { message = "Rate limiting configuration updated successfully" });
+        return Task.FromResult(Results.Ok(new { message = "Rate limiting configuration updated successfully" }));
     }
 
     private static async Task<IResult> GetAdminRateLimitStats(

@@ -486,9 +486,9 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddEmailServices(this IServiceCollection services)
     {
         // Register email senders
-        services.AddScoped<Yapplr.Api.Services.EmailSenders.AwsSesEmailSender>();
-        services.AddScoped<Yapplr.Api.Services.EmailSenders.SendGridEmailSender>();
-        services.AddScoped<Yapplr.Api.Services.EmailSenders.SmtpEmailSender>();
+        services.AddScoped<Services.EmailSenders.AwsSesEmailSender>();
+        services.AddScoped<Services.EmailSenders.SendGridEmailSender>();
+        services.AddScoped<Services.EmailSenders.SmtpEmailSender>();
         services.AddScoped<IEmailSenderFactory, EmailSenderFactory>();
 
         // Register email service factory

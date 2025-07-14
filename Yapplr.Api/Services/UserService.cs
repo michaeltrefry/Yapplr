@@ -9,16 +9,14 @@ namespace Yapplr.Api.Services;
 
 public class UserService : BaseService, IUserService
 {
-    private readonly IBlockService _blockService;
     private readonly INotificationService _notificationService;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
     private readonly ICountCacheService _countCache;
     private readonly ITrustScoreService _trustScoreService;
 
-    public UserService(YapplrDbContext context, IBlockService blockService, INotificationService notificationService, IEmailService emailService, IConfiguration configuration, ICountCacheService countCache, ITrustScoreService trustScoreService, ILogger<UserService> logger) : base(context, logger)
+    public UserService(YapplrDbContext context, INotificationService notificationService, IEmailService emailService, IConfiguration configuration, ICountCacheService countCache, ITrustScoreService trustScoreService, ILogger<UserService> logger) : base(context, logger)
     {
-        _blockService = blockService;
         _notificationService = notificationService;
         _emailService = emailService;
         _configuration = configuration;
@@ -247,7 +245,7 @@ public class UserService : BaseService, IUserService
         else
         {
             // Create direct follow relationship
-            var follow = new Models.Follow
+            var follow = new Follow
             {
                 FollowerId = followerId,
                 FollowingId = followingId,
@@ -514,7 +512,7 @@ public class UserService : BaseService, IUserService
         }
 
         // Create the follow relationship
-        var follow = new Models.Follow
+        var follow = new Follow
         {
             FollowerId = request.RequesterId,
             FollowingId = request.RequestedId,

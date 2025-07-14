@@ -12,7 +12,7 @@ public static class VideoEndpoints
             .WithTags("Videos")
             .WithOpenApi();
 
-        videos.MapPost("/upload", async (IFormFile file, IVideoService videoService, HttpContext context) =>
+        videos.MapPost("/upload", async (IFormFile? file, IVideoService videoService, HttpContext context) =>
         {
             try
             {

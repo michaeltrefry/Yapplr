@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Xunit;
 using Yapplr.Api.Configuration;
 

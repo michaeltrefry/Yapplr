@@ -108,10 +108,10 @@ public class FirebaseService : IFirebaseService
         try
         {
             // Try the most basic possible message
-            var message = new FirebaseAdmin.Messaging.Message()
+            var message = new Message()
             {
                 Token = fcmToken,
-                Notification = new FirebaseAdmin.Messaging.Notification()
+                Notification = new Notification()
                 {
                     Title = "Test",
                     Body = "Test message",
@@ -193,10 +193,10 @@ public class FirebaseService : IFirebaseService
             }
 
             // Try a simple message first without platform-specific configs and without data payload
-            var message = new FirebaseAdmin.Messaging.Message()
+            var message = new Message()
             {
                 Token = fcmToken,
-                Notification = new FirebaseAdmin.Messaging.Notification()
+                Notification = new Notification()
                 {
                     Title = title,
                     Body = body,
@@ -220,7 +220,7 @@ public class FirebaseService : IFirebaseService
             _logger.LogInformation("Successfully sent Firebase notification: {Title} - Response: {Response}", title, response);
             return true;
         }
-        catch (FirebaseAdmin.Messaging.FirebaseMessagingException fmEx)
+        catch (FirebaseMessagingException fmEx)
         {
             _logger.LogError(fmEx, "Firebase Messaging Error sending '{Title}' to token: {Token}. Error Code: {ErrorCode}, Message: {Error}",
                 title,
@@ -465,7 +465,7 @@ public class FirebaseService : IFirebaseService
             var message = new MulticastMessage()
             {
                 Tokens = fcmTokens,
-                Notification = new FirebaseAdmin.Messaging.Notification()
+                Notification = new Notification()
                 {
                     Title = title,
                     Body = body,
