@@ -491,15 +491,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Services.EmailSenders.SmtpEmailSender>();
         services.AddScoped<IEmailSenderFactory, EmailSenderFactory>();
 
-        // Register email service factory
-        services.AddScoped<IEmailServiceFactory, EmailServiceFactory>();
-
-        // Register the email service based on configuration
-        services.AddScoped<IEmailService>(provider =>
+        // Register the email sender based on configuration
+        services.AddScoped<IEmailSender>(provider =>
         {
-            var factory = provider.GetRequiredService<IEmailServiceFactory>();
-            return factory.CreateEmailService();
+            var factory = provider.GetRequiredService<IEmailSenderFactory>();
+            return factory.CreateEmailSender();
         });
+
+        // Register UnifiedEmailService directly with IEmailSender
+        services.AddScoped<IEmailService, UnifiedEmailService>();
 
         return services;
     }
