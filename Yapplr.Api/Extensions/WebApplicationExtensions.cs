@@ -5,6 +5,7 @@ using Yapplr.Api.Endpoints;
 using Yapplr.Api.Middleware;
 using Yapplr.Api.Hubs;
 using Yapplr.Api.Configuration;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Extensions;
 
@@ -14,6 +15,9 @@ public static class WebApplicationExtensions
     {
         // Configure forwarded headers for reverse proxy support (must be first)
         app.UseForwardedHeaders();
+
+        // Add global error handling middleware (should be early in pipeline)
+        app.UseErrorHandling();
 
         // Configure Swagger/OpenAPI - only in development and staging
         if (app.Environment.IsDevelopment() || app.Environment.IsStaging())

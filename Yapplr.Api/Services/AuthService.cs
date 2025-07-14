@@ -20,13 +20,15 @@ public class AuthService : IAuthService
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly ICommandPublisher _commandPublisher;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(YapplrDbContext context, IConfiguration configuration, IEmailService emailService, ICommandPublisher commandPublisher)
+    public AuthService(YapplrDbContext context, IConfiguration configuration, IEmailService emailService, ICommandPublisher commandPublisher, ILogger<AuthService> logger)
     {
         _context = context;
         _configuration = configuration;
         _emailService = emailService;
         _commandPublisher = commandPublisher;
+        _logger = logger;
     }
 
     public async Task<AuthResponseDto?> RegisterAsync(RegisterUserDto registerDto)
@@ -132,6 +134,7 @@ public class AuthService : IAuthService
         // Check if email is verified
         if (!user.EmailVerified)
         {
+            _logger.LogWarning("Login attempt with unverified email: {Email}", user.Email);
             throw new EmailNotVerifiedException(user.Email);
         }
 

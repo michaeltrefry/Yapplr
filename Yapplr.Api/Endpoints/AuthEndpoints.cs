@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
 using Yapplr.Api.Common;
+using Yapplr.Api.Exceptions;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -32,7 +33,7 @@ public static class AuthEndpoints
             {
                 var result = await authService.LoginAsync(loginDto);
                 if (result == null)
-                    throw new UnauthorizedAccessException("Invalid credentials");
+                    throw new InvalidCredentialsException("Invalid credentials");
                 return result;
             });
         })

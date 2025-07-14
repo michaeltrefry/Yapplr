@@ -25,18 +25,36 @@ function LoginForm() {
       await login({ email, password });
       router.push(redirectUrl);
     } catch (err: unknown) {
-      const errorObj = err as { response?: { data?: { message?: string }; status?: number } };
-      const errorMessage = errorObj.response?.data?.message || 'Invalid email or password';
+      console.log('Login error caught:', err);
 
-      // Check if the error is related to email verification
-      if (errorObj.response?.status === 403 ||
-          errorMessage.toLowerCase().includes('verify') ||
-          errorMessage.toLowerCase().includes('verification')) {
+      const errorObj = err as {
+        response?: {
+          data?: {
+            message?: string;
+            detail?: string;
+            type?: string;
+            title?: string;
+          };
+          status?: number;
+        }
+      };
+
+      console.log('Error object:', errorObj);
+      console.log('Response status:', errorObj.response?.status);
+      console.log('Response data:', errorObj.response?.data);
+
+      const errorData = errorObj.response?.data;
+      const errorMessage = errorData?.detail || errorData?.message || 'Invalid email or password';
+
+      // Check if the error is specifically related to email verification
+      if (errorObj.response?.status === 403 && errorData?.type === 'email_verification_required') {
+        console.log('Email verification required - redirecting to verification page');
         // Redirect to email verification required page with email pre-filled
         router.push(`/email-verification-required?email=${encodeURIComponent(email)}`);
         return;
       }
 
+      console.log('Setting error message:', errorMessage);
       setError(errorMessage);
     } finally {
       setIsLoading(false);

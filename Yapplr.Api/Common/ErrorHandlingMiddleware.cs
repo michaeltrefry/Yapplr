@@ -26,7 +26,8 @@ public class ErrorHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred");
+            _logger.LogError(ex, "An unhandled exception occurred: {ExceptionType} - {Message}",
+                ex.GetType().Name, ex.Message);
             await HandleExceptionAsync(context, ex);
         }
     }
@@ -46,6 +47,12 @@ public class ErrorHandlingMiddleware
                 errorResponse.Type = "validation_error";
                 break;
 
+            case InvalidCredentialsException ex:
+                response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                errorResponse.Message = ex.Message;
+                errorResponse.Type = "unauthorized";
+                break;
+
             case UnauthorizedAccessException ex:
                 response.StatusCode = (int)HttpStatusCode.Forbidden;
                 errorResponse.Message = ex.Message;
@@ -56,6 +63,9 @@ public class ErrorHandlingMiddleware
                 response.StatusCode = (int)HttpStatusCode.Forbidden;
                 errorResponse.Message = ex.Message;
                 errorResponse.Type = "email_verification_required";
+                errorResponse.Detail = ex.Message;
+                errorResponse.Title = "Email Verification Required";
+                errorResponse.Status = (int)HttpStatusCode.Forbidden;
                 break;
 
             case KeyNotFoundException ex:

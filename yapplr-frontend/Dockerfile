@@ -34,6 +34,14 @@ FROM node:18-alpine AS production
 
 WORKDIR /app
 
+# Define build arguments for environment variables (needed for runtime)
+ARG NEXT_PUBLIC_API_URL=https://api.yapplr.com
+ARG NEXT_PUBLIC_ENABLE_SIGNALR=true
+
+# Set environment variables from build arguments (for runtime)
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_ENABLE_SIGNALR=$NEXT_PUBLIC_ENABLE_SIGNALR
+
 # Copy built app
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public

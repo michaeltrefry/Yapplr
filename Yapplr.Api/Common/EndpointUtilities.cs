@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Yapplr.Api.Extensions;
+using Yapplr.Api.Exceptions;
 
 namespace Yapplr.Api.Common;
 
@@ -74,9 +75,27 @@ public static class EndpointUtilities
         {
             return Forbidden(ex.Message);
         }
-        catch (Exception)
+        catch (EmailNotVerifiedException ex)
         {
-            // Log the exception here if needed
+            return Results.Problem(
+                detail: ex.Message,
+                statusCode: 403,
+                title: "Email Verification Required",
+                type: "email_verification_required"
+            );
+        }
+        catch (InvalidCredentialsException ex)
+        {
+            return Results.Problem(
+                detail: ex.Message,
+                statusCode: 401,
+                title: "Unauthorized"
+            );
+        }
+        catch (Exception ex)
+        {
+            // Log the exception for debugging
+            Console.WriteLine($"EndpointUtilities.HandleAsync caught exception: {ex.GetType().Name} - {ex.Message}");
             return Results.Problem(
                 detail: "An error occurred while processing the request",
                 statusCode: 500,
@@ -109,6 +128,23 @@ public static class EndpointUtilities
         catch (UnauthorizedAccessException ex)
         {
             return Forbidden(ex.Message);
+        }
+        catch (EmailNotVerifiedException ex)
+        {
+            return Results.Problem(
+                detail: ex.Message,
+                statusCode: 403,
+                title: "Email Verification Required",
+                type: "email_verification_required"
+            );
+        }
+        catch (InvalidCredentialsException ex)
+        {
+            return Results.Problem(
+                detail: ex.Message,
+                statusCode: 401,
+                title: "Unauthorized"
+            );
         }
         catch (Exception)
         {

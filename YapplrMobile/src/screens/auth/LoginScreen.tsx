@@ -36,12 +36,13 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       const errorTitle = error.response?.data?.title || '';
       const errorType = error.response?.data?.type || '';
 
-      // Check if the error is related to email verification
-      if (error.response?.status === 403 ||
-          errorMessage.toLowerCase().includes('verify') ||
-          errorMessage.toLowerCase().includes('verification') ||
-          errorTitle.toLowerCase().includes('verification') ||
-          errorType === 'email-verification-required') {
+      // Check if the error is specifically related to email verification (403 status)
+      // 401 status indicates invalid credentials, not email verification issues
+      if (error.response?.status === 403 &&
+          (errorMessage.toLowerCase().includes('verify') ||
+           errorMessage.toLowerCase().includes('verification') ||
+           errorTitle.toLowerCase().includes('verification') ||
+           errorType === 'email-verification-required')) {
         // Navigate to email verification required screen (no error shown)
         navigation.navigate('EmailVerificationRequired', { email });
       } else {
