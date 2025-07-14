@@ -13,6 +13,7 @@ using Yapplr.Api.Authorization;
 using MassTransit;
 using Yapplr.Api.CQRS;
 using Yapplr.Api.Common;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.Extensions;
 
@@ -453,7 +454,11 @@ public static class ServiceCollectionExtensions
             return providers;
         });
 
-        // Register the composite notification service with explicit provider collection
+        // Register the new unified notification services
+        services.AddScoped<INotificationProviderManager, NotificationProviderManager>();
+        services.AddScoped<IUnifiedNotificationService, UnifiedNotificationService>();
+
+        // Register the composite notification service with explicit provider collection (legacy)
         services.AddScoped<ICompositeNotificationService>(provider =>
         {
             var logger = provider.GetRequiredService<ILogger<CompositeNotificationService>>();

@@ -9,4 +9,5 @@ public class NotificationProvidersConfiguration
 
     public FirebaseConfiguration Firebase { get; set; } = new();
     public SignalRConfiguration SignalR { get; set; } = new();
+    public ExpoConfiguration Expo { get; set; } = new();
 }

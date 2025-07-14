@@ -1,0 +1,1197 @@
+using Microsoft.EntityFrameworkCore;
+using Yapplr.Api.Data;
+using Yapplr.Api.DTOs;
+using Yapplr.Api.Models;
+using Yapplr.Api.Services;
+using Yapplr.Api.Utils;
+
+namespace Yapplr.Api.Services.Unified;
+
+/// <summary>
+/// Unified notification service that serves as the single entry point for all notification operations.
+/// Consolidates functionality from NotificationService and CompositeNotificationService.
+/// </summary>
+public class UnifiedNotificationService : IUnifiedNotificationService
+{
+    private readonly YapplrDbContext _context;
+    private readonly INotificationPreferencesService _preferencesService;
+    private readonly ISignalRConnectionPool _connectionPool;
+    private readonly ICountCacheService _countCache;
+    private readonly ILogger<UnifiedNotificationService> _logger;
+    
+    // Optional services for enhanced functionality
+    private readonly INotificationProviderManager? _providerManager;
+    private readonly INotificationQueue? _notificationQueue;
+    private readonly INotificationEnhancementService? _enhancementService;
+    
+    // Statistics tracking
+    private long _totalNotificationsSent = 0;
+    private long _totalNotificationsDelivered = 0;
+    private long _totalNotificationsFailed = 0;
+    private long _totalNotificationsQueued = 0;
+    private readonly object _statsLock = new object();
+
+    public UnifiedNotificationService(
+        YapplrDbContext context,
+        INotificationPreferencesService preferencesService,
+        ISignalRConnectionPool connectionPool,
+        ICountCacheService countCache,
+        ILogger<UnifiedNotificationService> logger,
+        INotificationProviderManager? providerManager = null,
+        INotificationQueue? notificationQueue = null,
+        INotificationEnhancementService? enhancementService = null)
+    {
+        _context = context;
+        _preferencesService = preferencesService;
+        _connectionPool = connectionPool;
+        _countCache = countCache;
+        _logger = logger;
+        _providerManager = providerManager;
+        _notificationQueue = notificationQueue;
+        _enhancementService = enhancementService;
+    }
+
+    #region Core Notification Methods
+
+    public async Task<bool> SendNotificationAsync(NotificationRequest request)
+    {
+        try
+        {
+            _logger.LogDebug("Processing notification request for user {UserId}, type {NotificationType}", 
+                request.UserId, request.NotificationType);
+
+            // Validate request
+            if (!await ValidateNotificationRequestAsync(request))
+            {
+                return false;
+            }
+
+            // Check user preferences
+            if (!await ShouldSendNotificationAsync(request.UserId, request.NotificationType))
+            {
+                _logger.LogDebug("Notification blocked by user preferences for user {UserId}, type {NotificationType}", 
+                    request.UserId, request.NotificationType);
+                return false;
+            }
+
+            // Check rate limiting if enhancement service is available
+            if (_enhancementService != null)
+            {
+                var rateLimitResult = await _enhancementService.CheckRateLimitAsync(request.UserId, request.NotificationType);
+                if (!rateLimitResult.IsAllowed)
+                {
+                    _logger.LogWarning("Notification rate limited for user {UserId}, type {NotificationType}", 
+                        request.UserId, request.NotificationType);
+                    return false;
+                }
+            }
+
+            // Create database notification
+            var notification = await CreateDatabaseNotificationAsync(request);
+            if (notification == null)
+            {
+                _logger.LogError("Failed to create database notification for user {UserId}", request.UserId);
+                return false;
+            }
+
+            // Determine delivery strategy
+            var isUserOnline = await _connectionPool.IsUserOnlineAsync(request.UserId);
+            
+            if (isUserOnline && _providerManager != null)
+            {
+                // Try immediate delivery
+                var deliveryRequest = CreateDeliveryRequest(request);
+                var delivered = await _providerManager.SendNotificationAsync(deliveryRequest);
+                
+                if (delivered)
+                {
+                    Interlocked.Increment(ref _totalNotificationsDelivered);
+                    _logger.LogDebug("Notification delivered immediately to user {UserId}", request.UserId);
+                    
+                    // Record metrics
+                    await RecordNotificationEventAsync("delivered", request, true);
+                    return true;
+                }
+                else
+                {
+                    _logger.LogWarning("Immediate delivery failed for user {UserId}, queuing notification", request.UserId);
+                }
+            }
+
+            // Queue for later delivery if user is offline or immediate delivery failed
+            if (_notificationQueue != null)
+            {
+                var queuedNotification = CreateQueuedNotification(request, notification.Id);
+                await _notificationQueue.QueueNotificationAsync(queuedNotification);
+                
+                Interlocked.Increment(ref _totalNotificationsQueued);
+                _logger.LogDebug("Notification queued for user {UserId}", request.UserId);
+                
+                // Record metrics
+                await RecordNotificationEventAsync("queued", request, true);
+                return true;
+            }
+
+            // If no provider manager or queue available, just create database notification
+            Interlocked.Increment(ref _totalNotificationsSent);
+            await RecordNotificationEventAsync("sent", request, true);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send notification for user {UserId}, type {NotificationType}", 
+                request.UserId, request.NotificationType);
+            
+            Interlocked.Increment(ref _totalNotificationsFailed);
+            await RecordNotificationEventAsync("failed", request, false, ex.Message);
+            return false;
+        }
+    }
+
+    public async Task<bool> SendTestNotificationAsync(int userId)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "test",
+            Title = "Test Notification",
+            Body = "This is a test notification from the unified notification service!",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "test",
+                ["timestamp"] = DateTime.UtcNow.ToString("O")
+            }
+        };
+
+        return await SendNotificationAsync(request);
+    }
+
+    public async Task<bool> SendMulticastNotificationAsync(List<int> userIds, NotificationRequest request)
+    {
+        var tasks = userIds.Select(async userId =>
+        {
+            var userRequest = new NotificationRequest
+            {
+                UserId = userId,
+                NotificationType = request.NotificationType,
+                Title = request.Title,
+                Body = request.Body,
+                Data = request.Data,
+                Priority = request.Priority,
+                ScheduledFor = request.ScheduledFor,
+                RequireDeliveryConfirmation = request.RequireDeliveryConfirmation,
+                ExpiresAfter = request.ExpiresAfter
+            };
+            
+            return await SendNotificationAsync(userRequest);
+        });
+
+        var results = await Task.WhenAll(tasks);
+        return results.All(r => r);
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    private async Task<bool> ValidateNotificationRequestAsync(NotificationRequest request)
+    {
+        if (request.UserId <= 0)
+        {
+            _logger.LogWarning("Invalid user ID in notification request: {UserId}", request.UserId);
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(request.NotificationType))
+        {
+            _logger.LogWarning("Missing notification type in request for user {UserId}", request.UserId);
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Title) && string.IsNullOrWhiteSpace(request.Body))
+        {
+            _logger.LogWarning("Missing title and body in notification request for user {UserId}", request.UserId);
+            return false;
+        }
+
+        // Check if user exists
+        var userExists = await _context.Users.AnyAsync(u => u.Id == request.UserId);
+        if (!userExists)
+        {
+            _logger.LogWarning("User {UserId} not found for notification", request.UserId);
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> ShouldSendNotificationAsync(int userId, string notificationType)
+    {
+        try
+        {
+            return await _preferencesService.ShouldSendNotificationAsync(userId, notificationType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check notification preferences for user {UserId}, type {NotificationType}", 
+                userId, notificationType);
+            // Default to allowing notification if preference check fails
+            return true;
+        }
+    }
+
+    private async Task<Notification?> CreateDatabaseNotificationAsync(NotificationRequest request)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                Type = ParseNotificationType(request.NotificationType),
+                Message = !string.IsNullOrWhiteSpace(request.Body) ? request.Body : request.Title,
+                UserId = request.UserId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
+
+            // Invalidate notification count cache
+            await _countCache.InvalidateNotificationCountsAsync(request.UserId);
+
+            return notification;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create database notification for user {UserId}", request.UserId);
+            return null;
+        }
+    }
+
+    private NotificationDeliveryRequest CreateDeliveryRequest(NotificationRequest request)
+    {
+        return new NotificationDeliveryRequest
+        {
+            UserId = request.UserId,
+            NotificationType = request.NotificationType,
+            Title = request.Title,
+            Body = request.Body,
+            Data = request.Data,
+            Priority = request.Priority,
+            RequireDeliveryConfirmation = request.RequireDeliveryConfirmation
+        };
+    }
+
+    private QueuedNotification CreateQueuedNotification(NotificationRequest request, int notificationId)
+    {
+        var queuedNotification = new QueuedNotification
+        {
+            UserId = request.UserId,
+            NotificationType = request.NotificationType,
+            Title = request.Title,
+            Body = request.Body,
+            Data = request.Data,
+            Priority = request.Priority,
+            ScheduledFor = request.ScheduledFor,
+            ExpiresAt = request.ExpiresAfter.HasValue ? DateTime.UtcNow.Add(request.ExpiresAfter.Value) : null
+        };
+
+        // Add database notification ID to data for reference
+        queuedNotification.Data ??= new Dictionary<string, string>();
+        queuedNotification.Data["notificationId"] = notificationId.ToString();
+
+        return queuedNotification;
+    }
+
+    private NotificationType ParseNotificationType(string notificationTypeString)
+    {
+        return notificationTypeString.ToLower() switch
+        {
+            "mention" => NotificationType.Mention,
+            "like" => NotificationType.Like,
+            "repost" => NotificationType.Repost,
+            "follow" => NotificationType.Follow,
+            "comment" => NotificationType.Comment,
+            "follow_request" => NotificationType.FollowRequest,
+            "message" => NotificationType.SystemMessage,
+            "user_suspended" => NotificationType.UserSuspended,
+            "user_banned" => NotificationType.UserBanned,
+            "content_hidden" => NotificationType.ContentHidden,
+            "appeal_approved" => NotificationType.AppealApproved,
+            "appeal_denied" => NotificationType.AppealDenied,
+            "video_processing_completed" => NotificationType.VideoProcessingCompleted,
+            _ => NotificationType.SystemMessage
+        };
+    }
+
+    private async Task RecordNotificationEventAsync(string eventType, NotificationRequest request, bool success, string? errorMessage = null)
+    {
+        if (_enhancementService == null) return;
+
+        try
+        {
+            var notificationEvent = new NotificationEvent
+            {
+                EventType = eventType,
+                UserId = request.UserId,
+                NotificationType = request.NotificationType,
+                Success = success,
+                ErrorMessage = errorMessage,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["title"] = request.Title,
+                    ["priority"] = request.Priority.ToString()
+                }
+            };
+
+            await _enhancementService.RecordNotificationEventAsync(notificationEvent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to record notification event for user {UserId}", request.UserId);
+        }
+    }
+
+    #endregion
+
+    #region Legacy Compatibility Methods (for gradual migration)
+
+    /// <summary>
+    /// Creates a like notification with blocking and validation logic
+    /// </summary>
+    public async Task CreateLikeNotificationAsync(int likedUserId, int likingUserId, int postId)
+    {
+        // Don't notify if user likes their own post
+        if (likedUserId == likingUserId)
+            return;
+
+        // Check if user has blocked the liking user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == likedUserId && b.BlockedId == likingUserId);
+
+        if (isBlocked)
+            return;
+
+        var likingUser = await _context.Users.FindAsync(likingUserId);
+        if (likingUser == null)
+            return;
+
+        // Create database notification with proper foreign keys
+        var notification = new Notification
+        {
+            Type = NotificationType.Like,
+            Message = $"@{likingUser.Username} liked your post",
+            UserId = likedUserId,
+            ActorUserId = likingUserId,
+            PostId = postId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(likedUserId);
+
+        // Send real-time notification
+        await SendLikeNotificationAsync(likedUserId, likingUser.Username, postId);
+    }
+
+    /// <summary>
+    /// Creates a repost notification with blocking and validation logic
+    /// </summary>
+    public async Task CreateRepostNotificationAsync(int originalUserId, int repostingUserId, int postId)
+    {
+        // Don't notify if user reposts their own post
+        if (originalUserId == repostingUserId)
+            return;
+
+        // Check if user has blocked the reposting user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == originalUserId && b.BlockedId == repostingUserId);
+
+        if (isBlocked)
+            return;
+
+        var repostingUser = await _context.Users.FindAsync(repostingUserId);
+        if (repostingUser == null)
+            return;
+
+        // Create database notification with proper foreign keys
+        var notification = new Notification
+        {
+            Type = NotificationType.Repost,
+            Message = $"@{repostingUser.Username} reposted your post",
+            UserId = originalUserId,
+            ActorUserId = repostingUserId,
+            PostId = postId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(originalUserId);
+
+        // Send real-time notification
+        await SendRepostNotificationAsync(originalUserId, repostingUser.Username, postId);
+    }
+
+    /// <summary>
+    /// Creates a follow notification with blocking and validation logic
+    /// </summary>
+    public async Task CreateFollowNotificationAsync(int followedUserId, int followingUserId)
+    {
+        // Check if user has blocked the following user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == followedUserId && b.BlockedId == followingUserId);
+
+        if (isBlocked)
+            return;
+
+        var followingUser = await _context.Users.FindAsync(followingUserId);
+        if (followingUser == null)
+            return;
+
+        // Create database notification with proper foreign keys
+        var notification = new Notification
+        {
+            Type = NotificationType.Follow,
+            Message = $"@{followingUser.Username} started following you",
+            UserId = followedUserId,
+            ActorUserId = followingUserId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(followedUserId);
+
+        // Send real-time notification
+        await SendFollowNotificationAsync(followedUserId, followingUser.Username);
+    }
+
+    /// <summary>
+    /// Creates a follow request notification with blocking and validation logic
+    /// </summary>
+    public async Task CreateFollowRequestNotificationAsync(int requestedUserId, int requesterUserId)
+    {
+        // Check if user has blocked the requesting user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == requestedUserId && b.BlockedId == requesterUserId);
+
+        if (isBlocked)
+            return;
+
+        var requesterUser = await _context.Users.FindAsync(requesterUserId);
+        if (requesterUser == null)
+            return;
+
+        // Create database notification with proper foreign keys
+        var notification = new Notification
+        {
+            Type = NotificationType.FollowRequest,
+            Message = $"@{requesterUser.Username} wants to follow you",
+            UserId = requestedUserId,
+            ActorUserId = requesterUserId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(requestedUserId);
+
+        // Send real-time notification
+        await SendFollowRequestNotificationAsync(requestedUserId, requesterUser.Username);
+    }
+
+    /// <summary>
+    /// Creates a comment notification with blocking and validation logic
+    /// </summary>
+    public async Task CreateCommentNotificationAsync(int postOwnerId, int commentingUserId, int postId, int commentId, string commentContent)
+    {
+        // Don't notify if user comments on their own post
+        if (postOwnerId == commentingUserId)
+            return;
+
+        // Check if user has blocked the commenting user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == postOwnerId && b.BlockedId == commentingUserId);
+
+        if (isBlocked)
+            return;
+
+        var commentingUser = await _context.Users.FindAsync(commentingUserId);
+        if (commentingUser == null)
+            return;
+
+        // Create database notification with proper foreign keys
+        var notification = new Notification
+        {
+            Type = NotificationType.Comment,
+            Message = $"@{commentingUser.Username} commented on your post",
+            UserId = postOwnerId,
+            ActorUserId = commentingUserId,
+            PostId = postId,
+            CommentId = commentId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(postOwnerId);
+
+        // Send real-time notification
+        await SendCommentNotificationAsync(postOwnerId, commentingUser.Username, postId, commentId);
+    }
+
+    /// <summary>
+    /// Creates mention notifications for users mentioned in content
+    /// </summary>
+    public async Task CreateMentionNotificationsAsync(string content, int mentioningUserId, int? postId = null, int? commentId = null)
+    {
+        var mentionedUsernames = MentionParser.ExtractMentions(content);
+        if (!mentionedUsernames.Any())
+            return;
+
+        // Get users that exist and are not the mentioning user
+        var mentionedUsers = await _context.Users
+            .Where(u => mentionedUsernames.Contains(u.Username.ToLower()) && u.Id != mentioningUserId)
+            .ToListAsync();
+
+        var mentioningUser = await _context.Users.FindAsync(mentioningUserId);
+        if (mentioningUser == null)
+            return;
+
+        foreach (var mentionedUser in mentionedUsers)
+        {
+            // Check if user has blocked the mentioning user
+            var isBlocked = await _context.Blocks
+                .AnyAsync(b => b.BlockerId == mentionedUser.Id && b.BlockedId == mentioningUserId);
+
+            if (isBlocked)
+                continue;
+
+            // Create database notification with proper foreign keys
+            var message = postId.HasValue
+                ? $"@{mentioningUser.Username} mentioned you in a post"
+                : $"@{mentioningUser.Username} mentioned you in a comment";
+
+            var notification = new Notification
+            {
+                Type = NotificationType.Mention,
+                Message = message,
+                UserId = mentionedUser.Id,
+                ActorUserId = mentioningUserId,
+                PostId = postId,
+                CommentId = commentId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
+
+            // Invalidate notification count cache
+            await _countCache.InvalidateNotificationCountsAsync(mentionedUser.Id);
+
+            // Create mention record
+            var mention = new Mention
+            {
+                MentioningUserId = mentioningUserId,
+                MentionedUserId = mentionedUser.Id,
+                PostId = postId,
+                CommentId = commentId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Mentions.Add(mention);
+            await _context.SaveChangesAsync();
+
+            // Send real-time notification
+            await SendMentionNotificationAsync(mentionedUser.Id, mentioningUser.Username, postId ?? 0, commentId);
+        }
+    }
+
+    /// <summary>
+    /// Creates a system message notification
+    /// </summary>
+    public async Task CreateSystemMessageNotificationAsync(int userId, string message)
+    {
+        // Create database notification
+        var notification = new Notification
+        {
+            Type = NotificationType.SystemMessage,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        // Send real-time notification
+        await SendSystemMessageAsync(userId, "System Message", message);
+    }
+
+    /// <summary>
+    /// Creates a user ban notification
+    /// </summary>
+    public async Task CreateUserBanNotificationAsync(int userId, string reason, bool isShadowBan, string moderatorUsername)
+    {
+        var banType = isShadowBan ? "shadow banned" : "banned";
+        var message = $"Your account has been {banType} by @{moderatorUsername}. Reason: {reason}";
+
+        // Create database notification
+        var notification = new Notification
+        {
+            Type = NotificationType.UserBanned,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        // Send real-time notification (only for regular bans, not shadow bans)
+        if (!isShadowBan)
+        {
+            await SendSystemMessageAsync(userId, "Account Banned", message);
+        }
+    }
+
+    /// <summary>
+    /// Creates a content hidden notification
+    /// </summary>
+    public async Task CreateContentHiddenNotificationAsync(int userId, string contentType, int contentId, string reason, string moderatorUsername)
+    {
+        var message = $"Your {contentType} #{contentId} has been hidden by @{moderatorUsername}. Reason: {reason}";
+
+        // Create database notification
+        var notification = new Notification
+        {
+            Type = NotificationType.ContentHidden,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            PostId = contentType == "post" ? contentId : null,
+            CommentId = contentType == "comment" ? contentId : null,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        // Send real-time notification
+        await SendContentHiddenNotificationAsync(userId, contentType, contentId, reason);
+    }
+
+    /// <summary>
+    /// Deletes notifications related to a post (when post is deleted)
+    /// </summary>
+    public async Task DeletePostNotificationsAsync(int postId)
+    {
+        var notifications = await _context.Notifications
+            .Where(n => n.PostId == postId)
+            .ToListAsync();
+
+        if (notifications.Any())
+        {
+            _context.Notifications.RemoveRange(notifications);
+            await _context.SaveChangesAsync();
+
+            // Invalidate notification count cache for affected users
+            var affectedUserIds = notifications.Select(n => n.UserId).Distinct();
+            foreach (var userId in affectedUserIds)
+            {
+                await _countCache.InvalidateNotificationCountsAsync(userId);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Deletes notifications related to a comment (when comment is deleted)
+    /// </summary>
+    public async Task DeleteCommentNotificationsAsync(int commentId)
+    {
+        var notifications = await _context.Notifications
+            .Where(n => n.CommentId == commentId)
+            .ToListAsync();
+
+        if (notifications.Any())
+        {
+            _context.Notifications.RemoveRange(notifications);
+            await _context.SaveChangesAsync();
+
+            // Invalidate notification count cache for affected users
+            var affectedUserIds = notifications.Select(n => n.UserId).Distinct();
+            foreach (var userId in affectedUserIds)
+            {
+                await _countCache.InvalidateNotificationCountsAsync(userId);
+            }
+        }
+    }
+
+    #endregion
+
+    #region Specific Notification Types
+
+    public async Task SendMessageNotificationAsync(int userId, string senderUsername, string messageContent, int conversationId)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "message",
+            Title = "New Message",
+            Body = $"@{senderUsername}: {TruncateMessage(messageContent)}",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "message",
+                ["conversationId"] = conversationId.ToString(),
+                ["senderUsername"] = senderUsername
+            }
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendMentionNotificationAsync(int userId, string mentionerUsername, int postId, int? commentId = null)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "mention",
+            Title = "You were mentioned",
+            Body = $"@{mentionerUsername} mentioned you in a {(commentId.HasValue ? "comment" : "post")}",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "mention",
+                ["postId"] = postId.ToString(),
+                ["mentionerUsername"] = mentionerUsername
+            }
+        };
+
+        if (commentId.HasValue)
+        {
+            request.Data["commentId"] = commentId.Value.ToString();
+        }
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendReplyNotificationAsync(int userId, string replierUsername, int postId, int commentId)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "reply",
+            Title = "New Reply",
+            Body = $"@{replierUsername} replied to your comment",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "reply",
+                ["postId"] = postId.ToString(),
+                ["commentId"] = commentId.ToString(),
+                ["replierUsername"] = replierUsername
+            }
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendCommentNotificationAsync(int userId, string commenterUsername, int postId, int commentId)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "comment",
+            Title = "New Comment",
+            Body = $"@{commenterUsername} commented on your post",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "comment",
+                ["postId"] = postId.ToString(),
+                ["commentId"] = commentId.ToString(),
+                ["commenterUsername"] = commenterUsername
+            }
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendFollowNotificationAsync(int userId, string followerUsername)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "follow",
+            Title = "New Follower",
+            Body = $"@{followerUsername} started following you",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "follow",
+                ["followerUsername"] = followerUsername
+            }
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendFollowRequestNotificationAsync(int userId, string requesterUsername)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "follow_request",
+            Title = "Follow Request",
+            Body = $"@{requesterUsername} wants to follow you",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "follow_request",
+                ["requesterUsername"] = requesterUsername
+            }
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendFollowRequestApprovedNotificationAsync(int userId, string approverUsername)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "follow_request_approved",
+            Title = "Follow Request Approved",
+            Body = $"@{approverUsername} approved your follow request",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "follow_request_approved",
+                ["approverUsername"] = approverUsername
+            }
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendLikeNotificationAsync(int userId, string likerUsername, int postId)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "like",
+            Title = "Post Liked",
+            Body = $"@{likerUsername} liked your post",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "like",
+                ["postId"] = postId.ToString(),
+                ["likerUsername"] = likerUsername
+            }
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendRepostNotificationAsync(int userId, string reposterUsername, int postId)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "repost",
+            Title = "Post Reposted",
+            Body = $"@{reposterUsername} reposted your post",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "repost",
+                ["postId"] = postId.ToString(),
+                ["reposterUsername"] = reposterUsername
+            }
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    #endregion
+
+    #region System and Moderation Notifications
+
+    public async Task SendSystemMessageAsync(int userId, string title, string message, Dictionary<string, string>? data = null)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "system_message",
+            Title = title,
+            Body = message,
+            Data = data ?? new Dictionary<string, string> { ["type"] = "system_message" },
+            Priority = NotificationPriority.High
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendUserSuspendedNotificationAsync(int userId, string reason, DateTime suspendedUntil)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "user_suspended",
+            Title = "Account Suspended",
+            Body = $"Your account has been suspended until {suspendedUntil:yyyy-MM-dd}. Reason: {reason}",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "user_suspended",
+                ["reason"] = reason,
+                ["suspendedUntil"] = suspendedUntil.ToString("O")
+            },
+            Priority = NotificationPriority.Critical
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendContentHiddenNotificationAsync(int userId, string contentType, int contentId, string reason)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "content_hidden",
+            Title = "Content Hidden",
+            Body = $"Your {contentType} #{contentId} has been hidden. Reason: {reason}",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "content_hidden",
+                ["contentType"] = contentType,
+                ["contentId"] = contentId.ToString(),
+                ["reason"] = reason
+            },
+            Priority = NotificationPriority.High
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendAppealApprovedNotificationAsync(int userId, string appealType, int appealId)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "appeal_approved",
+            Title = "Appeal Approved",
+            Body = $"Your {appealType} appeal has been approved",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "appeal_approved",
+                ["appealType"] = appealType,
+                ["appealId"] = appealId.ToString()
+            },
+            Priority = NotificationPriority.High
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendAppealDeniedNotificationAsync(int userId, string appealType, int appealId, string reason)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "appeal_denied",
+            Title = "Appeal Denied",
+            Body = $"Your {appealType} appeal has been denied. Reason: {reason}",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "appeal_denied",
+                ["appealType"] = appealType,
+                ["appealId"] = appealId.ToString(),
+                ["reason"] = reason
+            },
+            Priority = NotificationPriority.High
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    #endregion
+
+    #region Management and Monitoring
+
+    public async Task<NotificationStats> GetStatsAsync()
+    {
+        lock (_statsLock)
+        {
+            return new NotificationStats
+            {
+                TotalNotificationsSent = _totalNotificationsSent,
+                TotalNotificationsDelivered = _totalNotificationsDelivered,
+                TotalNotificationsFailed = _totalNotificationsFailed,
+                TotalNotificationsQueued = _totalNotificationsQueued,
+                DeliverySuccessRate = _totalNotificationsSent > 0
+                    ? (double)_totalNotificationsDelivered / _totalNotificationsSent * 100
+                    : 0,
+                LastUpdated = DateTime.UtcNow
+            };
+        }
+    }
+
+    public async Task<bool> IsHealthyAsync()
+    {
+        try
+        {
+            // Check database connectivity
+            await _context.Database.CanConnectAsync();
+
+            // Check if preferences service is working
+            await _preferencesService.GetUserPreferencesAsync(1); // Test with user ID 1
+
+            // Check provider manager health if available
+            if (_providerManager != null)
+            {
+                var hasProviders = await _providerManager.HasAvailableProvidersAsync();
+                if (!hasProviders)
+                {
+                    _logger.LogWarning("No notification providers are available");
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Health check failed for UnifiedNotificationService");
+            return false;
+        }
+    }
+
+    public async Task<NotificationHealthReport> GetHealthReportAsync()
+    {
+        var report = new NotificationHealthReport();
+        var issues = new List<string>();
+
+        try
+        {
+            // Check database
+            var canConnect = await _context.Database.CanConnectAsync();
+            report.ComponentHealth["Database"] = new ComponentHealth
+            {
+                IsHealthy = canConnect,
+                Status = canConnect ? "Connected" : "Disconnected",
+                LastChecked = DateTime.UtcNow
+            };
+
+            if (!canConnect)
+            {
+                issues.Add("Database connection failed");
+            }
+
+            // Check preferences service
+            try
+            {
+                await _preferencesService.GetUserPreferencesAsync(1);
+                report.ComponentHealth["PreferencesService"] = new ComponentHealth
+                {
+                    IsHealthy = true,
+                    Status = "Operational",
+                    LastChecked = DateTime.UtcNow
+                };
+            }
+            catch (Exception ex)
+            {
+                report.ComponentHealth["PreferencesService"] = new ComponentHealth
+                {
+                    IsHealthy = false,
+                    Status = "Failed",
+                    ErrorMessage = ex.Message,
+                    LastChecked = DateTime.UtcNow
+                };
+                issues.Add("Preferences service failed");
+            }
+
+            // Check provider manager if available
+            if (_providerManager != null)
+            {
+                var hasProviders = await _providerManager.HasAvailableProvidersAsync();
+                report.ComponentHealth["ProviderManager"] = new ComponentHealth
+                {
+                    IsHealthy = hasProviders,
+                    Status = hasProviders ? "Available" : "No providers available",
+                    LastChecked = DateTime.UtcNow
+                };
+
+                if (!hasProviders)
+                {
+                    issues.Add("No notification providers available");
+                }
+            }
+
+            report.IsHealthy = issues.Count == 0;
+            report.Issues = issues;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate health report");
+            report.IsHealthy = false;
+            report.Issues.Add($"Health check failed: {ex.Message}");
+        }
+
+        return report;
+    }
+
+    public async Task RefreshSystemAsync()
+    {
+        _logger.LogInformation("Refreshing unified notification system");
+
+        try
+        {
+            // Refresh provider health if available
+            if (_providerManager != null)
+            {
+                await _providerManager.RefreshProviderHealthAsync();
+            }
+
+            // Refresh queue health if available
+            if (_notificationQueue != null)
+            {
+                await _notificationQueue.RefreshHealthAsync();
+            }
+
+            _logger.LogInformation("System refresh completed successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh notification system");
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region Utility Methods
+
+    private string TruncateMessage(string message, int maxLength = 100)
+    {
+        if (string.IsNullOrEmpty(message) || message.Length <= maxLength)
+            return message;
+
+        return message.Substring(0, maxLength - 3) + "...";
+    }
+
+    #endregion
+}
