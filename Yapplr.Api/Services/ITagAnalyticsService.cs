@@ -10,18 +10,3 @@ public interface ITagAnalyticsService
     Task<IEnumerable<TagUsageDto>> GetTagUsageOverTimeAsync(string tagName, int days = 30);
     Task UpdateTagMetricsAsync(int tagId, string action, DateTime timestamp);
 }
-
-public record TagAnalyticsDto(
-    string Name,
-    int TotalPosts,
-    int PostsThisWeek,
-    int PostsThisMonth,
-    DateTime FirstUsed,
-    DateTime LastUsed,
-    int UniqueUsers
-);
-
-public record TagUsageDto(
-    DateTime Date,
-    int PostCount
-);

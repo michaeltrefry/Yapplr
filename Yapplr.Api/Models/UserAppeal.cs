@@ -2,24 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Yapplr.Api.Models;
 
-public enum AppealType
-{
-    Suspension = 0,
-    Ban = 1,
-    ContentRemoval = 2,
-    SystemTag = 3,
-    Other = 4
-}
-
-public enum AppealStatus
-{
-    Pending = 0,
-    UnderReview = 1,
-    Approved = 2,
-    Denied = 3,
-    Escalated = 4
-}
-
 public class UserAppeal
 {
     public int Id { get; set; }

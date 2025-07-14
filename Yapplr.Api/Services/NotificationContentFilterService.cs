@@ -2,57 +2,6 @@ using System.Text.RegularExpressions;
 
 namespace Yapplr.Api.Services;
 
-/// <summary>
-/// Content validation result
-/// </summary>
-public class ContentValidationResult
-{
-    public bool IsValid { get; set; }
-    public List<string> Violations { get; set; } = new();
-    public string? SanitizedContent { get; set; }
-    public ContentRiskLevel RiskLevel { get; set; } = ContentRiskLevel.Low;
-}
-
-/// <summary>
-/// Content risk levels
-/// </summary>
-public enum ContentRiskLevel
-{
-    Low = 0,
-    Medium = 1,
-    High = 2,
-    Critical = 3
-}
-
-/// <summary>
-/// Content filter configuration
-/// </summary>
-public class ContentFilterConfig
-{
-    public bool EnableProfanityFilter { get; set; } = true;
-    public bool EnableSpamDetection { get; set; } = true;
-    public bool EnablePhishingDetection { get; set; } = true;
-    public bool EnableMaliciousLinkDetection { get; set; } = true;
-    public bool EnableContentSanitization { get; set; } = true;
-    public int MaxContentLength { get; set; } = 1000;
-    public int MaxUrlsPerMessage { get; set; } = 3;
-    public bool BlockSuspiciousDomains { get; set; } = true;
-}
-
-/// <summary>
-/// Service for filtering and validating notification content
-/// </summary>
-public interface INotificationContentFilterService
-{
-    Task<ContentValidationResult> ValidateContentAsync(string content, string contentType = "text");
-    Task<ContentValidationResult> ValidateNotificationAsync(string title, string body, Dictionary<string, string>? data = null);
-    Task<bool> IsContentSafeAsync(string content);
-    Task<string> SanitizeContentAsync(string content);
-    Task<List<string>> DetectSuspiciousLinksAsync(string content);
-    Task<Dictionary<string, object>> GetFilterStatsAsync();
-    Task UpdateFilterConfigAsync(ContentFilterConfig config);
-}
-
 public class NotificationContentFilterService : INotificationContentFilterService
 {
     private readonly ILogger<NotificationContentFilterService> _logger;

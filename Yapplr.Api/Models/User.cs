@@ -4,22 +4,6 @@ using Yapplr.Api.Models.Analytics;
 
 namespace Yapplr.Api.Models;
 
-public enum UserRole
-{
-    User = 0,
-    Moderator = 1,
-    Admin = 2,
-    System = 3
-}
-
-public enum UserStatus
-{
-    Active = 0,
-    Suspended = 1,
-    ShadowBanned = 2,
-    Banned = 3
-}
-
 public class User : IEntity
 {
     public int Id { get; set; }

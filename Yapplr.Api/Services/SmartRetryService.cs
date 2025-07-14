@@ -2,65 +2,6 @@ using System.Net;
 
 namespace Yapplr.Api.Services;
 
-/// <summary>
-/// Error types for smart retry logic
-/// </summary>
-public enum NotificationErrorType
-{
-    Unknown,
-    NetworkTimeout,
-    NetworkUnavailable,
-    ServiceUnavailable,
-    RateLimited,
-    InvalidToken,
-    PermissionDenied,
-    InvalidPayload,
-    QuotaExceeded,
-    ServerError,
-    ClientError
-}
-
-/// <summary>
-/// Retry strategy configuration
-/// </summary>
-public class RetryStrategy
-{
-    public bool ShouldRetry { get; set; }
-    public TimeSpan InitialDelay { get; set; }
-    public TimeSpan MaxDelay { get; set; }
-    public int MaxAttempts { get; set; }
-    public double BackoffMultiplier { get; set; } = 2.0;
-    public bool UseJitter { get; set; } = true;
-}
-
-/// <summary>
-/// Retry attempt information
-/// </summary>
-public class RetryAttempt
-{
-    public int AttemptNumber { get; set; }
-    public DateTime AttemptTime { get; set; }
-    public TimeSpan Delay { get; set; }
-    public NotificationErrorType ErrorType { get; set; }
-    public string? ErrorMessage { get; set; }
-    public bool IsSuccessful { get; set; }
-}
-
-/// <summary>
-/// Smart retry service that adapts retry behavior based on error types
-/// </summary>
-public interface ISmartRetryService
-{
-    Task<T> ExecuteWithRetryAsync<T>(
-        Func<Task<T>> operation,
-        string operationName,
-        CancellationToken cancellationToken = default);
-    
-    NotificationErrorType ClassifyError(Exception exception);
-    RetryStrategy GetRetryStrategy(NotificationErrorType errorType);
-    Task<bool> ShouldRetryAsync(NotificationErrorType errorType, int attemptNumber, Exception exception);
-}
-
 public class SmartRetryService : ISmartRetryService
 {
     private readonly ILogger<SmartRetryService> _logger;

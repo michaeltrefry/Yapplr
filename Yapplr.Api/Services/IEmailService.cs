@@ -7,15 +7,3 @@ public interface IEmailService
     Task<bool> SendUserSuspensionEmailAsync(string toEmail, string username, string reason, DateTime? suspendedUntil, string moderatorUsername, string appealUrl);
     Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string? textBody = null);
 }
-
-public interface IEmailSender
-{
-    Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string? textBody = null);
-}
-
-public interface IEmailTemplate
-{
-    string Subject { get; }
-    string GenerateHtmlBody();
-    string GenerateTextBody();
-}

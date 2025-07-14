@@ -7,21 +7,6 @@ using Yapplr.Api.DTOs;
 
 namespace Yapplr.Api.Services;
 
-/// <summary>
-/// Service for queuing notifications when users are offline
-/// </summary>
-public interface INotificationQueueService
-{
-    Task QueueNotificationAsync(QueuedNotificationDto notification);
-    Task<List<QueuedNotificationDto>> GetPendingNotificationsAsync(int userId);
-    Task<List<QueuedNotificationDto>> GetAllPendingNotificationsAsync();
-    Task MarkAsDeliveredAsync(string notificationId);
-    Task MarkAsFailedAsync(string notificationId, string error);
-    Task ProcessPendingNotificationsAsync();
-    Task CleanupOldNotificationsAsync(TimeSpan maxAge);
-    Task<NotificationQueueStats> GetStatsAsync();
-}
-
 public class NotificationQueueService : INotificationQueueService
 {
     private readonly YapplrDbContext _context;
@@ -549,27 +534,4 @@ public class NotificationQueueService : INotificationQueueService
             LastError = dbNotification.LastError
         };
     }
-}
-
-/// <summary>
-/// Statistics about the notification queue
-/// </summary>
-public class NotificationQueueStats
-{
-    public long TotalQueued { get; set; }
-    public long TotalDelivered { get; set; }
-    public long TotalFailed { get; set; }
-    public int PendingInMemory { get; set; }
-    public int QueueSize { get; set; }
-
-    // Database statistics
-    public int PendingInDatabase { get; set; }
-    public int DeliveredInDatabase { get; set; }
-    public int FailedInDatabase { get; set; }
-
-    // Calculated properties
-    public double DeliveryRate => TotalQueued > 0 ? (double)TotalDelivered / TotalQueued * 100 : 0;
-    public double FailureRate => TotalQueued > 0 ? (double)TotalFailed / TotalQueued * 100 : 0;
-    public int TotalPending => PendingInMemory + PendingInDatabase;
-    public int TotalInDatabase => PendingInDatabase + DeliveredInDatabase + FailedInDatabase;
 }

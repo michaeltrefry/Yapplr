@@ -81,61 +81,6 @@ public class ApiResult
 }
 
 /// <summary>
-/// Paginated result wrapper
-/// </summary>
-public class PaginatedResult<T>
-{
-    public List<T> Items { get; set; } = new();
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int TotalCount { get; set; }
-    public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
-    public bool HasNextPage => Page < TotalPages;
-    public bool HasPreviousPage => Page > 1;
-
-    public static PaginatedResult<T> Create(List<T> items, int page, int pageSize, int totalCount)
-    {
-        return new PaginatedResult<T>
-        {
-            Items = items,
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount
-        };
-    }
-}
-
-/// <summary>
-/// Service operation result for internal service communication
-/// </summary>
-public class ServiceResult<T>
-{
-    public bool IsSuccess { get; set; }
-    public T? Data { get; set; }
-    public string? ErrorMessage { get; set; }
-    public Exception? Exception { get; set; }
-
-    public static ServiceResult<T> Success(T data)
-    {
-        return new ServiceResult<T>
-        {
-            IsSuccess = true,
-            Data = data
-        };
-    }
-
-    public static ServiceResult<T> Failure(string errorMessage, Exception? exception = null)
-    {
-        return new ServiceResult<T>
-        {
-            IsSuccess = false,
-            ErrorMessage = errorMessage,
-            Exception = exception
-        };
-    }
-}
-
-/// <summary>
 /// Non-generic service result
 /// </summary>
 public class ServiceResult

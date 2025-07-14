@@ -1,10 +1,5 @@
 namespace Yapplr.Api.Services;
 
-public interface IEmailServiceFactory
-{
-    IEmailService CreateEmailService();
-}
-
 public class EmailServiceFactory : IEmailServiceFactory
 {
     private readonly IServiceProvider _serviceProvider;

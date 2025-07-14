@@ -4,42 +4,6 @@ using Yapplr.Api.Models;
 
 namespace Yapplr.Api.Services;
 
-/// <summary>
-/// Service that uses trust scores to influence various platform behaviors
-/// </summary>
-public interface ITrustBasedModerationService
-{
-    /// <summary>
-    /// Get rate limit multiplier based on user's trust score
-    /// </summary>
-    Task<float> GetRateLimitMultiplierAsync(int userId);
-
-    /// <summary>
-    /// Determine if content should be auto-hidden based on author's trust score
-    /// </summary>
-    Task<bool> ShouldAutoHideContentAsync(int authorId, string contentType);
-
-    /// <summary>
-    /// Get moderation priority score for content based on author's trust score
-    /// </summary>
-    Task<int> GetModerationPriorityAsync(int authorId, string contentType);
-
-    /// <summary>
-    /// Check if user should be allowed to perform an action based on trust score
-    /// </summary>
-    Task<bool> CanPerformActionAsync(int userId, TrustRequiredAction action);
-
-    /// <summary>
-    /// Get content visibility level based on author's trust score
-    /// </summary>
-    Task<ContentVisibilityLevel> GetContentVisibilityLevelAsync(int authorId);
-
-    /// <summary>
-    /// Get recommended review threshold for user reports based on reporter's trust score
-    /// </summary>
-    Task<float> GetReportReviewThresholdAsync(int reporterId);
-}
-
 public class TrustBasedModerationService : ITrustBasedModerationService
 {
     private readonly YapplrDbContext _context;
@@ -203,31 +167,4 @@ public class TrustBasedModerationService : ITrustBasedModerationService
             return 0.5f; // Default threshold on error
         }
     }
-}
-
-/// <summary>
-/// Actions that require certain trust levels
-/// </summary>
-public enum TrustRequiredAction
-{
-    CreatePost,
-    CreateComment,
-    LikeContent,
-    ReportContent,
-    SendMessage,
-    FollowUsers,
-    CreateMultiplePosts,
-    MentionUsers
-}
-
-/// <summary>
-/// Content visibility levels based on trust scores
-/// </summary>
-public enum ContentVisibilityLevel
-{
-    Hidden,              // Content is hidden from feeds
-    LimitedVisibility,   // Only visible to followers
-    ReducedVisibility,   // Lower priority in feeds
-    NormalVisibility,    // Normal feed visibility
-    FullVisibility       // Boosted visibility in feeds
 }

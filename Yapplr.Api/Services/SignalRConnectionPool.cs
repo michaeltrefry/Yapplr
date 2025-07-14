@@ -4,24 +4,6 @@ using Yapplr.Api.Hubs;
 
 namespace Yapplr.Api.Services;
 
-/// <summary>
-/// Manages SignalR connection pooling and user group management for efficient message delivery
-/// </summary>
-public interface ISignalRConnectionPool
-{
-    Task AddUserConnectionAsync(int userId, string connectionId);
-    Task RemoveUserConnectionAsync(int userId, string connectionId);
-    Task RemoveAllUserConnectionsAsync(int userId);
-    Task<List<string>> GetUserConnectionsAsync(int userId);
-    Task<int> GetActiveConnectionCountAsync();
-    Task<Dictionary<int, int>> GetUserConnectionStatsAsync();
-    Task SendToUserAsync(int userId, string method, object data);
-    Task SendToUsersAsync(List<int> userIds, string method, object data);
-    Task<bool> IsUserOnlineAsync(int userId);
-    Task<ConnectionPoolStats> GetStatsAsync();
-    Task CleanupInactiveConnectionsAsync(TimeSpan inactivityThreshold);
-}
-
 public class SignalRConnectionPool : ISignalRConnectionPool
 {
     private readonly IHubContext<NotificationHub> _hubContext;
@@ -273,17 +255,4 @@ public class SignalRConnectionPool : ISignalRConnectionPool
             _logger.LogInformation("Cleaned up {Count} inactive users", inactiveUsers.Count);
         }
     }
-}
-
-/// <summary>
-/// Statistics about the SignalR connection pool
-/// </summary>
-public class ConnectionPoolStats
-{
-    public int ActiveUsers { get; set; }
-    public int TotalConnections { get; set; }
-    public long TotalConnectionsCreated { get; set; }
-    public long TotalConnectionsRemoved { get; set; }
-    public Dictionary<int, int> UserConnectionCounts { get; set; } = new();
-    public Dictionary<int, DateTime> UserLastActivity { get; set; } = new();
 }

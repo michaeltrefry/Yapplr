@@ -3,67 +3,6 @@ using Yapplr.Api.Data;
 
 namespace Yapplr.Api.Services;
 
-/// <summary>
-/// Offline notification entry
-/// </summary>
-public class OfflineNotification
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public int UserId { get; set; }
-    public string NotificationType { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string Body { get; set; } = string.Empty;
-    public Dictionary<string, string>? Data { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? LastAttemptAt { get; set; }
-    public int AttemptCount { get; set; } = 0;
-    public int MaxAttempts { get; set; } = 5;
-    public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
-    public DateTime ExpiresAt { get; set; }
-    public bool IsExpired => DateTime.UtcNow > ExpiresAt;
-    public string? LastError { get; set; }
-}
-
-/// <summary>
-/// Notification priority levels
-/// </summary>
-public enum NotificationPriority
-{
-    Low = 0,
-    Normal = 1,
-    High = 2,
-    Critical = 3
-}
-
-/// <summary>
-/// User connectivity status
-/// </summary>
-public class UserConnectivityStatus
-{
-    public int UserId { get; set; }
-    public bool IsOnline { get; set; }
-    public DateTime LastSeenAt { get; set; }
-    public string? LastKnownConnection { get; set; } // "firebase", "signalr", "polling"
-    public int OfflineNotificationCount { get; set; }
-}
-
-/// <summary>
-/// Service for handling offline notification scenarios
-/// </summary>
-public interface IOfflineNotificationService
-{
-    Task QueueOfflineNotificationAsync(OfflineNotification notification);
-    Task<List<OfflineNotification>> GetOfflineNotificationsAsync(int userId);
-    Task ProcessOfflineNotificationsAsync(int userId);
-    Task ProcessAllOfflineNotificationsAsync();
-    Task MarkUserOnlineAsync(int userId, string connectionType);
-    Task MarkUserOfflineAsync(int userId);
-    Task<UserConnectivityStatus> GetUserConnectivityStatusAsync(int userId);
-    Task<List<UserConnectivityStatus>> GetAllUserConnectivityStatusAsync();
-    Task CleanupExpiredNotificationsAsync();
-    Task<Dictionary<string, object>> GetOfflineStatsAsync();
-}
-
 public class OfflineNotificationService : IOfflineNotificationService
 {
     private readonly YapplrDbContext _context;

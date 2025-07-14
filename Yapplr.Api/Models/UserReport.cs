@@ -2,14 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Yapplr.Api.Models;
 
-public enum UserReportStatus
-{
-    Pending = 0,
-    Reviewed = 1,
-    Dismissed = 2,
-    ActionTaken = 3
-}
-
 public class UserReport
 {
     public int Id { get; set; }
@@ -44,17 +36,4 @@ public class UserReport
     
     // Navigation properties for selected system tags
     public ICollection<UserReportSystemTag> UserReportSystemTags { get; set; } = new List<UserReportSystemTag>();
-}
-
-public class UserReportSystemTag
-{
-    public int Id { get; set; }
-    
-    public int UserReportId { get; set; }
-    public UserReport UserReport { get; set; } = null!;
-    
-    public int SystemTagId { get; set; }
-    public SystemTag SystemTag { get; set; } = null!;
-    
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

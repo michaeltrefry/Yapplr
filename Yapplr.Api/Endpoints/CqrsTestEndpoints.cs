@@ -138,7 +138,3 @@ public static class CqrsTestEndpoints
 }
 
 // Request DTOs for testing
-public record TestEmailRequest(string ToEmail, string? Subject = null, string? Message = null);
-public record TestNotificationRequest(int? TargetUserId = null, string? Title = null, string? Message = null);
-public record TestAnalyticsRequest(string? ActivityType = null, string? TestData = null);
-public record TestDelayedRequest(string ToEmail, int? DelaySeconds = null);

@@ -2,17 +2,6 @@ using System.Diagnostics;
 
 namespace Yapplr.Api.Common;
 
-/// <summary>
-/// Monitor and log database query performance
-/// </summary>
-public interface IQueryPerformanceMonitor
-{
-    Task<T> MonitorAsync<T>(string operationName, Func<Task<T>> operation, object? parameters = null);
-    Task MonitorAsync(string operationName, Func<Task> operation, object? parameters = null);
-    QueryPerformanceStats GetStats();
-    void ResetStats();
-}
-
 public class QueryPerformanceMonitor : IQueryPerformanceMonitor
 {
     private readonly ILogger<QueryPerformanceMonitor> _logger;
@@ -170,106 +159,5 @@ public class QueryPerformanceMonitor : IQueryPerformanceMonitor
             _stats.TotalDuration = TimeSpan.Zero;
             _stats.OperationStats.Clear();
         }
-    }
-}
-
-public class QueryPerformanceStats
-{
-    public int TotalOperations { get; set; }
-    public int SuccessfulOperations { get; set; }
-    public int FailedOperations { get; set; }
-    public TimeSpan TotalDuration { get; set; }
-    public TimeSpan AverageDuration { get; set; }
-    public Dictionary<string, OperationStats> OperationStats { get; set; } = new();
-    
-    public double SuccessRate => TotalOperations > 0 ? (double)SuccessfulOperations / TotalOperations * 100 : 0;
-}
-
-public class OperationStats
-{
-    public int TotalCalls { get; set; }
-    public int SuccessfulCalls { get; set; }
-    public int FailedCalls { get; set; }
-    public TimeSpan TotalDuration { get; set; }
-    public TimeSpan AverageDuration { get; set; }
-    public TimeSpan MinDuration { get; set; }
-    public TimeSpan MaxDuration { get; set; }
-    public DateTime LastExecuted { get; set; }
-    public string? LastError { get; set; }
-    
-    public double SuccessRate => TotalCalls > 0 ? (double)SuccessfulCalls / TotalCalls * 100 : 0;
-}
-
-/// <summary>
-/// Extension methods for easy performance monitoring
-/// </summary>
-public static class PerformanceMonitoringExtensions
-{
-    /// <summary>
-    /// Monitor a database query operation
-    /// </summary>
-    public static async Task<T> MonitorQueryAsync<T>(
-        this IQueryPerformanceMonitor monitor,
-        string queryName,
-        Func<Task<T>> query,
-        object? parameters = null)
-    {
-        return await monitor.MonitorAsync($"Query:{queryName}", query, parameters);
-    }
-
-    /// <summary>
-    /// Monitor a service operation
-    /// </summary>
-    public static async Task<T> MonitorServiceAsync<T>(
-        this IQueryPerformanceMonitor monitor,
-        string serviceName,
-        string operationName,
-        Func<Task<T>> operation,
-        object? parameters = null)
-    {
-        return await monitor.MonitorAsync($"Service:{serviceName}:{operationName}", operation, parameters);
-    }
-}
-
-/// <summary>
-/// Middleware to automatically monitor all database operations
-/// </summary>
-public class QueryPerformanceMiddleware
-{
-    private readonly RequestDelegate _next;
-    private readonly IQueryPerformanceMonitor _monitor;
-    private readonly ILogger<QueryPerformanceMiddleware> _logger;
-
-    public QueryPerformanceMiddleware(
-        RequestDelegate next, 
-        IQueryPerformanceMonitor monitor,
-        ILogger<QueryPerformanceMiddleware> logger)
-    {
-        _next = next;
-        _monitor = monitor;
-        _logger = logger;
-    }
-
-    public async Task InvokeAsync(HttpContext context)
-    {
-        var requestPath = context.Request.Path.Value ?? "unknown";
-        var method = context.Request.Method;
-        var operationName = $"{method} {requestPath}";
-
-        await _monitor.MonitorAsync($"Request:{operationName}", async () =>
-        {
-            await _next(context);
-        });
-    }
-}
-
-/// <summary>
-/// Extension method to register the performance monitoring middleware
-/// </summary>
-public static class QueryPerformanceMiddlewareExtensions
-{
-    public static IApplicationBuilder UseQueryPerformanceMonitoring(this IApplicationBuilder builder)
-    {
-        return builder.UseMiddleware<QueryPerformanceMiddleware>();
     }
 }

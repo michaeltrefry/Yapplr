@@ -8,19 +8,6 @@ using Yapplr.Api.Services;
 namespace Yapplr.Api.Tests;
 
 // Custom test DbContext that ignores problematic properties
-public class TestYapplrDbContext : YapplrDbContext
-{
-    public TestYapplrDbContext(DbContextOptions<YapplrDbContext> options) : base(options) { }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-
-        // Ignore the problematic NotificationHistory.Data property for tests
-        modelBuilder.Entity<NotificationHistory>()
-            .Ignore(nh => nh.Data);
-    }
-}
 
 public class BlockServiceTests : IDisposable
 {

@@ -4,42 +4,6 @@ using System.Text.Json;
 
 namespace Yapplr.Api.Services;
 
-/// <summary>
-/// Compressed notification payload
-/// </summary>
-public class CompressedNotificationPayload
-{
-    public string CompressedData { get; set; } = string.Empty;
-    public string CompressionMethod { get; set; } = string.Empty;
-    public int OriginalSize { get; set; }
-    public int CompressedSize { get; set; }
-    public double CompressionRatio => OriginalSize > 0 ? (double)CompressedSize / OriginalSize : 1.0;
-}
-
-/// <summary>
-/// Notification payload optimization settings
-/// </summary>
-public class OptimizationSettings
-{
-    public bool EnableCompression { get; set; } = true;
-    public int CompressionThreshold { get; set; } = 1024; // Only compress if payload > 1KB
-    public bool TruncateLongMessages { get; set; } = true;
-    public int MaxMessageLength { get; set; } = 200;
-    public bool RemoveUnnecessaryFields { get; set; } = true;
-    public bool UseShortFieldNames { get; set; } = true;
-}
-
-/// <summary>
-/// Service for optimizing notification payloads to reduce bandwidth usage
-/// </summary>
-public interface INotificationCompressionService
-{
-    Task<CompressedNotificationPayload> CompressPayloadAsync(object payload, OptimizationSettings? settings = null);
-    Task<T> DecompressPayloadAsync<T>(CompressedNotificationPayload compressedPayload);
-    Task<object> OptimizePayloadAsync(object payload, OptimizationSettings? settings = null);
-    Task<Dictionary<string, object>> GetCompressionStatsAsync();
-}
-
 public class NotificationCompressionService : INotificationCompressionService
 {
     private readonly ILogger<NotificationCompressionService> _logger;

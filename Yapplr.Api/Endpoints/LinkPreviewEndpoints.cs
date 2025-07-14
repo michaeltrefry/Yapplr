@@ -56,5 +56,3 @@ public static class LinkPreviewEndpoints
         .Produces(401);
     }
 }
-
-public record ProcessLinksDto(string Content);

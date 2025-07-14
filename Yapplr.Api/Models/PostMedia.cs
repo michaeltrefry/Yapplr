@@ -4,12 +4,6 @@ using Yapplr.Shared.Models;
 
 namespace Yapplr.Api.Models;
 
-public enum MediaType
-{
-    Image = 0,
-    Video = 1
-}
-
 /// <summary>
 /// Stores media-related information for posts (images and videos)
 /// </summary>

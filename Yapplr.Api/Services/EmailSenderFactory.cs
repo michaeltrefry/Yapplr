@@ -2,11 +2,6 @@ using Yapplr.Api.Services.EmailSenders;
 
 namespace Yapplr.Api.Services;
 
-public interface IEmailSenderFactory
-{
-    IEmailSender CreateEmailSender();
-}
-
 public class EmailSenderFactory : IEmailSenderFactory
 {
     private readonly IServiceProvider _serviceProvider;

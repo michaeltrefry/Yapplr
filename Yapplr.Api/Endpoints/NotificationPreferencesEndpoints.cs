@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Yapplr.Api.DTOs;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;

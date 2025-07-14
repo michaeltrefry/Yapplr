@@ -2,52 +2,6 @@ using System.Collections.Concurrent;
 
 namespace Yapplr.Api.Services;
 
-/// <summary>
-/// Metrics for notification delivery performance
-/// </summary>
-public class NotificationMetrics
-{
-    public long TotalNotificationsSent { get; set; }
-    public long TotalNotificationsDelivered { get; set; }
-    public long TotalNotificationsFailed { get; set; }
-    public double AverageDeliveryTimeMs { get; set; }
-    public double DeliverySuccessRate { get; set; }
-    public Dictionary<string, long> NotificationTypeBreakdown { get; set; } = new();
-    public Dictionary<string, long> ProviderBreakdown { get; set; } = new();
-    public Dictionary<string, double> ProviderAverageLatency { get; set; } = new();
-    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
-}
-
-/// <summary>
-/// Real-time notification delivery metrics
-/// </summary>
-public class DeliveryMetric
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public int UserId { get; set; }
-    public string NotificationType { get; set; } = string.Empty;
-    public string Provider { get; set; } = string.Empty;
-    public DateTime StartTime { get; set; }
-    public DateTime? EndTime { get; set; }
-    public bool Success { get; set; }
-    public string? Error { get; set; }
-    public double LatencyMs => EndTime.HasValue ? (EndTime.Value - StartTime).TotalMilliseconds : 0;
-}
-
-/// <summary>
-/// Service for tracking and monitoring notification delivery metrics
-/// </summary>
-public interface INotificationMetricsService
-{
-    string StartDeliveryTracking(int userId, string notificationType, string provider);
-    Task CompleteDeliveryTrackingAsync(string trackingId, bool success, string? error = null);
-    Task<NotificationMetrics> GetMetricsAsync(TimeSpan? timeWindow = null);
-    Task<List<DeliveryMetric>> GetRecentDeliveriesAsync(int count = 100);
-    Task<Dictionary<string, object>> GetHealthCheckDataAsync();
-    Task<Dictionary<string, object>> GetPerformanceInsightsAsync();
-    Task ResetMetricsAsync();
-}
-
 public class NotificationMetricsService : INotificationMetricsService
 {
     private readonly ILogger<NotificationMetricsService> _logger;
