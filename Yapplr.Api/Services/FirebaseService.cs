@@ -15,7 +15,7 @@ public class FirebaseService : IFirebaseService
     private readonly FirebaseMessaging? _messaging;
     private readonly bool _isEnabled;
     private static readonly object _lock = new object();
-    private static bool _isInitialized = false;
+    private static bool _isInitialized;
 
     public string ProviderName => "Firebase";
 

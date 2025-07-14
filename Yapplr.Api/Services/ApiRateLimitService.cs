@@ -107,9 +107,9 @@ public class ApiRateLimitService : IApiRateLimitService
     private readonly ConcurrentDictionary<int, DateTime> _blockedUsers = new();
     
     // Statistics
-    private long _totalRequests = 0;
-    private long _totalViolations = 0;
-    private long _totalBlocked = 0;
+    private long _totalRequests;
+    private long _totalViolations;
+    private long _totalBlocked;
 
     public ApiRateLimitService(
         ILogger<ApiRateLimitService> logger,

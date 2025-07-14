@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
-using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Services.Unified;
 
@@ -34,11 +33,11 @@ public class NotificationQueue : INotificationQueue
     #endregion
 
     #region Statistics
-    private long _totalQueued = 0;
-    private long _totalDelivered = 0;
-    private long _totalFailed = 0;
-    private long _totalExpired = 0;
-    private long _totalRetried = 0;
+    private long _totalQueued;
+    private long _totalDelivered;
+    private long _totalFailed;
+    private long _totalExpired;
+    private long _totalRetried;
     #endregion
 
     #region Retry Configuration

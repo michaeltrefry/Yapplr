@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using Yapplr.Api.Data;
 using Yapplr.Api.Hubs;
 using Yapplr.Api.Configuration;
-using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.Services;
 

@@ -1,5 +1,3 @@
-using Yapplr.Api.Services;
-
 namespace Yapplr.Api.Services.Unified;
 
 /// <summary>

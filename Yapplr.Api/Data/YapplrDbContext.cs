@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Models;
 using Yapplr.Api.Models.Analytics;
-using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Data;
 
@@ -37,7 +36,7 @@ public class YapplrDbContext : DbContext
     public DbSet<PostLinkPreview> PostLinkPreviews { get; set; }
     public DbSet<NotificationDeliveryConfirmation> NotificationDeliveryConfirmations { get; set; }
     public DbSet<NotificationHistory> NotificationHistory { get; set; }
-    public DbSet<Models.NotificationAuditLog> NotificationAuditLogs { get; set; }
+    public DbSet<NotificationAuditLog> NotificationAuditLogs { get; set; }
 
     // Admin/Moderation entities
     public DbSet<SystemTag> SystemTags { get; set; }

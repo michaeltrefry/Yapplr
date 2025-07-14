@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Yapplr.Api.Data;
-using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
 using Yapplr.Api.Services.Unified;
 using Xunit;

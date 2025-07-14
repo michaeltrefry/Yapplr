@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Yapplr.Api.Data;
 using Yapplr.Api.Services;
-using Yapplr.Api.Models;
 using System.Reflection;
 
 namespace Yapplr.Tests.Services;

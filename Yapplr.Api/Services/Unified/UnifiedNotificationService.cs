@@ -1,9 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using Yapplr.Api.Data;
-using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
-using Yapplr.Api.Services;
 using Yapplr.Api.Utils;
 
 namespace Yapplr.Api.Services.Unified;
@@ -26,12 +24,12 @@ public class UnifiedNotificationService : IUnifiedNotificationService
     private readonly INotificationEnhancementService? _enhancementService;
     
     // Statistics tracking
-    private long _totalNotificationsSent = 0;
-    private long _totalNotificationsDelivered = 0;
-    private long _totalNotificationsFailed = 0;
-    private long _totalNotificationsQueued = 0;
+    private long _totalNotificationsSent;
+    private long _totalNotificationsDelivered;
+    private long _totalNotificationsFailed;
+    private long _totalNotificationsQueued;
     private readonly ConcurrentDictionary<string, long> _notificationTypeBreakdown = new();
-    private readonly object _statsLock = new object();
+    private readonly object _statsLock = new();
 
     public UnifiedNotificationService(
         YapplrDbContext context,
@@ -674,7 +672,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         // Invalidate notification count cache
         await _countCache.InvalidateNotificationCountsAsync(userId);
 
-        // Send real-time notification (only for regular bans, not shadow bans)
+        // Send real-time notification (only for regular bans, not shadow-bans)
         if (!isShadowBan)
         {
             await SendSystemMessageAsync(userId, "Account Banned", message);
@@ -1190,7 +1188,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
                     else
                     {
                         // Create new delivery confirmation record
-                        deliveryConfirmation = new Models.NotificationDeliveryConfirmation
+                        deliveryConfirmation = new NotificationDeliveryConfirmation
                         {
                             UserId = notification.UserId,
                             NotificationId = notificationId,
@@ -1287,11 +1285,11 @@ public class UnifiedNotificationService : IUnifiedNotificationService
 
     #region Management and Monitoring
 
-    public async Task<NotificationStats> GetStatsAsync()
+    public Task<NotificationStats> GetStatsAsync()
     {
         lock (_statsLock)
         {
-            return new NotificationStats
+            return Task.FromResult(new NotificationStats
             {
                 TotalNotificationsSent = _totalNotificationsSent,
                 TotalNotificationsDelivered = _totalNotificationsDelivered,
@@ -1302,7 +1300,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
                     : 0,
                 NotificationTypeBreakdown = _notificationTypeBreakdown.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
                 LastUpdated = DateTime.UtcNow
-            };
+            });
         }
     }
 

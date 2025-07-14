@@ -12,7 +12,6 @@ using Yapplr.Api.Data;
 using Yapplr.Api.Services.Unified;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
-using Yapplr.Api.Extensions;
 using Yapplr.Api.Common;
 using Yapplr.Api.Hubs;
 using QueuedNotification = Yapplr.Api.Services.Unified.QueuedNotification;

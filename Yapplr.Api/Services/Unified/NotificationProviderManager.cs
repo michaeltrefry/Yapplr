@@ -252,9 +252,9 @@ public class NotificationProviderManager : INotificationProviderManager
         return _activeProvider;
     }
 
-    public async Task<List<IRealtimeNotificationProvider>> GetAllProvidersAsync()
+    public Task<List<IRealtimeNotificationProvider>> GetAllProvidersAsync()
     {
-        return _orderedProviders.ToList();
+        return Task.FromResult(_orderedProviders.ToList());
     }
 
     #endregion
@@ -345,7 +345,7 @@ public class NotificationProviderManager : INotificationProviderManager
         await EnsureActiveProviderAsync();
     }
 
-    public async Task<Dictionary<string, ProviderConfiguration>> GetProviderConfigurationsAsync()
+    public Task<Dictionary<string, ProviderConfiguration>> GetProviderConfigurationsAsync()
     {
         var configurations = new Dictionary<string, ProviderConfiguration>();
 
@@ -364,7 +364,7 @@ public class NotificationProviderManager : INotificationProviderManager
             };
         }
 
-        return configurations;
+        return Task.FromResult(configurations);
     }
 
     #endregion

@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
-using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Services.Unified;
 
@@ -34,9 +33,9 @@ public class NotificationEnhancementService : INotificationEnhancementService
     private readonly ConcurrentDictionary<string, long> _providerCounts = new();
     private readonly ConcurrentDictionary<string, List<double>> _providerLatencies = new();
     
-    private long _totalSent = 0;
-    private long _totalDelivered = 0;
-    private long _totalFailed = 0;
+    private long _totalSent;
+    private long _totalDelivered;
+    private long _totalFailed;
     private const int MaxCompletedDeliveries = 1000;
     private const int MaxLatencyHistory = 100;
     #endregion
@@ -45,8 +44,8 @@ public class NotificationEnhancementService : INotificationEnhancementService
     private readonly ConcurrentDictionary<string, RequestTracker> _requestTrackers = new();
     private readonly ConcurrentDictionary<int, List<RateLimitViolation>> _violations = new();
     private readonly ConcurrentDictionary<int, DateTime> _blockedUsers = new();
-    private long _totalRequests = 0;
-    private long _totalViolations = 0;
+    private long _totalRequests;
+    private long _totalViolations;
     #endregion
 
     #region Content Filtering Collections
@@ -60,16 +59,16 @@ public class NotificationEnhancementService : INotificationEnhancementService
         MaxContentLength = 2000
     };
     
-    private long _totalValidations = 0;
-    private long _totalViolationsContent = 0;
-    private long _totalBlocked = 0;
-    private long _totalSanitized = 0;
+    private long _totalValidations;
+    private long _totalViolationsContent;
+    private long _totalBlocked;
+    private long _totalSanitized;
     #endregion
 
     #region Compression Collections
-    private long _totalPayloadsProcessed = 0;
-    private long _totalOriginalBytes = 0;
-    private long _totalCompressedBytes = 0;
+    private long _totalPayloadsProcessed;
+    private long _totalOriginalBytes;
+    private long _totalCompressedBytes;
     private readonly object _statsLock = new object();
     #endregion
 

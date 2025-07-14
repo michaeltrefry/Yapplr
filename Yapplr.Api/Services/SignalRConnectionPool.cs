@@ -20,8 +20,8 @@ public class SignalRConnectionPool : ISignalRConnectionPool
 
     // Connection statistics
     private readonly ConcurrentDictionary<int, DateTime> _userLastActivity = new();
-    private long _totalConnectionsCreated = 0;
-    private long _totalConnectionsRemoved = 0;
+    private long _totalConnectionsCreated;
+    private long _totalConnectionsRemoved;
 
     public SignalRConnectionPool(
         IHubContext<NotificationHub> hubContext,
