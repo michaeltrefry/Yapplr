@@ -59,6 +59,7 @@ public class VideoProcessingTests : IDisposable
             Mock.Of<ICountCacheService>(),
             Mock.Of<ITrustScoreService>(),
             _trustBasedModerationService.Object,
+            Mock.Of<IAnalyticsService>(),
             _postServiceLogger.Object
         );
 
