@@ -456,6 +456,7 @@ public static class ServiceCollectionExtensions
 
         // Register the new unified notification services
         services.AddScoped<INotificationProviderManager, NotificationProviderManager>();
+        services.AddScoped<INotificationQueue, NotificationQueue>();
         services.AddScoped<IUnifiedNotificationService, UnifiedNotificationService>();
 
         // Register the composite notification service with explicit provider collection (legacy)

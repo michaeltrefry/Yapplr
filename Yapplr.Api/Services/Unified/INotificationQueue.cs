@@ -1,3 +1,5 @@
+using Yapplr.Api.Services;
+
 namespace Yapplr.Api.Services.Unified;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace Yapplr.Api.Services.Unified;
 public interface INotificationQueue
 {
     #region Queuing Operations
-    
+
     /// <summary>
     /// Queues a notification for delivery when the user comes online
     /// </summary>
