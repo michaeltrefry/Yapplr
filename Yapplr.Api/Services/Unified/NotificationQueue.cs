@@ -695,6 +695,9 @@ public class NotificationQueue : INotificationQueue
     {
         try
         {
+            // Note: AttemptCount is already incremented by TryDeliverNotificationAsync
+            // Don't increment it again here to avoid double counting
+
             // Classify the error and determine retry strategy
             var errorType = ClassifyError(notification.LastError);
             var strategy = GetRetryStrategy(errorType);
@@ -718,11 +721,37 @@ public class NotificationQueue : INotificationQueue
                     notification.Id, notification.AttemptCount);
             }
 
-            await Task.CompletedTask;
+            // Update database record with new retry count and next retry time
+            await UpdateDatabaseRetryInfoAsync(notification);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error handling failed delivery for notification {NotificationId}", notification.Id);
+        }
+    }
+
+    private async Task UpdateDatabaseRetryInfoAsync(QueuedNotification notification)
+    {
+        try
+        {
+            var dbNotification = await _context.QueuedNotifications
+                .FirstOrDefaultAsync(n => n.Id == notification.Id);
+
+            if (dbNotification != null)
+            {
+                dbNotification.RetryCount = notification.AttemptCount;
+                dbNotification.NextRetryAt = notification.NextRetryAt;
+                dbNotification.LastError = notification.LastError;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogDebug("Updated database retry info for notification {NotificationId}: RetryCount={RetryCount}, NextRetryAt={NextRetryAt}",
+                    notification.Id, notification.AttemptCount, notification.NextRetryAt);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update database retry info for notification {NotificationId}", notification.Id);
         }
     }
 
@@ -922,11 +951,18 @@ public class NotificationQueue : INotificationQueue
             }
 
             // Clean database
-            var dbCleanedCount = await _context.QueuedNotifications
+            var expiredDbNotifications = await _context.QueuedNotifications
                 .Where(n => n.CreatedAt < cutoffTime ||
                            (n.DeliveredAt.HasValue && n.DeliveredAt < cutoffTime))
-                .ExecuteDeleteAsync();
+                .ToListAsync();
 
+            if (expiredDbNotifications.Any())
+            {
+                _context.QueuedNotifications.RemoveRange(expiredDbNotifications);
+                await _context.SaveChangesAsync();
+            }
+
+            var dbCleanedCount = expiredDbNotifications.Count;
             cleanedCount += dbCleanedCount;
 
             if (cleanedCount > 0)

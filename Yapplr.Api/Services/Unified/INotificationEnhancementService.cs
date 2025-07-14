@@ -61,7 +61,7 @@ public interface INotificationEnhancementService
     /// </summary>
     /// <param name="queryParams">Query parameters for filtering audit logs</param>
     /// <returns>List of audit log entries</returns>
-    Task<List<NotificationAuditLog>> GetAuditLogsAsync(AuditQueryParams queryParams);
+    Task<List<Models.NotificationAuditLog>> GetAuditLogsAsync(AuditQueryParams queryParams);
     
     /// <summary>
     /// Gets security statistics and threat information
@@ -172,13 +172,15 @@ public interface INotificationEnhancementService
 public class NotificationEvent
 {
     public string EventId { get; set; } = Guid.NewGuid().ToString();
+    public string? TrackingId { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public string EventType { get; set; } = string.Empty; // sent, delivered, failed, queued, etc.
     public int UserId { get; set; }
     public string NotificationType { get; set; } = string.Empty;
-    public string? Provider { get; set; }
+    public string Provider { get; set; } = string.Empty;
     public bool Success { get; set; }
     public TimeSpan? ProcessingTime { get; set; }
+    public double? LatencyMs { get; set; }
     public string? ErrorMessage { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
@@ -188,13 +190,16 @@ public class NotificationEvent
 /// </summary>
 public class DeliveryEvent
 {
+    public string Id { get; set; } = string.Empty;
     public string EventId { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
+    public DateTime StartTime { get; set; }
     public int UserId { get; set; }
     public string NotificationType { get; set; } = string.Empty;
     public string Provider { get; set; } = string.Empty;
     public bool Success { get; set; }
     public TimeSpan ProcessingTime { get; set; }
+    public double LatencyMs { get; set; }
     public string? ErrorMessage { get; set; }
 }
 
@@ -221,9 +226,21 @@ public class SecurityEvent
     public string EventType { get; set; } = string.Empty;
     public int? UserId { get; set; }
     public string Description { get; set; } = string.Empty;
+    public SecurityEventSeverity Severity { get; set; } = SecurityEventSeverity.Low;
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
-    public Dictionary<string, object> AdditionalData { get; set; } = new();
+    public Dictionary<string, object>? AdditionalData { get; set; }
+}
+
+/// <summary>
+/// Security event severity levels
+/// </summary>
+public enum SecurityEventSeverity
+{
+    Low,
+    Medium,
+    High,
+    Critical
 }
 
 /// <summary>
@@ -237,6 +254,11 @@ public class SecurityStats
     public long ContentFilterViolations { get; set; }
     public Dictionary<string, long> ThreatBreakdown { get; set; } = new();
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public long TotalEvents24h { get; set; }
+    public Dictionary<string, int> EventTypeBreakdown { get; set; } = new();
+    public Dictionary<string, int> SeverityBreakdown { get; set; } = new();
+    public int CurrentlyBlockedUsers { get; set; }
+    public long TotalViolations { get; set; }
 }
 
 /// <summary>
@@ -253,12 +275,18 @@ public class EnhancementConfiguration
 }
 
 /// <summary>
-/// Health report for enhancement features
+/// Enhancement health report
 /// </summary>
 public class EnhancementHealthReport
 {
     public bool IsHealthy { get; set; }
-    public Dictionary<string, bool> FeatureHealth { get; set; } = new();
-    public List<string> Issues { get; set; } = new();
     public DateTime LastChecked { get; set; } = DateTime.UtcNow;
+    public Dictionary<string, bool> FeaturesEnabled { get; set; } = new();
+    public List<string> Issues { get; set; } = new();
+    public Dictionary<string, object>? MetricsStats { get; set; }
+    public Dictionary<string, object>? RateLimitStats { get; set; }
+    public Dictionary<string, object>? ContentFilterStats { get; set; }
+    public Dictionary<string, object>? CompressionStats { get; set; }
 }
+
+

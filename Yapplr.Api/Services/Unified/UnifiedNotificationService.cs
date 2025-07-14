@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
@@ -29,6 +30,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
     private long _totalNotificationsDelivered = 0;
     private long _totalNotificationsFailed = 0;
     private long _totalNotificationsQueued = 0;
+    private readonly ConcurrentDictionary<string, long> _notificationTypeBreakdown = new();
     private readonly object _statsLock = new object();
 
     public UnifiedNotificationService(
@@ -94,6 +96,12 @@ public class UnifiedNotificationService : IUnifiedNotificationService
                 return false;
             }
 
+            // Increment sent counter for all successfully processed notifications
+            Interlocked.Increment(ref _totalNotificationsSent);
+
+            // Track notification type breakdown
+            _notificationTypeBreakdown.AddOrUpdate(request.NotificationType, 1, (key, value) => value + 1);
+
             // Determine delivery strategy
             var isUserOnline = await _connectionPool.IsUserOnlineAsync(request.UserId);
             
@@ -133,7 +141,6 @@ public class UnifiedNotificationService : IUnifiedNotificationService
             }
 
             // If no provider manager or queue available, just create database notification
-            Interlocked.Increment(ref _totalNotificationsSent);
             await RecordNotificationEventAsync("sent", request, true);
             return true;
         }
@@ -1046,6 +1053,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
                 DeliverySuccessRate = _totalNotificationsSent > 0
                     ? (double)_totalNotificationsDelivered / _totalNotificationsSent * 100
                     : 0,
+                NotificationTypeBreakdown = _notificationTypeBreakdown.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
                 LastUpdated = DateTime.UtcNow
             };
         }
