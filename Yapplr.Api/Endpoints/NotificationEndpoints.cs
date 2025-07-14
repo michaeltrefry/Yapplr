@@ -88,119 +88,123 @@ public static class NotificationEndpoints
         .Produces(200)
         .Produces(401);
 
-        // Test notification endpoint (Firebase + SignalR fallback)
-        notifications.MapPost("/test", async (ClaimsPrincipal user, ICompositeNotificationService notificationService) =>
+        // Test notification endpoints - only available in development
+        if (app.Environment.IsDevelopment())
         {
-            var userId = user.GetUserId(true);
-
-            var success = await notificationService.SendTestNotificationAsync(userId);
-
-            return Results.Ok(new {
-                success = success,
-                message = success ? "Test notification sent successfully" : "Failed to send test notification",
-                activeProvider = notificationService.ActiveProvider?.ProviderName ?? "None",
-                availableProviders = (await notificationService.GetProviderStatusAsync()).Select(kvp => new { name = kvp.Key, available = kvp.Value })
-            });
-        })
-        .WithName("TestNotification")
-        .WithSummary("Send a test notification using the composite service (Firebase with SignalR fallback)")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
-
-        // Test Firebase-specific notification endpoint
-        notifications.MapPost("/test-firebase", async (ClaimsPrincipal user, IFirebaseService firebaseService, IUserService userService) =>
-        {
-            var userId = user.GetUserId(true);
-            var currentUser = await userService.GetUserByIdAsync(userId);
-
-            if (currentUser?.FcmToken == null || string.IsNullOrEmpty(currentUser.FcmToken))
+            // Test notification endpoint (Firebase + SignalR fallback)
+            notifications.MapPost("/test", async (ClaimsPrincipal user, ICompositeNotificationService notificationService) =>
             {
-                return Results.BadRequest(new { error = "No FCM token found for user" });
-            }
+                var userId = user.GetUserId(true);
 
-            var success = await firebaseService.SendTestNotificationAsync(currentUser.FcmToken);
+                var success = await notificationService.SendTestNotificationAsync(userId);
 
-            return Results.Ok(new {
-                success = success,
-                message = success ? "Firebase test notification sent successfully" : "Failed to send Firebase test notification",
-                fcmTokenLength = currentUser.FcmToken.Length,
-                fcmTokenStart = currentUser.FcmToken.Substring(0, Math.Min(30, currentUser.FcmToken.Length)) + "..."
-            });
-        })
-        .WithName("TestFirebaseNotification")
-        .WithSummary("Send a test Firebase notification directly (for debugging)")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
+                return Results.Ok(new {
+                    success = success,
+                    message = success ? "Test notification sent successfully" : "Failed to send test notification",
+                    activeProvider = notificationService.ActiveProvider?.ProviderName ?? "None",
+                    availableProviders = (await notificationService.GetProviderStatusAsync()).Select(kvp => new { name = kvp.Key, available = kvp.Value })
+                });
+            })
+            .WithName("TestNotification")
+            .WithSummary("Send a test notification using the composite service (Firebase with SignalR fallback)")
+            .RequireAuthorization("ActiveUser")
+            .Produces(200)
+            .Produces(400)
+            .Produces(401);
 
-        // Test Firebase service with mock token (for simulator testing)
-        notifications.MapPost("/test-firebase-mock", async (IFirebaseService firebaseService) =>
-        {
-            // Use a mock Expo push token format for testing
-            var mockToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
-
-            var success = await firebaseService.SendTestNotificationAsync(mockToken);
-
-            return Results.Ok(new {
-                success = success,
-                message = success ? "Firebase test with mock token sent successfully" : "Firebase test with mock token failed",
-                mockToken = mockToken,
-                note = "This tests Firebase service functionality with a mock token (will fail to deliver but tests the service)"
-            });
-        })
-        .WithName("TestFirebaseMock")
-        .WithSummary("Test Firebase service with mock token (for simulator testing)")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(401);
-
-        // Test SignalR-specific notification endpoint
-        notifications.MapPost("/test-signalr", async (ClaimsPrincipal user, SignalRNotificationService signalRService) =>
-        {
-            var userId = user.GetUserId(true);
-
-            var success = await signalRService.SendTestNotificationAsync(userId);
-
-            return Results.Ok(new {
-                success = success,
-                message = success ? "SignalR test notification sent successfully" : "Failed to send SignalR test notification"
-            });
-        })
-        .WithName("TestSignalRNotification")
-        .WithSummary("Send a test SignalR notification directly (for debugging)")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
-
-        // Test Expo-specific notification endpoint
-        notifications.MapPost("/test-expo", async (ClaimsPrincipal user, ExpoNotificationService expoService, IUserService userService) =>
-        {
-            var userId = user.GetUserId(true);
-            var currentUser = await userService.GetUserByIdAsync(userId);
-
-            if (currentUser?.ExpoPushToken == null || string.IsNullOrEmpty(currentUser.ExpoPushToken))
+            // Test Firebase-specific notification endpoint
+            notifications.MapPost("/test-firebase", async (ClaimsPrincipal user, IFirebaseService firebaseService, IUserService userService) =>
             {
-                return Results.BadRequest(new { error = "No Expo push token found for user" });
-            }
+                var userId = user.GetUserId(true);
+                var currentUser = await userService.GetUserByIdAsync(userId);
 
-            var success = await expoService.SendTestNotificationAsync(userId);
+                if (currentUser?.FcmToken == null || string.IsNullOrEmpty(currentUser.FcmToken))
+                {
+                    return Results.BadRequest(new { error = "No FCM token found for user" });
+                }
 
-            return Results.Ok(new {
-                success = success,
-                message = success ? "Expo test notification sent successfully" : "Failed to send Expo test notification",
-                expoPushTokenLength = currentUser.ExpoPushToken.Length,
-                expoPushTokenStart = currentUser.ExpoPushToken.Substring(0, Math.Min(30, currentUser.ExpoPushToken.Length)) + "..."
-            });
-        })
-        .WithName("TestExpoNotification")
-        .WithSummary("Send a test Expo notification directly (for debugging)")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
+                var success = await firebaseService.SendTestNotificationAsync(currentUser.FcmToken);
+
+                return Results.Ok(new {
+                    success = success,
+                    message = success ? "Firebase test notification sent successfully" : "Failed to send Firebase test notification",
+                    fcmTokenLength = currentUser.FcmToken.Length,
+                    fcmTokenStart = currentUser.FcmToken.Substring(0, Math.Min(30, currentUser.FcmToken.Length)) + "..."
+                });
+            })
+            .WithName("TestFirebaseNotification")
+            .WithSummary("Send a test Firebase notification directly (for debugging)")
+            .RequireAuthorization("ActiveUser")
+            .Produces(200)
+            .Produces(400)
+            .Produces(401);
+
+            // Test Firebase service with mock token (for simulator testing)
+            notifications.MapPost("/test-firebase-mock", async (IFirebaseService firebaseService) =>
+            {
+                // Use a mock Expo push token format for testing
+                var mockToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
+
+                var success = await firebaseService.SendTestNotificationAsync(mockToken);
+
+                return Results.Ok(new {
+                    success = success,
+                    message = success ? "Firebase test with mock token sent successfully" : "Firebase test with mock token failed",
+                    mockToken = mockToken,
+                    note = "This tests Firebase service functionality with a mock token (will fail to deliver but tests the service)"
+                });
+            })
+            .WithName("TestFirebaseMock")
+            .WithSummary("Test Firebase service with mock token (for simulator testing)")
+            .RequireAuthorization("ActiveUser")
+            .Produces(200)
+            .Produces(401);
+
+            // Test SignalR-specific notification endpoint
+            notifications.MapPost("/test-signalr", async (ClaimsPrincipal user, SignalRNotificationService signalRService) =>
+            {
+                var userId = user.GetUserId(true);
+
+                var success = await signalRService.SendTestNotificationAsync(userId);
+
+                return Results.Ok(new {
+                    success = success,
+                    message = success ? "SignalR test notification sent successfully" : "Failed to send SignalR test notification"
+                });
+            })
+            .WithName("TestSignalRNotification")
+            .WithSummary("Send a test SignalR notification directly (for debugging)")
+            .RequireAuthorization("ActiveUser")
+            .Produces(200)
+            .Produces(400)
+            .Produces(401);
+
+            // Test Expo-specific notification endpoint
+            notifications.MapPost("/test-expo", async (ClaimsPrincipal user, ExpoNotificationService expoService, IUserService userService) =>
+            {
+                var userId = user.GetUserId(true);
+                var currentUser = await userService.GetUserByIdAsync(userId);
+
+                if (currentUser?.ExpoPushToken == null || string.IsNullOrEmpty(currentUser.ExpoPushToken))
+                {
+                    return Results.BadRequest(new { error = "No Expo push token found for user" });
+                }
+
+                var success = await expoService.SendTestNotificationAsync(userId);
+
+                return Results.Ok(new {
+                    success = success,
+                    message = success ? "Expo test notification sent successfully" : "Failed to send Expo test notification",
+                    expoPushTokenLength = currentUser.ExpoPushToken.Length,
+                    expoPushTokenStart = currentUser.ExpoPushToken.Substring(0, Math.Min(30, currentUser.ExpoPushToken.Length)) + "..."
+                });
+            })
+            .WithName("TestExpoNotification")
+            .WithSummary("Send a test Expo notification directly (for debugging)")
+            .RequireAuthorization("ActiveUser")
+            .Produces(200)
+            .Produces(400)
+            .Produces(401);
+        }
     }
 }

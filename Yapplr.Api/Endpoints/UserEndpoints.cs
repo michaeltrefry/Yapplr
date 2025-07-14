@@ -342,75 +342,83 @@ public static class UserEndpoints
         .Produces(400)
         .Produces(401);
 
-        users.MapGet("/debug-follow-status/{username}", async (string username, ClaimsPrincipal user, IUserService userService) =>
+        // Debug endpoints - only available in development
+        if (app.Environment.IsDevelopment())
         {
-            var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var profile = await userService.GetUserProfileAsync(username, currentUserId);
+            users.MapGet("/debug-follow-status/{username}", async (string username, ClaimsPrincipal user, IUserService userService) =>
+            {
+                var currentUserId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                var profile = await userService.GetUserProfileAsync(username, currentUserId);
 
-            if (profile == null)
-                return Results.NotFound();
+                if (profile == null)
+                    return Results.NotFound();
 
-            return Results.Ok(new {
-                username = profile.Username,
-                isFollowedByCurrentUser = profile.IsFollowedByCurrentUser,
-                hasPendingFollowRequest = profile.HasPendingFollowRequest,
-                requiresFollowApproval = profile.RequiresFollowApproval
-            });
-        })
-        .WithName("DebugFollowStatus")
-        .WithSummary("Debug follow status for a user")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(401)
-        .Produces(404);
+                return Results.Ok(new {
+                    username = profile.Username,
+                    isFollowedByCurrentUser = profile.IsFollowedByCurrentUser,
+                    hasPendingFollowRequest = profile.HasPendingFollowRequest,
+                    requiresFollowApproval = profile.RequiresFollowApproval
+                });
+            })
+            .WithName("DebugFollowStatus")
+            .WithSummary("Debug follow status for a user")
+            .RequireAuthorization("ActiveUser")
+            .Produces(200)
+            .Produces(401)
+            .Produces(404);
+        }
 
-        // Cache management endpoints (for testing and monitoring)
-        users.MapPost("/cache/clear", async (ICachingService cachingService) =>
+        // Cache management and demonstration endpoints - only available in development
+        if (app.Environment.IsDevelopment())
         {
-            await cachingService.ClearUserCacheAsync();
-            return Results.Ok(new { message = "User cache cleared successfully" });
-        })
-        .WithName("ClearUserCache")
-        .WithSummary("Clear all cached users")
-        .Produces(200);
+            // Cache management endpoints (for testing and monitoring)
+            users.MapPost("/cache/clear", async (ICachingService cachingService) =>
+            {
+                await cachingService.ClearUserCacheAsync();
+                return Results.Ok(new { message = "User cache cleared successfully" });
+            })
+            .WithName("ClearUserCache")
+            .WithSummary("Clear all cached users")
+            .Produces(200);
 
-        users.MapDelete("/cache/{userId}", async (int userId, ICachingService cachingService) =>
-        {
-            await cachingService.InvalidateUserByIdAsync(userId);
-            return Results.Ok(new { message = $"User {userId} removed from cache" });
-        })
-        .WithName("InvalidateUserCacheById")
-        .WithSummary("Remove a specific user from cache by ID")
-        .Produces(200);
+            users.MapDelete("/cache/{userId}", async (int userId, ICachingService cachingService) =>
+            {
+                await cachingService.InvalidateUserByIdAsync(userId);
+                return Results.Ok(new { message = $"User {userId} removed from cache" });
+            })
+            .WithName("InvalidateUserCacheById")
+            .WithSummary("Remove a specific user from cache by ID")
+            .Produces(200);
 
-        users.MapDelete("/cache/username/{username}", async (string username, ICachingService cachingService) =>
-        {
-            await cachingService.InvalidateUserByUsernameAsync(username);
-            return Results.Ok(new { message = $"User {username} removed from cache" });
-        })
-        .WithName("InvalidateUserCacheByUsername")
-        .WithSummary("Remove a specific user from cache by username")
-        .Produces(200);
+            users.MapDelete("/cache/username/{username}", async (string username, ICachingService cachingService) =>
+            {
+                await cachingService.InvalidateUserByUsernameAsync(username);
+                return Results.Ok(new { message = $"User {username} removed from cache" });
+            })
+            .WithName("InvalidateUserCacheByUsername")
+            .WithSummary("Remove a specific user from cache by username")
+            .Produces(200);
 
-        // Demonstration endpoints showing cached vs non-cached lookups
-        users.MapGet("/cached/{userId}", async (int userId, ICachingService cachingService, IServiceScopeFactory serviceScopeFactory) =>
-        {
-            var user = await cachingService.GetUserByIdAsync(userId, serviceScopeFactory);
-            return user == null ? Results.NotFound() : Results.Ok(user.ToDto());
-        })
-        .WithName("GetUserByIdCached")
-        .WithSummary("Get user by ID using cache service")
-        .Produces<UserDto>(200)
-        .Produces(404);
+            // Demonstration endpoints showing cached vs non-cached lookups
+            users.MapGet("/cached/{userId}", async (int userId, ICachingService cachingService, IServiceScopeFactory serviceScopeFactory) =>
+            {
+                var user = await cachingService.GetUserByIdAsync(userId, serviceScopeFactory);
+                return user == null ? Results.NotFound() : Results.Ok(user.ToDto());
+            })
+            .WithName("GetUserByIdCached")
+            .WithSummary("Get user by ID using cache service")
+            .Produces<UserDto>(200)
+            .Produces(404);
 
-        users.MapGet("/cached/username/{username}", async (string username, ICachingService cachingService, IServiceScopeFactory serviceScopeFactory) =>
-        {
-            var user = await cachingService.GetUserByUsernameAsync(username, serviceScopeFactory);
-            return user == null ? Results.NotFound() : Results.Ok(user.ToDto());
-        })
-        .WithName("GetUserByUsernameCached")
-        .WithSummary("Get user by username using cache service")
-        .Produces<UserDto>(200)
-        .Produces(404);
+            users.MapGet("/cached/username/{username}", async (string username, ICachingService cachingService, IServiceScopeFactory serviceScopeFactory) =>
+            {
+                var user = await cachingService.GetUserByUsernameAsync(username, serviceScopeFactory);
+                return user == null ? Results.NotFound() : Results.Ok(user.ToDto());
+            })
+            .WithName("GetUserByUsernameCached")
+            .WithSummary("Get user by username using cache service")
+            .Produces<UserDto>(200)
+            .Produces(404);
+        }
     }
 }

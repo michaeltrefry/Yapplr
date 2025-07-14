@@ -241,16 +241,21 @@ function MainStack() {
         component={HelpSupportScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="NotificationDebug"
-        component={NotificationDebugScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="NotificationTest"
-        component={NotificationTestScreen}
-        options={{ headerShown: false }}
-      />
+      {/* Debug/Test screens - only available in development */}
+      {__DEV__ && (
+        <>
+          <Stack.Screen
+            name="NotificationDebug"
+            component={NotificationDebugScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="NotificationTest"
+            component={NotificationTestScreen}
+            options={{ headerShown: false }}
+          />
+        </>
+      )}
       <Stack.Screen
         name="Notifications"
         component={NotificationsScreen}

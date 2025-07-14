@@ -1282,6 +1282,11 @@ For detailed configuration options, see [PLATFORM_SPECIFIC_NOTIFICATIONS.md](PLA
 - **CORS Configuration**: Properly configured for frontend development
 - **Input Validation**: Comprehensive validation on all endpoints
 - **Privacy Controls**: Robust privacy system with relationship-based filtering
+- **Environment-Based Security**: Test and debug endpoints are conditionally registered based on environment
+  - **Development-Only Endpoints**: Debug, test, and cache management endpoints only available in development
+  - **Production Security**: Test endpoints (`/api/notifications/test-*`, `/api/cqrs-test/*`, debug endpoints) are automatically disabled in production
+  - **Swagger/OpenAPI**: API documentation only accessible in development and staging environments
+  - **Mobile App Security**: Debug and test screens in mobile app only accessible in development builds
 
 ## 🚀 Deployment
 

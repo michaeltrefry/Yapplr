@@ -15,15 +15,18 @@ public static class WebApplicationExtensions
         // Configure forwarded headers for reverse proxy support (must be first)
         app.UseForwardedHeaders();
 
-        // Configure the HTTP request pipeline
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
+        // Configure Swagger/OpenAPI - only in development and staging
+        if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Yapplr API v1");
-            c.RoutePrefix = "swagger";
-        });
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Yapplr API v1");
+                c.RoutePrefix = "swagger";
+            });
+            app.MapOpenApi();
+        }
 
-        app.MapOpenApi();
         app.UseHttpsRedirection();
         
         // Use AllowAll CORS policy for development (temporary fix for Docker)
@@ -65,7 +68,12 @@ public static class WebApplicationExtensions
         app.MapContentEndpoints();
         app.MapAdminEndpoints();
         app.MapCorsConfigurationEndpoints();
-        app.MapCqrsTestEndpoints();
+
+        // Only register test endpoints in development environment
+        if (app.Environment.IsDevelopment())
+        {
+            app.MapCqrsTestEndpoints();
+        }
 
         return app;
     }

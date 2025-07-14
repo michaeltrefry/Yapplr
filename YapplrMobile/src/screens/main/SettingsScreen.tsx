@@ -59,37 +59,42 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Notifications</Text>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('NotificationDebug')}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, styles.orangeIconContainer]}>
-                <Ionicons name="bug-outline" size={20} color="#F97316" />
-              </View>
-              <View style={styles.menuItemText}>
-                <Text style={styles.menuItemTitle}>Debug Center</Text>
-                <Text style={styles.menuItemSubtitle}>Test notification functionality</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
+          {/* Debug/Test screens - only available in development */}
+          {__DEV__ && (
+            <>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('NotificationDebug')}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.iconContainer, styles.orangeIconContainer]}>
+                    <Ionicons name="bug-outline" size={20} color="#F97316" />
+                  </View>
+                  <View style={styles.menuItemText}>
+                    <Text style={styles.menuItemTitle}>Debug Center</Text>
+                    <Text style={styles.menuItemSubtitle}>Test notification functionality</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('NotificationTest')}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, styles.blueIconContainer]}>
-                <Ionicons name="notifications-outline" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.menuItemText}>
-                <Text style={styles.menuItemTitle}>Expo Push Test</Text>
-                <Text style={styles.menuItemSubtitle}>Test Expo push notifications</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('NotificationTest')}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.iconContainer, styles.blueIconContainer]}>
+                    <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+                  </View>
+                  <View style={styles.menuItemText}>
+                    <Text style={styles.menuItemTitle}>Expo Push Test</Text>
+                    <Text style={styles.menuItemSubtitle}>Test Expo push notifications</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <View style={styles.section}>
