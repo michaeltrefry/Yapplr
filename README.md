@@ -1218,10 +1218,7 @@ For detailed configuration options, see [PLATFORM_SPECIFIC_NOTIFICATIONS.md](PLA
 - `GET /api/tags/{tagName}/analytics` - Get detailed analytics for a specific hashtag
 - `GET /api/tags/{tagName}/usage` - Get hashtag usage over time (daily breakdown)
 
-### Link Preview System
-- `GET /api/link-previews?url={url}` - Get existing link preview by URL
-- `POST /api/link-previews` - Create or get link preview for a specific URL
-- `POST /api/link-previews/process` - Process and create link previews for URLs found in post content
+
 
 ### User Management
 - `GET /api/users/{username}` - Get user profile
