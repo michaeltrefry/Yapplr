@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
+using Yapplr.Api.Models.Analytics;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Utils;
 using Yapplr.Api.Common;
@@ -23,6 +24,7 @@ public class PostService : BaseService, IPostService
     private readonly ICountCacheService _countCache;
     private readonly ITrustScoreService _trustScoreService;
     private readonly ITrustBasedModerationService _trustBasedModerationService;
+    private readonly IAnalyticsService _analyticsService;
 
     public PostService(
         YapplrDbContext context,
@@ -36,6 +38,7 @@ public class PostService : BaseService, IPostService
         ICountCacheService countCache,
         ITrustScoreService trustScoreService,
         ITrustBasedModerationService trustBasedModerationService,
+        IAnalyticsService analyticsService,
         ILogger<PostService> logger) : base(context, logger)
     {
         _httpContextAccessor = httpContextAccessor;
@@ -48,6 +51,7 @@ public class PostService : BaseService, IPostService
         _countCache = countCache;
         _trustScoreService = trustScoreService;
         _trustBasedModerationService = trustBasedModerationService;
+        _analyticsService = analyticsService;
     }
 
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
@@ -584,6 +588,115 @@ public class PostService : BaseService, IPostService
         return true;
     }
 
+    public async Task<bool> LikeCommentAsync(int commentId, int userId)
+    {
+        // Check trust-based permissions
+        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.LikeContent))
+        {
+            throw new InvalidOperationException("Insufficient trust score to like content");
+        }
+
+        // Check if already liked
+        if (await _context.CommentLikes.AnyAsync(cl => cl.CommentId == commentId && cl.UserId == userId))
+            return false;
+
+        var commentLike = new CommentLike
+        {
+            CommentId = commentId,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.CommentLikes.Add(commentLike);
+        await _context.SaveChangesAsync();
+
+        // Invalidate comment like count cache
+        await _countCache.InvalidateCommentCountsAsync(commentId);
+
+        // Get the comment owner to create notification
+        var comment = await _context.Comments.FindAsync(commentId);
+        if (comment != null)
+        {
+            await _notificationService.CreateCommentLikeNotificationAsync(comment.UserId, userId, comment.PostId, commentId);
+        }
+
+        // Update trust score for like given
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.LikeGiven,
+                "comment",
+                commentId,
+                "Liked a comment"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for comment like by user {UserId}", userId);
+            // Don't fail the like action if trust score update fails
+        }
+
+        // Track analytics for comment like
+        try
+        {
+            await _analyticsService.TrackContentEngagementAsync(
+                userId,
+                ContentType.Comment,
+                commentId,
+                EngagementType.Like,
+                comment?.UserId,
+                "comment_like_button",
+                "User liked a comment"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to track analytics for comment like by user {UserId}", userId);
+            // Don't fail the like action if analytics tracking fails
+        }
+
+        return true;
+    }
+
+    public async Task<bool> UnlikeCommentAsync(int commentId, int userId)
+    {
+        var commentLike = await _context.CommentLikes.FirstOrDefaultAsync(cl => cl.CommentId == commentId && cl.UserId == userId);
+
+        if (commentLike == null)
+            return false;
+
+        // Get comment info before removing the like for analytics
+        var comment = await _context.Comments.FindAsync(commentId);
+
+        _context.CommentLikes.Remove(commentLike);
+        await _context.SaveChangesAsync();
+
+        // Invalidate comment like count cache
+        await _countCache.InvalidateCommentCountsAsync(commentId);
+
+        // Track analytics for comment unlike
+        try
+        {
+            await _analyticsService.TrackContentEngagementAsync(
+                userId,
+                ContentType.Comment,
+                commentId,
+                EngagementType.Unlike,
+                comment?.UserId,
+                "comment_like_button",
+                "User unliked a comment"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to track analytics for comment unlike by user {UserId}", userId);
+            // Don't fail the unlike action if analytics tracking fails
+        }
+
+        return true;
+    }
+
     public async Task<bool> RepostAsync(int postId, int userId)
     {
         // Check if already reposted
@@ -706,7 +819,11 @@ public class PostService : BaseService, IPostService
             .Include(c => c.User)
             .FirstAsync(c => c.Id == comment.Id);
 
-        return createdComment.MapToCommentDto(_httpContextAccessor.HttpContext);
+        // Get like information for the new comment
+        var likeCount = await _countCache.GetCommentLikeCountAsync(comment.Id);
+        var isLikedByCurrentUser = await _countCache.HasUserLikedCommentAsync(comment.Id, userId);
+
+        return createdComment.MapToCommentDto(userId, likeCount, isLikedByCurrentUser, _httpContextAccessor.HttpContext);
     }
 
     public async Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId)
@@ -717,6 +834,7 @@ public class PostService : BaseService, IPostService
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
+        // Map comments without like information (for unauthenticated users)
         return comments.Select(c => c.MapToCommentDto(_httpContextAccessor.HttpContext));
     }
 
@@ -731,9 +849,17 @@ public class PostService : BaseService, IPostService
         // Filter out comments from blocked users if user is authenticated
         var blockedUserIds = await GetBlockedUserIdsAsync(currentUserId);
         comments = comments.Where(c => !blockedUserIds.Contains(c.UserId)).ToList();
-    
 
-        return comments.Select(c => c.MapToCommentDto(_httpContextAccessor.HttpContext));
+        // Map comments with like information for authenticated users
+        var commentDtos = new List<CommentDto>();
+        foreach (var comment in comments)
+        {
+            var likeCount = await _countCache.GetCommentLikeCountAsync(comment.Id);
+            var isLikedByCurrentUser = await _countCache.HasUserLikedCommentAsync(comment.Id, currentUserId);
+            commentDtos.Add(comment.MapToCommentDto(currentUserId, likeCount, isLikedByCurrentUser, _httpContextAccessor.HttpContext));
+        }
+
+        return commentDtos;
     }
 
     public async Task<bool> DeleteCommentAsync(int commentId, int userId)
@@ -808,7 +934,11 @@ public class PostService : BaseService, IPostService
         // Perform content moderation analysis on updated comment
         await ProcessCommentModerationAsync(comment.Id, updateDto.Content, userId);
 
-        return comment.MapToCommentDto(_httpContextAccessor.HttpContext);
+        // Get like information for the updated comment
+        var likeCount = await _countCache.GetCommentLikeCountAsync(comment.Id);
+        var isLikedByCurrentUser = await _countCache.HasUserLikedCommentAsync(comment.Id, userId);
+
+        return comment.MapToCommentDto(userId, likeCount, isLikedByCurrentUser, _httpContextAccessor.HttpContext);
     }
 
     private new async Task<List<int>> GetBlockedUserIdsAsync(int userId)

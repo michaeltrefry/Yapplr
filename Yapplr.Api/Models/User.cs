@@ -75,6 +75,7 @@ public class User : IEntity
     // Navigation properties
     public ICollection<Post> Posts { get; set; } = new List<Post>();
     public ICollection<Like> Likes { get; set; } = new List<Like>();
+    public ICollection<CommentLike> CommentLikes { get; set; } = new List<CommentLike>();
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<Repost> Reposts { get; set; } = new List<Repost>();
 

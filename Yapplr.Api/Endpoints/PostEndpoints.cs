@@ -207,9 +207,22 @@ public static class PostEndpoints
         .Produces(400)
         .Produces(401);
 
-        posts.MapGet("/{id:int}/comments", async (int id, IPostService postService) =>
+        posts.MapGet("/{id:int}/comments", async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
-            var comments = await postService.GetPostCommentsAsync(id);
+            var userId = user.GetUserIdOrNull(); // Returns int? - null if not authenticated
+
+            IEnumerable<CommentDto> comments;
+            if (userId.HasValue)
+            {
+                // Authenticated user - include like information
+                comments = await postService.GetPostCommentsAsync(id, userId.Value);
+            }
+            else
+            {
+                // Unauthenticated user - no like information
+                comments = await postService.GetPostCommentsAsync(id);
+            }
+
             return Results.Ok(comments);
         })
         .WithName("GetPostComments")
@@ -244,5 +257,34 @@ public static class PostEndpoints
         .Produces(204)
         .Produces(401)
         .Produces(404);
+
+        // Comment likes
+        posts.MapPost("/{postId:int}/comments/{commentId:int}/like", async (int postId, int commentId, ClaimsPrincipal user, IPostService postService) =>
+        {
+            var userId = user.GetUserId(true);
+            var success = await postService.LikeCommentAsync(commentId, userId);
+
+            return success ? Results.Ok() : Results.BadRequest(new { message = "Already liked" });
+        })
+        .WithName("LikeComment")
+        .WithSummary("Like a comment")
+        .RequireAuthorization("ActiveUser")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
+
+        posts.MapDelete("/{postId:int}/comments/{commentId:int}/like", async (int postId, int commentId, ClaimsPrincipal user, IPostService postService) =>
+        {
+            var userId = user.GetUserId(true);
+            var success = await postService.UnlikeCommentAsync(commentId, userId);
+
+            return success ? Results.Ok() : Results.BadRequest(new { message = "Not liked" });
+        })
+        .WithName("UnlikeComment")
+        .WithSummary("Unlike a comment")
+        .RequireAuthorization("ActiveUser")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
     }
 }

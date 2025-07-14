@@ -2,12 +2,12 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { postApi } from '@/lib/api';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatNumber } from '@/lib/utils';
 import { Comment } from '@/types';
 import Link from 'next/link';
 import UserAvatar from './UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trash2, Edit3, Reply, Flag } from 'lucide-react';
+import { Trash2, Edit3, Reply, Flag, Heart } from 'lucide-react';
 import { useState } from 'react';
 import { MentionHighlight } from '@/utils/mentionUtils';
 import ReportModal from './ReportModal';
@@ -88,6 +88,18 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
     },
   });
 
+  const likeMutation = useMutation({
+    mutationFn: () =>
+      comment.isLikedByCurrentUser
+        ? postApi.unlikeComment(postId, comment.id)
+        : postApi.likeComment(postId, comment.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['post', postId] });
+    },
+  });
+
   const handleEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editContent.trim()) return;
@@ -101,6 +113,10 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
 
   const handleDelete = () => {
     deleteMutation.mutate();
+  };
+
+  const handleLike = () => {
+    likeMutation.mutate();
   };
 
   const isOwner = user && user.id === comment.user.id;
@@ -124,49 +140,6 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
             {formatDate(comment.createdAt)}
             {comment.isEdited && <span className="ml-1">(edited)</span>}
           </span>
-          <div className="ml-auto flex space-x-1">
-            {/* Reply button for all users */}
-            {onReply && (
-              <button
-                onClick={() => onReply(comment.user.username)}
-                className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
-                title="Reply to comment"
-              >
-                <Reply className="w-3 h-3" />
-              </button>
-            )}
-            {/* Report button for other users' comments */}
-            {!isOwner && (
-              <button
-                onClick={() => setShowReportModal(true)}
-                className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
-                title="Report comment"
-              >
-                <Flag className="w-3 h-3" />
-              </button>
-            )}
-            {/* Edit and delete buttons only for owner */}
-            {isOwner && (
-              <>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
-                  title="Edit comment"
-                  disabled={editMutation.isPending || isEditing}
-                >
-                  <Edit3 className="w-3 h-3" />
-                </button>
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
-                  title="Delete comment"
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </>
-            )}
-          </div>
         </div>
 
         {/* Comment Text */}
@@ -204,6 +177,81 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
             </p>
           )}
         </div>
+
+        {/* Action Bar - only show when not editing */}
+        {!isEditing && (
+          <div className="flex items-center justify-between mt-2 pt-2">
+            <div className="flex space-x-4">
+              {/* Like Button */}
+              <button
+                onClick={handleLike}
+                disabled={likeMutation.isPending}
+                className={`flex items-center space-x-1 transition-colors group ${
+                  comment.isLikedByCurrentUser
+                    ? 'text-red-500'
+                    : 'text-gray-500 hover:text-red-500'
+                }`}
+              >
+                <div className="p-1 rounded-full group-hover:bg-red-50">
+                  <Heart
+                    className={`w-4 h-4 ${comment.isLikedByCurrentUser ? 'fill-current' : ''}`}
+                  />
+                </div>
+                <span className="text-xs">{formatNumber(comment.likeCount)}</span>
+              </button>
+
+              {/* Reply Button */}
+              {onReply && (
+                <button
+                  onClick={() => onReply(comment.user.username)}
+                  className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors group"
+                  title="Reply to comment"
+                >
+                  <div className="p-1 rounded-full group-hover:bg-blue-50">
+                    <Reply className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs">Reply</span>
+                </button>
+              )}
+
+              {/* Report Button - only for other users' comments */}
+              {!isOwner && (
+                <button
+                  onClick={() => setShowReportModal(true)}
+                  className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors group"
+                  title="Report comment"
+                >
+                  <div className="p-1 rounded-full group-hover:bg-red-50">
+                    <Flag className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs">Report</span>
+                </button>
+              )}
+            </div>
+
+            {/* Owner Actions */}
+            {isOwner && (
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                  title="Edit comment"
+                  disabled={editMutation.isPending}
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                  title="Delete comment"
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}

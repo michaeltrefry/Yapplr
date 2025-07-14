@@ -6,5 +6,7 @@ public record CommentDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     UserDto User,
-    bool IsEdited = false
+    bool IsEdited = false,
+    int LikeCount = 0,
+    bool IsLikedByCurrentUser = false
 );

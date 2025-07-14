@@ -38,7 +38,12 @@ public interface INotificationService
     /// Creates a like notification
     /// </summary>
     Task CreateLikeNotificationAsync(int likedUserId, int likingUserId, int postId);
-    
+
+    /// <summary>
+    /// Creates a comment like notification
+    /// </summary>
+    Task CreateCommentLikeNotificationAsync(int commentOwnerId, int likingUserId, int postId, int commentId);
+
     /// <summary>
     /// Creates a repost notification
     /// </summary>

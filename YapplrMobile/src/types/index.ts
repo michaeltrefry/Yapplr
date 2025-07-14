@@ -153,6 +153,8 @@ export interface Comment {
   updatedAt: string;
   user: User;
   isEdited: boolean;
+  likeCount: number;
+  isLikedByCurrentUser: boolean;
 }
 
 export interface CreateCommentData {
@@ -436,6 +438,8 @@ export interface YapplrApi {
     getUserTimeline: (userId: number, page: number, limit: number) => Promise<TimelineItem[]>;
     getComments: (postId: number) => Promise<Comment[]>;
     addComment: (postId: number, data: CreateCommentData) => Promise<Comment>;
+    likeComment: (postId: number, commentId: number) => Promise<void>;
+    unlikeComment: (postId: number, commentId: number) => Promise<void>;
     updateComment: (commentId: number, data: UpdateCommentData) => Promise<Comment>;
     deleteComment: (commentId: number) => Promise<void>;
   };

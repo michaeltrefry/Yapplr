@@ -124,9 +124,11 @@ The API will be available at:
 
 ### Comments
 - `POST /api/posts/{id}/comments` - Add comment to yap with automatic mention detection (authenticated)
-- `GET /api/posts/{id}/comments` - Get yap comments
+- `GET /api/posts/{id}/comments` - Get yap comments with like information for authenticated users
 - `PUT /api/posts/comments/{commentId}` - Update comment (authenticated, own comments only)
 - `DELETE /api/posts/comments/{commentId}` - Delete comment (authenticated, own comments only)
+- `POST /api/posts/{postId}/comments/{commentId}/like` - Like a comment (authenticated)
+- `DELETE /api/posts/{postId}/comments/{commentId}/like` - Unlike a comment (authenticated)
 
 ### Notifications
 - `GET /api/notifications` - Get user notifications (paginated, 25 per page)

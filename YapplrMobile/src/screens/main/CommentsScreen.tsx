@@ -34,15 +34,17 @@ type CommentsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Com
 // CommentItem component with delete functionality
 interface CommentItemProps {
   comment: Comment;
+  postId: number;
   getImageUrl: (fileName: string) => string;
   onDelete: () => void;
 }
 
-function CommentItem({ comment, getImageUrl, onDelete }: CommentItemProps) {
+function CommentItem({ comment, postId, getImageUrl, onDelete }: CommentItemProps) {
   const { user, api } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
 
   const isOwner = user && user.id === comment.user.id;
 
@@ -59,6 +61,27 @@ function CommentItem({ comment, getImageUrl, onDelete }: CommentItemProps) {
       Alert.alert('Error', 'Failed to delete comment. Please try again.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!user) return;
+
+    setIsLiking(true);
+    try {
+      if (comment.isLikedByCurrentUser) {
+        await api.posts.unlikeComment(postId, comment.id);
+      } else {
+        await api.posts.likeComment(postId, comment.id);
+      }
+      // Note: In a real app, you'd want to update the comment state here
+      // For now, we'll rely on the parent component to refresh
+      onDelete(); // This triggers a refresh of comments
+    } catch (error) {
+      console.error('Error liking comment:', error);
+      Alert.alert('Failed to like comment. Please try again.');
+    } finally {
+      setIsLiking(false);
     }
   };
 
@@ -87,8 +110,39 @@ function CommentItem({ comment, getImageUrl, onDelete }: CommentItemProps) {
             {comment.isEdited && <Text style={commentStyles.editedText}> (edited)</Text>}
           </Text>
         </View>
-        <View style={commentStyles.actionButtons}>
-          {/* Report button - only show for other users' comments */}
+      </View>
+      <Text style={commentStyles.commentContent}>{comment.content}</Text>
+
+      {/* Action Bar */}
+      <View style={commentStyles.actionBar}>
+        <View style={commentStyles.leftActions}>
+          {/* Like Button */}
+          <TouchableOpacity
+            style={commentStyles.actionButton}
+            onPress={handleLike}
+            disabled={isLiking}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={comment.isLikedByCurrentUser ? "heart" : "heart-outline"}
+              size={16}
+              color={comment.isLikedByCurrentUser ? "#EF4444" : "#6B7280"}
+            />
+            <Text style={[commentStyles.actionText, comment.isLikedByCurrentUser && { color: '#EF4444' }]}>
+              {comment.likeCount}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Reply Button */}
+          <TouchableOpacity
+            style={commentStyles.actionButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chatbubble-outline" size={16} color="#6B7280" />
+            <Text style={commentStyles.actionText}>Reply</Text>
+          </TouchableOpacity>
+
+          {/* Report Button - only for other users' comments */}
           {!isOwner && (
             <TouchableOpacity
               style={commentStyles.actionButton}
@@ -96,10 +150,14 @@ function CommentItem({ comment, getImageUrl, onDelete }: CommentItemProps) {
               activeOpacity={0.7}
             >
               <Ionicons name="flag-outline" size={16} color="#6B7280" />
+              <Text style={commentStyles.actionText}>Report</Text>
             </TouchableOpacity>
           )}
-          {/* Delete button - only show for own comments */}
-          {isOwner && (
+        </View>
+
+        {/* Owner Actions */}
+        {isOwner && (
+          <View style={commentStyles.rightActions}>
             <TouchableOpacity
               style={commentStyles.actionButton}
               onPress={() => setShowDeleteConfirm(true)}
@@ -107,10 +165,9 @@ function CommentItem({ comment, getImageUrl, onDelete }: CommentItemProps) {
             >
               <Ionicons name="trash-outline" size={16} color="#EF4444" />
             </TouchableOpacity>
-          )}
-        </View>
+          </View>
+        )}
       </View>
-      <Text style={commentStyles.commentContent}>{comment.content}</Text>
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -247,10 +304,11 @@ export default function CommentsScreen() {
   const renderComment = useCallback(({ item }: { item: Comment }) => (
     <CommentItem
       comment={item}
+      postId={post.id}
       getImageUrl={getImageUrl}
       onDelete={loadComments}
     />
-  ), [getImageUrl, loadComments]);
+  ), [getImageUrl, loadComments, post.id]);
 
   const renderHeader = useMemo(() => (
     <View style={styles.postContainer}>
@@ -560,9 +618,33 @@ const commentStyles = StyleSheet.create({
     gap: 8,
   },
   actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 8,
     borderRadius: 16,
     backgroundColor: '#F9FAFB',
+    gap: 4,
+  },
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginLeft: 44,
+    marginTop: 8,
+    paddingTop: 8,
+  },
+  leftActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  rightActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   modalOverlay: {
     flex: 1,

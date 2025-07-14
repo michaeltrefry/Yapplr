@@ -73,7 +73,12 @@ public interface IUnifiedNotificationService
     /// Sends a like notification
     /// </summary>
     Task SendLikeNotificationAsync(int userId, string likerUsername, int postId);
-    
+
+    /// <summary>
+    /// Sends a comment like notification
+    /// </summary>
+    Task SendCommentLikeNotificationAsync(int userId, string likerUsername, int postId, int commentId);
+
     /// <summary>
     /// Sends a repost notification
     /// </summary>

@@ -121,7 +121,7 @@ public static class MappingUtilities
     }
 
     /// <summary>
-    /// Map Comment to CommentDto
+    /// Map Comment to CommentDto (without like information)
     /// </summary>
     public static CommentDto MapToCommentDto(this Comment comment, HttpContext? httpContext = null)
     {
@@ -134,7 +134,29 @@ public static class MappingUtilities
             comment.CreatedAt,
             comment.UpdatedAt,
             userDto,
-            isEdited
+            isEdited,
+            0, // LikeCount - will be 0 when not provided
+            false // IsLikedByCurrentUser - will be false when not provided
+        );
+    }
+
+    /// <summary>
+    /// Map Comment to CommentDto with like information
+    /// </summary>
+    public static CommentDto MapToCommentDto(this Comment comment, int? currentUserId, int likeCount, bool isLikedByCurrentUser, HttpContext? httpContext = null)
+    {
+        var userDto = comment.User.MapToUserDto();
+        var isEdited = IsEdited(comment.CreatedAt, comment.UpdatedAt);
+
+        return new CommentDto(
+            comment.Id,
+            comment.Content,
+            comment.CreatedAt,
+            comment.UpdatedAt,
+            userDto,
+            isEdited,
+            likeCount,
+            isLikedByCurrentUser
         );
     }
 

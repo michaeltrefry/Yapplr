@@ -268,6 +268,14 @@ export const postApi = {
     await api.delete(`/posts/${id}/like`);
   },
 
+  likeComment: async (postId: number, commentId: number): Promise<void> => {
+    await api.post(`/posts/${postId}/comments/${commentId}/like`);
+  },
+
+  unlikeComment: async (postId: number, commentId: number): Promise<void> => {
+    await api.delete(`/posts/${postId}/comments/${commentId}/like`);
+  },
+
   repost: async (id: number): Promise<void> => {
     await api.post(`/posts/${id}/repost`);
   },

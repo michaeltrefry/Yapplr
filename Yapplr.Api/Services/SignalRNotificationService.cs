@@ -355,6 +355,38 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
         }
     }
 
+    public async Task<bool> SendCommentLikeNotificationAsync(int userId, string likerUsername, int postId, int commentId)
+    {
+        try
+        {
+            var title = "New Like";
+            var body = $"@{likerUsername} liked your comment";
+            var data = new Dictionary<string, string>
+            {
+                ["type"] = "comment_like",
+                ["postId"] = postId.ToString(),
+                ["commentId"] = commentId.ToString(),
+                ["likerUsername"] = likerUsername
+            };
+
+            await _hubContext.SendNotificationToUserAsync(
+                userId,
+                "comment_like",
+                title,
+                body,
+                data
+            );
+
+            _logger.LogInformation("SignalR comment like notification sent to user {UserId} from {LikerUsername}", userId, likerUsername);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send SignalR comment like notification to user {UserId}", userId);
+            return false;
+        }
+    }
+
     public async Task<bool> SendRepostNotificationAsync(int userId, string reposterUsername, int postId)
     {
         try

@@ -94,6 +94,29 @@ public class CountCacheService : ICountCacheService
         }, PostCountExpiration);
     }
 
+    // Comment counts
+    public async Task<int> GetCommentLikeCountAsync(int commentId)
+    {
+        var key = $"count:comment:likes:{commentId}";
+        return await _cache.GetOrSetValueAsync(key, async () =>
+        {
+            var count = await _context.CommentLikes.CountAsync(cl => cl.CommentId == commentId);
+            _logger.LogDebug("Calculated like count for comment {CommentId}: {Count}", commentId, count);
+            return count;
+        }, PostCountExpiration);
+    }
+
+    public async Task<bool> HasUserLikedCommentAsync(int commentId, int userId)
+    {
+        var key = $"user:liked:comment:{userId}:{commentId}";
+        return await _cache.GetOrSetValueAsync(key, async () =>
+        {
+            var hasLiked = await _context.CommentLikes.AnyAsync(cl => cl.CommentId == commentId && cl.UserId == userId);
+            _logger.LogDebug("Checked if user {UserId} liked comment {CommentId}: {HasLiked}", userId, commentId, hasLiked);
+            return hasLiked;
+        }, PostCountExpiration);
+    }
+
     // Notification counts
     public async Task<int> GetUnreadNotificationCountAsync(int userId)
     {
@@ -205,6 +228,13 @@ public class CountCacheService : ICountCacheService
         await _cache.RemoveAsync($"count:comments:{postId}");
         await _cache.RemoveAsync($"count:reposts:{postId}");
         _logger.LogDebug("Invalidated post counts for post {PostId}", postId);
+    }
+
+    public async Task InvalidateCommentCountsAsync(int commentId)
+    {
+        await _cache.RemoveAsync($"count:comment:likes:{commentId}");
+        await _cache.RemoveByPatternAsync($"user:liked:comment:*:{commentId}");
+        _logger.LogDebug("Invalidated comment counts for comment {CommentId}", commentId);
     }
 
     public async Task InvalidateFollowCountsAsync(int followerId, int followingId)

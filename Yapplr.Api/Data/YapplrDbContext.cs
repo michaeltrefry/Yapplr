@@ -15,6 +15,7 @@ public class YapplrDbContext : DbContext
     public DbSet<PostMedia> PostMedia { get; set; }
     public DbSet<Like> Likes { get; set; }
     public DbSet<Comment> Comments { get; set; }
+    public DbSet<CommentLike> CommentLikes { get; set; }
     public DbSet<Repost> Reposts { get; set; }
     public DbSet<Follow> Follows { get; set; }
     public DbSet<FollowRequest> FollowRequests { get; set; }
@@ -143,7 +144,22 @@ public class YapplrDbContext : DbContext
             // Performance indexes for comment queries
             entity.HasIndex(e => new { e.PostId, e.CreatedAt }); // Comments for a post ordered by date
         });
-        
+
+        // CommentLike configuration
+        modelBuilder.Entity<CommentLike>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.CommentId }).IsUnique(); // Prevent duplicate likes
+            entity.HasOne(e => e.User)
+                  .WithMany(e => e.CommentLikes)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Comment)
+                  .WithMany(e => e.CommentLikes)
+                  .HasForeignKey(e => e.CommentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // Repost configuration
         modelBuilder.Entity<Repost>(entity =>
         {

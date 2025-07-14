@@ -14,7 +14,11 @@ public interface ICountCacheService
     Task<int> GetLikeCountAsync(int postId);
     Task<int> GetCommentCountAsync(int postId);
     Task<int> GetRepostCountAsync(int postId);
-    
+
+    // Comment counts
+    Task<int> GetCommentLikeCountAsync(int commentId);
+    Task<bool> HasUserLikedCommentAsync(int commentId, int userId);
+
     // Notification counts
     Task<int> GetUnreadNotificationCountAsync(int userId);
     Task<int> GetUnreadMessageCountAsync(int userId);
@@ -26,6 +30,7 @@ public interface ICountCacheService
     // Cache invalidation
     Task InvalidateUserCountsAsync(int userId);
     Task InvalidatePostCountsAsync(int postId);
+    Task InvalidateCommentCountsAsync(int commentId);
     Task InvalidateFollowCountsAsync(int followerId, int followingId);
     Task InvalidateNotificationCountsAsync(int userId);
     Task InvalidateTagCountsAsync(int tagId);

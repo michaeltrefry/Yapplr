@@ -171,6 +171,8 @@ export interface Comment {
   updatedAt: string;
   user: User;
   isEdited: boolean;
+  likeCount: number;
+  isLikedByCurrentUser: boolean;
 }
 
 export interface FollowResponse {

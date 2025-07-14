@@ -26,4 +26,8 @@ public interface IPostService
     Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId);
     Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId, int currentUserId);
     Task<bool> DeleteCommentAsync(int commentId, int userId);
+
+    // Comment likes
+    Task<bool> LikeCommentAsync(int commentId, int userId);
+    Task<bool> UnlikeCommentAsync(int commentId, int userId);
 }

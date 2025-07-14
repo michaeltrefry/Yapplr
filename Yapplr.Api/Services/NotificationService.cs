@@ -233,6 +233,41 @@ public class NotificationService : INotificationService
         await _notificationService.SendLikeNotificationAsync(likedUserId, likingUser.Username, postId);
     }
 
+    public async Task CreateCommentLikeNotificationAsync(int commentOwnerId, int likingUserId, int postId, int commentId)
+    {
+        // Don't notify if user likes their own comment
+        if (commentOwnerId == likingUserId)
+            return;
+
+        // Check if user has blocked the liking user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == commentOwnerId && b.BlockedId == likingUserId);
+
+        if (isBlocked)
+            return;
+
+        var likingUser = await _context.Users.FindAsync(likingUserId);
+        if (likingUser == null)
+            return;
+
+        var notification = new Notification
+        {
+            Type = NotificationType.Like,
+            Message = $"@{likingUser.Username} liked your comment",
+            UserId = commentOwnerId,
+            ActorUserId = likingUserId,
+            PostId = postId,
+            CommentId = commentId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification (Firebase with SignalR fallback)
+        await _notificationService.SendCommentLikeNotificationAsync(commentOwnerId, likingUser.Username, postId, commentId);
+    }
+
     public async Task CreateRepostNotificationAsync(int originalUserId, int repostingUserId, int postId)
     {
         // Don't notify if user reposts their own post
@@ -490,7 +525,9 @@ public class NotificationService : INotificationService
                 notification.Comment.CreatedAt,
                 notification.Comment.UpdatedAt,
                 notification.Comment.User.ToDto(),
-                notification.Comment.UpdatedAt > notification.Comment.CreatedAt.AddMinutes(1) // IsEdited
+                notification.Comment.UpdatedAt > notification.Comment.CreatedAt.AddMinutes(1), // IsEdited
+                0, // LikeCount - not needed for notifications
+                false // IsLikedByCurrentUser - not needed for notifications
             );
 
             // If this is a comment mention and we don't have post info yet, get it from the comment

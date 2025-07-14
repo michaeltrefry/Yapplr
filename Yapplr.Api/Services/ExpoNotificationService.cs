@@ -225,6 +225,21 @@ public class ExpoNotificationService : IRealtimeNotificationProvider
         return await SendNotificationAsync(userId, title, body, data);
     }
 
+    public async Task<bool> SendCommentLikeNotificationAsync(int userId, string likerUsername, int postId, int commentId)
+    {
+        var title = "New Like";
+        var body = $"@{likerUsername} liked your comment";
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "comment_like",
+            ["postId"] = postId.ToString(),
+            ["commentId"] = commentId.ToString(),
+            ["likerUsername"] = likerUsername
+        };
+
+        return await SendNotificationAsync(userId, title, body, data);
+    }
+
     public async Task<bool> SendCommentNotificationAsync(int userId, string commenterUsername, int postId, int commentId)
     {
         var title = "New Comment";

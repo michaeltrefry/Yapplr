@@ -914,6 +914,26 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         await SendNotificationAsync(request);
     }
 
+    public async Task SendCommentLikeNotificationAsync(int userId, string likerUsername, int postId, int commentId)
+    {
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "comment_like",
+            Title = "Comment Liked",
+            Body = $"@{likerUsername} liked your comment",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "comment_like",
+                ["postId"] = postId.ToString(),
+                ["commentId"] = commentId.ToString(),
+                ["likerUsername"] = likerUsername
+            }
+        };
+
+        await SendNotificationAsync(request);
+    }
+
     public async Task SendRepostNotificationAsync(int userId, string reposterUsername, int postId)
     {
         var request = new NotificationRequest

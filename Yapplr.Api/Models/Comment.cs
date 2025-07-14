@@ -39,6 +39,7 @@ public class Comment : IUserOwnedEntity
     // Navigation properties
     public User User { get; set; } = null!;
     public Post Post { get; set; } = null!;
+    public ICollection<CommentLike> CommentLikes { get; set; } = new List<CommentLike>();
     public ICollection<CommentSystemTag> CommentSystemTags { get; set; } = new List<CommentSystemTag>();
     public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
 }

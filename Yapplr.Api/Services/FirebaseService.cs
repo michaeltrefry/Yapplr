@@ -426,6 +426,27 @@ public class FirebaseService : IFirebaseService
         return await SendNotificationAsync(user.FcmToken, title, body, data);
     }
 
+    public async Task<bool> SendCommentLikeNotificationAsync(int userId, string likerUsername, int postId, int commentId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null || string.IsNullOrEmpty(user.FcmToken))
+        {
+            return false;
+        }
+
+        var title = "Comment Liked";
+        var body = $"@{likerUsername} liked your comment";
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "comment_like",
+            ["postId"] = postId.ToString(),
+            ["commentId"] = commentId.ToString(),
+            ["likerUsername"] = likerUsername
+        };
+
+        return await SendNotificationAsync(user.FcmToken, title, body, data);
+    }
+
     public async Task<bool> SendRepostNotificationAsync(int userId, string reposterUsername, int postId)
     {
         var user = await _context.Users.FindAsync(userId);

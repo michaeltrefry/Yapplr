@@ -66,6 +66,11 @@ public interface IRealtimeNotificationProvider
     Task<bool> SendLikeNotificationAsync(int userId, string likerUsername, int postId);
 
     /// <summary>
+    /// Sends a comment like notification
+    /// </summary>
+    Task<bool> SendCommentLikeNotificationAsync(int userId, string likerUsername, int postId, int commentId);
+
+    /// <summary>
     /// Sends a repost notification
     /// </summary>
     Task<bool> SendRepostNotificationAsync(int userId, string reposterUsername, int postId);

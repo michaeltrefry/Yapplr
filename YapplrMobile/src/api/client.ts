@@ -152,6 +152,14 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         return response.data;
       },
 
+      likeComment: async (postId: number, commentId: number): Promise<void> => {
+        await client.post(`/api/posts/${postId}/comments/${commentId}/like`);
+      },
+
+      unlikeComment: async (postId: number, commentId: number): Promise<void> => {
+        await client.delete(`/api/posts/${postId}/comments/${commentId}/like`);
+      },
+
       updateComment: async (commentId: number, data: UpdateCommentData): Promise<Comment> => {
         const response = await client.put(`/api/posts/comments/${commentId}`, data);
         return response.data;

@@ -8,6 +8,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Yaps**: Create text yaps (up to 256 characters) with optional images and videos
 - **Reyaps**: Reyap content with proper attribution in timeline feeds
 - **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, auto-scroll to new comments, and reply functionality
+- **Comment Likes**: Like and unlike comments with real-time counts, visual feedback, and consistent UI matching post interactions
 - **Mentions**: @username mention system with clickable links and real-time notifications
 - **Hashtags**: Complete #hashtag system with searchable tags, trending topics, clickable links, dedicated trending page with time periods, hashtag suggestions in post creation, and trending widgets
 - **Link Previews**: Automatic visual previews for URLs in posts with title, description, images, and error handling for broken links
