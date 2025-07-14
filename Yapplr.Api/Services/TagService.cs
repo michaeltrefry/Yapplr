@@ -80,19 +80,10 @@ public class TagService : ITagService
             blockedUserIds = await GetBlockedUserIdsAsync(currentUserId.Value);
         }
 
-        var posts = await _context.Posts
-            .Include(p => p.User)
-            .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser)) // Filter out user-deleted comments
-            .Include(p => p.Reposts)
-            .Include(p => p.PostTags)
-                .ThenInclude(pt => pt.Tag)
-            .Include(p => p.PostLinkPreviews)
-                .ThenInclude(plp => plp.LinkPreview)
-            .Include(p => p.PostMedia)
-            .AsSplitQuery()
+        var posts = await _context.GetPostsForFeed()
             .Where(p => p.PostTags.Any(pt => pt.Tag.Name == normalizedTagName) &&
                        !p.IsDeletedByUser && // Filter out user-deleted posts
+                       !p.IsHidden && // Filter out moderator-hidden posts
                        (!p.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && p.UserId == currentUserId.Value)) && // Filter out posts hidden during video processing, except user's own posts
                        !blockedUserIds.Contains(p.UserId) &&
                        (p.Privacy == PostPrivacy.Public ||

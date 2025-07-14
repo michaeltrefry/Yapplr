@@ -245,9 +245,9 @@ public class PostService : BaseService, IPostService
         var fetchSize = pageSize * 3; // Fetch more to account for mixed posts and reposts
 
         // Get original posts with filtering
-        var posts = await _context.GetPostsWithIncludes()
-            .FilterForVisibility(userId, blockedUserIds, followingIds)
-            .OrderByNewest()
+        var posts = await _context.GetPostsForFeed()
+            .ApplyVisibilityFilters(userId, blockedUserIds.ToHashSet(), followingIds.ToHashSet())
+            .OrderByDescending(p => p.CreatedAt)
             .Take(fetchSize)
             .ToListAsync();
 

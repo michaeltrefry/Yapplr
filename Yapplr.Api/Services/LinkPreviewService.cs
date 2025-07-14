@@ -161,8 +161,19 @@ public class LinkPreviewService : ILinkPreviewService
             }
             
             var html = await response.Content.ReadAsStringAsync();
+
+            // Store YouTube site name before parsing HTML (to preserve it)
+            var isYouTube = !string.IsNullOrEmpty(linkPreview.YouTubeVideoId);
+            var youTubeSiteName = isYouTube ? linkPreview.SiteName : null;
+
             ParseHtmlMetadata(html, linkPreview);
-            
+
+            // Restore YouTube site name if it was overwritten
+            if (isYouTube && string.IsNullOrEmpty(linkPreview.SiteName))
+            {
+                linkPreview.SiteName = youTubeSiteName;
+            }
+
             linkPreview.Status = LinkPreviewStatus.Success;
         }
         catch (TaskCanceledException)
