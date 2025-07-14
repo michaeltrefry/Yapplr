@@ -138,7 +138,7 @@ export default function CreatePost() {
 
       if (isVideo) {
         // Validate video file type
-        const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm', 'video/x-matroska'];
+        const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/x-msvideo', 'video/mov', 'video/quicktime', 'video/wmv', 'video/flv', 'video/webm', 'video/x-matroska'];
         if (!allowedVideoTypes.includes(file.type)) {
           alert('Please select a valid video file (MP4, AVI, MOV, WMV, FLV, WebM, MKV)');
           return;
@@ -348,7 +348,7 @@ export default function CreatePost() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,video/mp4,video/mov,video/avi,video/wmv,video/flv,video/webm,video/x-matroska"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,video/mp4,video/mov,video/quicktime,video/avi,video/x-msvideo,video/wmv,video/flv,video/webm,video/x-matroska"
               multiple={false}
               onChange={handleMediaSelect}
               className="hidden"

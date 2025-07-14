@@ -10,9 +10,9 @@ public class VideoService : IVideoService
     private readonly string _processedPath;
     private readonly string _thumbnailPath;
     private readonly string[] _allowedExtensions = { ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".mkv" };
-    private readonly string[] _allowedMimeTypes = { 
-        "video/mp4", "video/avi", "video/quicktime", "video/x-ms-wmv", 
-        "video/x-flv", "video/webm", "video/x-matroska" 
+    private readonly string[] _allowedMimeTypes = {
+        "video/mp4", "video/avi", "video/x-msvideo", "video/quicktime", "video/x-ms-wmv",
+        "video/x-flv", "video/webm", "video/x-matroska"
     };
     private readonly long _maxFileSize = 100 * 1024 * 1024; // 100MB
     private readonly ILogger<VideoService> _logger;

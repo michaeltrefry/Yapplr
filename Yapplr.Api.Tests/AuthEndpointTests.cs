@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using FluentAssertions;
 using Moq;
@@ -20,6 +21,7 @@ public class AuthServiceExceptionTests : IDisposable
     private readonly AuthService _authService;
     private readonly Mock<IEmailService> _mockEmailService;
     private readonly Mock<ICommandPublisher> _mockCommandPublisher;
+    private readonly Mock<ILogger<AuthService>> _mockLogger;
 
     public AuthServiceExceptionTests()
     {
@@ -41,8 +43,9 @@ public class AuthServiceExceptionTests : IDisposable
 
         _mockEmailService = new Mock<IEmailService>();
         _mockCommandPublisher = new Mock<ICommandPublisher>();
+        _mockLogger = new Mock<ILogger<AuthService>>();
 
-        _authService = new AuthService(_context, configuration, _mockEmailService.Object, _mockCommandPublisher.Object);
+        _authService = new AuthService(_context, configuration, _mockEmailService.Object, _mockCommandPublisher.Object, _mockLogger.Object);
     }
 
     public void Dispose()
