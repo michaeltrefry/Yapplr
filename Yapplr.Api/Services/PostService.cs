@@ -189,14 +189,25 @@ public class PostService : BaseService, IPostService
     public async Task<PostDto?> GetPostByIdAsync(int postId, int? currentUserId = null)
     {
         var post = await _context.GetPostsWithIncludes()
-            .FirstOrDefaultAsync(p => p.Id == postId && !p.IsDeletedByUser);
+            .FirstOrDefaultAsync(p => p.Id == postId);
 
         if (post == null) return null;
 
-        // Check if user can view this hidden post
-        if (post.IsHidden && !await _context.CanViewHiddenContentAsync(currentUserId, post.UserId))
+        // Use hybrid visibility system to check if user can view this post
+        var blockedUserIds = currentUserId.HasValue
+            ? await _context.GetBlockedUserIdsAsync(currentUserId.Value)
+            : new HashSet<int>();
+        var followingIds = currentUserId.HasValue
+            ? await _context.GetFollowingUserIdsAsync(currentUserId.Value)
+            : new HashSet<int>();
+
+        var visiblePosts = new[] { post }.AsQueryable()
+            .ApplyVisibilityFilters(currentUserId, blockedUserIds, followingIds)
+            .ToList();
+
+        if (!visiblePosts.Any())
         {
-            return null; // Hide the post from unauthorized users
+            return null; // Post is hidden from this user
         }
 
         return post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext, includeModeration: true);
@@ -213,23 +224,8 @@ public class PostService : BaseService, IPostService
         // Get blocked user IDs to filter them out
         var blockedUserIds = await GetBlockedUserIdsAsync(userId);
 
-        var posts = await _context.Posts
-            .Include(p => p.User)
-            .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
-            .Include(p => p.Reposts)
-            .Include(p => p.PostTags)
-                .ThenInclude(pt => pt.Tag)
-            .Include(p => p.PostLinkPreviews)
-                .ThenInclude(plp => plp.LinkPreview)
-            .Where(p =>
-                !p.IsDeletedByUser && // Filter out user-deleted posts
-                !p.IsHidden && // Filter out moderator-hidden posts
-                (!p.IsHiddenDuringVideoProcessing || p.UserId == userId) && // Filter out posts hidden during video processing, except user's own posts
-                !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
-                (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
-                p.UserId == userId || // User's own posts are always visible
-                (p.Privacy == PostPrivacy.Followers && followingIds.Contains(p.UserId)))) // Followers-only posts visible if following the author
+        var posts = await _context.GetPostsForFeed()
+            .ApplyVisibilityFilters(userId, blockedUserIds.ToHashSet(), followingIds.ToHashSet())
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -259,7 +255,11 @@ public class PostService : BaseService, IPostService
         // Get reposts from followed users and self
         var reposts = await _context.GetRepostsWithIncludes()
             .Where(r =>
-                !r.Post.IsDeletedByUser && // Filter out reposts of user-deleted posts
+                // Apply same visibility filters as posts - use hybrid system
+                (!r.Post.IsHidden ||
+                 (r.Post.HiddenReasonType == PostHiddenReasonType.VideoProcessing && r.Post.UserId == userId)) && // Filter out hidden posts except video processing for author
+                r.Post.User.Status == UserStatus.Active && // Hide reposts of posts from suspended/banned users
+                (r.Post.User.TrustScore >= 0.1f || r.Post.UserId == userId) && // Hide reposts of low trust posts except from self
                 !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
                 !blockedUserIds.Contains(r.Post.UserId) && // Filter out reposts of posts from blocked users
                 (r.UserId == userId || followingIds.Contains(r.UserId))) // Reposts from self or followed users
@@ -371,24 +371,14 @@ public class PostService : BaseService, IPostService
                 .AnyAsync(f => f.FollowerId == currentUserId.Value && f.FollowingId == userId);
         }
 
-        var posts = await _context.Posts
-            .Include(p => p.User)
-            .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
-            .Include(p => p.Reposts)
-            .Include(p => p.PostTags)
-                .ThenInclude(pt => pt.Tag)
-            .Include(p => p.PostLinkPreviews)
-                .ThenInclude(plp => plp.LinkPreview)
-            .Include(p => p.PostMedia)
-            .AsSplitQuery()
-            .Where(p => p.UserId == userId &&
-                !p.IsDeletedByUser && // Filter out user-deleted posts
-                !p.IsHidden && // Filter out moderator-hidden posts
-                (!p.IsHiddenDuringVideoProcessing || currentUserId == userId) && // Filter out posts hidden during video processing, except when viewing your own posts
-                (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
-                 currentUserId == userId || // User's own posts are always visible
-                 (p.Privacy == PostPrivacy.Followers && isFollowing))) // Followers-only posts visible if following
+        var blockedUserIds = currentUserId.HasValue
+            ? await _context.GetBlockedUserIdsAsync(currentUserId.Value)
+            : new HashSet<int>();
+        var followingIds = isFollowing ? new HashSet<int> { userId } : new HashSet<int>();
+
+        var posts = await _context.GetPostsForFeed()
+            .Where(p => p.UserId == userId) // Only posts from this user
+            .ApplyVisibilityFilters(currentUserId, blockedUserIds, followingIds)
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -418,25 +408,15 @@ public class PostService : BaseService, IPostService
                 .AnyAsync(f => f.FollowerId == currentUserId.Value && f.FollowingId == userId);
         }
 
-        var posts = await _context.Posts
-            .Include(p => p.User)
-            .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
-            .Include(p => p.Reposts)
-            .Include(p => p.PostTags)
-                .ThenInclude(pt => pt.Tag)
-            .Include(p => p.PostLinkPreviews)
-                .ThenInclude(plp => plp.LinkPreview)
-            .Include(p => p.PostMedia)
-            .AsSplitQuery()
-            .Where(p => p.UserId == userId &&
-                !p.IsDeletedByUser && // Filter out user-deleted posts
-                !p.IsHidden && // Filter out moderator-hidden posts
-                (!p.IsHiddenDuringVideoProcessing || currentUserId == userId) && // Filter out posts hidden during video processing, except when viewing your own posts
-                (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
-                 currentUserId == userId || // User's own posts are always visible
-                 (p.Privacy == PostPrivacy.Followers && isFollowing)) && // Followers-only posts visible if following
-                p.PostMedia.Any(pm => pm.MediaType == MediaType.Image)) // Only posts with images
+        var blockedUserIds = currentUserId.HasValue
+            ? await _context.GetBlockedUserIdsAsync(currentUserId.Value)
+            : new HashSet<int>();
+        var followingIds = isFollowing ? new HashSet<int> { userId } : new HashSet<int>();
+
+        var posts = await _context.GetPostsForFeed()
+            .Where(p => p.UserId == userId && // Only posts from this user
+                   p.PostMedia.Any(pm => pm.MediaType == MediaType.Image)) // Only posts with images
+            .ApplyVisibilityFilters(currentUserId, blockedUserIds, followingIds)
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -468,25 +448,15 @@ public class PostService : BaseService, IPostService
 
         var fetchSize = pageSize * 2; // Fetch more to account for mixed posts and reposts
 
+        var blockedUserIds = currentUserId.HasValue
+            ? await _context.GetBlockedUserIdsAsync(currentUserId.Value)
+            : new HashSet<int>();
+        var followingIds = isFollowing ? new HashSet<int> { userId } : new HashSet<int>();
+
         // Get user's original posts
-        var posts = await _context.Posts
-            .Include(p => p.User)
-            .Include(p => p.Likes)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
-            .Include(p => p.Reposts)
-            .Include(p => p.PostTags)
-                .ThenInclude(pt => pt.Tag)
-            .Include(p => p.PostLinkPreviews)
-                .ThenInclude(plp => plp.LinkPreview)
-            .Include(p => p.PostMedia)
-            .AsSplitQuery()
-            .Where(p => p.UserId == userId &&
-                !p.IsDeletedByUser && // Filter out user-deleted posts
-                !p.IsHidden && // Filter out moderator-hidden posts
-                (!p.IsHiddenDuringVideoProcessing || currentUserId == userId) && // Filter out posts hidden during video processing, except when viewing your own posts
-                (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
-                 currentUserId == userId || // User's own posts are always visible
-                 (p.Privacy == PostPrivacy.Followers && isFollowing))) // Followers-only posts visible if following
+        var posts = await _context.GetPostsForFeed()
+            .Where(p => p.UserId == userId) // Only posts from this user
+            .ApplyVisibilityFilters(currentUserId, blockedUserIds, followingIds)
             .OrderByDescending(p => p.CreatedAt)
             .Take(fetchSize)
             .ToListAsync();
@@ -503,7 +473,11 @@ public class PostService : BaseService, IPostService
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
             .AsSplitQuery()
-            .Where(r => r.UserId == userId && !r.Post.IsDeletedByUser && !r.Post.IsHidden) // Reposts by this user, filter out deleted and hidden posts
+            .Where(r => r.UserId == userId &&
+                   (!r.Post.IsHidden ||
+                    (r.Post.HiddenReasonType == PostHiddenReasonType.VideoProcessing && r.Post.UserId == currentUserId)) && // Use hybrid system for filtering
+                   r.Post.User.Status == UserStatus.Active && // Hide reposts of posts from suspended/banned users
+                   (r.Post.User.TrustScore >= 0.1f || r.Post.UserId == currentUserId)) // Hide reposts of low trust posts except from self
             .Where(r =>
                 r.Post.Privacy == PostPrivacy.Public || // Public posts can be seen
                 r.Post.UserId == currentUserId || // Current user's own posts
@@ -515,7 +489,7 @@ public class PostService : BaseService, IPostService
         // Filter reposts based on whether current user follows the original authors (for followers-only posts)
         if (currentUserId.HasValue && currentUserId.Value != userId)
         {
-            var followingIds = await _context.Follows
+            var currentUserFollowingIds = await _context.Follows
                 .Where(f => f.FollowerId == currentUserId.Value)
                 .Select(f => f.FollowingId)
                 .ToListAsync();
@@ -523,7 +497,7 @@ public class PostService : BaseService, IPostService
             reposts = reposts.Where(r =>
                 r.Post.Privacy == PostPrivacy.Public ||
                 r.Post.UserId == currentUserId ||
-                (r.Post.Privacy == PostPrivacy.Followers && followingIds.Contains(r.Post.UserId)))
+                (r.Post.Privacy == PostPrivacy.Followers && currentUserFollowingIds.Contains(r.Post.UserId)))
                 .ToList();
         }
 
@@ -561,9 +535,12 @@ public class PostService : BaseService, IPostService
         if (post == null)
             return false;
 
-        // Soft delete: mark as deleted by user instead of removing from database
-        post.IsDeletedByUser = true;
-        post.DeletedByUserAt = DateTime.UtcNow;
+        // Use hybrid hiding system: mark as hidden with DeletedByUser reason
+        post.IsHidden = true;
+        post.HiddenReasonType = PostHiddenReasonType.DeletedByUser;
+        post.HiddenAt = DateTime.UtcNow;
+        post.HiddenByUserId = userId; // User deleted their own post
+        post.HiddenReason = "Post deleted by user";
 
         await _context.SaveChangesAsync();
         return true;
