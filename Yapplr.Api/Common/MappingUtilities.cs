@@ -277,7 +277,7 @@ public static class MappingUtilities
 
             moderationInfo = new PostModerationInfoDto(
                 post.IsHidden,
-                post.HiddenReason,
+                post.HiddenReason ?? post.HiddenReasonType.ToString(), // Use admin's text reason or enum as fallback
                 post.HiddenAt,
                 post.HiddenByUser?.MapToUserDto(),
                 systemTags,
@@ -385,7 +385,7 @@ public static class MappingUtilities
 
             moderationInfo = new PostModerationInfoDto(
                 post.IsHidden,
-                post.HiddenReason,
+                post.HiddenReason, // Use the admin's text reason, not the enum
                 post.HiddenAt,
                 post.HiddenByUser?.MapToUserDto(),
                 systemTags,

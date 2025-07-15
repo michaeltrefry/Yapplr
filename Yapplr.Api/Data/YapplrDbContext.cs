@@ -86,6 +86,13 @@ public class YapplrDbContext : DbContext
             entity.Property(e => e.Privacy)
                   .HasConversion<int>()
                   .HasDefaultValue(PostPrivacy.Public);
+
+            // Configure consolidated hiding system
+            entity.Property(e => e.HiddenReasonType)
+                  .HasConversion<int>()
+                  .HasDefaultValue(PostHiddenReasonType.None);
+            entity.Property(e => e.HiddenReason).HasMaxLength(500);
+
             entity.HasOne(e => e.User)
                   .WithMany(e => e.Posts)
                   .HasForeignKey(e => e.UserId)
@@ -95,6 +102,11 @@ public class YapplrDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.CreatedAt }); // User profile posts ordered by date
             entity.HasIndex(e => new { e.Privacy, e.CreatedAt }); // Public timeline queries
             entity.HasIndex(e => e.CreatedAt); // General timeline ordering
+
+            // Optimized index for hybrid hiding system
+            entity.HasIndex(e => new { e.IsHidden, HiddenReasonType = e.HiddenReasonType, e.UserId, e.Privacy, e.CreatedAt })
+                  .HasDatabaseName("IX_Posts_HybridVisibility")
+                  .HasFilter("\"IsHidden\" = false OR \"HiddenReasonType\" = 3"); // Include video processing for author visibility
         });
 
         // PostMedia configuration

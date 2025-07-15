@@ -2,6 +2,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.Data;
+using Yapplr.Api.Models;
 
 namespace Yapplr.Api.CQRS.Handlers;
 
@@ -92,6 +93,7 @@ public class ApplyModerationActionCommandHandler : BaseCommandHandler<ApplyModer
         {
             case "hide":
                 post.IsHidden = true;
+                post.HiddenReasonType = PostHiddenReasonType.ModeratorHidden;
                 post.HiddenReason = command.Reason;
                 post.HiddenAt = DateTime.UtcNow;
                 break;

@@ -51,7 +51,7 @@ public static class QueryUtilities
     }
 
     /// <summary>
-    /// Apply common post visibility filters
+    /// Apply hybrid post visibility filters (post-level permanent hiding + real-time user checks)
     /// </summary>
     public static IQueryable<Post> ApplyVisibilityFilters(this IQueryable<Post> query,
         int? currentUserId,
@@ -59,9 +59,17 @@ public static class QueryUtilities
         HashSet<int> followingIds)
     {
         return query.Where(p =>
-            !p.IsDeletedByUser && // Filter out user-deleted posts
-            !p.IsHidden && // Filter out moderator-hidden posts
-            (!p.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && p.UserId == currentUserId.Value)) && // Filter out posts hidden during video processing, except user's own posts
+            // PERMANENT POST-LEVEL HIDING (single optimized check)
+            (!p.IsHidden ||
+             (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing &&
+              currentUserId.HasValue && p.UserId == currentUserId.Value)) && // Video processing posts visible to author
+
+            // REAL-TIME USER STATUS CHECKS (no post updates needed when user status changes)
+            p.User.Status == UserStatus.Active && // Hide posts from suspended/banned users
+            (p.User.TrustScore >= 0.1f ||
+             (currentUserId.HasValue && p.UserId == currentUserId.Value)) && // Hide low trust posts except from author
+
+            // USER-SPECIFIC FILTERING
             !blockedUserIds.Contains(p.UserId) && // Filter out blocked users
             (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
              (currentUserId.HasValue && p.UserId == currentUserId.Value) || // User's own posts are always visible
@@ -69,15 +77,20 @@ public static class QueryUtilities
     }
 
     /// <summary>
-    /// Apply common post visibility filters for public-only content
+    /// Apply hybrid post visibility filters for public-only content
     /// </summary>
     public static IQueryable<Post> ApplyPublicVisibilityFilters(this IQueryable<Post> query,
         HashSet<int> blockedUserIds)
     {
         return query.Where(p =>
-            !p.IsDeletedByUser && // Filter out user-deleted posts
-            !p.IsHidden && // Filter out moderator-hidden posts
-            !p.IsHiddenDuringVideoProcessing && // Filter out posts hidden during video processing (public timeline doesn't show user's own posts)
+            // PERMANENT POST-LEVEL HIDING (no video processing exception for public timeline)
+            !p.IsHidden &&
+
+            // REAL-TIME USER STATUS CHECKS
+            p.User.Status == UserStatus.Active && // Hide posts from suspended/banned users
+            p.User.TrustScore >= 0.1f && // Hide low trust posts from public timeline
+
+            // PUBLIC TIMELINE SPECIFIC FILTERING
             p.Privacy == PostPrivacy.Public && // Only public posts
             !blockedUserIds.Contains(p.UserId)); // Filter out blocked users
     }
@@ -199,9 +212,15 @@ public static class QueryUtilities
         var followingSet = followingIds.ToHashSet();
 
         return query.Where(p =>
-            !p.IsDeletedByUser &&
-            !p.IsHidden &&
-            (!p.IsHiddenDuringVideoProcessing || p.UserId == userId) &&
+            // PERMANENT POST-LEVEL HIDING
+            (!p.IsHidden ||
+             (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing && p.UserId == userId)) &&
+
+            // REAL-TIME USER STATUS CHECKS
+            p.User.Status == UserStatus.Active &&
+            (p.User.TrustScore >= 0.1f || p.UserId == userId) &&
+
+            // USER-SPECIFIC FILTERING
             !blockedSet.Contains(p.UserId) &&
             (p.Privacy == PostPrivacy.Public ||
              p.UserId == userId ||
@@ -219,26 +238,29 @@ public static class QueryUtilities
     }
 
     /// <summary>
-    /// Filter posts for visibility based on user and privacy settings
+    /// Filter posts for visibility based on user and privacy settings (hybrid approach)
     /// </summary>
     public static IQueryable<Post> FilterForVisibility(
-        this IQueryable<Post> query, 
-        int? currentUserId, 
+        this IQueryable<Post> query,
+        int? currentUserId,
         List<int>? blockedUserIds = null,
         List<int>? followingUserIds = null,
         bool includeHidden = false)
     {
-        // Filter out user-deleted posts
-        query = query.Where(p => !p.IsDeletedByUser);
-
-        // Filter out hidden posts unless user is authorized to see them
+        // PERMANENT POST-LEVEL HIDING
         if (!includeHidden)
         {
-            query = query.Where(p => !p.IsHidden);
+            query = query.Where(p =>
+                !p.IsHidden ||
+                (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing &&
+                 currentUserId.HasValue && p.UserId == currentUserId.Value));
         }
 
-        // Filter out posts hidden during video processing, except user's own posts
-        query = query.Where(p => !p.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && p.UserId == currentUserId.Value));
+        // REAL-TIME USER STATUS CHECKS
+        query = query.Where(p =>
+            p.User.Status == UserStatus.Active &&
+            (p.User.TrustScore >= 0.1f ||
+             (currentUserId.HasValue && p.UserId == currentUserId.Value)));
 
         // Filter out blocked users
         if (blockedUserIds?.Any() == true)
@@ -252,7 +274,7 @@ public static class QueryUtilities
             query = query.Where(p =>
                 p.Privacy == PostPrivacy.Public || // Public posts
                 p.UserId == currentUserId.Value || // User's own posts
-                (p.Privacy == PostPrivacy.Followers && 
+                (p.Privacy == PostPrivacy.Followers &&
                  followingUserIds != null && followingUserIds.Contains(p.UserId))); // Followers-only posts if following
         }
         else

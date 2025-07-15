@@ -11,16 +11,25 @@ public static class QueryFilters
     /// <summary>
     /// Filter posts for a specific user's visibility
     /// </summary>
-    public static QueryBuilder<Post> ForUser(this QueryBuilder<Post> builder, int? currentUserId, 
+    public static QueryBuilder<Post> ForUser(this QueryBuilder<Post> builder, int? currentUserId,
         List<int>? blockedUserIds = null, List<int>? followingUserIds = null)
     {
-        return builder.Where(p => 
-            !p.IsDeletedByUser &&
-            !p.IsHidden &&
+        return builder.Where(p =>
+            // PERMANENT POST-LEVEL HIDING
+            (!p.IsHidden ||
+             (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing &&
+              currentUserId.HasValue && p.UserId == currentUserId.Value)) &&
+
+            // REAL-TIME USER STATUS CHECKS
+            p.User.Status == UserStatus.Active &&
+            (p.User.TrustScore >= 0.1f ||
+             (currentUserId.HasValue && p.UserId == currentUserId.Value)) &&
+
+            // USER-SPECIFIC FILTERING
             (blockedUserIds == null || !blockedUserIds.Contains(p.UserId)) &&
             (p.Privacy == PostPrivacy.Public ||
              (currentUserId.HasValue && p.UserId == currentUserId.Value) ||
-             (p.Privacy == PostPrivacy.Followers && currentUserId.HasValue && 
+             (p.Privacy == PostPrivacy.Followers && currentUserId.HasValue &&
               followingUserIds != null && followingUserIds.Contains(p.UserId))));
     }
 

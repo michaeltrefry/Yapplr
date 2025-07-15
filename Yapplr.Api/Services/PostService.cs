@@ -155,8 +155,9 @@ public class PostService : BaseService, IPostService
             if (await _trustBasedModerationService.ShouldAutoHideContentAsync(userId, "post"))
             {
                 post.IsHidden = true;
-                post.HiddenAt = DateTime.UtcNow;
+                post.HiddenReasonType = PostHiddenReasonType.ContentModerationHidden;
                 post.HiddenReason = "Auto-hidden due to low trust score";
+                post.HiddenAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Auto-hidden post {PostId} from low trust user {UserId}", post.Id, userId);
@@ -1200,9 +1201,10 @@ public class PostService : BaseService, IPostService
                 if (post != null)
                 {
                     post.IsHidden = true;
+                    post.HiddenReasonType = PostHiddenReasonType.ContentModerationHidden;
+                    post.HiddenReason = $"Auto-hidden due to high risk content (Score: {moderationResult.RiskAssessment.Score:F2})";
                     post.HiddenByUserId = userId; // System user ID would be better
                     post.HiddenAt = DateTime.UtcNow;
-                    post.HiddenReason = $"Auto-hidden due to high risk content (Score: {moderationResult.RiskAssessment.Score:F2})";
                     await _context.SaveChangesAsync();
 
                     _logger.LogWarning("Auto-hidden post {PostId} due to high risk score {RiskScore}",

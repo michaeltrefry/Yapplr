@@ -20,12 +20,32 @@ public class Post : IUserOwnedEntity
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    // Moderation fields
+    // CONSOLIDATED PERMANENT HIDING SYSTEM
+    /// <summary>
+    /// Whether this post is permanently hidden (requires manual action to change)
+    /// </summary>
     public bool IsHidden { get; set; } = false;
+
+    /// <summary>
+    /// Reason type why the post is permanently hidden (enum)
+    /// </summary>
+    public PostHiddenReasonType HiddenReasonType { get; set; } = PostHiddenReasonType.None;
+
+    /// <summary>
+    /// When the post was hidden
+    /// </summary>
+    public DateTime? HiddenAt { get; set; }
+
+    /// <summary>
+    /// User who hid the post (for moderator actions)
+    /// </summary>
     public int? HiddenByUserId { get; set; }
     public User? HiddenByUser { get; set; }
-    public DateTime? HiddenAt { get; set; }
-    [StringLength(256)]
+
+    /// <summary>
+    /// Additional details about why the post was hidden
+    /// </summary>
+    [StringLength(500)]
     public string? HiddenReason { get; set; }
 
     public bool IsFlagged { get; set; } = false;

@@ -204,9 +204,10 @@ public class AdminService : IAdminService
         if (moderator == null) return false;
 
         post.IsHidden = true;
+        post.HiddenReasonType = PostHiddenReasonType.ModeratorHidden;
+        post.HiddenReason = reason;
         post.HiddenByUserId = hiddenByUserId;
         post.HiddenAt = DateTime.UtcNow;
-        post.HiddenReason = reason;
 
         await _context.SaveChangesAsync();
         await _auditService.LogPostHiddenAsync(postId, hiddenByUserId, reason);
@@ -240,9 +241,10 @@ public class AdminService : IAdminService
         if (post == null) return false;
 
         post.IsHidden = false;
+        post.HiddenReasonType = PostHiddenReasonType.None;
+        post.HiddenReason = null;
         post.HiddenByUserId = null;
         post.HiddenAt = null;
-        post.HiddenReason = null;
 
         await _context.SaveChangesAsync();
 
@@ -395,9 +397,10 @@ public class AdminService : IAdminService
         foreach (var post in posts)
         {
             post.IsHidden = true;
+            post.HiddenReasonType = PostHiddenReasonType.ModeratorHidden;
+            post.HiddenReason = reason;
             post.HiddenByUserId = hiddenByUserId;
             post.HiddenAt = DateTime.UtcNow;
-            post.HiddenReason = reason;
         }
 
         await _context.SaveChangesAsync();
@@ -716,9 +719,10 @@ public class AdminService : IAdminService
                     {
                         // Unhide the post
                         post.IsHidden = false;
+                        post.HiddenReasonType = PostHiddenReasonType.None;
+                        post.HiddenReason = null;
                         post.HiddenByUserId = null;
                         post.HiddenAt = null;
-                        post.HiddenReason = null;
 
                         // Remove all system tags applied to this post
                         var systemTags = post.PostSystemTags.ToList();
@@ -1198,7 +1202,7 @@ public class AdminService : IAdminService
             ImageFileName = post.ImageFileName,
             Privacy = post.Privacy,
             IsHidden = post.IsHidden,
-            HiddenReason = post.HiddenReason,
+            HiddenReason = post.HiddenReason ?? post.HiddenReasonType.ToString(),
             HiddenAt = post.HiddenAt,
             HiddenByUsername = post.HiddenByUser?.Username,
             CreatedAt = post.CreatedAt,
