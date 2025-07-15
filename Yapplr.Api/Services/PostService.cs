@@ -397,6 +397,54 @@ public class PostService : BaseService, IPostService
         return posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext));
     }
 
+    public async Task<IEnumerable<PostDto>> GetUserPhotosAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
+    {
+        // Check if current user is blocked by the profile owner or has blocked them
+        if (currentUserId.HasValue && currentUserId.Value != userId)
+        {
+            var isBlocked = await _blockService.IsUserBlockedAsync(currentUserId.Value, userId) ||
+                           await _blockService.IsBlockedByUserAsync(currentUserId.Value, userId);
+            if (isBlocked)
+            {
+                return new List<PostDto>(); // Return empty list if blocked
+            }
+        }
+
+        // Check if current user is following the target user
+        var isFollowing = false;
+        if (currentUserId.HasValue && currentUserId.Value != userId)
+        {
+            isFollowing = await _context.Follows
+                .AnyAsync(f => f.FollowerId == currentUserId.Value && f.FollowingId == userId);
+        }
+
+        var posts = await _context.Posts
+            .Include(p => p.User)
+            .Include(p => p.Likes)
+            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
+            .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
+            .AsSplitQuery()
+            .Where(p => p.UserId == userId &&
+                !p.IsDeletedByUser && // Filter out user-deleted posts
+                !p.IsHidden && // Filter out moderator-hidden posts
+                (!p.IsHiddenDuringVideoProcessing || currentUserId == userId) && // Filter out posts hidden during video processing, except when viewing your own posts
+                (p.Privacy == PostPrivacy.Public || // Public posts are visible to everyone
+                 currentUserId == userId || // User's own posts are always visible
+                 (p.Privacy == PostPrivacy.Followers && isFollowing)) && // Followers-only posts visible if following
+                p.PostMedia.Any(pm => pm.MediaType == MediaType.Image)) // Only posts with images
+            .OrderByDescending(p => p.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext));
+    }
+
     public async Task<IEnumerable<TimelineItemDto>> GetUserTimelineAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
     {
         // Check if current user is blocked by the profile owner or has blocked them

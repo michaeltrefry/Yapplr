@@ -256,6 +256,11 @@ export const postApi = {
     return response.data;
   },
 
+  getUserPhotos: async (userId: number, page = 1, pageSize = 25): Promise<Post[]> => {
+    const response = await api.get(`/posts/user/${userId}/photos?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
   updatePost: async (id: number, data: UpdatePostData): Promise<Post> => {
     const response = await api.put(`/posts/${id}`, data);
     return response.data;

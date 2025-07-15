@@ -103,6 +103,21 @@ public static class PostEndpoints
         .WithSummary("Get user timeline (posts and reposts)")
         .Produces<IEnumerable<TimelineItemDto>>(200);
 
+        // Get user photos
+        posts.MapGet("/user/{userId}/photos", async (int userId, ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 25) =>
+        {
+            var currentUserId = user?.Identity?.IsAuthenticated == true
+                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
+                : (int?)null;
+
+            var userPhotos = await postService.GetUserPhotosAsync(userId, currentUserId, page, pageSize);
+
+            return Results.Ok(userPhotos);
+        })
+        .WithName("GetUserPhotos")
+        .WithSummary("Get posts with photos by user")
+        .Produces<IEnumerable<PostDto>>(200);
+
         // Update post
         posts.MapPut("/{id:int}", async (int id, [FromBody] UpdatePostDto updateDto, ClaimsPrincipal user, IPostService postService) =>
         {

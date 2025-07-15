@@ -6,11 +6,25 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // Disable image optimization for local development to avoid Docker networking issues
+    unoptimized: process.env.NODE_ENV === 'development',
     remotePatterns: [
       {
         protocol: 'http',
         hostname: 'localhost',
         port: '5161',
+        pathname: '/api/images/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8080',
+        pathname: '/api/images/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'yapplr-api',
+        port: '8080',
         pathname: '/api/images/**',
       },
       {

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+using Yapplr.Api.Configuration;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Endpoints;
@@ -41,9 +43,10 @@ public static class ImageEndpoints
         .Produces(401)
         .DisableAntiforgery();
 
-        images.MapGet("/{fileName}", async (string fileName, IWebHostEnvironment environment) =>
+        images.MapGet("/{fileName}", async (string fileName, IOptions<UploadsConfiguration> uploadsConfig) =>
         {
-            var uploadsPath = Path.Combine(environment.ContentRootPath, "uploads", "images");
+            var config = uploadsConfig.Value;
+            var uploadsPath = Path.GetFullPath(Path.Combine(config.BasePath, "images"));
             var filePath = Path.Combine(uploadsPath, fileName);
 
             if (!File.Exists(filePath))

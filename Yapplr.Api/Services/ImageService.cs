@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Options;
+using Yapplr.Api.Configuration;
+
 namespace Yapplr.Api.Services;
 
 public class ImageService : IImageService
@@ -6,10 +9,11 @@ public class ImageService : IImageService
     private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
     private readonly long _maxFileSize = 5 * 1024 * 1024; // 5MB
 
-    public ImageService(IWebHostEnvironment environment)
+    public ImageService(IOptions<UploadsConfiguration> uploadsConfig)
     {
-        _uploadPath = Path.Combine(environment.ContentRootPath, "uploads", "images");
-        
+        var config = uploadsConfig.Value;
+        _uploadPath = Path.GetFullPath(Path.Combine(config.BasePath, "images"));
+
         // Create uploads directory if it doesn't exist
         if (!Directory.Exists(_uploadPath))
         {

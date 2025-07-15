@@ -7,11 +7,14 @@ import { userApi, blockApi, messageApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/utils';
 import { Calendar, Shield, ShieldOff, MessageCircle } from 'lucide-react';
+import { Post } from '@/types';
 
 import UserTimeline from '@/components/UserTimeline';
 import Sidebar from '@/components/Sidebar';
 import UserAvatar from '@/components/UserAvatar';
 import UserList from '@/components/UserList';
+import PhotoGrid from '@/components/PhotoGrid';
+import FullScreenPhotoViewer from '@/components/FullScreenPhotoViewer';
 
 interface ProfilePageProps {
   params: Promise<{
@@ -25,7 +28,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'following' | 'followers'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'photos' | 'following' | 'followers'>('posts');
+  const [selectedPhoto, setSelectedPhoto] = useState<Post | null>(null);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', username],
@@ -309,6 +313,16 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   Posts
                 </button>
                 <button
+                  onClick={() => setActiveTab('photos')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'photos'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Photos
+                </button>
+                <button
                   onClick={() => setActiveTab('following')}
                   className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === 'following'
@@ -334,6 +348,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             {/* Tab Content */}
             {activeTab === 'posts' && (
               <UserTimeline userId={profile.id} isOwnProfile={isOwnProfile} />
+            )}
+            {activeTab === 'photos' && (
+              <PhotoGrid userId={profile.id} onPhotoClick={setSelectedPhoto} />
             )}
             {activeTab === 'following' && (
               <UserList userId={profile.id} type="following" />
@@ -374,6 +391,14 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         </div>
       )}
 
+      {/* Full Screen Photo Viewer */}
+      {selectedPhoto && (
+        <FullScreenPhotoViewer
+          post={selectedPhoto}
+          isOpen={!!selectedPhoto}
+          onClose={() => setSelectedPhoto(null)}
+        />
+      )}
 
     </div>
   );

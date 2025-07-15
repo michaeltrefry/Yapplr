@@ -105,6 +105,9 @@ services:
         - NEXT_PUBLIC_ENABLE_SIGNALR=true
         # Force rebuild by passing current timestamp
         - CACHE_BUST=${CACHE_BUST:-$(date +%s)}
+    environment:
+      # Internal API URL for server-side operations (image optimization)
+      - INTERNAL_API_URL=http://yapplr-api:8080
     image: yapplr-frontend:local
     ports:
       - "3000:3000"  # Expose frontend for local access
