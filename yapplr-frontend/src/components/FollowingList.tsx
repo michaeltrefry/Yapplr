@@ -81,7 +81,7 @@ export default function FollowingList() {
         <Link
           key={user.id}
           href={`/profile/${user.username}`}
-          className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg bg-background hover-surface transition-colors text-foreground"
+          className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg bg-background hover:bg-gray-100 transition-colors text-foreground"
         >
           <div className="relative flex-shrink-0">
             <UserAvatar user={user} size="sm" clickable={false} />
