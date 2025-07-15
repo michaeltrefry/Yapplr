@@ -132,8 +132,9 @@ public static class QueryUtilities
         HashSet<int> blockedUserIds)
     {
         return query.Where(r =>
-            !r.Post.IsDeletedByUser && // Filter out reposts of user-deleted posts
-            !r.Post.IsHidden && // Filter out reposts of moderator-hidden posts
+            !r.Post.IsHidden && // Filter out reposts of hidden posts (includes DeletedByUser via hybrid system)
+            r.Post.User.Status == UserStatus.Active && // Hide reposts of posts from suspended/banned users
+            r.Post.User.TrustScore >= 0.1f && // Hide reposts of low trust posts from public timeline
             r.Post.Privacy == PostPrivacy.Public && // Only reposts of public posts
             !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
             !blockedUserIds.Contains(r.Post.UserId)); // Filter out reposts of posts from blocked users

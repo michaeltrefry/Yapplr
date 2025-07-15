@@ -73,21 +73,17 @@ public class TagService : ITagService
 
         var normalizedTagName = tagName.ToLowerInvariant().TrimStart('#');
 
-        // Get blocked user IDs to filter them out
-        var blockedUserIds = new List<int>();
-        if (currentUserId.HasValue)
-        {
-            blockedUserIds = await GetBlockedUserIdsAsync(currentUserId.Value);
-        }
+        // Get blocked user IDs and following IDs for filtering
+        var blockedUserIds = currentUserId.HasValue
+            ? await _context.GetBlockedUserIdsAsync(currentUserId.Value)
+            : new HashSet<int>();
+        var followingIds = currentUserId.HasValue
+            ? await _context.GetFollowingUserIdsAsync(currentUserId.Value)
+            : new HashSet<int>();
 
         var posts = await _context.GetPostsForFeed()
-            .Where(p => p.PostTags.Any(pt => pt.Tag.Name == normalizedTagName) &&
-                       !p.IsDeletedByUser && // Filter out user-deleted posts
-                       !p.IsHidden && // Filter out moderator-hidden posts
-                       (!p.IsHiddenDuringVideoProcessing || (currentUserId.HasValue && p.UserId == currentUserId.Value)) && // Filter out posts hidden during video processing, except user's own posts
-                       !blockedUserIds.Contains(p.UserId) &&
-                       (p.Privacy == PostPrivacy.Public ||
-                        (currentUserId.HasValue && p.UserId == currentUserId.Value)))
+            .Where(p => p.PostTags.Any(pt => pt.Tag.Name == normalizedTagName))
+            .ApplyVisibilityFilters(currentUserId, blockedUserIds, followingIds)
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
