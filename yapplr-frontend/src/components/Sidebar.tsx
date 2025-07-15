@@ -20,7 +20,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="h-full bg-white border-r border-gray-200 p-2 lg:p-4">
+    <div className="h-full bg-background border-r border-default p-2 lg:p-4">
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="mb-6 lg:mb-8">
@@ -41,7 +41,7 @@ export default function Sidebar() {
           <div className="space-y-2">
             <Link
               href="/"
-              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover-surface transition-colors text-foreground"
             >
               <Home className="w-6 h-6" />
               <span className="text-lg hidden lg:block">Home</span>
@@ -49,7 +49,7 @@ export default function Sidebar() {
 
             <Link
               href="/search"
-              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover-surface transition-colors text-foreground"
             >
               <Search className="w-6 h-6" />
               <span className="text-lg hidden lg:block">Search</span>
@@ -57,7 +57,7 @@ export default function Sidebar() {
 
           <Link
             href="/trending"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover-surface transition-colors text-foreground"
           >
             <TrendingUp className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Trending</span>
@@ -65,7 +65,7 @@ export default function Sidebar() {
 
           <Link
             href="/notifications"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors relative text-gray-700"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover-surface transition-colors relative text-foreground"
           >
             <div className="relative">
               <Bell className="w-6 h-6" />
@@ -80,7 +80,7 @@ export default function Sidebar() {
 
           <Link
             href="/messages"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors relative text-gray-700"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover-surface transition-colors relative text-foreground"
           >
             <div className="relative">
               <MessageCircle className="w-6 h-6" />
@@ -95,7 +95,7 @@ export default function Sidebar() {
 
           <Link
             href="/settings"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover-surface transition-colors text-foreground"
           >
             <Settings className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Settings</span>
@@ -118,7 +118,7 @@ export default function Sidebar() {
           {process.env.NODE_ENV === 'development' && (
             <Link
               href="/notification-test"
-              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 border-t border-gray-200 mt-2 pt-2"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover-surface transition-colors text-foreground border-t border-default mt-2 pt-2"
             >
               <TestTube className="w-6 h-6" />
               <span className="text-lg hidden lg:block">Notification Test</span>
@@ -139,10 +139,10 @@ export default function Sidebar() {
         </nav>
 
         {/* User Info & Logout */}
-        <div className="border-t border-gray-200 pt-4 space-y-2 bg-white">
+        <div className="border-t border-default pt-4 space-y-2 bg-background">
           <Link
             href={`/profile/${user?.username}`}
-            className="flex items-center justify-center lg:justify-start hover:bg-gray-100 rounded-lg p-2 transition-colors cursor-pointer"
+            className="flex items-center justify-center lg:justify-start hover-surface rounded-lg p-2 transition-colors cursor-pointer text-foreground"
             title={`Go to @${user?.username}'s profile`}
           >
             <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -151,10 +151,10 @@ export default function Sidebar() {
               </span>
             </div>
             <div className="flex-1 min-w-0 hidden lg:block lg:ml-3">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <p className="text-sm font-medium text-foreground truncate">
                 @{user?.username}
               </p>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-secondary truncate">
                 {user?.email}
               </p>
             </div>
@@ -162,7 +162,7 @@ export default function Sidebar() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center lg:justify-start px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 w-full"
+            className="flex items-center justify-center lg:justify-start px-1 lg:px-3 py-2 rounded-lg hover-surface transition-colors text-foreground w-full"
             title="Logout"
           >
             <LogOut className="w-6 h-6 flex-shrink-0" />

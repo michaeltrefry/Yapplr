@@ -76,12 +76,12 @@ export default function FollowingList() {
   const visibleFollowing = following.slice(0, visibleCount);
 
   return (
-    <div ref={containerRef} className="space-y-1 overflow-hidden bg-white">
+    <div ref={containerRef} className="space-y-1 overflow-hidden bg-background">
       {visibleFollowing.map((user) => (
         <Link
           key={user.id}
           href={`/profile/${user.username}`}
-          className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg bg-white hover:bg-gray-100 transition-colors"
+          className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg bg-background hover-surface transition-colors text-foreground"
         >
           <div className="relative flex-shrink-0">
             <UserAvatar user={user} size="sm" clickable={false} />
@@ -90,7 +90,7 @@ export default function FollowingList() {
             )}
           </div>
           <div className="flex-1 min-w-0 hidden lg:block">
-            <p className="text-sm font-medium text-gray-900 truncate">
+            <p className="text-sm font-medium text-foreground truncate">
               {user.username}
             </p>
           </div>

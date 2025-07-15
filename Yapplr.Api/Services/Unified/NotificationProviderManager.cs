@@ -26,7 +26,6 @@ public class NotificationProviderManager : INotificationProviderManager
     
     // Statistics
     private readonly ConcurrentDictionary<string, ProviderStats> _providerStats = new();
-    private readonly object _statsLock = new object();
 
     public NotificationProviderManager(
         ILogger<NotificationProviderManager> logger,

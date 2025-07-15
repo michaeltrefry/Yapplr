@@ -1357,16 +1357,5 @@ public class NotificationQueue : INotificationQueue
     }
 
     #endregion
-
-    #region Helper Properties
-
-    /// <summary>
-    /// Extension property to check if a notification has expired
-    /// </summary>
-    private static bool IsExpired(QueuedNotification notification)
-    {
-        return notification.ExpiresAt.HasValue && DateTime.UtcNow > notification.ExpiresAt.Value;
-    }
-
-    #endregion
+    
 }
