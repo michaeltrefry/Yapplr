@@ -6,6 +6,8 @@ A complete Twitter-like social media platform built with modern web technologies
 
 ### Core Social Features
 - **Yaps**: Create text yaps (up to 256 characters) with optional images and videos
+- **Multi-Media Posts**: Upload up to 10 photos and videos per post with comprehensive media gallery support
+- **Photo Library**: Dedicated photo library showing all user images with slideshow navigation and theme-aware full-screen viewing
 - **Reyaps**: Reyap content with proper attribution in timeline feeds
 - **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, auto-scroll to new comments, and reply functionality
 - **Comment Likes**: Like and unlike comments with real-time counts, visual feedback, and consistent UI matching post interactions
@@ -126,6 +128,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Infinite Scroll**: Smooth pagination with 25 posts per page for optimal performance
 - **Return to Top**: Convenient navigation button when reaching the end of timelines
 - **Media Upload**: Server-side storage for images and videos in yaps, messages, and profile pictures
+- **Multi-Media Upload**: Upload up to 10 photos and videos per post with drag-and-drop support and file validation
+- **Photo Library**: Comprehensive photo gallery showing all user images with slideshow navigation, keyboard controls, and theme-aware backgrounds
 - **Video Processing**: Automatic video processing with FFmpeg including format conversion, compression, and thumbnail generation
 - **iPhone Photo Library Support**: Unified media picker supporting both photos and videos from iPhone photo library via Safari
 - **User Search**: Find users by username or bio content
@@ -143,6 +147,25 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Dark Mode**: Complete dark theme with toggle in Settings, synchronized across all platforms
 - **Database Performance**: Optimized with strategic indexing for fast timeline, profile, and messaging queries
 - **Redis Caching**: High-performance count caching for followers, posts, likes, comments, and notifications with automatic fallback
+
+### 📸 Photo Library & Multi-Media Features
+- **Multi-Media Posts**: Upload up to 10 photos and videos per post with comprehensive media management
+  - **Drag & Drop Upload**: Intuitive drag-and-drop interface for easy media selection
+  - **File Validation**: Automatic format detection and size validation with user-friendly error messages
+  - **Mixed Media Support**: Combine photos and videos in a single post
+  - **Upload Progress**: Real-time upload progress indicators with cancel functionality
+- **Photo Library**: Dedicated photo gallery for browsing all user images
+  - **Grid Layout**: Clean 3-column grid displaying all photos from user's posts
+  - **Slideshow Navigation**: Full-screen photo viewing with left/right arrow navigation
+  - **Keyboard Controls**: Navigate photos using arrow keys (← → for navigation, Escape to close)
+  - **Photo Counter**: Shows current position (e.g., "3 of 15") with navigation hints
+  - **Theme-Aware Backgrounds**: Proper light/dark mode support for full-screen viewing
+  - **Smooth Transitions**: Enhanced hover effects and animations for better user experience
+- **Media Gallery**: Enhanced media viewing for posts with multiple images/videos
+  - **Thumbnail Grid**: Visual grid layout for posts with multiple media items
+  - **Full-Screen Viewer**: Click any image to view in full-screen with navigation controls
+  - **Video Support**: Integrated video playback with standard HTML5 controls
+  - **Cross-Platform**: Consistent media experience across web and mobile platforms
 
 ### 🎥 Video Features
 - **Video Upload Support**: Upload videos in posts and messages with comprehensive format support
@@ -176,7 +199,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **JWT Bearer** - Authentication
 - **BCrypt** - Password hashing
 - **SendGrid** - Email service for verification and password reset (with AWS SES fallback)
-- **File System Storage** - Image and video upload and serving
+- **File System Storage** - Image and video upload and serving with multi-media support
+- **Multi-Media Processing** - Support for up to 10 photos/videos per post with PostMedia entity relationships
 - **Video Processing Service** - FFmpeg-based video processing with RabbitMQ messaging
 - **RabbitMQ** - Message queue for asynchronous video processing tasks
 - **Redis** - High-performance caching for count operations and real-time data
@@ -199,6 +223,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Lucide React** - Beautiful icons
 - **SignalR Client** - Real-time WebSocket notifications
 - **date-fns** - Date formatting and manipulation
+- **Multi-Media Components** - PhotoGrid, MediaGallery, and FullScreenPhotoViewer for comprehensive media handling
 
 ### Mobile App (React Native + Expo)
 - **React Native** - Cross-platform mobile development
@@ -250,6 +275,41 @@ Yapplr features a comprehensive hashtag system that enables content discovery an
 - `GET /api/tags/tag/{tagName}` - Get specific hashtag details
 - `GET /api/tags/tag/{tagName}/posts` - Get posts by hashtag
 - Analytics endpoints for detailed hashtag metrics
+
+## 📸 Photo Library & Multi-Media API
+
+Yapplr provides comprehensive API endpoints for multi-media post creation and photo library management.
+
+### Core Features
+- **Multi-Media Posts**: Support for up to 10 photos and videos per post
+- **Photo Library**: Dedicated endpoints for retrieving user's photo collections
+- **Media Management**: Complete CRUD operations for post media items
+- **File Upload**: Secure file upload with validation and processing
+
+### API Endpoints
+
+#### Multi-Media Post Creation
+- `POST /api/posts` - Create post with multiple media items (up to 10 photos/videos)
+- `POST /api/posts/upload-media` - Upload media files with validation and processing
+- `GET /api/posts/{id}/media` - Get all media items for a specific post
+- `DELETE /api/posts/{id}/media/{mediaId}` - Remove specific media item from post
+
+#### Photo Library
+- `GET /api/posts/user/{userId}/photos` - Get user's photo library with pagination
+- `GET /api/posts/user/{userId}/photos?page={page}&limit={limit}` - Paginated photo retrieval
+- Photo library automatically filters for image media types and respects privacy settings
+
+#### Media Processing
+- `GET /api/media/{id}/status` - Check media processing status (Pending, Processing, Completed, Failed)
+- `GET /api/media/{id}/thumbnail` - Get video thumbnail or image preview
+- Media files are automatically processed and optimized for web delivery
+
+### Technical Implementation
+- **PostMedia Entity**: One-to-many relationship between Post and PostMedia for flexible media handling
+- **Media Types**: Support for Image and Video media types with extensible enum structure
+- **File Validation**: Automatic format detection, size limits (5MB images, 100MB videos)
+- **Privacy Aware**: All photo library queries respect post privacy settings and user relationships
+- **Performance Optimized**: Efficient database queries with proper indexing for fast photo retrieval
 
 ## 🤖 AI Content Moderation System
 
