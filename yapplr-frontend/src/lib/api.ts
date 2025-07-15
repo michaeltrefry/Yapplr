@@ -6,6 +6,7 @@ import type {
   RegisterData,
   Post,
   CreatePostData,
+  CreatePostWithMediaData,
   UpdatePostData,
   Comment,
   CreateCommentData,
@@ -48,6 +49,8 @@ import type {
   ApplySystemTagDto,
   ReviewAppealDto,
   CreateAppealDto,
+  MultipleFileUploadResponse,
+  UploadLimits,
   SystemTagCategory,
   UserRole,
   UserStatus,
@@ -231,6 +234,11 @@ export const postApi = {
     return response.data;
   },
 
+  createPostWithMedia: async (data: CreatePostWithMediaData): Promise<Post> => {
+    const response = await api.post('/posts/with-media', data);
+    return response.data;
+  },
+
   getPost: async (id: number): Promise<Post> => {
     const response = await api.get(`/posts/${id}`);
     return response.data;
@@ -349,6 +357,28 @@ export const videoApi = {
 
   deleteVideo: async (fileName: string): Promise<void> => {
     await api.delete(`/videos/${fileName}`);
+  },
+};
+
+// Multiple File Upload API
+export const multipleUploadApi = {
+  uploadMultipleFiles: async (files: File[]): Promise<MultipleFileUploadResponse> => {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+
+    const response = await api.post('/uploads/media', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  getUploadLimits: async (): Promise<UploadLimits> => {
+    const response = await api.get('/uploads/limits');
+    return response.data;
   },
 };
 

@@ -2,23 +2,28 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { postApi, imageApi, videoApi, tagApi } from '@/lib/api';
+import { postApi, imageApi, videoApi, tagApi, multipleUploadApi } from '@/lib/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Image as ImageIcon, Video, X, Hash, Globe, Users, Lock, ChevronDown, AlertCircle } from 'lucide-react';
-import Image from 'next/image';
-import { PostPrivacy, UserStatus } from '@/types';
+import { PostPrivacy, UserStatus, MediaType, MediaFile, UploadedFile } from '@/types';
 
 export default function CreatePost() {
   const [content, setContent] = useState('');
-  const [, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFileUrls, setSelectedFileUrls] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [privacy, setPrivacy] = useState<PostPrivacy>(PostPrivacy.Public);
+  const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false);
+  const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
+
+  // Legacy state for backward compatibility
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [uploadedVideoFileName, setUploadedVideoFileName] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
-  const [privacy, setPrivacy] = useState<PostPrivacy>(PostPrivacy.Public);
-  const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false);
-  const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const privacyDropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
@@ -84,6 +89,25 @@ export default function CreatePost() {
     }
   }, [showPrivacyDropdown]);
 
+  // Create and cleanup object URLs when selectedFiles change to prevent memory leaks
+  useEffect(() => {
+    // Cleanup previous URLs
+    selectedFileUrls.forEach(url => URL.revokeObjectURL(url));
+
+    // Create new URLs for image files
+    const newUrls = selectedFiles.map(file =>
+      file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
+    );
+    setSelectedFileUrls(newUrls);
+
+    // Cleanup on unmount
+    return () => {
+      newUrls.forEach(url => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, [selectedFiles]);
+
   // Get trending hashtags for suggestions
   const { data: trendingTags } = useQuery({
     queryKey: ['trending-tags-suggestions'],
@@ -91,6 +115,7 @@ export default function CreatePost() {
     enabled: showHashtagSuggestions,
   });
 
+  // Legacy upload mutations for backward compatibility
   const uploadImageMutation = useMutation({
     mutationFn: imageApi.uploadImage,
     onSuccess: (data) => {
@@ -105,103 +130,171 @@ export default function CreatePost() {
     },
   });
 
+  // New multiple file upload mutation
+  const multipleUploadMutation = useMutation({
+    mutationFn: multipleUploadApi.uploadMultipleFiles,
+    onMutate: () => {
+      setIsUploading(true);
+    },
+    onSuccess: (data) => {
+      console.log('Upload success response:', data);
+      console.log('Uploaded files:', data.uploadedFiles);
+      data.uploadedFiles.forEach((file, index) => {
+        console.log(`File ${index}:`, file);
+        console.log(`  fileName: ${file.fileName}`);
+        console.log(`  fileUrl: ${file.fileUrl}`);
+        console.log(`  mediaType: ${file.mediaType}`);
+      });
+
+      setUploadedFiles(prev => [...prev, ...data.uploadedFiles]);
+      setIsUploading(false);
+
+      // Clear selected files and their URLs since they're now uploaded
+      selectedFileUrls.forEach(url => {
+        if (url) URL.revokeObjectURL(url);
+      });
+      setSelectedFiles([]);
+      setSelectedFileUrls([]);
+
+      if (data.errors.length > 0) {
+        // Show errors to user
+        const errorMessages = data.errors.map(e => `${e.originalFileName}: ${e.errorMessage}`).join('\n');
+        alert(`Some files failed to upload:\n${errorMessages}`);
+      }
+    },
+    onError: () => {
+      setIsUploading(false);
+      alert('Failed to upload files. Please try again.');
+    },
+  });
+
   const createPostMutation = useMutation({
     mutationFn: postApi.createPost,
     onSuccess: () => {
-      setContent('');
-      setSelectedFile(null);
-      setImagePreview(null);
-      setUploadedFileName(null);
-      setVideoPreview(null);
-      setUploadedVideoFileName(null);
-      setMediaType(null);
-      setPrivacy(PostPrivacy.Public);
-      setShowHashtagSuggestions(false); // Hide hashtag suggestions after posting
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      resetForm();
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
     },
   });
 
+  const createPostWithMediaMutation = useMutation({
+    mutationFn: postApi.createPostWithMedia,
+    onSuccess: () => {
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+    },
+  });
+
+  const resetForm = () => {
+    // Clean up all object URLs
+    selectedFileUrls.forEach(url => {
+      if (url) URL.revokeObjectURL(url);
+    });
+    setContent('');
+    setSelectedFiles([]);
+    setSelectedFileUrls([]);
+    setUploadedFiles([]);
+    setImagePreview(null);
+    setUploadedFileName(null);
+    setVideoPreview(null);
+    setUploadedVideoFileName(null);
+    setMediaType(null);
+    setPrivacy(PostPrivacy.Public);
+    setShowHashtagSuggestions(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Determine if this is an image or video
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Check if adding these files would exceed the limit
+    const totalFiles = selectedFiles.length + uploadedFiles.length + files.length;
+    if (totalFiles > 10) {
+      alert(`Maximum 10 files allowed. You currently have ${selectedFiles.length + uploadedFiles.length} files selected.`);
+      return;
+    }
+
+    // Validate each file
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
+    for (const file of files) {
       const isVideo = file.type.startsWith('video/');
       const isImage = file.type.startsWith('image/');
 
       if (!isImage && !isVideo) {
-        alert('Please select a valid image or video file');
-        return;
+        errors.push(`${file.name}: Unsupported file type. Please select images or videos only.`);
+        continue;
       }
 
       if (isVideo) {
-        // Validate video file type
         const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/x-msvideo', 'video/mov', 'video/quicktime', 'video/wmv', 'video/flv', 'video/webm', 'video/x-matroska'];
         if (!allowedVideoTypes.includes(file.type)) {
-          alert('Please select a valid video file (MP4, AVI, MOV, WMV, FLV, WebM, MKV)');
-          return;
+          errors.push(`${file.name}: Unsupported video format. Supported: MP4, AVI, MOV, WMV, FLV, WebM, MKV`);
+          continue;
         }
 
-        // Validate video file size (100MB)
         if (file.size > 100 * 1024 * 1024) {
-          alert('Video file size must be less than 100MB');
-          return;
+          errors.push(`${file.name}: Video file too large. Maximum size is 100MB.`);
+          continue;
         }
-
-        setSelectedFile(file);
-        setMediaType('video');
-
-        // Create video preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setVideoPreview(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-
-        // Clear image if present
-        setImagePreview(null);
-        setUploadedFileName(null);
-
-        // Upload immediately
-        uploadVideoMutation.mutate(file);
-      } else {
-        // Handle image
+      } else if (isImage) {
         const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedImageTypes.includes(file.type)) {
-          alert('Please select a valid image file (JPG, PNG, GIF, WebP)');
-          return;
+          errors.push(`${file.name}: Unsupported image format. Supported: JPG, PNG, GIF, WebP`);
+          continue;
         }
 
-        // Validate image file size (5MB)
         if (file.size > 5 * 1024 * 1024) {
-          alert('Image file size must be less than 5MB');
-          return;
+          errors.push(`${file.name}: Image file too large. Maximum size is 5MB.`);
+          continue;
         }
-
-        setSelectedFile(file);
-        setMediaType('image');
-
-        // Create image preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setImagePreview(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-
-        // Clear video if present
-        setVideoPreview(null);
-        setUploadedVideoFileName(null);
-
-        // Upload immediately
-        uploadImageMutation.mutate(file);
       }
+
+      validFiles.push(file);
+    }
+
+    if (errors.length > 0) {
+      alert(`Some files were rejected:\n${errors.join('\n')}`);
+    }
+
+    if (validFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...validFiles]);
+
+      // Upload files immediately
+      multipleUploadMutation.mutate(validFiles);
+    }
+
+    // Clear the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
-  const removeMedia = () => {
-    setSelectedFile(null);
+  const removeFile = (index: number, isUploaded: boolean = false) => {
+    if (isUploaded) {
+      setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    } else {
+      // Clean up object URL before removing
+      if (selectedFileUrls[index]) {
+        URL.revokeObjectURL(selectedFileUrls[index]);
+      }
+      setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+      setSelectedFileUrls(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const removeAllMedia = () => {
+    // Clean up all object URLs
+    selectedFileUrls.forEach(url => {
+      if (url) URL.revokeObjectURL(url);
+    });
+    setSelectedFiles([]);
+    setSelectedFileUrls([]);
+    setUploadedFiles([]);
+    // Legacy cleanup
     setImagePreview(null);
     setVideoPreview(null);
     setUploadedFileName(null);
@@ -216,12 +309,31 @@ export default function CreatePost() {
     e.preventDefault();
     if (!content.trim()) return;
 
-    createPostMutation.mutate({
-      content: content.trim(),
-      imageFileName: uploadedFileName || undefined,
-      videoFileName: uploadedVideoFileName || undefined,
-      privacy: privacy,
-    });
+    // Use new multiple media API if we have uploaded files
+    if (uploadedFiles.length > 0) {
+      const mediaFiles: MediaFile[] = uploadedFiles.map(file => ({
+        fileName: file.fileName,
+        mediaType: file.mediaType,
+        width: file.width,
+        height: file.height,
+        fileSizeBytes: file.fileSizeBytes,
+        duration: file.duration,
+      }));
+
+      createPostWithMediaMutation.mutate({
+        content: content.trim(),
+        privacy: privacy,
+        mediaFiles: mediaFiles,
+      });
+    } else {
+      // Use legacy API for backward compatibility
+      createPostMutation.mutate({
+        content: content.trim(),
+        imageFileName: uploadedFileName || undefined,
+        videoFileName: uploadedVideoFileName || undefined,
+        privacy: privacy,
+      });
+    }
   };
 
   const remainingChars = 256 - content.length;
@@ -349,24 +461,108 @@ export default function CreatePost() {
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,video/mp4,video/mov,video/quicktime,video/avi,video/x-msvideo,video/wmv,video/flv,video/webm,video/x-matroska"
-              multiple={false}
+              multiple={true}
               onChange={handleMediaSelect}
               className="hidden"
             />
 
-            {/* Image Preview */}
-            {imagePreview && (
+            {/* Multiple Media Preview */}
+            {(uploadedFiles.length > 0 || selectedFiles.length > 0) && (
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">
+                    {uploadedFiles.length + selectedFiles.length} file(s) selected (max 10)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={removeAllMedia}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    Remove all
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {/* Uploaded Files */}
+                  {uploadedFiles.map((file, index) => {
+                    console.log(`Rendering uploaded file ${index}:`, file);
+                    return (
+                      <div key={`uploaded-${index}`} className="relative">
+                        {file.mediaType === MediaType.Image ? (
+                          <img
+                            src={file.fileUrl}
+                            alt={`Uploaded ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                            onError={(e) => {
+                              console.error(`Image failed to load for file ${index}:`, file.fileUrl);
+                              console.error('Error event:', e);
+                            }}
+                            onLoad={() => {
+                              console.log(`Image loaded successfully for file ${index}:`, file.fileUrl);
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-24 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                            <Video className="w-8 h-8 text-gray-400" />
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index, true)}
+                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <div className="absolute bottom-1 left-1 bg-green-500 text-white text-xs px-1 rounded">
+                          ✓
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Files being uploaded */}
+                  {selectedFiles.map((file, index) => (
+                    <div key={`selected-${index}`} className="relative">
+                      {file.type.startsWith('image/') && selectedFileUrls[index] ? (
+                        <img
+                          src={selectedFileUrls[index]}
+                          alt={`Selected ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-full h-24 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                          <Video className="w-8 h-8 text-gray-400" />
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index, false)}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      {isUploading && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                          <div className="text-white text-xs">Uploading...</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Legacy Image Preview (for backward compatibility) */}
+            {imagePreview && !uploadedFiles.length && !selectedFiles.length && (
               <div className="mt-3 relative">
-                <Image
+                <img
                   src={imagePreview}
                   alt="Preview"
-                  width={500}
-                  height={300}
                   className="max-w-full h-auto rounded-lg border border-gray-200"
                 />
                 <button
                   type="button"
-                  onClick={removeMedia}
+                  onClick={removeAllMedia}
                   className="absolute top-2 right-2 bg-gray-800 bg-opacity-75 text-white rounded-full p-1 hover:bg-opacity-100 transition-opacity"
                 >
                   <X className="w-4 h-4" />
@@ -379,8 +575,8 @@ export default function CreatePost() {
               </div>
             )}
 
-            {/* Video Preview */}
-            {videoPreview && (
+            {/* Legacy Video Preview (for backward compatibility) */}
+            {videoPreview && !uploadedFiles.length && !selectedFiles.length && (
               <div className="mt-3 relative">
                 <video
                   src={videoPreview}
@@ -392,7 +588,7 @@ export default function CreatePost() {
                 </video>
                 <button
                   type="button"
-                  onClick={removeMedia}
+                  onClick={removeAllMedia}
                   className="absolute top-2 right-2 bg-gray-800 bg-opacity-75 text-white rounded-full p-1 hover:bg-opacity-100 transition-opacity"
                 >
                   <X className="w-4 h-4" />
@@ -412,11 +608,15 @@ export default function CreatePost() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors flex items-center gap-1 sm:gap-2"
-                  title="Add photo or video from library"
-                  disabled={uploadImageMutation.isPending || uploadVideoMutation.isPending}
+                  title={`Add photos/videos (${uploadedFiles.length + selectedFiles.length}/10)`}
+                  disabled={isUploading || uploadImageMutation.isPending || uploadVideoMutation.isPending || (uploadedFiles.length + selectedFiles.length) >= 10}
                 >
                   <ImageIcon className="w-5 h-5" />
-                  <span className="hidden sm:inline text-sm">Photo/Video</span>
+                  <span className="hidden sm:inline text-sm">
+                    {uploadedFiles.length + selectedFiles.length > 0
+                      ? `Add More (${uploadedFiles.length + selectedFiles.length}/10)`
+                      : 'Photo/Video'}
+                  </span>
                 </button>
 
                 {/* Privacy Selector */}
@@ -477,10 +677,11 @@ export default function CreatePost() {
                 </span>
                 <button
                   type="submit"
-                  disabled={!content.trim() || remainingChars < 0 || createPostMutation.isPending || uploadImageMutation.isPending || uploadVideoMutation.isPending}
+                  disabled={!content.trim() || remainingChars < 0 || createPostMutation.isPending || createPostWithMediaMutation.isPending || isUploading || uploadImageMutation.isPending || uploadVideoMutation.isPending}
                   className="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {createPostMutation.isPending ? 'Yapping...' :
+                  {createPostMutation.isPending || createPostWithMediaMutation.isPending ? 'Yapping...' :
+                   isUploading ? 'Uploading files...' :
                    uploadImageMutation.isPending ? 'Uploading image...' :
                    uploadVideoMutation.isPending ? 'Uploading video...' : 'Yap'}
                 </button>

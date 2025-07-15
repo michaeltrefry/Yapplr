@@ -315,6 +315,9 @@ public static class MappingUtilities
             };
         }
 
+        // Map media items
+        var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto(httpContext)).ToList();
+
         return new PostDto(
             post.Id,
             post.Content,
@@ -335,7 +338,8 @@ public static class MappingUtilities
             isReposted,
             isEdited,
             moderationInfo,
-            videoMetadata
+            videoMetadata,
+            mediaItems
         );
     }
 
@@ -432,6 +436,9 @@ public static class MappingUtilities
             }
         }
 
+        // Map media items
+        var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto(httpContext)).ToList();
+
         return new PostDto(
             post.Id,
             post.Content,
@@ -452,7 +459,8 @@ public static class MappingUtilities
             isReposted,
             isEdited,
             moderationInfo,
-            videoMetadata
+            videoMetadata,
+            mediaItems
         );
     }
 
@@ -502,6 +510,80 @@ public static class MappingUtilities
             participants,
             lastMessageDto,
             unreadCount
+        );
+    }
+
+    /// <summary>
+    /// Map PostMedia to PostMediaDto
+    /// </summary>
+    public static PostMediaDto MapToPostMediaDto(this PostMedia media, HttpContext? httpContext = null)
+    {
+        string? imageUrl = null;
+        string? videoUrl = null;
+        string? videoThumbnailUrl = null;
+        VideoProcessingStatus? videoProcessingStatus = null;
+        int? width = null;
+        int? height = null;
+        TimeSpan? duration = null;
+        long? fileSizeBytes = null;
+        string? format = null;
+        VideoMetadata? videoMetadata = null;
+
+        if (media.MediaType == MediaType.Image)
+        {
+            imageUrl = GenerateImageUrl(media.ImageFileName, httpContext);
+            width = media.ImageWidth;
+            height = media.ImageHeight;
+            fileSizeBytes = media.ImageFileSizeBytes;
+            format = media.ImageFormat;
+        }
+        else if (media.MediaType == MediaType.Video)
+        {
+            videoUrl = GenerateVideoUrl(media.ProcessedVideoFileName, httpContext);
+            videoThumbnailUrl = GenerateVideoThumbnailUrl(media.VideoThumbnailFileName, httpContext);
+            videoProcessingStatus = media.VideoProcessingStatus;
+            width = media.VideoWidth ?? media.OriginalVideoWidth;
+            height = media.VideoHeight ?? media.OriginalVideoHeight;
+            duration = media.VideoDuration ?? media.OriginalVideoDuration;
+            fileSizeBytes = media.VideoFileSizeBytes ?? media.OriginalVideoFileSizeBytes;
+            format = media.VideoFormat ?? media.OriginalVideoFormat;
+
+            // Create video metadata if available
+            if (media.VideoWidth.HasValue && media.VideoHeight.HasValue)
+            {
+                videoMetadata = new VideoMetadata
+                {
+                    ProcessedWidth = media.VideoWidth.Value,
+                    ProcessedHeight = media.VideoHeight.Value,
+                    ProcessedDuration = media.VideoDuration ?? TimeSpan.Zero,
+                    ProcessedFileSizeBytes = media.VideoFileSizeBytes ?? 0,
+                    ProcessedFormat = media.VideoFormat ?? string.Empty,
+                    ProcessedBitrate = media.VideoBitrate ?? 0,
+                    CompressionRatio = media.VideoCompressionRatio ?? 0,
+                    OriginalWidth = media.OriginalVideoWidth ?? media.VideoWidth.Value,
+                    OriginalHeight = media.OriginalVideoHeight ?? media.VideoHeight.Value,
+                    OriginalDuration = media.OriginalVideoDuration ?? media.VideoDuration ?? TimeSpan.Zero,
+                    OriginalFileSizeBytes = media.OriginalVideoFileSizeBytes ?? media.VideoFileSizeBytes ?? 0,
+                    OriginalFormat = media.OriginalVideoFormat ?? media.VideoFormat ?? string.Empty,
+                    OriginalBitrate = media.OriginalVideoBitrate ?? media.VideoBitrate ?? 0
+                };
+            }
+        }
+
+        return new PostMediaDto(
+            media.Id,
+            media.MediaType,
+            imageUrl,
+            videoUrl,
+            videoThumbnailUrl,
+            videoProcessingStatus,
+            width,
+            height,
+            duration,
+            fileSizeBytes,
+            format,
+            media.CreatedAt,
+            videoMetadata
         );
     }
 }

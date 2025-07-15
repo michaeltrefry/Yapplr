@@ -298,6 +298,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBlockService, BlockService>();
         services.AddScoped<IImageService, ImageService>();
         services.AddScoped<IVideoService, VideoService>();
+        services.AddScoped<IMultipleFileUploadService, MultipleFileUploadService>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
         services.AddScoped<INotificationService, NotificationService>();

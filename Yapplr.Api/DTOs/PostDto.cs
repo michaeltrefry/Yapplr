@@ -23,5 +23,6 @@ public record PostDto(
     bool IsRepostedByCurrentUser = false,
     bool IsEdited = false,
     PostModerationInfoDto? ModerationInfo = null,
-    VideoMetadata? VideoMetadata = null
+    VideoMetadata? VideoMetadata = null,
+    IEnumerable<PostMediaDto>? MediaItems = null
 );

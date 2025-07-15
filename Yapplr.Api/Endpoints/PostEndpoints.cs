@@ -24,6 +24,47 @@ public static class PostEndpoints
         })
         .WithName("CreatePost")
         .WithSummary("Create a new post")
+        .WithDescription(@"Create a new post with optional single media file.
+
+**For multiple media files, use the /api/posts/with-media endpoint instead.**
+
+**Requirements:**
+- Content must be 1-256 characters
+- Optional single image or video file (legacy support)
+- Use imageFileName OR videoFileName, not both
+
+**Note:** This endpoint supports backward compatibility for single media files. For new implementations with multiple media support, use the /api/posts/with-media endpoint.")
+        .RequireAuthorization("ActiveUser")
+        .Produces<PostDto>(201)
+        .Produces(400)
+        .Produces(401);
+
+        // Create post with multiple media
+        posts.MapPost("/with-media", async ([FromBody] CreatePostWithMediaDto createDto, ClaimsPrincipal user, IPostService postService) =>
+        {
+            var userId = user.GetUserId(true);
+            return await EndpointUtilities.HandleAsync(
+                async () => await postService.CreatePostWithMediaAsync(userId, createDto),
+                $"/api/posts/{{id}}"
+            );
+        })
+        .WithName("CreatePostWithMedia")
+        .WithSummary("Create a new post with multiple media files")
+        .WithDescription(@"Create a new post with up to 10 media files (images and videos).
+
+**Requirements:**
+- Content must be 1-256 characters
+- Maximum 10 media files per post
+- Media files must be uploaded first using the /api/uploads/media endpoint
+- Use the returned file names in the mediaFiles array
+
+**Media File Information:**
+Each media file object should include:
+- fileName: Name returned from upload endpoint
+- mediaType: 0 for Image, 1 for Video
+- width, height: Optional dimensions
+- fileSizeBytes: Optional file size
+- duration: Optional video duration (ISO 8601 format)")
         .RequireAuthorization("ActiveUser")
         .Produces<PostDto>(201)
         .Produces(400)

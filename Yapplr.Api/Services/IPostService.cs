@@ -5,6 +5,7 @@ namespace Yapplr.Api.Services;
 public interface IPostService
 {
     Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto);
+    Task<PostDto?> CreatePostWithMediaAsync(int userId, CreatePostWithMediaDto createDto);
     Task<PostDto?> GetPostByIdAsync(int postId, int? currentUserId = null);
     Task<PostDto?> UpdatePostAsync(int postId, int userId, UpdatePostDto updateDto);
     Task<IEnumerable<PostDto>> GetTimelineAsync(int userId, int page = 1, int pageSize = 20);

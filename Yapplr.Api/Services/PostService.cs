@@ -62,6 +62,12 @@ public class PostService : BaseService, IPostService
             throw new InvalidOperationException("Insufficient trust score to create posts");
         }
 
+        // Check if post contains any videos
+        var hasVideos = !string.IsNullOrEmpty(createDto.VideoFileName) ||
+                       (createDto.MediaFileNames?.Any(fileName =>
+                           !string.IsNullOrEmpty(fileName) &&
+                           DetermineMediaTypeFromFileName(fileName) == MediaType.Video) == true);
+
         var post = new Post
         {
             Content = createDto.Content,
@@ -70,13 +76,16 @@ public class PostService : BaseService, IPostService
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             // Hide posts with videos during processing so they're only visible to the author
-            IsHiddenDuringVideoProcessing = !string.IsNullOrEmpty(createDto.VideoFileName)
+            IsHiddenDuringVideoProcessing = hasVideos
         };
 
         _context.Posts.Add(post);
         await _context.SaveChangesAsync();
 
         // Create media records if present
+        var hasMedia = false;
+
+        // Handle legacy single file properties for backward compatibility
         if (!string.IsNullOrEmpty(createDto.ImageFileName))
         {
             var imageMedia = new PostMedia
@@ -89,6 +98,7 @@ public class PostService : BaseService, IPostService
                 UpdatedAt = DateTime.UtcNow
             };
             _context.PostMedia.Add(imageMedia);
+            hasMedia = true;
         }
 
         if (!string.IsNullOrEmpty(createDto.VideoFileName))
@@ -104,9 +114,44 @@ public class PostService : BaseService, IPostService
                 UpdatedAt = DateTime.UtcNow
             };
             _context.PostMedia.Add(videoMedia);
+            hasMedia = true;
         }
 
-        if (!string.IsNullOrEmpty(createDto.ImageFileName) || !string.IsNullOrEmpty(createDto.VideoFileName))
+        // Handle multiple media files
+        if (createDto.MediaFileNames != null && createDto.MediaFileNames.Count > 0)
+        {
+            foreach (var fileName in createDto.MediaFileNames)
+            {
+                if (string.IsNullOrEmpty(fileName)) continue;
+
+                // Determine media type based on file extension
+                var mediaType = DetermineMediaTypeFromFileName(fileName);
+
+                var media = new PostMedia
+                {
+                    PostId = post.Id,
+                    MediaType = mediaType,
+                    OriginalFileName = fileName,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                if (mediaType == MediaType.Image)
+                {
+                    media.ImageFileName = fileName;
+                }
+                else if (mediaType == MediaType.Video)
+                {
+                    media.VideoFileName = fileName;
+                    media.VideoProcessingStatus = VideoProcessingStatus.Pending;
+                }
+
+                _context.PostMedia.Add(media);
+                hasMedia = true;
+            }
+        }
+
+        if (hasMedia)
         {
             await _context.SaveChangesAsync();
         }
@@ -123,10 +168,31 @@ public class PostService : BaseService, IPostService
         // Perform content moderation analysis
         await ProcessContentModerationAsync(post.Id, createDto.Content, userId);
 
-        // Process video if present
+        // Process videos if present
+        var videoFileNames = new List<string>();
+
+        // Add legacy single video file
         if (!string.IsNullOrEmpty(createDto.VideoFileName))
         {
-            await ProcessVideoAsync(post.Id, userId, createDto.VideoFileName, createDto.Content);
+            videoFileNames.Add(createDto.VideoFileName);
+        }
+
+        // Add multiple video files
+        if (createDto.MediaFileNames != null)
+        {
+            foreach (var fileName in createDto.MediaFileNames)
+            {
+                if (!string.IsNullOrEmpty(fileName) && DetermineMediaTypeFromFileName(fileName) == MediaType.Video)
+                {
+                    videoFileNames.Add(fileName);
+                }
+            }
+        }
+
+        // Process each video
+        foreach (var videoFileName in videoFileNames)
+        {
+            await ProcessVideoAsync(post.Id, userId, videoFileName, createDto.Content);
         }
 
         // Invalidate user post count cache
@@ -161,6 +227,154 @@ public class PostService : BaseService, IPostService
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Auto-hidden post {PostId} from low trust user {UserId}", post.Id, userId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check auto-hide for post {PostId} by user {UserId}", post.Id, userId);
+            // Don't fail the post creation if auto-hide check fails
+        }
+
+        // Load the post with user data
+        var createdPost = await _context.Posts
+            .Include(p => p.User)
+            .Include(p => p.Likes)
+            .Include(p => p.Comments)
+            .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
+            .AsSplitQuery()
+            .FirstAsync(p => p.Id == post.Id);
+
+        return createdPost.MapToPostDto(userId, _httpContextAccessor.HttpContext);
+    }
+
+    public async Task<PostDto?> CreatePostWithMediaAsync(int userId, CreatePostWithMediaDto createDto)
+    {
+        // Check trust-based permissions
+        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.CreatePost))
+        {
+            throw new InvalidOperationException("Insufficient trust score to create posts");
+        }
+
+        // Validate media files count
+        if (createDto.MediaFiles != null && createDto.MediaFiles.Count > 10)
+        {
+            throw new ArgumentException("Maximum 10 media files allowed per post");
+        }
+
+        // Check if post contains any videos
+        var hasVideos = createDto.MediaFiles?.Any(m => m.MediaType == MediaType.Video) == true;
+
+        var post = new Post
+        {
+            Content = createDto.Content,
+            Privacy = createDto.Privacy,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            // Hide posts with videos during processing so they're only visible to the author
+            IsHiddenDuringVideoProcessing = hasVideos
+        };
+
+        _context.Posts.Add(post);
+        await _context.SaveChangesAsync();
+
+        // Create media records
+        if (createDto.MediaFiles != null && createDto.MediaFiles.Count > 0)
+        {
+            foreach (var mediaFile in createDto.MediaFiles)
+            {
+                var media = new PostMedia
+                {
+                    PostId = post.Id,
+                    MediaType = mediaFile.MediaType,
+                    OriginalFileName = mediaFile.FileName,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                if (mediaFile.MediaType == MediaType.Image)
+                {
+                    media.ImageFileName = mediaFile.FileName;
+                    media.ImageWidth = mediaFile.Width;
+                    media.ImageHeight = mediaFile.Height;
+                    media.ImageFileSizeBytes = mediaFile.FileSizeBytes;
+                }
+                else if (mediaFile.MediaType == MediaType.Video)
+                {
+                    media.VideoFileName = mediaFile.FileName;
+                    media.VideoProcessingStatus = VideoProcessingStatus.Pending;
+                    media.OriginalVideoWidth = mediaFile.Width;
+                    media.OriginalVideoHeight = mediaFile.Height;
+                    media.OriginalVideoDuration = mediaFile.Duration;
+                    media.OriginalVideoFileSizeBytes = mediaFile.FileSizeBytes;
+                }
+
+                _context.PostMedia.Add(media);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        // Process hashtags in the post content
+        await ProcessPostTagsAsync(post.Id, createDto.Content);
+
+        // Process link previews in the post content
+        await ProcessPostLinkPreviewsAsync(post.Id, createDto.Content);
+
+        // Create mention notifications for users mentioned in the post
+        await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, post.Id);
+
+        // Perform content moderation analysis
+        await ProcessContentModerationAsync(post.Id, createDto.Content, userId);
+
+        // Process videos if present
+        if (createDto.MediaFiles != null)
+        {
+            var videoFiles = createDto.MediaFiles.Where(m => m.MediaType == MediaType.Video);
+            foreach (var videoFile in videoFiles)
+            {
+                await ProcessVideoAsync(post.Id, userId, videoFile.FileName, createDto.Content);
+            }
+        }
+
+        // Invalidate user post count cache
+        await _countCache.InvalidateUserCountsAsync(userId);
+
+        // Update trust score for post creation
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.PostCreated,
+                "post",
+                post.Id,
+                $"Created post with {createDto.Content.Length} characters and {createDto.MediaFiles?.Count ?? 0} media files"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for post creation by user {UserId}", userId);
+            // Don't fail the post creation if trust score update fails
+        }
+
+        // Check if post should be auto-hidden based on trust score
+        try
+        {
+            var shouldAutoHide = await _trustBasedModerationService.ShouldAutoHideContentAsync(userId, createDto.Content);
+            if (shouldAutoHide)
+            {
+                post.IsHidden = true;
+                post.HiddenReasonType = PostHiddenReasonType.ContentModerationHidden;
+                post.HiddenReason = "Content automatically hidden due to low trust score";
+                post.HiddenAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Post {PostId} by user {UserId} auto-hidden due to low trust score", post.Id, userId);
             }
         }
         catch (Exception ex)
@@ -1366,5 +1580,28 @@ public class PostService : BaseService, IPostService
                 _logger.LogError(updateEx, "Error updating post status to failed for Post {PostId}", postId);
             }
         }
+    }
+
+    /// <summary>
+    /// Determine media type based on file extension
+    /// </summary>
+    private MediaType DetermineMediaTypeFromFileName(string fileName)
+    {
+        var extension = Path.GetExtension(fileName)?.ToLowerInvariant();
+
+        var imageExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var videoExtensions = new[] { ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".mkv" };
+
+        if (!string.IsNullOrEmpty(extension))
+        {
+            if (imageExtensions.Contains(extension))
+                return MediaType.Image;
+
+            if (videoExtensions.Contains(extension))
+                return MediaType.Video;
+        }
+
+        // Default to image if unknown
+        return MediaType.Image;
     }
 }

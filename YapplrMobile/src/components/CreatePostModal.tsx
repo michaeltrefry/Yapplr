@@ -20,7 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { CreatePostData, PostPrivacy } from '../types';
+import { CreatePostData, CreatePostWithMediaData, PostPrivacy, MediaType, MediaFile, UploadedFile } from '../types';
 
 interface CreatePostModalProps {
   visible: boolean;
@@ -35,11 +35,15 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
   const styles = createStyles(colors);
   const [content, setContent] = useState('');
   const [privacy, setPrivacy] = useState<PostPrivacy>(PostPrivacy.Public);
+  const [selectedFiles, setSelectedFiles] = useState<Array<{ uri: string; fileName: string; type: string; mediaType: MediaType }>>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Legacy state for backward compatibility
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
-  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -70,16 +74,62 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
     },
   });
 
+  const createPostWithMediaMutation = useMutation({
+    mutationFn: (data: CreatePostWithMediaData) => api.posts.createPostWithMedia(data),
+    onSuccess: () => {
+      // Refresh the timeline
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      resetForm();
+      onClose();
+      Alert.alert('Success', 'Post created successfully!');
+    },
+    onError: (error) => {
+      console.error('Create post with media error:', error);
+      Alert.alert('Error', 'Failed to create post. Please try again.');
+    },
+  });
+
+  const multipleUploadMutation = useMutation({
+    mutationFn: (files: Array<{ uri: string; fileName: string; type: string }>) => api.uploads.uploadMultipleFiles(files),
+    onMutate: () => {
+      setIsUploadingMedia(true);
+    },
+    onSuccess: (data) => {
+      setUploadedFiles(data.uploadedFiles);
+      setIsUploadingMedia(false);
+      if (data.errors.length > 0) {
+        const errorMessages = data.errors.map(e => `${e.originalFileName}: ${e.errorMessage}`).join('\n');
+        Alert.alert('Upload Errors', `Some files failed to upload:\n${errorMessages}`);
+      }
+    },
+    onError: (error) => {
+      setIsUploadingMedia(false);
+      console.error('Multiple upload error:', error);
+      Alert.alert('Error', 'Failed to upload files. Please try again.');
+    },
+  });
+
   const resetForm = () => {
     setContent('');
+    setSelectedFiles([]);
+    setUploadedFiles([]);
+    setPrivacy(PostPrivacy.Public);
+    setIsUploadingMedia(false);
+    // Legacy cleanup
     setSelectedMedia(null);
     setMediaType(null);
     setUploadedFileName(null);
-    setIsUploadingMedia(false);
   };
 
   const pickMedia = async () => {
     try {
+      // Check if we're at the limit
+      const totalFiles = selectedFiles.length + uploadedFiles.length;
+      if (totalFiles >= 10) {
+        Alert.alert('Limit Reached', 'You can only select up to 10 files per post.');
+        return;
+      }
+
       // Request permission
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -88,112 +138,134 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
         return;
       }
 
+      // Calculate remaining slots
+      const remainingSlots = 10 - totalFiles;
+
       // Launch media picker supporting both images and videos
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'], // Support both images and videos
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.5, // Reduced quality for images
-        allowsMultipleSelection: false,
-        selectionLimit: 1,
+        allowsEditing: false, // Disable editing for multiple selection
+        quality: 0.8, // Good quality for images
+        allowsMultipleSelection: true,
+        selectionLimit: Math.min(remainingSlots, 10),
         exif: false,
         videoMaxDuration: 60, // Limit videos to 60 seconds
       });
 
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        console.log('Full asset details:', JSON.stringify(asset, null, 2));
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        console.log('Selected assets:', result.assets.length);
 
-        // Determine if this is an image or video
-        const isVideo = asset.type === 'video' ||
-                       (asset.mimeType && asset.mimeType.startsWith('video/')) ||
-                       (asset.fileName && /\.(mp4|mov|avi|wmv|flv|webm|mkv)$/i.test(asset.fileName));
+        const validFiles: Array<{ uri: string; fileName: string; type: string; mediaType: MediaType }> = [];
+        const errors: string[] = [];
 
-        // Validate file size based on type
-        if (isVideo) {
-          // Video size limit: 100MB (matching backend)
-          const maxVideoSize = 100 * 1024 * 1024; // 100MB in bytes
-          if (asset.fileSize && asset.fileSize > maxVideoSize) {
-            Alert.alert('File Too Large', 'Video files must be less than 100MB. Please select a smaller video or compress it.');
-            return;
-          }
-        } else {
-          // Image size limit: 5MB (matching existing logic)
-          const maxImageSize = 5 * 1024 * 1024; // 5MB in bytes
-          if (asset.fileSize && asset.fileSize > maxImageSize) {
-            Alert.alert('File Too Large', 'Image files must be less than 5MB. Please select a smaller image.');
-            return;
-          }
-        }
+        for (const asset of result.assets) {
+          console.log('Processing asset:', JSON.stringify(asset, null, 2));
 
-        setSelectedMedia(asset.uri);
-        setMediaType(isVideo ? 'video' : 'image');
+          // Determine if this is an image or video
+          const isVideo = asset.type === 'video' ||
+                         (asset.mimeType && asset.mimeType.startsWith('video/')) ||
+                         (asset.fileName && /\.(mp4|mov|avi|wmv|flv|webm|mkv)$/i.test(asset.fileName));
 
-        // Upload media immediately
-        const fileName = asset.fileName || (isVideo ? 'video.mp4' : 'image.jpg');
-        let mimeType = asset.mimeType || asset.type;
+          const fileName = asset.fileName || (isVideo ? `video_${Date.now()}.mp4` : `image_${Date.now()}.jpg`);
 
-        console.log('Original mimeType:', mimeType, 'fileName:', fileName, 'isVideo:', isVideo);
+          // Validate file size based on type
+          if (isVideo) {
+            // Video size limit: 100MB (matching backend)
+            const maxVideoSize = 100 * 1024 * 1024; // 100MB in bytes
+            if (asset.fileSize && asset.fileSize > maxVideoSize) {
+              errors.push(`${fileName}: Video too large (max 100MB)`);
+              continue;
+            }
 
-        if (isVideo) {
-          // Validate video file type
-          const supportedVideoTypes = ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm', 'mkv'];
-          const fileExtension = fileName.toLowerCase().split('.').pop();
+            // Validate video file type
+            const supportedVideoTypes = ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm', 'mkv'];
+            const fileExtension = fileName.toLowerCase().split('.').pop();
 
-          if (!fileExtension || !supportedVideoTypes.includes(fileExtension)) {
-            Alert.alert('Unsupported Video Format', 'Please select a video in one of these formats: MP4, MOV, AVI, WMV, FLV, WebM, MKV');
-            return;
-          }
+            if (!fileExtension || !supportedVideoTypes.includes(fileExtension)) {
+              errors.push(`${fileName}: Unsupported video format`);
+              continue;
+            }
+          } else {
+            // Image size limit: 5MB (matching existing logic)
+            const maxImageSize = 5 * 1024 * 1024; // 5MB in bytes
+            if (asset.fileSize && asset.fileSize > maxImageSize) {
+              errors.push(`${fileName}: Image too large (max 5MB)`);
+              continue;
+            }
 
-          // Handle video MIME types
-          if (!mimeType || !mimeType.startsWith('video/')) {
-            // Fallback based on file extension
-            if (fileName.toLowerCase().endsWith('.mov')) {
-              mimeType = 'video/quicktime';
-            } else if (fileName.toLowerCase().endsWith('.avi')) {
-              mimeType = 'video/x-msvideo';
-            } else if (fileName.toLowerCase().endsWith('.wmv')) {
-              mimeType = 'video/x-ms-wmv';
-            } else if (fileName.toLowerCase().endsWith('.flv')) {
-              mimeType = 'video/x-flv';
-            } else if (fileName.toLowerCase().endsWith('.webm')) {
-              mimeType = 'video/webm';
-            } else if (fileName.toLowerCase().endsWith('.mkv')) {
-              mimeType = 'video/x-matroska';
-            } else {
-              mimeType = 'video/mp4';
+            // Validate image file type
+            const supportedImageTypes = ['jpg', 'jpeg', 'png', 'gif', 'heic', 'webp'];
+            const fileExtension = fileName.toLowerCase().split('.').pop();
+
+            if (!fileExtension || !supportedImageTypes.includes(fileExtension)) {
+              errors.push(`${fileName}: Unsupported image format`);
+              continue;
             }
           }
-          await uploadVideo(asset.uri, fileName, mimeType);
-        } else {
-          // Validate image file type
-          const supportedImageTypes = ['jpg', 'jpeg', 'png', 'gif', 'heic', 'webp'];
-          const fileExtension = fileName.toLowerCase().split('.').pop();
 
-          if (!fileExtension || !supportedImageTypes.includes(fileExtension)) {
-            Alert.alert('Unsupported Image Format', 'Please select an image in one of these formats: JPG, PNG, GIF, HEIC, WebP');
-            return;
-          }
-
-          // Handle image MIME types
-          if (!mimeType || !mimeType.startsWith('image/')) {
-            // Fallback based on file extension
-            if (fileName.toLowerCase().endsWith('.png')) {
-              mimeType = 'image/png';
-            } else if (fileName.toLowerCase().endsWith('.gif')) {
-              mimeType = 'image/gif';
-            } else if (fileName.toLowerCase().endsWith('.heic')) {
-              mimeType = 'image/heic';
-            } else if (fileName.toLowerCase().endsWith('.webp')) {
-              mimeType = 'image/webp';
-            } else {
-              mimeType = 'image/jpeg';
+          // Determine MIME type
+          let mimeType = asset.mimeType || asset.type;
+          if (isVideo) {
+            if (!mimeType || !mimeType.startsWith('video/')) {
+              // Fallback based on file extension
+              if (fileName.toLowerCase().endsWith('.mov')) {
+                mimeType = 'video/quicktime';
+              } else if (fileName.toLowerCase().endsWith('.avi')) {
+                mimeType = 'video/x-msvideo';
+              } else if (fileName.toLowerCase().endsWith('.wmv')) {
+                mimeType = 'video/x-ms-wmv';
+              } else if (fileName.toLowerCase().endsWith('.flv')) {
+                mimeType = 'video/x-flv';
+              } else if (fileName.toLowerCase().endsWith('.webm')) {
+                mimeType = 'video/webm';
+              } else if (fileName.toLowerCase().endsWith('.mkv')) {
+                mimeType = 'video/x-matroska';
+              } else {
+                mimeType = 'video/mp4';
+              }
+            }
+          } else {
+            if (!mimeType || !mimeType.startsWith('image/')) {
+              // Fallback based on file extension
+              if (fileName.toLowerCase().endsWith('.png')) {
+                mimeType = 'image/png';
+              } else if (fileName.toLowerCase().endsWith('.gif')) {
+                mimeType = 'image/gif';
+              } else if (fileName.toLowerCase().endsWith('.heic')) {
+                mimeType = 'image/heic';
+              } else if (fileName.toLowerCase().endsWith('.webp')) {
+                mimeType = 'image/webp';
+              } else {
+                mimeType = 'image/jpeg';
+              }
             }
           }
-          await uploadImage(asset.uri, fileName, mimeType);
+
+          validFiles.push({
+            uri: asset.uri,
+            fileName,
+            type: mimeType,
+            mediaType: isVideo ? MediaType.Video : MediaType.Image,
+          });
         }
 
-        console.log('Final mimeType:', mimeType);
+        if (errors.length > 0) {
+          Alert.alert('File Validation Errors', errors.join('\n'));
+        }
+
+        if (validFiles.length > 0) {
+          // Add to selected files and upload immediately
+          setSelectedFiles(prev => [...prev, ...validFiles]);
+
+          // Upload files
+          const uploadFiles = validFiles.map(file => ({
+            uri: file.uri,
+            fileName: file.fileName,
+            type: file.type,
+          }));
+
+          multipleUploadMutation.mutate(uploadFiles);
+        }
       }
     } catch (error) {
       console.error('Error picking media:', error);
@@ -238,6 +310,24 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
     setIsUploadingMedia(false);
   };
 
+  const removeFile = (index: number, isUploaded: boolean = false) => {
+    if (isUploaded) {
+      setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const removeAllMedia = () => {
+    setSelectedFiles([]);
+    setUploadedFiles([]);
+    // Legacy cleanup
+    setSelectedMedia(null);
+    setMediaType(null);
+    setUploadedFileName(null);
+    setIsUploadingMedia(false);
+  };
+
   const handleSubmit = () => {
     if (!content.trim()) {
       Alert.alert('Error', 'Please enter some content for your post.');
@@ -250,25 +340,46 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
     }
 
     if (isUploadingMedia) {
-      Alert.alert('Please wait', `${mediaType === 'video' ? 'Video' : 'Media'} is still uploading...`);
+      Alert.alert('Please wait', 'Media is still uploading...');
       return;
     }
 
-    const postData: CreatePostData = {
-      content: content.trim(),
-      privacy,
-    };
+    // Use new multiple media API if we have uploaded files
+    if (uploadedFiles.length > 0) {
+      const mediaFiles: MediaFile[] = uploadedFiles.map(file => ({
+        fileName: file.fileName,
+        mediaType: file.mediaType,
+        width: file.width,
+        height: file.height,
+        fileSizeBytes: file.fileSizeBytes,
+        duration: file.duration,
+      }));
 
-    // Add the appropriate file name based on media type
-    if (uploadedFileName) {
-      if (mediaType === 'video') {
-        postData.videoFileName = uploadedFileName;
-      } else {
-        postData.imageFileName = uploadedFileName;
+      const postData: CreatePostWithMediaData = {
+        content: content.trim(),
+        privacy,
+        mediaFiles,
+      };
+
+      createPostWithMediaMutation.mutate(postData);
+    } else {
+      // Use legacy API for backward compatibility
+      const postData: CreatePostData = {
+        content: content.trim(),
+        privacy,
+      };
+
+      // Add the appropriate file name based on media type
+      if (uploadedFileName) {
+        if (mediaType === 'video') {
+          postData.videoFileName = uploadedFileName;
+        } else {
+          postData.imageFileName = uploadedFileName;
+        }
       }
-    }
 
-    createPostMutation.mutate(postData);
+      createPostMutation.mutate(postData);
+    }
   };
 
   const handleClose = () => {
@@ -338,7 +449,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
 
   const remainingChars = 256 - content.length;
   const isOverLimit = remainingChars < 0;
-  const canSubmit = content.trim().length > 0 && !isOverLimit && !createPostMutation.isPending && !isUploadingMedia;
+  const canSubmit = content.trim().length > 0 && !isOverLimit && !createPostMutation.isPending && !createPostWithMediaMutation.isPending && !isUploadingMedia;
 
   return (
     <Modal
@@ -402,13 +513,18 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
               <TouchableOpacity
                 style={styles.mediaButton}
                 onPress={pickMedia}
-                disabled={isUploadingMedia}
+                disabled={isUploadingMedia || (uploadedFiles.length + selectedFiles.length) >= 10}
               >
                 <Ionicons
                   name="attach-outline"
                   size={20}
-                  color={isUploadingMedia ? "#9CA3AF" : "#6B7280"}
+                  color={isUploadingMedia || (uploadedFiles.length + selectedFiles.length) >= 10 ? "#9CA3AF" : "#6B7280"}
                 />
+                {(uploadedFiles.length + selectedFiles.length) > 0 && (
+                  <Text style={styles.fileCount}>
+                    {uploadedFiles.length + selectedFiles.length}/10
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
 
@@ -436,8 +552,70 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
               textAlignVertical="top"
             />
 
-            {/* Media Preview */}
-            {selectedMedia && (
+            {/* Multiple Media Preview */}
+            {(uploadedFiles.length > 0 || selectedFiles.length > 0) && (
+              <View style={styles.mediaContainer}>
+                <View style={styles.mediaHeader}>
+                  <Text style={styles.mediaCount}>
+                    {uploadedFiles.length + selectedFiles.length} file(s) selected (max 10)
+                  </Text>
+                  <TouchableOpacity onPress={removeAllMedia}>
+                    <Text style={styles.removeAllText}>Remove all</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mediaScroll}>
+                  {/* Uploaded Files */}
+                  {uploadedFiles.map((file, index) => (
+                    <View key={`uploaded-${index}`} style={styles.mediaItem}>
+                      {file.mediaType === MediaType.Image ? (
+                        <Image source={{ uri: file.fileUrl }} style={styles.mediaThumbnail} />
+                      ) : (
+                        <View style={[styles.mediaThumbnail, styles.videoThumbnail]}>
+                          <Ionicons name="play-circle" size={32} color="#6B7280" />
+                        </View>
+                      )}
+                      <TouchableOpacity
+                        style={styles.removeItemButton}
+                        onPress={() => removeFile(index, true)}
+                      >
+                        <Ionicons name="close" size={16} color="#fff" />
+                      </TouchableOpacity>
+                      <View style={styles.uploadedBadge}>
+                        <Ionicons name="checkmark" size={12} color="#fff" />
+                      </View>
+                    </View>
+                  ))}
+
+                  {/* Files being uploaded */}
+                  {selectedFiles.map((file, index) => (
+                    <View key={`selected-${index}`} style={styles.mediaItem}>
+                      {file.mediaType === MediaType.Image ? (
+                        <Image source={{ uri: file.uri }} style={styles.mediaThumbnail} />
+                      ) : (
+                        <View style={[styles.mediaThumbnail, styles.videoThumbnail]}>
+                          <Ionicons name="play-circle" size={32} color="#6B7280" />
+                        </View>
+                      )}
+                      <TouchableOpacity
+                        style={styles.removeItemButton}
+                        onPress={() => removeFile(index, false)}
+                      >
+                        <Ionicons name="close" size={16} color="#fff" />
+                      </TouchableOpacity>
+                      {isUploadingMedia && (
+                        <View style={styles.uploadingOverlay}>
+                          <ActivityIndicator size="small" color="#3B82F6" />
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Legacy Media Preview (for backward compatibility) */}
+            {selectedMedia && !uploadedFiles.length && !selectedFiles.length && (
               <View style={styles.mediaContainer}>
                 {mediaType === 'video' ? (
                   <View style={styles.videoPreview}>
@@ -455,7 +633,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
                     </Text>
                   </View>
                 )}
-                <TouchableOpacity style={styles.removeMediaButton} onPress={removeMedia}>
+                <TouchableOpacity style={styles.removeMediaButton} onPress={removeAllMedia}>
                   <Ionicons name="close" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
@@ -649,6 +827,86 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: 16,
     width: 32,
     height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fileCount: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: 'bold',
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  mediaHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  mediaCount: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  removeAllText: {
+    fontSize: 14,
+    color: '#EF4444',
+    fontWeight: '500',
+  },
+  mediaScroll: {
+    flexDirection: 'row',
+  },
+  mediaItem: {
+    marginRight: 8,
+    position: 'relative',
+  },
+  mediaThumbnail: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  videoThumbnail: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeItemButton: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#EF4444',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  uploadedBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    backgroundColor: '#10B981',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },

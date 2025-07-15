@@ -107,6 +107,52 @@ export interface UserProfile {
   requiresFollowApproval: boolean;
 }
 
+export enum MediaType {
+  Image = 0,
+  Video = 1,
+}
+
+export interface PostMedia {
+  id: number;
+  mediaType: MediaType;
+  imageUrl?: string;
+  videoUrl?: string;
+  videoThumbnailUrl?: string;
+  videoProcessingStatus?: VideoProcessingStatus;
+  width?: number;
+  height?: number;
+  duration?: string; // ISO 8601 duration string
+  fileSizeBytes?: number;
+  format?: string;
+  createdAt: string;
+  videoMetadata?: VideoMetadata;
+}
+
+export interface VideoMetadata {
+  processedWidth: number;
+  processedHeight: number;
+  processedDuration: string; // ISO 8601 duration string
+  processedFileSizeBytes: number;
+  processedFormat: string;
+  processedBitrate: number;
+  compressionRatio: number;
+  originalWidth: number;
+  originalHeight: number;
+  originalDuration: string; // ISO 8601 duration string
+  originalFileSizeBytes: number;
+  originalFormat: string;
+  originalBitrate: number;
+}
+
+export interface MediaFile {
+  fileName: string;
+  mediaType: MediaType;
+  width?: number;
+  height?: number;
+  fileSizeBytes?: number;
+  duration?: string; // ISO 8601 duration string
+}
+
 export interface Post {
   id: number;
   content: string;
@@ -127,6 +173,7 @@ export interface Post {
   isRepostedByCurrentUser: boolean;
   isEdited: boolean;
   moderationInfo?: PostModerationInfo;
+  mediaItems?: PostMedia[];
 }
 
 export interface PostModerationInfo {
@@ -226,6 +273,45 @@ export interface CreatePostData {
   imageFileName?: string;
   videoFileName?: string;
   privacy?: PostPrivacy;
+  mediaFileNames?: string[];
+}
+
+export interface CreatePostWithMediaData {
+  content: string;
+  privacy?: PostPrivacy;
+  mediaFiles?: MediaFile[];
+}
+
+export interface UploadedFile {
+  fileName: string;
+  fileUrl: string;
+  mediaType: MediaType;
+  fileSizeBytes: number;
+  width?: number;
+  height?: number;
+  duration?: string;
+}
+
+export interface FileUploadError {
+  originalFileName: string;
+  errorMessage: string;
+  errorCode: string;
+}
+
+export interface MultipleFileUploadResponse {
+  uploadedFiles: UploadedFile[];
+  errors: FileUploadError[];
+  totalFiles: number;
+  successfulUploads: number;
+  failedUploads: number;
+}
+
+export interface UploadLimits {
+  maxFiles: number;
+  maxImageSizeMB: number;
+  maxVideoSizeMB: number;
+  supportedImageFormats: string[];
+  supportedVideoFormats: string[];
 }
 
 export interface UpdatePostData {

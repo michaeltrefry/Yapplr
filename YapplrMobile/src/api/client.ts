@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, RegisterResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag, ContentPageVersion } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, RegisterResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, CreatePostWithMediaData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag, ContentPageVersion, MultipleFileUploadResponse, UploadLimits } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -118,6 +118,11 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
       createPost: async (data: CreatePostData): Promise<Post> => {
         const response = await client.post('/api/posts', data);
+        return response.data;
+      },
+
+      createPostWithMedia: async (data: CreatePostWithMediaData): Promise<Post> => {
+        const response = await client.post('/api/posts/with-media', data);
         return response.data;
       },
 
@@ -414,6 +419,48 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
       deleteVideo: async (fileName: string): Promise<void> => {
         await client.delete(`/api/videos/${fileName}`);
+      },
+    },
+
+    uploads: {
+      uploadMultipleFiles: async (files: Array<{ uri: string; fileName: string; type: string }>): Promise<MultipleFileUploadResponse> => {
+        console.log('Uploading multiple files:', files.length);
+
+        const formData = new FormData();
+
+        files.forEach((file, index) => {
+          const mimeType = file.type;
+          formData.append('files', {
+            uri: file.uri,
+            type: mimeType,
+            name: file.fileName,
+          } as any);
+        });
+
+        try {
+          const response = await client.post('/api/uploads/media', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+
+          if (response.status >= 400) {
+            const errorMessage = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            console.error('API error response:', errorMessage);
+            throw new Error(`Upload failed with status ${response.status}: ${errorMessage}`);
+          }
+
+          console.log('Multiple files upload successful:', response.data);
+          return response.data;
+        } catch (error: any) {
+          console.error('Multiple files upload error:', error.message);
+          throw error;
+        }
+      },
+
+      getUploadLimits: async (): Promise<UploadLimits> => {
+        const response = await client.get('/api/uploads/limits');
+        return response.data;
       },
     },
 

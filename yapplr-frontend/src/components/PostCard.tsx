@@ -13,6 +13,7 @@ import ShareModal from './ShareModal';
 import ReportModal from './ReportModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentHighlight } from '@/utils/contentUtils';
+import MediaGallery from './MediaGallery';
 import LinkPreviewList from './LinkPreviewList';
 import HiddenPostBanner from './HiddenPostBanner';
 
@@ -353,56 +354,63 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               </p>
             )}
             
-            {/* Image */}
-            {post.imageUrl && (
-              <div className="mt-3">
-                <img
-                  src={post.imageUrl}
-                  alt="Post image"
-                  className="max-w-full h-auto rounded-lg border border-gray-200"
-                />
-              </div>
-            )}
-
-            {/* Video */}
-            {post.videoUrl && post.videoProcessingStatus === VideoProcessingStatus.Completed && (
-              <div className="mt-3">
-                <video
-                  src={post.videoUrl}
-                  poster={post.videoThumbnailUrl}
-                  controls
-                  className="max-w-full h-auto rounded-lg border border-gray-200"
-                  style={{ maxHeight: '400px' }}
-                >
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            )}
-
-            {/* Video Processing Status */}
-            {post.videoProcessingStatus !== null && post.videoProcessingStatus !== VideoProcessingStatus.Completed && (
-              <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center space-x-2">
-                  <Play className="w-5 h-5 text-gray-400" />
-                  <div>
-                    {(post.videoProcessingStatus === VideoProcessingStatus.Pending || post.videoProcessingStatus === VideoProcessingStatus.Processing) && (
-                      <p className="text-sm text-gray-600">Your video is processing. It will be available on your feed when it has completed.</p>
-                    )}
-                    {post.videoProcessingStatus === VideoProcessingStatus.Failed && (
-                      <p className="text-sm text-red-600">Video processing failed. Please try uploading again.</p>
-                    )}
-                    {post.videoThumbnailUrl && (
-                      <div className="mt-2">
-                        <img
-                          src={post.videoThumbnailUrl}
-                          alt="Video thumbnail"
-                          className="w-48 h-auto rounded border border-gray-200"
-                        />
-                      </div>
-                    )}
+            {/* Media Gallery - New multiple media support */}
+            {post.mediaItems && post.mediaItems.length > 0 ? (
+              <MediaGallery mediaItems={post.mediaItems} />
+            ) : (
+              <>
+                {/* Legacy single image support */}
+                {post.imageUrl && (
+                  <div className="mt-3">
+                    <img
+                      src={post.imageUrl}
+                      alt="Post image"
+                      className="max-w-full h-auto rounded-lg border border-gray-200"
+                    />
                   </div>
-                </div>
-              </div>
+                )}
+
+                {/* Legacy single video support */}
+                {post.videoUrl && post.videoProcessingStatus === VideoProcessingStatus.Completed && (
+                  <div className="mt-3">
+                    <video
+                      src={post.videoUrl}
+                      poster={post.videoThumbnailUrl}
+                      controls
+                      className="max-w-full h-auto rounded-lg border border-gray-200"
+                      style={{ maxHeight: '400px' }}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                )}
+
+                {/* Legacy video processing status */}
+                {post.videoProcessingStatus !== null && post.videoProcessingStatus !== VideoProcessingStatus.Completed && (
+                  <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center space-x-2">
+                      <Play className="w-5 h-5 text-gray-400" />
+                      <div>
+                        {(post.videoProcessingStatus === VideoProcessingStatus.Pending || post.videoProcessingStatus === VideoProcessingStatus.Processing) && (
+                          <p className="text-sm text-gray-600">Your video is processing. It will be available on your feed when it has completed.</p>
+                        )}
+                        {post.videoProcessingStatus === VideoProcessingStatus.Failed && (
+                          <p className="text-sm text-red-600">Video processing failed. Please try uploading again.</p>
+                        )}
+                        {post.videoThumbnailUrl && (
+                          <div className="mt-2">
+                            <img
+                              src={post.videoThumbnailUrl}
+                              alt="Video thumbnail"
+                              className="w-48 h-auto rounded border border-gray-200"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Link Previews */}
