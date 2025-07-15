@@ -174,7 +174,7 @@ public static class EndpointUtilities
         if (currentUserId.HasValue && currentUserId.Value == resourceOwnerId)
             return true;
 
-        return user.HasRole("Admin") || user.HasRole("Moderator");
+        return user.IsAdminOrModerator();
     }
 
     /// <summary>

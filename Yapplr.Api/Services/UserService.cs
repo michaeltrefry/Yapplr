@@ -743,6 +743,11 @@ public class UserService : BaseService, IUserService
         user.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        // NOTE: Role changes require the user to get a new JWT token to reflect the updated role claims.
+        // The client should handle this by prompting for re-authentication or implementing token refresh.
+        // Until the user gets a new token, their JWT will contain the old role information.
+
         return true;
     }
 

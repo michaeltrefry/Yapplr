@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
+using Yapplr.Api.Extensions;
 
 namespace Yapplr.Api.Common;
 
@@ -37,7 +39,9 @@ public abstract class BaseService
 
     /// <summary>
     /// Check if user has required role
+    /// DEPRECATED: Use ClaimsPrincipal.HasRoleOrHigher() instead to avoid database queries
     /// </summary>
+    [Obsolete("Use ClaimsPrincipal.HasRoleOrHigher() instead to avoid database queries")]
     protected async Task<bool> UserHasRoleAsync(int userId, UserRole requiredRole)
     {
         var user = await _context.Users.FindAsync(userId);
@@ -46,11 +50,29 @@ public abstract class BaseService
 
     /// <summary>
     /// Check if user is admin or moderator
+    /// DEPRECATED: Use ClaimsPrincipal.IsAdminOrModerator() instead to avoid database queries
     /// </summary>
+    [Obsolete("Use ClaimsPrincipal.IsAdminOrModerator() instead to avoid database queries")]
     protected async Task<bool> IsUserAdminOrModeratorAsync(int userId)
     {
         var user = await _context.Users.FindAsync(userId);
         return user != null && (user.Role == UserRole.Admin || user.Role == UserRole.Moderator);
+    }
+
+    /// <summary>
+    /// Check if user has required role using JWT claims (preferred method)
+    /// </summary>
+    protected static bool UserHasRole(ClaimsPrincipal user, UserRole requiredRole)
+    {
+        return user.HasRoleOrHigher(requiredRole);
+    }
+
+    /// <summary>
+    /// Check if user is admin or moderator using JWT claims (preferred method)
+    /// </summary>
+    protected static bool IsUserAdminOrModerator(ClaimsPrincipal user)
+    {
+        return user.IsAdminOrModerator();
     }
 
     /// <summary>

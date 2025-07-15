@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
+using Yapplr.Api.Extensions;
 
 namespace Yapplr.Api.Common;
 
@@ -401,7 +403,9 @@ public static class QueryUtilities
 
     /// <summary>
     /// Check if user can view hidden content (admin, moderator, or content owner)
+    /// DEPRECATED: Use the ClaimsPrincipal overload instead to avoid database queries
     /// </summary>
+    [Obsolete("Use the ClaimsPrincipal overload instead to avoid database queries")]
     public static async Task<bool> CanViewHiddenContentAsync(
         this YapplrDbContext context,
         int? currentUserId,
@@ -415,5 +419,20 @@ public static class QueryUtilities
 
         var user = await context.Users.FindAsync(currentUserId.Value);
         return user != null && (user.Role == UserRole.Admin || user.Role == UserRole.Moderator);
+    }
+
+    /// <summary>
+    /// Check if user can view hidden content using JWT claims (preferred method)
+    /// </summary>
+    public static bool CanViewHiddenContent(ClaimsPrincipal user, int contentOwnerId)
+    {
+        var currentUserId = user.GetUserIdOrNull();
+        if (!currentUserId.HasValue)
+            return false;
+
+        if (currentUserId.Value == contentOwnerId)
+            return true;
+
+        return user.IsAdminOrModerator();
     }
 }

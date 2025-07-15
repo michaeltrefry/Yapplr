@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 using Yapplr.Api.Common;
+using Yapplr.Api.Extensions;
 
 namespace Yapplr.Api.Authorization;
 
@@ -24,15 +25,29 @@ public class RoleAuthorizationHandler : AuthorizationHandler<RoleRequirement>
         RoleRequirement requirement)
     {
         // Check if user is authenticated
-        if (!context.User.Identity?.IsAuthenticated ?? true)
+        if (!context.User.IsAuthenticated())
         {
             context.Fail();
             return;
         }
 
-        // Get current user ID
-        var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        // Check role using JWT claims (no database query needed)
+        if (!context.User.HasRoleOrHigher(requirement.MinimumRole))
+        {
+            context.Fail();
+            return;
+        }
+
+        // If no status requirement, we're done (role check passed)
+        if (!requirement.UserStatus.HasValue)
+        {
+            context.Succeed(requirement);
+            return;
+        }
+
+        // Status check requires database query for real-time data
+        var userId = context.User.GetUserIdOrNull();
+        if (!userId.HasValue)
         {
             context.Fail();
             return;
@@ -40,27 +55,21 @@ public class RoleAuthorizationHandler : AuthorizationHandler<RoleRequirement>
 
         try
         {
-            // Get user entity and check role
-            var user = await _cachingService.GetUserByIdAsync(userId, _serviceScopeFactory);
+            // Only query database when status verification is required
+            var user = await _cachingService.GetUserByIdAsync(userId.Value, _serviceScopeFactory);
             if (user == null)
             {
                 context.Fail();
                 return;
             }
 
-            // Check if user has sufficient role
-            if (user.Role < requirement.MinimumRole)
-            {
-                context.Fail();
-                return;
-            }
-
-            if (requirement.UserStatus.HasValue && requirement.UserStatus.Value != user.Status)
+            // Handle status requirements
+            if (requirement.UserStatus.Value != user.Status)
             {
                 if (user.Status == UserStatus.Suspended && user.SuspendedUntil.HasValue && user.SuspendedUntil.Value <= DateTime.UtcNow)
                 {
                     // Auto-unsuspend user
-                    await _userService.UnsuspendUserAsync(userId);
+                    await _userService.UnsuspendUserAsync(userId.Value);
                     // Continue with authorization since user is now unsuspended
                 }
                 else if (user.Status == UserStatus.Suspended || user.Status == UserStatus.Banned)
@@ -69,7 +78,7 @@ public class RoleAuthorizationHandler : AuthorizationHandler<RoleRequirement>
                     return;
                 }
             }
-            
+
             // If we get here, the user meets all requirements
             context.Succeed(requirement);
         }

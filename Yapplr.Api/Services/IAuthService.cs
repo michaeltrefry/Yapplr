@@ -5,7 +5,7 @@ namespace Yapplr.Api.Services;
 
 public interface IAuthService
 {
-    Task<AuthResponseDto?> RegisterAsync(RegisterUserDto registerDto);
+    Task<RegisterResponseDto?> RegisterAsync(RegisterUserDto registerDto);
     Task<AuthResponseDto?> LoginAsync(LoginUserDto loginDto);
     Task<bool> RequestPasswordResetAsync(string email, string resetBaseUrl);
     Task<bool> ResetPasswordAsync(string token, string newPassword);

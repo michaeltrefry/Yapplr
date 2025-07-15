@@ -86,6 +86,7 @@ public static class AdminEndpoints
         })
         .WithName("GetUsersForAdmin")
         .WithSummary("Get users for admin management")
+        .RequireAuthorization("Admin")
         .Produces<IEnumerable<AdminUserDto>>(200);
 
         admin.MapGet("/users/{id:int}", async (int id, IAdminService adminService) =>

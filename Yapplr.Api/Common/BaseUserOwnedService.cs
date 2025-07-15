@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Yapplr.Api.Data;
+using Yapplr.Api.Extensions;
 
 namespace Yapplr.Api.Common;
 
@@ -23,6 +25,26 @@ public abstract class BaseUserOwnedService<TEntity, TDto, TCreateDto, TUpdateDto
     protected override Task<bool> CanDeleteEntityAsync(TEntity entity, int currentUserId)
     {
         return Task.FromResult(entity.UserId == currentUserId || IsUserAdminOrModeratorAsync(currentUserId).Result);
+    }
+
+    /// <summary>
+    /// Check if user can update entity using JWT claims (preferred method)
+    /// </summary>
+    protected virtual bool CanUpdateEntity(TEntity entity, TUpdateDto updateDto, ClaimsPrincipal user)
+    {
+        var currentUserId = user.GetUserIdOrNull();
+        return currentUserId.HasValue &&
+               (entity.UserId == currentUserId.Value || user.IsAdminOrModerator());
+    }
+
+    /// <summary>
+    /// Check if user can delete entity using JWT claims (preferred method)
+    /// </summary>
+    protected virtual bool CanDeleteEntity(TEntity entity, ClaimsPrincipal user)
+    {
+        var currentUserId = user.GetUserIdOrNull();
+        return currentUserId.HasValue &&
+               (entity.UserId == currentUserId.Value || user.IsAdminOrModerator());
     }
 
     protected override async Task<IQueryable<TEntity>> ApplyAccessFilterAsync(IQueryable<TEntity> query, int? currentUserId)

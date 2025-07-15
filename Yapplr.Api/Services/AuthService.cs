@@ -31,7 +31,7 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<AuthResponseDto?> RegisterAsync(RegisterUserDto registerDto)
+    public async Task<RegisterResponseDto?> RegisterAsync(RegisterUserDto registerDto)
     {
         // Check if user already exists
         if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
@@ -109,11 +109,13 @@ public class AuthService : IAuthService
             }
         });
 
-        // Return auth response but user will need to verify email to fully access the app
-        var token = GenerateJwtToken(user);
+        // Return registration response without token - user must verify email first
         var userDto = user.ToDto();
 
-        return new AuthResponseDto(token, userDto);
+        return new RegisterResponseDto(
+            "Registration successful. Please check your email to verify your account before logging in.",
+            userDto
+        );
     }
 
     public async Task<AuthResponseDto?> LoginAsync(LoginUserDto loginDto)

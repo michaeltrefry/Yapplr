@@ -23,8 +23,8 @@ public static class AuthEndpoints
             });
         })
         .WithName("Register")
-        .WithSummary("Register a new user")
-        .Produces<AuthResponseDto>(200)
+        .WithSummary("Register a new user - email verification required before login")
+        .Produces<RegisterResponseDto>(200)
         .Produces(400);
 
         auth.MapPost("/login", async ([FromBody] LoginUserDto loginDto, IAuthService authService) =>
