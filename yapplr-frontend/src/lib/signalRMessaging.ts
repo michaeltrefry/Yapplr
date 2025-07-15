@@ -1,7 +1,7 @@
 import * as signalR from '@microsoft/signalr';
 
 export interface SignalRNotificationPayload {
-  type: 'message' | 'mention' | 'reply' | 'comment' | 'follow' | 'like' | 'repost' | 'follow_request' | 'test' | 'generic' | 'VideoProcessingCompleted';
+  type: 'message' | 'mention' | 'reply' | 'comment' | 'follow' | 'like' | 'repost' | 'follow_request' | 'test' | 'generic' | 'VideoProcessingCompleted' | 'systemMessage';
   title: string;
   body: string;
   data?: {

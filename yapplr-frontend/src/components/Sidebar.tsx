@@ -139,7 +139,7 @@ export default function Sidebar() {
         </nav>
 
         {/* User Info & Logout */}
-        <div className="border-t border-gray-200 pt-4 space-y-2">
+        <div className="border-t border-gray-200 pt-4 space-y-2 bg-white">
           <Link
             href={`/profile/${user?.username}`}
             className="flex items-center justify-center lg:justify-start hover:bg-gray-100 rounded-lg p-2 transition-colors cursor-pointer"

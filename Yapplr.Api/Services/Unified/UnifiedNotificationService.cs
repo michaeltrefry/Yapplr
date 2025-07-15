@@ -87,12 +87,14 @@ public class UnifiedNotificationService : IUnifiedNotificationService
             }
 
             // Create database notification
+            _logger.LogDebug("Creating database notification for user {UserId}, type {NotificationType}", request.UserId, request.NotificationType);
             var notification = await CreateDatabaseNotificationAsync(request);
             if (notification == null)
             {
                 _logger.LogError("Failed to create database notification for user {UserId}", request.UserId);
                 return false;
             }
+            _logger.LogDebug("Database notification created successfully with ID {NotificationId} for user {UserId}", notification.Id, request.UserId);
 
             // Increment sent counter for all successfully processed notifications
             Interlocked.Increment(ref _totalNotificationsSent);
@@ -249,6 +251,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
     {
         try
         {
+            _logger.LogDebug("Creating notification entity for user {UserId}, type {NotificationType}", request.UserId, request.NotificationType);
             var notification = new Notification
             {
                 Type = ParseNotificationType(request.NotificationType),
@@ -257,10 +260,13 @@ public class UnifiedNotificationService : IUnifiedNotificationService
                 CreatedAt = DateTime.UtcNow
             };
 
+            _logger.LogDebug("Adding notification to context for user {UserId}", request.UserId);
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
+            _logger.LogDebug("Notification saved to database with ID {NotificationId} for user {UserId}", notification.Id, request.UserId);
 
             // Invalidate notification count cache
+            _logger.LogDebug("Invalidating notification count cache for user {UserId}", request.UserId);
             await _countCache.InvalidateNotificationCountsAsync(request.UserId);
 
             return notification;
@@ -324,6 +330,8 @@ public class UnifiedNotificationService : IUnifiedNotificationService
             "appeal_approved" => NotificationType.AppealApproved,
             "appeal_denied" => NotificationType.AppealDenied,
             "video_processing_completed" => NotificationType.VideoProcessingCompleted,
+            "test" => NotificationType.SystemMessage,
+            "systemmessage" => NotificationType.SystemMessage,
             _ => NotificationType.SystemMessage
         };
     }

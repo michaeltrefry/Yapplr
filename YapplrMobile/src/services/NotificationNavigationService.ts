@@ -49,6 +49,7 @@ class NotificationNavigationService {
               break;
 
             case 'mention':
+            case 'reply':
             case 'comment':
             case 'like':
             case 'repost':
@@ -58,6 +59,13 @@ class NotificationNavigationService {
             case 'follow':
             case 'follow_request':
               this.navigateToUserProfile(data);
+              break;
+
+            case 'test':
+            case 'generic':
+            case 'VideoProcessingCompleted':
+            case 'systemMessage':
+              console.log('📱🔔 System notification, no specific navigation');
               break;
 
             default:

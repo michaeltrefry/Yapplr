@@ -38,7 +38,7 @@ export default function SearchPage() {
         <div className="flex-1 ml-16 lg:ml-64">
           <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
             {/* Header */}
-            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 z-20">
               <h1 className="text-xl font-bold mb-4 text-gray-900">Search</h1>
 
               {/* Search Input */}

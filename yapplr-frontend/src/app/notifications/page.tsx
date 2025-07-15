@@ -118,16 +118,7 @@ export default function NotificationsPage() {
     },
   });
 
-  // Test notification mutation
-  const testNotificationMutation = useMutation({
-    mutationFn: () => api.post('/notifications/test'),
-    onSuccess: () => {
-      console.log('Test notification sent successfully');
-    },
-    onError: (error) => {
-      console.error('Failed to send test notification:', error);
-    },
-  });
+
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -223,7 +214,7 @@ export default function NotificationsPage() {
         <div className="flex-1 ml-16 lg:ml-64">
           <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
             {/* Header */}
-            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 z-20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <button
@@ -235,13 +226,6 @@ export default function NotificationsPage() {
                   <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <button
-                    onClick={() => testNotificationMutation.mutate()}
-                    disabled={testNotificationMutation.isPending}
-                    className="text-sm text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
-                  >
-                    Test
-                  </button>
                   {notificationData && notificationData.unreadCount > 0 && (
                     <button
                       onClick={handleMarkAllAsRead}

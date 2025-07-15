@@ -4,16 +4,22 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { UserRole } from '@/types';
-import { 
-  Settings, 
-  Shield, 
-  Zap, 
-  Users, 
-  Clock, 
+import {
+  Settings,
+  Shield,
+  Zap,
+  Users,
+  Clock,
   AlertTriangle,
   Save,
-  RotateCcw
+  RotateCcw,
+  Bell,
+  Bug,
+  ArrowRight
 } from 'lucide-react';
+import Link from 'next/link';
+import { NotificationStatus } from '@/components/NotificationStatus';
+import api from '@/lib/api';
 
 interface RateLimitConfig {
   enabled: boolean;
@@ -64,18 +70,10 @@ export default function AdminSettingsPage() {
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/security/admin/rate-limits/config', {
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setConfig(data);
-      } else {
-        console.error('Failed to fetch rate limiting configuration');
-      }
+      const response = await api.get('/security/admin/rate-limits/config');
+      setConfig(response.data);
     } catch (error) {
-      console.error('Error fetching configuration:', error);
+      console.error('Failed to fetch rate limiting configuration');
     } finally {
       setLoading(false);
     }
@@ -84,28 +82,15 @@ export default function AdminSettingsPage() {
   const saveConfig = async () => {
     try {
       setSaving(true);
-      const response = await fetch('/api/security/admin/rate-limits/config', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          ...config,
-          reason: 'Updated via admin settings interface',
-        }),
+      await api.put('/security/admin/rate-limits/config', {
+        ...config,
+        reason: 'Updated via admin settings interface',
       });
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Rate limiting configuration updated successfully!' });
-        setTimeout(() => setMessage(null), 5000);
-      } else {
-        setMessage({ type: 'error', text: 'Failed to update configuration. Please try again.' });
-        setTimeout(() => setMessage(null), 5000);
-      }
+      setMessage({ type: 'success', text: 'Rate limiting configuration updated successfully!' });
+      setTimeout(() => setMessage(null), 5000);
     } catch (error) {
       console.error('Error saving configuration:', error);
-      setMessage({ type: 'error', text: 'An error occurred while saving. Please try again.' });
+      setMessage({ type: 'error', text: 'Failed to update configuration. Please try again.' });
       setTimeout(() => setMessage(null), 5000);
     } finally {
       setSaving(false);
@@ -342,6 +327,49 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           )}
+
+          {/* Development & Testing Tools */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <Bug className="w-5 h-5 mr-2" />
+              Development & Testing Tools
+            </h3>
+
+            {/* Notification Status */}
+            <div className="p-4 bg-white border border-gray-200 rounded-lg mb-4">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Bell className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">Notification Status</h4>
+                  <p className="text-sm text-gray-600">
+                    Current notification delivery method and system status
+                  </p>
+                </div>
+              </div>
+              <NotificationStatus showDetails={true} />
+            </div>
+
+            {/* Debug Center Link */}
+            <Link
+              href="/debug/notifications"
+              className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Bug className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">Debug Center</h4>
+                  <p className="text-sm text-gray-600">
+                    Test notification fallback scenarios and system diagnostics
+                  </p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-gray-400" />
+            </Link>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex justify-between pt-6 border-t border-gray-200">

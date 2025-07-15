@@ -109,24 +109,34 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
         queryClient.invalidateQueries({ queryKey: ['unreadMessageCount'] });
         break;
 
+      case 'mention':
+      case 'reply':
       case 'comment':
-        console.log('📱🔔 Comment notification, updating notifications and posts');
+      case 'like':
+      case 'repost':
+      case 'follow':
+      case 'follow_request':
+      case 'test':
+        console.log('📱🔔 Social/interaction notification, updating notifications and posts');
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] });
         queryClient.invalidateQueries({ queryKey: ['posts'] });
+        queryClient.invalidateQueries({ queryKey: ['timeline'] });
         break;
 
-      case 'mention':
-      case 'like':
-      case 'follow':
-      case 'repost':
-        console.log('📱🔔 Social notification, updating notifications and posts');
+      case 'generic':
+      case 'VideoProcessingCompleted':
+      case 'systemMessage':
+        console.log('📱🔔 System notification, updating notifications and timeline');
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
-        queryClient.invalidateQueries({ queryKey: ['posts'] });
+        queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] });
+        queryClient.invalidateQueries({ queryKey: ['timeline'] });
         break;
 
       default:
-        console.log('📱🔔 Generic notification, updating notifications');
+        console.log('📱🔔 Unknown notification type, updating notifications');
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] });
         break;
     }
 

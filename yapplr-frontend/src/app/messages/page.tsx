@@ -41,7 +41,7 @@ export default function MessagesPage() {
         <div className="flex-1 ml-16 lg:ml-64">
           <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
             {/* Header */}
-            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 z-20">
               <div className="flex items-center space-x-3">
                 <MessageCircle className="w-6 h-6 text-blue-600" />
                 <h1 className="text-xl font-bold text-gray-900">Messages</h1>

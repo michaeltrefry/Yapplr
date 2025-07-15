@@ -7,9 +7,9 @@ import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
-import { Shield, ArrowRight, Moon, Sun, UserCheck, Bell, Bug } from 'lucide-react';
+import { Shield, ArrowRight, Moon, Sun, UserCheck, Bell } from 'lucide-react';
 import { preferencesApi } from '@/lib/api';
-import { NotificationStatus } from '@/components/NotificationStatus';
+
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
@@ -70,7 +70,7 @@ export default function SettingsPage() {
         <div className="flex-1 ml-16 lg:ml-64">
           <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
             {/* Header */}
-            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 z-20">
               <h1 className="text-xl font-bold text-gray-900">Settings</h1>
             </div>
 
@@ -117,21 +117,7 @@ export default function SettingsPage() {
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Notifications</h2>
 
-                  {/* Notification Status */}
-                  <div className="p-4 bg-white border border-gray-200 rounded-lg mb-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Bell className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Notification Status</h3>
-                        <p className="text-sm text-gray-600">
-                          Current notification delivery method
-                        </p>
-                      </div>
-                    </div>
-                    <NotificationStatus showDetails={true} />
-                  </div>
+
 
                   {/* Notification Preferences Link */}
                   <Link
@@ -152,24 +138,7 @@ export default function SettingsPage() {
                     <ArrowRight className="w-5 h-5 text-gray-400" />
                   </Link>
 
-                  {/* Debug Link */}
-                  <Link
-                    href="/debug/notifications"
-                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-orange-100 rounded-lg">
-                        <Bug className="w-5 h-5 text-orange-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Debug Center</h3>
-                        <p className="text-sm text-gray-600">
-                          Test notification fallback scenarios
-                        </p>
-                      </div>
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-gray-400" />
-                  </Link>
+
                 </div>
 
                 {/* Privacy & Safety Section */}
@@ -256,7 +225,7 @@ export default function SettingsPage() {
                   >
                     <div className="flex items-center space-x-3">
                       <div className="p-2 bg-blue-100 rounded-lg">
-                        <Bug className="w-5 h-5 text-blue-600" />
+                        <Shield className="w-5 h-5 text-blue-600" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">Terms of Service</h3>

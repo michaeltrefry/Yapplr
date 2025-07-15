@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import 'react-native-url-polyfill/auto'; // Required for SignalR in React Native
 
 export interface SignalRNotificationPayload {
-  type: 'message' | 'mention' | 'reply' | 'comment' | 'follow' | 'like' | 'repost' | 'follow_request' | 'test' | 'generic';
+  type: 'message' | 'mention' | 'reply' | 'comment' | 'follow' | 'like' | 'repost' | 'follow_request' | 'test' | 'generic' | 'VideoProcessingCompleted' | 'systemMessage';
   title: string;
   body: string;
   data?: {

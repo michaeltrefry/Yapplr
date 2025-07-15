@@ -37,7 +37,7 @@ export default function Home() {
           <div className="flex-1">
             <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
               {/* Header */}
-              <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
+              <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 z-20">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Image
@@ -105,7 +105,7 @@ export default function Home() {
         <div className="flex-1 ml-16 lg:ml-64 lg:mr-80">
           <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
             {/* Header */}
-            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4">
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 z-20">
               <h1 className="text-xl font-bold text-gray-900">Home</h1>
             </div>
 

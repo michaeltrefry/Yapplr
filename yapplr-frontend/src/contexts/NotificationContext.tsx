@@ -60,6 +60,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [refetch]);
 
   const refreshNotificationCount = useCallback(() => {
+    console.log('🔔 refreshNotificationCount called - triggering refetch');
     refetchNotifications();
   }, [refetchNotifications]);
 
@@ -219,8 +220,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (type === 'message') {
       console.log('🔔 Refreshing unread message count');
       refreshUnreadCount();
-    } else if (['mention', 'reply', 'comment', 'follow', 'like', 'repost', 'follow_request', 'generic', 'VideoProcessingCompleted'].includes(type)) {
-      console.log('🔔 Refreshing notification count');
+    } else if (['mention', 'reply', 'comment', 'follow', 'like', 'repost', 'follow_request', 'generic', 'VideoProcessingCompleted', 'test', 'systemMessage'].includes(type)) {
+      console.log('🔔 Refreshing notification count for type:', type);
       refreshNotificationCount();
     }
 

@@ -116,7 +116,7 @@ export default function ConversationPage({ params }: ConversationPageProps) {
         <div className="flex-1 ml-16 lg:ml-64">
           <div className="max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white flex flex-col">
             {/* Header */}
-            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 z-10">
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 z-20">
               <div className="flex items-center space-x-3">
                 <Link
                   href="/messages"
