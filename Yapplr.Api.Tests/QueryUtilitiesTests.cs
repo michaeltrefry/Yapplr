@@ -4,6 +4,7 @@ using FluentAssertions;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Common;
+using System.Security.Claims;
 
 namespace Yapplr.Api.Tests;
 
@@ -44,6 +45,18 @@ public class QueryUtilitiesTests : IDisposable
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
         return user;
+    }
+
+    private ClaimsPrincipal CreateTestClaimsPrincipal(User user)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Role, user.Role.ToString())
+        };
+
+        var identity = new ClaimsIdentity(claims, "test");
+        return new ClaimsPrincipal(identity);
     }
 
     private async Task<Post> CreateTestPostAsync(
@@ -304,23 +317,24 @@ public class QueryUtilitiesTests : IDisposable
 
     #endregion
 
-    #region CanViewHiddenContentAsync Tests
+    #region CanViewHiddenContent Tests
 
     [Fact]
-    public async Task CanViewHiddenContentAsync_ContentOwner_ShouldReturnTrue()
+    public async Task CanViewHiddenContent_ContentOwner_ShouldReturnTrue()
     {
         // Arrange
         var owner = await CreateTestUserAsync("owner");
+        var user = CreateTestClaimsPrincipal(owner);
 
         // Act
-        var result = await _context.CanViewHiddenContentAsync(owner.Id, owner.Id);
+        var result = QueryUtilities.CanViewHiddenContent(user, owner.Id);
 
         // Assert
         result.Should().BeTrue();
     }
 
     [Fact]
-    public async Task CanViewHiddenContentAsync_Admin_ShouldReturnTrue()
+    public async Task CanViewHiddenContent_Admin_ShouldReturnTrue()
     {
         // Arrange
         var admin = await CreateTestUserAsync("admin");
@@ -329,16 +343,17 @@ public class QueryUtilitiesTests : IDisposable
         await _context.SaveChangesAsync();
 
         var contentOwner = await CreateTestUserAsync("owner");
+        var user = CreateTestClaimsPrincipal(admin);
 
         // Act
-        var result = await _context.CanViewHiddenContentAsync(admin.Id, contentOwner.Id);
+        var result = QueryUtilities.CanViewHiddenContent(user, contentOwner.Id);
 
         // Assert
         result.Should().BeTrue();
     }
 
     [Fact]
-    public async Task CanViewHiddenContentAsync_Moderator_ShouldReturnTrue()
+    public async Task CanViewHiddenContent_Moderator_ShouldReturnTrue()
     {
         // Arrange
         var moderator = await CreateTestUserAsync("moderator");
@@ -347,36 +362,39 @@ public class QueryUtilitiesTests : IDisposable
         await _context.SaveChangesAsync();
 
         var contentOwner = await CreateTestUserAsync("owner");
+        var user = CreateTestClaimsPrincipal(moderator);
 
         // Act
-        var result = await _context.CanViewHiddenContentAsync(moderator.Id, contentOwner.Id);
+        var result = QueryUtilities.CanViewHiddenContent(user, contentOwner.Id);
 
         // Assert
         result.Should().BeTrue();
     }
 
     [Fact]
-    public async Task CanViewHiddenContentAsync_RegularUser_ShouldReturnFalse()
+    public async Task CanViewHiddenContent_RegularUser_ShouldReturnFalse()
     {
         // Arrange
         var regularUser = await CreateTestUserAsync("regular");
         var contentOwner = await CreateTestUserAsync("owner");
+        var user = CreateTestClaimsPrincipal(regularUser);
 
         // Act
-        var result = await _context.CanViewHiddenContentAsync(regularUser.Id, contentOwner.Id);
+        var result = QueryUtilities.CanViewHiddenContent(user, contentOwner.Id);
 
         // Assert
         result.Should().BeFalse();
     }
 
     [Fact]
-    public async Task CanViewHiddenContentAsync_NoCurrentUser_ShouldReturnFalse()
+    public void CanViewHiddenContent_NoCurrentUser_ShouldReturnFalse()
     {
         // Arrange
-        var contentOwner = await CreateTestUserAsync("owner");
+        var user = new ClaimsPrincipal(); // Empty claims principal
+        var contentOwnerId = 1;
 
         // Act
-        var result = await _context.CanViewHiddenContentAsync(null, contentOwner.Id);
+        var result = QueryUtilities.CanViewHiddenContent(user, contentOwnerId);
 
         // Assert
         result.Should().BeFalse();

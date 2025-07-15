@@ -402,25 +402,7 @@ public static class QueryUtilities
         return await query.CountAsync();
     }
 
-    /// <summary>
-    /// Check if user can view hidden content (admin, moderator, or content owner)
-    /// DEPRECATED: Use the ClaimsPrincipal overload instead to avoid database queries
-    /// </summary>
-    [Obsolete("Use the ClaimsPrincipal overload instead to avoid database queries")]
-    public static async Task<bool> CanViewHiddenContentAsync(
-        this YapplrDbContext context,
-        int? currentUserId,
-        int contentOwnerId)
-    {
-        if (!currentUserId.HasValue)
-            return false;
 
-        if (currentUserId.Value == contentOwnerId)
-            return true;
-
-        var user = await context.Users.FindAsync(currentUserId.Value);
-        return user != null && (user.Role == UserRole.Admin || user.Role == UserRole.Moderator);
-    }
 
     /// <summary>
     /// Check if user can view hidden content using JWT claims (preferred method)

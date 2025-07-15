@@ -1,9 +1,10 @@
 using Xunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Options;
 using Moq;
 using Yapplr.Api.Services;
+using Yapplr.Api.Configuration;
 using System.Text;
 
 namespace Yapplr.Api.Tests;
@@ -18,12 +19,15 @@ public class ImageServiceTests : IDisposable
         _testUploadPath = Path.Combine(Path.GetTempPath(), "yapplr_test_uploads", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testUploadPath);
 
-        var mockEnvironment = new Mock<IWebHostEnvironment>();
-        mockEnvironment.Setup(e => e.ContentRootPath).Returns(Path.GetTempPath());
+        // Create mock UploadsConfiguration
+        var uploadsConfig = new UploadsConfiguration
+        {
+            BasePath = _testUploadPath
+        };
+        var mockOptions = new Mock<IOptions<UploadsConfiguration>>();
+        mockOptions.Setup(o => o.Value).Returns(uploadsConfig);
 
-        // TODO: Fix constructor - temporarily commented out
-        // _imageService = new ImageService(mockEnvironment.Object);
-        _imageService = null!;
+        _imageService = new ImageService(mockOptions.Object);
     }
 
     public void Dispose()
@@ -250,8 +254,8 @@ public class ImageServiceTests : IDisposable
     {
         // Arrange
         var fileName = "test_delete.jpg";
-        // Create a file in the actual service upload path
-        var serviceUploadPath = Path.Combine(Path.GetTempPath(), "uploads", "images");
+        // Create a file in the service upload path (which is _testUploadPath/images)
+        var serviceUploadPath = Path.Combine(_testUploadPath, "images");
         Directory.CreateDirectory(serviceUploadPath);
         var filePath = Path.Combine(serviceUploadPath, fileName);
         File.WriteAllText(filePath, "test content");
@@ -262,10 +266,6 @@ public class ImageServiceTests : IDisposable
         // Assert
         result.Should().BeTrue();
         File.Exists(filePath).Should().BeFalse();
-
-        // Cleanup
-        if (Directory.Exists(serviceUploadPath))
-            Directory.Delete(serviceUploadPath, true);
     }
 
     [Fact]

@@ -286,8 +286,8 @@ input:focus, textarea:focus, select:focus {
   outline-offset: 2px;
 }
 
-/* Button overrides for consistency */
-button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-yellow"]) {
+/* Button overrides for consistency - only apply to buttons without specific background colors */
+button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-yellow"]):not([class*="bg-purple"]):not([class*="bg-orange"]):not([class*="bg-indigo"]):not([class*="bg-pink"]):not([class*="bg-cyan"]):not([class*="bg-teal"]):not([class*="bg-lime"]):not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-violet"]):not([class*="bg-fuchsia"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-slate"]):not([class*="bg-zinc"]):not([class*="bg-neutral"]):not([class*="bg-stone"]) {
   background-color: var(--surface) !important;
   color: var(--foreground) !important;
   border-color: var(--border) !important;
@@ -310,18 +310,25 @@ button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):n
   color: var(--primary) !important;
 }
 
-/* Card and panel overrides */
-.rounded-lg, .rounded-xl {
+/* Card and panel overrides - only apply to divs and specific elements, not buttons or links */
+div.rounded-lg:not([class*="bg-"]),
+div.rounded-xl:not([class*="bg-"]),
+section.rounded-lg:not([class*="bg-"]),
+section.rounded-xl:not([class*="bg-"]),
+article.rounded-lg:not([class*="bg-"]),
+article.rounded-xl:not([class*="bg-"]),
+aside.rounded-lg:not([class*="bg-"]),
+aside.rounded-xl:not([class*="bg-"]) {
   background-color: var(--card) !important;
   border-color: var(--border) !important;
 }
 
-/* Ensure proper contrast for links */
-a:not([class*="bg-"]) {
+/* Ensure proper contrast for links - but not for buttons with specific text colors */
+a:not([class*="bg-"]):not([class*="text-white"]):not([class*="text-black"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-green"]):not([class*="text-yellow"]):not([class*="text-purple"]):not([class*="text-orange"]):not([class*="text-indigo"]):not([class*="text-pink"]):not([class*="text-cyan"]):not([class*="text-teal"]):not([class*="text-lime"]):not([class*="text-emerald"]):not([class*="text-sky"]):not([class*="text-violet"]):not([class*="text-fuchsia"]):not([class*="text-rose"]):not([class*="text-amber"]):not([class*="text-slate"]):not([class*="text-zinc"]):not([class*="text-neutral"]):not([class*="text-stone"]) {
   color: var(--primary) !important;
 }
 
-a:not([class*="bg-"]):hover {
+a:not([class*="bg-"]):not([class*="text-white"]):not([class*="text-black"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-green"]):not([class*="text-yellow"]):not([class*="text-purple"]):not([class*="text-orange"]):not([class*="text-indigo"]):not([class*="text-pink"]):not([class*="text-cyan"]):not([class*="text-teal"]):not([class*="text-lime"]):not([class*="text-emerald"]):not([class*="text-sky"]):not([class*="text-violet"]):not([class*="text-fuchsia"]):not([class*="text-rose"]):not([class*="text-amber"]):not([class*="text-slate"]):not([class*="text-zinc"]):not([class*="text-neutral"]):not([class*="text-stone"]):hover {
   color: var(--primary) !important;
   opacity: 0.8;
 }
@@ -529,3 +536,12 @@ textarea:focus {
 textarea:focus::before {
   border-radius: 0.5rem !important;
 }
+
+/* Ensure buttons and links with text-white are never overridden */
+button.text-white,
+a.text-white,
+.text-white {
+  color: #ffffff !important;
+}
+
+/* Ensure buttons with colored backgrounds maintain their styling - removed problematic rule */

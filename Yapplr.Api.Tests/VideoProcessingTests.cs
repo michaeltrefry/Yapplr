@@ -248,7 +248,8 @@ public class VideoProcessingTests : IDisposable
         {
             Id = 1,
             Content = "User1's video post",
-            IsHiddenDuringVideoProcessing = true,
+            IsHidden = true,
+            HiddenReasonType = PostHiddenReasonType.VideoProcessing,
             Privacy = PostPrivacy.Public,
             UserId = user1.Id,
             CreatedAt = DateTime.UtcNow,
@@ -268,7 +269,8 @@ public class VideoProcessingTests : IDisposable
         {
             Id = 2,
             Content = "User2's video post",
-            IsHiddenDuringVideoProcessing = true,
+            IsHidden = true,
+            HiddenReasonType = PostHiddenReasonType.VideoProcessing,
             Privacy = PostPrivacy.Public,
             UserId = user2.Id,
             CreatedAt = DateTime.UtcNow,

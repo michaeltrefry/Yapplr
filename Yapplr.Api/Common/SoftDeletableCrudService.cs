@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using Yapplr.Api.Data;
+using Yapplr.Api.Extensions;
 
 namespace Yapplr.Api.Common;
 
@@ -88,20 +90,44 @@ public abstract class SoftDeletableCrudService<TEntity, TDto, TCreateDto, TUpdat
     {
         try
         {
-            if (!await IsUserAdminOrModeratorAsync(currentUserId))
+            // Note: This method should be updated to use ClaimsPrincipal for permission checks
+            // For now, we'll restrict access to prevent unauthorized access
+            return ServiceResult<PaginatedResult<TDto>>.Failure("Access denied - use ClaimsPrincipal-based method");
+        }
+        catch (Exception ex)
+        {
+            LogError(ex, nameof(GetDeletedAsync), new { page, pageSize, currentUserId });
+            return ServiceResult<PaginatedResult<TDto>>.Failure("An error occurred while retrieving deleted entities", ex);
+        }
+    }
+
+    /// <summary>
+    /// Get deleted entities using JWT claims (preferred method)
+    /// </summary>
+    public virtual async Task<ServiceResult<PaginatedResult<TDto>>> GetDeletedAsync(
+        ClaimsPrincipal user,
+        int page = 1,
+        int pageSize = 25)
+    {
+        try
+        {
+            if (!user.IsAdminOrModerator())
                 return ServiceResult<PaginatedResult<TDto>>.Failure("Access denied");
 
             var query = GetBaseQuery().Where(e => e.IsDeletedByUser);
 
             var totalCount = await query.CountAsync();
             var entities = await query
-                .ApplyPaginationWithOrdering(page, pageSize)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
+            var currentUserId = user.GetUserIdOrNull();
             var dtos = new List<TDto>();
             foreach (var entity in entities)
             {
-                dtos.Add(await MapToDto(entity, currentUserId));
+                var dto = await MapToDto(entity, currentUserId);
+                dtos.Add(dto);
             }
 
             var result = PaginatedResult<TDto>.Create(dtos, page, pageSize, totalCount);
@@ -109,7 +135,7 @@ public abstract class SoftDeletableCrudService<TEntity, TDto, TCreateDto, TUpdat
         }
         catch (Exception ex)
         {
-            LogError(ex, nameof(GetDeletedAsync), new { page, pageSize, currentUserId });
+            LogError(ex, nameof(GetDeletedAsync), new { page, pageSize, user = user.GetUserIdOrNull() });
             return ServiceResult<PaginatedResult<TDto>>.Failure("An error occurred while retrieving deleted entities", ex);
         }
     }
@@ -130,8 +156,20 @@ public abstract class SoftDeletableCrudService<TEntity, TDto, TCreateDto, TUpdat
     /// <summary>
     /// Check if user can restore entity
     /// </summary>
-    protected virtual async Task<bool> CanRestoreEntityAsync(TEntity entity, int currentUserId)
+    protected virtual Task<bool> CanRestoreEntityAsync(TEntity entity, int currentUserId)
     {
-        return entity.UserId == currentUserId || await IsUserAdminOrModeratorAsync(currentUserId);
+        // Note: This method should be updated to use ClaimsPrincipal for permission checks
+        // For now, only allow entity owners to restore
+        return Task.FromResult(entity.UserId == currentUserId);
+    }
+
+    /// <summary>
+    /// Check if user can restore entity using JWT claims (preferred method)
+    /// </summary>
+    protected virtual bool CanRestoreEntity(TEntity entity, ClaimsPrincipal user)
+    {
+        var currentUserId = user.GetUserIdOrNull();
+        return currentUserId.HasValue &&
+               (entity.UserId == currentUserId.Value || user.IsAdminOrModerator());
     }
 }

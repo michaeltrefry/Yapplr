@@ -129,6 +129,82 @@ export default function ThemeTest() {
           </div>
         </div>
 
+        {/* Button Test Section */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Button Visibility Test</h3>
+          <p className="text-gray-600 mb-4">
+            These buttons should be clearly visible in both light and dark themes:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Blue buttons */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700">Blue Buttons</h4>
+              <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                Blue Button
+              </button>
+              <a href="#" className="block w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-center">
+                Blue Link Button
+              </a>
+            </div>
+
+            {/* Red buttons */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700">Red Buttons</h4>
+              <button className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                Red Button
+              </button>
+              <a href="#" className="block w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-center">
+                Red Link Button
+              </a>
+            </div>
+
+            {/* Green buttons */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700">Green Buttons</h4>
+              <button className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                Green Button
+              </button>
+              <a href="#" className="block w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-center">
+                Green Link Button
+              </a>
+            </div>
+
+            {/* Yellow buttons */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700">Yellow Buttons</h4>
+              <button className="w-full bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">
+                Yellow Button
+              </button>
+              <a href="#" className="block w-full bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors text-center">
+                Yellow Link Button
+              </a>
+            </div>
+
+            {/* Purple buttons */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700">Purple Buttons</h4>
+              <button className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                Purple Button
+              </button>
+              <a href="#" className="block w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-center">
+                Purple Link Button
+              </a>
+            </div>
+
+            {/* Orange buttons */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700">Orange Buttons</h4>
+              <button className="w-full bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors">
+                Orange Button
+              </button>
+              <a href="#" className="block w-full bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-center">
+                Orange Link Button
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Header Test Section */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Sticky Header Test</h3>

@@ -37,27 +37,7 @@ public abstract class BaseService
         return user != null && user.Status == UserStatus.Active;
     }
 
-    /// <summary>
-    /// Check if user has required role
-    /// DEPRECATED: Use ClaimsPrincipal.HasRoleOrHigher() instead to avoid database queries
-    /// </summary>
-    [Obsolete("Use ClaimsPrincipal.HasRoleOrHigher() instead to avoid database queries")]
-    protected async Task<bool> UserHasRoleAsync(int userId, UserRole requiredRole)
-    {
-        var user = await _context.Users.FindAsync(userId);
-        return user != null && user.Role >= requiredRole;
-    }
 
-    /// <summary>
-    /// Check if user is admin or moderator
-    /// DEPRECATED: Use ClaimsPrincipal.IsAdminOrModerator() instead to avoid database queries
-    /// </summary>
-    [Obsolete("Use ClaimsPrincipal.IsAdminOrModerator() instead to avoid database queries")]
-    protected async Task<bool> IsUserAdminOrModeratorAsync(int userId)
-    {
-        var user = await _context.Users.FindAsync(userId);
-        return user != null && (user.Role == UserRole.Admin || user.Role == UserRole.Moderator);
-    }
 
     /// <summary>
     /// Check if user has required role using JWT claims (preferred method)
