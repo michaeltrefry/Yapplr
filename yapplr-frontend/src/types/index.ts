@@ -200,6 +200,11 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface RegisterResponse {
+  message: string;
+  user: User;
+}
+
 export interface RegisterData {
   email: string;
   password: string;

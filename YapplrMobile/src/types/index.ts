@@ -70,6 +70,11 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface RegisterResponse {
+  message: string;
+  user: User;
+}
+
 export interface CreatePostData {
   content: string;
   imageFileName?: string;
@@ -421,7 +426,7 @@ export interface YapplrApi {
   getToken: () => string | null;
   auth: {
     login: (data: LoginData) => Promise<AuthResponse>;
-    register: (data: RegisterData) => Promise<AuthResponse>;
+    register: (data: RegisterData) => Promise<RegisterResponse>;
     getCurrentUser: () => Promise<User>;
     forgotPassword: (email: string) => Promise<{ message: string }>;
     resetPassword: (token: string, newPassword: string) => Promise<{ message: string }>;

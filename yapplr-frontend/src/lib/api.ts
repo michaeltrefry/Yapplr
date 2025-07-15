@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type {
   AuthResponse,
+  RegisterResponse,
   LoginData,
   RegisterData,
   Post,
@@ -98,8 +99,12 @@ api.interceptors.response.use(
       // Only redirect if we're in a browser environment
       if (typeof window !== 'undefined') {
         const currentPath = window.location.pathname + window.location.search;
-        // Avoid infinite redirects by checking if we're already on login page
-        if (!window.location.pathname.startsWith('/login')) {
+
+        // Don't redirect from certain pages that should be accessible without auth
+        const noRedirectPaths = ['/login', '/register', '/verify-email', '/forgot-password', '/reset-password', '/resend-verification'];
+        const shouldNotRedirect = noRedirectPaths.some(path => window.location.pathname.startsWith(path));
+
+        if (!shouldNotRedirect) {
           window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
         }
       }
@@ -110,7 +115,7 @@ api.interceptors.response.use(
 
 // Auth API
 export const authApi = {
-  register: async (data: RegisterData): Promise<AuthResponse> => {
+  register: async (data: RegisterData): Promise<RegisterResponse> => {
     const response = await api.post('/auth/register', data);
     return response.data;
   },

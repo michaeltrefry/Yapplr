@@ -1,14 +1,14 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, AuthResponse, LoginData, RegisterData } from '@/types';
+import { User, AuthResponse, RegisterResponse, LoginData, RegisterData } from '@/types';
 import { authApi, userApi } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (data: LoginData) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  register: (data: RegisterData) => Promise<RegisterResponse>;
   logout: () => void;
   updateUser: (user: User) => void;
 }
@@ -56,9 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (data: RegisterData) => {
-    const response: AuthResponse = await authApi.register(data);
-    localStorage.setItem('token', response.token);
-    setUser(response.user);
+    const response = await authApi.register(data);
+    // Registration no longer returns a token - user must verify email first
+    // Don't set token or user state, just return the response for the UI to handle
+    return response;
   };
 
   const logout = () => {

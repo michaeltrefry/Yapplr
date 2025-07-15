@@ -139,9 +139,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (data: RegisterData) => {
     try {
       const response = await api.auth.register(data);
-      await AsyncStorage.setItem(TOKEN_KEY, response.token);
-      setToken(response.token);
-      setUser(response.user);
+      // Registration no longer returns a token - user must verify email first
+      // This method is now equivalent to registerWithoutLogin
+      console.log('Registration successful:', response.message);
+      // Don't set token or user - they need to verify email first
     } catch (error) {
       console.error('Register error:', error);
       throw error;
@@ -150,8 +151,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const registerWithoutLogin = async (data: RegisterData) => {
     try {
-      // Register but don't store token or set user
-      await api.auth.register(data);
+      // Register but don't store token or set user (same as register now)
+      const response = await api.auth.register(data);
+      console.log('Registration successful:', response.message);
+      return response;
     } catch (error) {
       console.error('Register error:', error);
       throw error;

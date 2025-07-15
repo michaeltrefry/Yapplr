@@ -44,10 +44,14 @@ function RegisterForm() {
     }
 
     try {
-      await register(formData);
+      const response = await register(formData);
       // After successful registration, show verification message instead of redirecting
       setRegisteredEmail(formData.email);
       setShowVerificationMessage(true);
+      // Optionally show the message from the API response
+      if (response && 'message' in response) {
+        console.log('Registration successful:', response.message);
+      }
     } catch (err: unknown) {
       setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Registration failed');
     } finally {
