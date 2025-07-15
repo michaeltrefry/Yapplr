@@ -9,6 +9,7 @@ import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
 import { Shield, ArrowRight, Moon, Sun, UserCheck, Bell } from 'lucide-react';
 import { preferencesApi } from '@/lib/api';
+import { Toggle } from '@/components/ui/Toggle';
 
 
 export default function SettingsPage() {
@@ -32,12 +33,10 @@ export default function SettingsPage() {
     },
   });
 
-  const handleFollowApprovalToggle = () => {
-    if (preferences) {
-      updatePreferencesMutation.mutate({
-        requireFollowApproval: !preferences.requireFollowApproval,
-      });
-    }
+  const handleFollowApprovalToggle = (checked: boolean) => {
+    updatePreferencesMutation.mutate({
+      requireFollowApproval: checked,
+    });
   };
 
   useEffect(() => {
@@ -98,18 +97,12 @@ export default function SettingsPage() {
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={toggleDarkMode}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                        isDarkMode ? 'bg-blue-600' : 'bg-gray-200'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          isDarkMode ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
+                    <Toggle
+                      checked={isDarkMode}
+                      onChange={toggleDarkMode}
+                      color="blue"
+                      aria-label="Toggle dark mode"
+                    />
                   </div>
                 </div>
 
@@ -158,19 +151,13 @@ export default function SettingsPage() {
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={handleFollowApprovalToggle}
+                    <Toggle
+                      checked={preferences?.requireFollowApproval || false}
+                      onChange={handleFollowApprovalToggle}
                       disabled={updatePreferencesMutation.isPending}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 ${
-                        preferences?.requireFollowApproval ? 'bg-purple-600' : 'bg-gray-200'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          preferences?.requireFollowApproval ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
+                      color="purple"
+                      aria-label="Toggle follow approval requirement"
+                    />
                   </div>
 
                   {/* Blocklist Setting */}

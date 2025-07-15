@@ -1,13 +1,54 @@
 @import "tailwindcss";
 
-/* Force light mode only */
-html {
-  color-scheme: light;
+/* CSS Custom Properties for Theme Colors */
+:root {
+  /* Light theme colors */
+  --background: #ffffff;
+  --foreground: #1f2937;
+  --surface: #f9fafb;
+  --border: #e5e7eb;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --primary: #3b82f6;
+  --primary-text: #ffffff;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --card: #ffffff;
+  --input: #ffffff;
+  --input-border: #d1d5db;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --scrollbar-track: #f1f1f1;
+  --scrollbar-thumb: #c1c1c1;
+  --scrollbar-thumb-hover: #a8a8a8;
 }
 
+/* Dark theme colors */
+.dark {
+  --background: #111827;
+  --foreground: #f9fafb;
+  --surface: #1f2937;
+  --border: #374151;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  --primary: #3b82f6;
+  --primary-text: #ffffff;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --card: #1f2937;
+  --input: #374151;
+  --input-border: #4b5563;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --scrollbar-track: #374151;
+  --scrollbar-thumb: #6b7280;
+  --scrollbar-thumb-hover: #9ca3af;
+}
+
+/* Apply theme colors to body */
 body {
-  background-color: white;
-  color: #1f2937;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 * {
@@ -31,38 +72,460 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Focus styles */
 button:focus,
 input:focus,
 textarea:focus {
-  outline: 2px solid #1d9bf0;
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
 /* Smooth transitions */
 * {
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 /* Hide scrollbar for message textarea */
 .message-textarea {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
-  color: #1f2937; /* Dark text */
+  color: var(--foreground);
 }
 
 .message-textarea::-webkit-scrollbar {
   display: none; /* WebKit */
+}
+
+/* Additional utility classes for common patterns */
+.bg-card {
+  background-color: var(--card);
+}
+
+.bg-surface {
+  background-color: var(--surface);
+}
+
+.text-primary {
+  color: var(--primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.border-default {
+  border-color: var(--border);
+}
+
+.bg-input {
+  background-color: var(--input);
+}
+
+.border-input {
+  border-color: var(--input-border);
+}
+
+/* Hover states that work with both themes */
+.hover-surface:hover {
+  background-color: var(--surface);
+}
+
+.hover-border:hover {
+  border-color: var(--text-muted);
+}
+
+/* Focus states */
+.focus-primary:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Override common Tailwind classes to use our theme system */
+/* This allows existing components to automatically adapt to dark mode */
+
+/* Background colors */
+.bg-white {
+  background-color: var(--background) !important;
+}
+
+.bg-gray-50 {
+  background-color: var(--surface) !important;
+}
+
+.bg-gray-100 {
+  background-color: var(--surface) !important;
+}
+
+/* Text colors */
+.text-gray-900 {
+  color: var(--foreground) !important;
+}
+
+.text-gray-800 {
+  color: var(--foreground) !important;
+}
+
+.text-gray-700 {
+  color: var(--foreground) !important;
+}
+
+.text-gray-600 {
+  color: var(--text-secondary) !important;
+}
+
+.text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+
+.text-gray-400 {
+  color: var(--text-muted) !important;
+}
+
+/* Border colors */
+.border-gray-200 {
+  border-color: var(--border) !important;
+}
+
+.border-gray-300 {
+  border-color: var(--input-border) !important;
+}
+
+/* Hover states */
+.hover\\:bg-gray-50:hover {
+  background-color: var(--surface) !important;
+}
+
+.hover\\:bg-gray-100:hover {
+  background-color: var(--surface) !important;
+}
+
+.hover\\:text-gray-700:hover {
+  color: var(--foreground) !important;
+}
+
+.hover\\:text-gray-800:hover {
+  color: var(--foreground) !important;
+}
+
+.hover\\:text-gray-900:hover {
+  color: var(--foreground) !important;
+}
+
+/* Focus states for inputs */
+.focus\\:border-blue-500:focus {
+  border-color: var(--primary) !important;
+}
+
+.focus\\:ring-blue-500:focus {
+  --tw-ring-color: var(--primary) !important;
+}
+
+/* Additional background overrides */
+.bg-white\\/80 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark .bg-white\\/80 {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Alternative approach for bg-white/80 - using attribute selector */
+[class*="bg-white/80"] {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark [class*="bg-white/80"] {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Specific header background fixes */
+.sticky.top-0[class*="bg-white"] {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark .sticky.top-0[class*="bg-white"] {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Backdrop blur backgrounds */
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+}
+
+/* Gradient overrides for dark mode */
+.bg-gradient-to-r.from-blue-50.to-purple-50 {
+  background: linear-gradient(to right, var(--surface), var(--surface)) !important;
+}
+
+/* Input and form element overrides */
+input, textarea, select {
+  background-color: var(--input) !important;
+  border-color: var(--input-border) !important;
+  color: var(--foreground) !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary) !important;
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px;
+}
+
+/* Button overrides for consistency */
+button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-yellow"]) {
+  background-color: var(--surface) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+/* Specific hover states */
+.hover\\:bg-blue-50:hover {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.hover\\:text-blue-600:hover {
+  color: var(--primary) !important;
+}
+
+.hover\\:text-blue-700:hover {
+  color: var(--primary) !important;
+}
+
+.hover\\:text-blue-800:hover {
+  color: var(--primary) !important;
+}
+
+/* Card and panel overrides */
+.rounded-lg, .rounded-xl {
+  background-color: var(--card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Ensure proper contrast for links */
+a:not([class*="bg-"]) {
+  color: var(--primary) !important;
+}
+
+a:not([class*="bg-"]):hover {
+  color: var(--primary) !important;
+  opacity: 0.8;
+}
+
+/* Header-specific fixes */
+.sticky {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Ensure header text is properly themed */
+.sticky h1, .sticky h2, .sticky h3 {
+  color: var(--foreground) !important;
+}
+
+/* Fix any remaining header background issues */
+.sticky[class*="bg-white"] {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-color: var(--border) !important;
+}
+
+.dark .sticky[class*="bg-white"] {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+  border-color: var(--border) !important;
+}
+
+/* Utility class for header backgrounds */
+.header-bg {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .header-bg {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Force override for problematic bg-white/80 classes */
+.bg-white\/80 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark .bg-white\/80 {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Comprehensive header background fix - target all sticky headers */
+div.sticky.top-0 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-color: var(--border) !important;
+}
+
+.dark div.sticky.top-0 {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+  border-color: var(--border) !important;
+}
+
+/* Additional specificity for headers with backdrop blur */
+.sticky.top-0.backdrop-blur-md {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark .sticky.top-0.backdrop-blur-md {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Ultra-specific selectors for bg-white/80 headers - highest priority */
+div.sticky.top-0.bg-white\/80.backdrop-blur-md {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark div.sticky.top-0.bg-white\/80.backdrop-blur-md {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Catch any remaining bg-white/80 variations */
+.bg-white\/80.sticky {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark .bg-white\/80.sticky {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Alternative syntax variations for bg-white/80 */
+.bg-white\\/80.sticky {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark .bg-white\\/80.sticky {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Ensure all header divs with any white background get themed */
+div[class*="bg-white"].sticky.top-0 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark div[class*="bg-white"].sticky.top-0 {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Maximum specificity rules for stubborn headers */
+div.sticky.top-0[class*="bg-white"][class*="backdrop-blur"] {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark div.sticky.top-0[class*="bg-white"][class*="backdrop-blur"] {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Catch-all for any remaining white backgrounds in dark mode */
+.dark [class*="bg-white"] {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Specific override for Tailwind's bg-white/80 utility */
+.dark .bg-white\/80,
+.dark .bg-white\\/80 {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Target the exact class combination from the header */
+.sticky.top-0.bg-white\/80.backdrop-blur-md.border-b.border-gray-200 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-color: var(--border) !important;
+}
+
+.dark .sticky.top-0.bg-white\/80.backdrop-blur-md.border-b.border-gray-200 {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+  border-color: var(--border) !important;
+}
+
+/* Alternative syntax for the same combination */
+.sticky.top-0.bg-white\\/80.backdrop-blur-md.border-b.border-gray-200 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-color: var(--border) !important;
+}
+
+.dark .sticky.top-0.bg-white\\/80.backdrop-blur-md.border-b.border-gray-200 {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+  border-color: var(--border) !important;
+}
+
+/* Ensure border colors are also themed */
+.dark .border-gray-200 {
+  border-color: var(--border) !important;
+}
+
+/* High specificity rule for any sticky header with bg-white/80 */
+div.sticky.top-0.bg-white\/80,
+div.sticky.top-0.bg-white\\/80 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark div.sticky.top-0.bg-white\/80,
+.dark div.sticky.top-0.bg-white\\/80 {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Nuclear option - override any bg-white/80 in dark mode regardless of context */
+.dark *[class*="bg-white/80"] {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Also handle the escaped version */
+.dark *[class*="bg-white\\/80"] {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+/* Ensure z-index doesn't interfere with our overrides */
+.dark .sticky.top-0[class*="bg-white"] {
+  background-color: rgba(17, 24, 39, 0.8) !important;
+  border-color: var(--border) !important;
+}
+
+/* Fix toggle switches in dark mode */
+/* Toggle track background */
+.dark .bg-gray-200 {
+  background-color: var(--input-border) !important;
+}
+
+/* Toggle thumb (after pseudo-element) */
+.dark .after\\:bg-white::after {
+  background-color: var(--background) !important;
+}
+
+/* Toggle thumb border */
+.dark .after\\:border-gray-300::after {
+  border-color: var(--border) !important;
+}
+
+/* Peer focus ring colors for dark mode */
+.dark .peer-focus\\:ring-blue-300:focus {
+  --tw-ring-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Ensure textarea focus rings are properly rounded */
+textarea:focus {
+  --tw-ring-offset-width: 2px;
+  --tw-ring-offset-color: transparent;
+  border-radius: 0.5rem !important;
+}
+
+textarea:focus::before {
+  border-radius: 0.5rem !important;
 }

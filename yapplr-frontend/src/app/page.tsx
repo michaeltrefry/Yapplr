@@ -84,6 +84,8 @@ export default function Home() {
               <PublicTimeline />
             </div>
           </div>
+
+
         </div>
       </div>
     );
@@ -164,6 +166,8 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+
       </div>
     </div>
   );

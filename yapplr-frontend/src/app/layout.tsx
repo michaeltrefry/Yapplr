@@ -31,7 +31,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/logo-128.png" />
         <meta name="theme-color" content="#3B82F6" />
       </head>
-      <body className={`${inter.variable} font-sans antialiased bg-white`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <ThemeProvider>

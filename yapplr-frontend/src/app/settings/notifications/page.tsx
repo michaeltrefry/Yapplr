@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import { ArrowLeft, Bell, Clock, Shield, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
+import { Toggle } from '@/components/ui/Toggle';
 
 interface NotificationPreferences {
   id: number;
@@ -159,15 +160,12 @@ export default function NotificationPreferencesPage() {
                         <div className="font-medium text-gray-900">{item.label}</div>
                         <div className="text-sm text-gray-600">{item.description}</div>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={preferences?.[item.key as keyof NotificationPreferences] as boolean}
-                          onChange={(e) => handleToggle(item.key as keyof NotificationPreferences, e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
+                      <Toggle
+                        checked={preferences?.[item.key as keyof NotificationPreferences] as boolean || false}
+                        onChange={(checked) => handleToggle(item.key as keyof NotificationPreferences, checked)}
+                        color="blue"
+                        aria-label={`Toggle ${item.label} notifications`}
+                      />
                     </div>
                   ))}
                 </div>
@@ -185,15 +183,12 @@ export default function NotificationPreferencesPage() {
                       <div className="font-medium text-gray-900">Enable Quiet Hours</div>
                       <div className="text-sm text-gray-600">Pause notifications during specified hours</div>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={preferences?.enableQuietHours}
-                        onChange={(e) => handleToggle('enableQuietHours', e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
+                    <Toggle
+                      checked={preferences?.enableQuietHours || false}
+                      onChange={(checked) => handleToggle('enableQuietHours', checked)}
+                      color="blue"
+                      aria-label="Toggle quiet hours"
+                    />
                   </div>
 
                   {preferences?.enableQuietHours && (
@@ -233,15 +228,12 @@ export default function NotificationPreferencesPage() {
                       <div className="font-medium text-gray-900">Enable Frequency Limits</div>
                       <div className="text-sm text-gray-600">Limit the number of notifications per hour/day</div>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={preferences?.enableFrequencyLimits}
-                        onChange={(e) => handleToggle('enableFrequencyLimits', e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
+                    <Toggle
+                      checked={preferences?.enableFrequencyLimits || false}
+                      onChange={(checked) => handleToggle('enableFrequencyLimits', checked)}
+                      color="blue"
+                      aria-label="Toggle frequency limits"
+                    />
                   </div>
 
                   {preferences?.enableFrequencyLimits && (
@@ -291,15 +283,12 @@ export default function NotificationPreferencesPage() {
                         <div className="font-medium text-gray-900">{item.label}</div>
                         <div className="text-sm text-gray-600">{item.description}</div>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={preferences?.[item.key as keyof NotificationPreferences] as boolean}
-                          onChange={(e) => handleToggle(item.key as keyof NotificationPreferences, e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
+                      <Toggle
+                        checked={preferences?.[item.key as keyof NotificationPreferences] as boolean || false}
+                        onChange={(checked) => handleToggle(item.key as keyof NotificationPreferences, checked)}
+                        color="blue"
+                        aria-label={`Toggle ${item.label} notifications`}
+                      />
                     </div>
                   ))}
 

@@ -303,7 +303,7 @@ export default function CreatePost() {
                 setShowHashtagSuggestions(e.target.value.includes('#'));
               }}
               placeholder="What's happening?"
-              className="w-full text-xl placeholder-gray-500 border-none resize-none focus:outline-none bg-transparent text-gray-900"
+              className="w-full text-xl placeholder-gray-500 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 focus:border-blue-500 bg-transparent text-gray-900 p-3 transition-all duration-200"
               rows={3}
               maxLength={256}
             />
