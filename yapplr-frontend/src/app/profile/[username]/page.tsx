@@ -7,7 +7,8 @@ import { userApi, blockApi, messageApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/utils';
 import { Calendar, Shield, ShieldOff, MessageCircle } from 'lucide-react';
-import { Post } from '@/types';
+import { Post, PostMedia } from '@/types';
+import { PhotoItem } from '@/components/PhotoGrid';
 
 import UserTimeline from '@/components/UserTimeline';
 import Sidebar from '@/components/Sidebar';
@@ -30,6 +31,27 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'photos' | 'following' | 'followers'>('posts');
   const [selectedPhoto, setSelectedPhoto] = useState<Post | null>(null);
+  const [selectedMediaItem, setSelectedMediaItem] = useState<PostMedia | null>(null);
+  const [allPhotos, setAllPhotos] = useState<PhotoItem[]>([]);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState<number>(0);
+
+  const handlePhotoClick = (post: Post, mediaItem?: PostMedia, photos?: PhotoItem[], index?: number) => {
+    setSelectedPhoto(post);
+    setSelectedMediaItem(mediaItem || null);
+    if (photos && index !== undefined) {
+      setAllPhotos(photos);
+      setCurrentPhotoIndex(index);
+    }
+  };
+
+  const handlePhotoNavigate = (newIndex: number) => {
+    if (allPhotos && newIndex >= 0 && newIndex < allPhotos.length) {
+      const newPhoto = allPhotos[newIndex];
+      setSelectedPhoto(newPhoto.post);
+      setSelectedMediaItem(newPhoto.mediaItem);
+      setCurrentPhotoIndex(newIndex);
+    }
+  };
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', username],
@@ -350,7 +372,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               <UserTimeline userId={profile.id} isOwnProfile={isOwnProfile} />
             )}
             {activeTab === 'photos' && (
-              <PhotoGrid userId={profile.id} onPhotoClick={setSelectedPhoto} />
+              <PhotoGrid userId={profile.id} onPhotoClick={handlePhotoClick} />
             )}
             {activeTab === 'following' && (
               <UserList userId={profile.id} type="following" />
@@ -395,8 +417,17 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       {selectedPhoto && (
         <FullScreenPhotoViewer
           post={selectedPhoto}
+          mediaItem={selectedMediaItem || undefined}
+          allPhotos={allPhotos}
+          currentIndex={currentPhotoIndex}
           isOpen={!!selectedPhoto}
-          onClose={() => setSelectedPhoto(null)}
+          onClose={() => {
+            setSelectedPhoto(null);
+            setSelectedMediaItem(null);
+            setAllPhotos([]);
+            setCurrentPhotoIndex(0);
+          }}
+          onNavigate={handlePhotoNavigate}
         />
       )}
 

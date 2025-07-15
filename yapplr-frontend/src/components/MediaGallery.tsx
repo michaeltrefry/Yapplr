@@ -26,11 +26,11 @@ function MediaViewer({ mediaItems, currentIndex, isOpen, onClose, onNext, onPrev
   const hasMultiple = mediaItems.length > 1;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center">
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+        className="absolute top-4 right-4 text-foreground hover:bg-surface/50 rounded-full p-2 transition-colors z-10"
       >
         <X className="w-8 h-8" />
       </button>
@@ -40,14 +40,14 @@ function MediaViewer({ mediaItems, currentIndex, isOpen, onClose, onNext, onPrev
         <>
           <button
             onClick={onPrevious}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 text-foreground hover:bg-surface/50 rounded-full p-2 transition-colors z-10 disabled:opacity-50"
             disabled={currentIndex === 0}
           >
             <ChevronLeft className="w-8 h-8" />
           </button>
           <button
             onClick={onNext}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-foreground hover:bg-surface/50 rounded-full p-2 transition-colors z-10 disabled:opacity-50"
             disabled={currentIndex === mediaItems.length - 1}
           >
             <ChevronRight className="w-8 h-8" />
@@ -78,7 +78,7 @@ function MediaViewer({ mediaItems, currentIndex, isOpen, onClose, onNext, onPrev
 
       {/* Counter */}
       {hasMultiple && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm">
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
           {currentIndex + 1} of {mediaItems.length}
         </div>
       )}

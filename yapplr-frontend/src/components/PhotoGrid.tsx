@@ -3,11 +3,17 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { postApi } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
-import { Post } from '@/types';
+import { Post, PostMedia, MediaType } from '@/types';
 
 interface PhotoGridProps {
   userId: number;
-  onPhotoClick: (post: Post) => void;
+  onPhotoClick: (post: Post, mediaItem?: PostMedia, allPhotos?: PhotoItem[], currentIndex?: number) => void;
+}
+
+export interface PhotoItem {
+  post: Post;
+  mediaItem: PostMedia;
+  imageUrl: string;
 }
 
 export default function PhotoGrid({ userId, onPhotoClick }: PhotoGridProps) {
@@ -33,6 +39,43 @@ export default function PhotoGrid({ userId, onPhotoClick }: PhotoGridProps) {
     initialPageParam: 1,
     enabled: !!userId,
   });
+
+  // Extract all photos from posts (including multiple images per post)
+  const extractPhotosFromPosts = (posts: Post[]): PhotoItem[] => {
+    const photos: PhotoItem[] = [];
+
+    posts.forEach(post => {
+      // Handle new multi-media posts
+      if (post.mediaItems && post.mediaItems.length > 0) {
+        post.mediaItems.forEach(mediaItem => {
+          if (mediaItem.mediaType === MediaType.Image && mediaItem.imageUrl) {
+            photos.push({
+              post,
+              mediaItem,
+              imageUrl: mediaItem.imageUrl
+            });
+          }
+        });
+      }
+      // Handle legacy single image posts
+      else if (post.imageUrl) {
+        // Create a synthetic media item for legacy posts
+        const syntheticMediaItem: PostMedia = {
+          id: 0, // Synthetic ID
+          mediaType: MediaType.Image,
+          imageUrl: post.imageUrl,
+          createdAt: post.createdAt
+        };
+        photos.push({
+          post,
+          mediaItem: syntheticMediaItem,
+          imageUrl: post.imageUrl
+        });
+      }
+    });
+
+    return photos;
+  };
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -77,7 +120,8 @@ export default function PhotoGrid({ userId, onPhotoClick }: PhotoGridProps) {
     );
   }
 
-  const photos = data?.pages.flat() || [];
+  const posts = data?.pages.flat() || [];
+  const photos = extractPhotosFromPosts(posts);
 
   if (photos.length === 0) {
     return (
@@ -91,25 +135,19 @@ export default function PhotoGrid({ userId, onPhotoClick }: PhotoGridProps) {
     <div className="p-4">
       {/* Photo Grid - 3 columns */}
       <div className="grid grid-cols-3 gap-1">
-        {photos.map((post) => (
+        {photos.map((photoItem, index) => (
           <div
-            key={post.id}
+            key={`${photoItem.post.id}-${photoItem.mediaItem.id}-${index}`}
             className="aspect-square cursor-pointer group border border-gray-300 bg-white"
-            onClick={() => onPhotoClick(post)}
+            onClick={() => onPhotoClick(photoItem.post, photoItem.mediaItem, photos, index)}
           >
-            {post.imageUrl ? (
-              <img
-                src={post.imageUrl}
-                alt="Photo"
-                className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                onLoad={() => console.log('Image loaded:', post.imageUrl)}
-                onError={() => console.error('Image failed to load:', post.imageUrl)}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs bg-gray-100">
-                No Image
-              </div>
-            )}
+            <img
+              src={photoItem.imageUrl}
+              alt="Photo"
+              className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+              onLoad={() => console.log('Image loaded:', photoItem.imageUrl)}
+              onError={() => console.error('Image failed to load:', photoItem.imageUrl)}
+            />
           </div>
         ))}
       </div>
