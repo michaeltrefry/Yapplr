@@ -41,7 +41,7 @@ export default function Sidebar() {
           <div className="space-y-2">
             <Link
               href="/"
-              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-foreground"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 text-foreground"
             >
               <Home className="w-6 h-6" />
               <span className="text-lg hidden lg:block">Home</span>
@@ -49,7 +49,7 @@ export default function Sidebar() {
 
             <Link
               href="/search"
-              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-foreground"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 text-foreground"
             >
               <Search className="w-6 h-6" />
               <span className="text-lg hidden lg:block">Search</span>
@@ -57,7 +57,7 @@ export default function Sidebar() {
 
           <Link
             href="/trending"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-foreground"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 text-foreground"
           >
             <TrendingUp className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Trending</span>
@@ -65,7 +65,7 @@ export default function Sidebar() {
 
           <Link
             href="/notifications"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors relative text-foreground"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 relative text-foreground"
           >
             <div className="relative">
               <Bell className="w-6 h-6" />
@@ -80,7 +80,7 @@ export default function Sidebar() {
 
           <Link
             href="/messages"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors relative text-foreground"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 relative text-foreground"
           >
             <div className="relative">
               <MessageCircle className="w-6 h-6" />
@@ -95,7 +95,7 @@ export default function Sidebar() {
 
           <Link
             href="/settings"
-            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-foreground"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 text-foreground"
           >
             <Settings className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Settings</span>
@@ -105,7 +105,7 @@ export default function Sidebar() {
           {user && (user.role === UserRole.Moderator || user.role === UserRole.Admin) && (
             <Link
               href="/admin"
-              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors text-blue-600 border border-blue-200"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-blue-100 text-blue-600 border border-blue-200"
             >
               <Shield className="w-6 h-6" />
               <span className="text-lg hidden lg:block font-medium">Admin</span>
@@ -118,7 +118,7 @@ export default function Sidebar() {
           {process.env.NODE_ENV === 'development' && (
             <Link
               href="/notification-test"
-              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-foreground border-t border-default mt-2 pt-2"
+              className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 text-foreground border-t border-default mt-2 pt-2"
             >
               <TestTube className="w-6 h-6" />
               <span className="text-lg hidden lg:block">Notification Test</span>
@@ -142,7 +142,7 @@ export default function Sidebar() {
         <div className="border-t border-default pt-4 space-y-2 bg-background">
           <Link
             href={`/profile/${user?.username}`}
-            className="flex items-center justify-center lg:justify-start hover:bg-gray-100 rounded-lg p-2 transition-colors cursor-pointer text-foreground"
+            className="flex items-center justify-center lg:justify-start hover:bg-gray-100 rounded-lg p-2 cursor-pointer text-foreground"
             title={`Go to @${user?.username}'s profile`}
           >
             <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -162,7 +162,7 @@ export default function Sidebar() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center lg:justify-start px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-foreground w-full"
+            className="flex items-center justify-center lg:justify-start px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 text-foreground w-full"
             title="Logout"
           >
             <LogOut className="w-6 h-6 flex-shrink-0" />
