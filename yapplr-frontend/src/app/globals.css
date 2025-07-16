@@ -219,6 +219,19 @@ textarea:focus {
   background-color: var(--surface) !important;
 }
 
+/* Enhanced hover visibility for dark mode */
+.dark .hover\\:bg-gray-50:hover {
+  background-color: #374151 !important; /* Lighter than --surface for better visibility */
+}
+
+.dark .hover\\:bg-gray-100:hover {
+  background-color: #374151 !important; /* Lighter than --surface for better visibility */
+}
+
+.dark .hover\\:bg-white:hover {
+  background-color: #374151 !important; /* Lighter than --surface for better visibility */
+}
+
 .hover\\:text-gray-700:hover {
   color: var(--foreground) !important;
 }
@@ -243,6 +256,14 @@ textarea:focus {
 [class*="hover:bg-gray-50"]:hover,
 [class*="hover:bg-white"]:hover {
   background-color: var(--surface) !important;
+  color: var(--foreground) !important;
+}
+
+/* Enhanced dark mode hover patterns */
+.dark [class*="hover:bg-gray-100"]:hover,
+.dark [class*="hover:bg-gray-50"]:hover,
+.dark [class*="hover:bg-white"]:hover {
+  background-color: #374151 !important; /* More visible hover color in dark mode */
   color: var(--foreground) !important;
 }
 
