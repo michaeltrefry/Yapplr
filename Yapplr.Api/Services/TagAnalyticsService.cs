@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Extensions;
+using Yapplr.Api.Models;
 using Yapplr.Api.Models.Analytics;
 
 namespace Yapplr.Api.Services;
@@ -23,15 +24,21 @@ public class TagAnalyticsService : ITagAnalyticsService
     {
         var cutoffDate = DateTime.UtcNow.AddDays(-days);
 
-        // Get tags with recent activity
+        // Get tags with recent activity, filtering out hidden/deleted posts
         var trendingTags = await _context.Tags
             .Where(t => _context.PostTags
-                .Any(pt => pt.TagId == t.Id && pt.CreatedAt >= cutoffDate))
+                .Any(pt => pt.TagId == t.Id &&
+                          pt.CreatedAt >= cutoffDate &&
+                          !pt.Post.IsHidden && // Filter out hidden posts
+                          pt.Post.User.Status == UserStatus.Active)) // Filter out posts from suspended users
             .Select(t => new
             {
                 Tag = t,
                 RecentPostCount = _context.PostTags
-                    .Count(pt => pt.TagId == t.Id && pt.CreatedAt >= cutoffDate)
+                    .Count(pt => pt.TagId == t.Id &&
+                               pt.CreatedAt >= cutoffDate &&
+                               !pt.Post.IsHidden && // Filter out hidden posts
+                               pt.Post.User.Status == UserStatus.Active) // Filter out posts from suspended users
             })
             .OrderByDescending(x => x.RecentPostCount)
             .ThenByDescending(x => x.Tag.PostCount)
@@ -67,31 +74,43 @@ public class TagAnalyticsService : ITagAnalyticsService
         var oneWeekAgo = now.AddDays(-7);
         var oneMonthAgo = now.AddDays(-30);
 
-        // Get post counts for different time periods
+        // Get post counts for different time periods (only from visible posts)
         var postsThisWeek = await _context.PostTags
-            .Where(pt => pt.TagId == tag.Id && pt.CreatedAt >= oneWeekAgo)
+            .Where(pt => pt.TagId == tag.Id &&
+                        pt.CreatedAt >= oneWeekAgo &&
+                        !pt.Post.IsHidden &&
+                        pt.Post.User.Status == UserStatus.Active)
             .CountAsync();
 
         var postsThisMonth = await _context.PostTags
-            .Where(pt => pt.TagId == tag.Id && pt.CreatedAt >= oneMonthAgo)
+            .Where(pt => pt.TagId == tag.Id &&
+                        pt.CreatedAt >= oneMonthAgo &&
+                        !pt.Post.IsHidden &&
+                        pt.Post.User.Status == UserStatus.Active)
             .CountAsync();
 
-        // Get first and last usage dates
+        // Get first and last usage dates (only from visible posts)
         var firstUsage = await _context.PostTags
-            .Where(pt => pt.TagId == tag.Id)
+            .Where(pt => pt.TagId == tag.Id &&
+                        !pt.Post.IsHidden &&
+                        pt.Post.User.Status == UserStatus.Active)
             .OrderBy(pt => pt.CreatedAt)
             .Select(pt => pt.CreatedAt)
             .FirstOrDefaultAsync();
 
         var lastUsage = await _context.PostTags
-            .Where(pt => pt.TagId == tag.Id)
+            .Where(pt => pt.TagId == tag.Id &&
+                        !pt.Post.IsHidden &&
+                        pt.Post.User.Status == UserStatus.Active)
             .OrderByDescending(pt => pt.CreatedAt)
             .Select(pt => pt.CreatedAt)
             .FirstOrDefaultAsync();
 
-        // Get unique users count
+        // Get unique users count (only from visible posts)
         var uniqueUsers = await _context.PostTags
-            .Where(pt => pt.TagId == tag.Id)
+            .Where(pt => pt.TagId == tag.Id &&
+                        !pt.Post.IsHidden &&
+                        pt.Post.User.Status == UserStatus.Active)
             .Select(pt => pt.Post.UserId)
             .Distinct()
             .CountAsync();

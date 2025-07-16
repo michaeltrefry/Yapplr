@@ -1019,11 +1019,14 @@ public class AdminService : IAdminService
     {
         var startDate = DateTime.UtcNow.AddDays(-days);
 
-        // Get trending hashtags from recent posts
+        // Get trending hashtags from recent posts (excluding hidden/deleted posts)
         var trendingHashtags = await _context.PostTags
             .Include(pt => pt.Tag)
             .Include(pt => pt.Post)
-            .Where(pt => pt.Post.CreatedAt >= startDate)
+                .ThenInclude(p => p.User)
+            .Where(pt => pt.Post.CreatedAt >= startDate &&
+                        !pt.Post.IsHidden &&
+                        pt.Post.User.Status == UserStatus.Active)
             .GroupBy(pt => pt.Tag.Name)
             .Select(g => new HashtagStatsDto
             {

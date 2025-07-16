@@ -56,14 +56,27 @@ public class TagService : ITagService
 
     public async Task<IEnumerable<TagDto>> GetTrendingTagsAsync(int limit = 10)
     {
+        // Calculate actual visible post counts for trending tags
         var tags = await _context.Tags
-            .Where(t => t.PostCount > 0)
-            .OrderByDescending(t => t.PostCount)
-            .ThenByDescending(t => t.CreatedAt)
+            .Where(t => _context.PostTags
+                .Any(pt => pt.TagId == t.Id &&
+                          !pt.Post.IsHidden &&
+                          pt.Post.User.Status == UserStatus.Active))
+            .Select(t => new
+            {
+                Tag = t,
+                VisiblePostCount = _context.PostTags
+                    .Count(pt => pt.TagId == t.Id &&
+                               !pt.Post.IsHidden &&
+                               pt.Post.User.Status == UserStatus.Active)
+            })
+            .Where(x => x.VisiblePostCount > 0)
+            .OrderByDescending(x => x.VisiblePostCount)
+            .ThenByDescending(x => x.Tag.CreatedAt)
             .Take(limit)
             .ToListAsync();
 
-        return tags.Select(t => t.ToDto());
+        return tags.Select(x => new TagDto(x.Tag.Id, x.Tag.Name, x.VisiblePostCount));
     }
 
     public async Task<IEnumerable<PostDto>> GetPostsByTagAsync(string tagName, int? currentUserId = null, int page = 1, int pageSize = 25)

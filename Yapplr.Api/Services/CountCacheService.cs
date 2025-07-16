@@ -201,8 +201,10 @@ public class CountCacheService : ICountCacheService
             var count = await _context.PostTags
                 .Where(pt => pt.Tag.Name == normalizedTagName &&
                     !blockedUserIds.Contains(pt.Post.UserId) &&
-                    (!pt.Post.IsHiddenDuringVideoProcessing ||
-                     (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)) &&
+                    (!pt.Post.IsHidden ||
+                     (pt.Post.HiddenReasonType == PostHiddenReasonType.VideoProcessing &&
+                      currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)) &&
+                    pt.Post.User.Status == UserStatus.Active &&
                     (pt.Post.Privacy == PostPrivacy.Public ||
                      (currentUserId.HasValue && pt.Post.UserId == currentUserId.Value)))
                 .CountAsync();
