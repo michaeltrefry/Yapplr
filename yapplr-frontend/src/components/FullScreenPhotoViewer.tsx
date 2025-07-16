@@ -12,6 +12,7 @@ import UserAvatar from './UserAvatar';
 import ShareModal from './ShareModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentHighlight } from '@/utils/contentUtils';
+import { useRouter } from 'next/navigation';
 
 interface FullScreenPhotoViewerProps {
   post: Post;
@@ -33,8 +34,15 @@ export default function FullScreenPhotoViewer({
   onNavigate
 }: FullScreenPhotoViewerProps) {
   const [showShareModal, setShowShareModal] = useState(false);
+  const [localPost, setLocalPost] = useState(post);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const router = useRouter();
+
+  // Update local post when prop changes
+  useEffect(() => {
+    setLocalPost(post);
+  }, [post]);
 
   // Navigation functions
   const canNavigatePrev = allPhotos && currentIndex !== undefined && currentIndex > 0;
@@ -78,26 +86,58 @@ export default function FullScreenPhotoViewer({
   }, [isOpen, navigatePrev, navigateNext, onClose]);
 
   const likeMutation = useMutation({
-    mutationFn: () => 
-      post.isLikedByCurrentUser 
-        ? postApi.unlikePost(post.id)
-        : postApi.likePost(post.id),
+    mutationFn: () =>
+      localPost.isLikedByCurrentUser
+        ? postApi.unlikePost(localPost.id)
+        : postApi.likePost(localPost.id),
+    onMutate: async () => {
+      // Optimistic update
+      setLocalPost(prev => ({
+        ...prev,
+        isLikedByCurrentUser: !prev.isLikedByCurrentUser,
+        likeCount: prev.isLikedByCurrentUser ? prev.likeCount - 1 : prev.likeCount + 1
+      }));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['userPhotos'] });
-      queryClient.invalidateQueries({ queryKey: ['post', post.id] });
+      queryClient.invalidateQueries({ queryKey: ['post', localPost.id] });
+    },
+    onError: () => {
+      // Revert optimistic update on error
+      setLocalPost(prev => ({
+        ...prev,
+        isLikedByCurrentUser: !prev.isLikedByCurrentUser,
+        likeCount: prev.isLikedByCurrentUser ? prev.likeCount - 1 : prev.likeCount + 1
+      }));
     },
   });
 
   const repostMutation = useMutation({
-    mutationFn: () => 
-      post.isRepostedByCurrentUser 
-        ? postApi.unrepost(post.id)
-        : postApi.repost(post.id),
+    mutationFn: () =>
+      localPost.isRepostedByCurrentUser
+        ? postApi.unrepost(localPost.id)
+        : postApi.repost(localPost.id),
+    onMutate: async () => {
+      // Optimistic update
+      setLocalPost(prev => ({
+        ...prev,
+        isRepostedByCurrentUser: !prev.isRepostedByCurrentUser,
+        repostCount: prev.isRepostedByCurrentUser ? prev.repostCount - 1 : prev.repostCount + 1
+      }));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['userPhotos'] });
-      queryClient.invalidateQueries({ queryKey: ['post', post.id] });
+      queryClient.invalidateQueries({ queryKey: ['post', localPost.id] });
+    },
+    onError: () => {
+      // Revert optimistic update on error
+      setLocalPost(prev => ({
+        ...prev,
+        isRepostedByCurrentUser: !prev.isRepostedByCurrentUser,
+        repostCount: prev.isRepostedByCurrentUser ? prev.repostCount - 1 : prev.repostCount + 1
+      }));
     },
   });
 
@@ -216,63 +256,66 @@ export default function FullScreenPhotoViewer({
             <div className="max-w-4xl mx-auto p-4">
               <div className="flex space-x-3">
                 {/* Avatar */}
-                <UserAvatar user={post.user} size="md" />
+                <UserAvatar user={localPost.user} size="md" />
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   {/* Header */}
                   <div className="flex items-center space-x-2 mb-2">
                     <Link
-                      href={`/profile/${post.user.username}`}
+                      href={`/profile/${localPost.user.username}`}
                       className="font-semibold text-foreground hover:underline"
                       onClick={onClose}
                     >
-                      @{post.user.username}
+                      @{localPost.user.username}
                     </Link>
                     <span className="text-text-secondary">·</span>
                     <span className="text-text-secondary text-sm">
-                      {formatDate(post.createdAt)}
-                      {post.isEdited && <span className="ml-1">(edited)</span>}
+                      {formatDate(localPost.createdAt)}
+                      {localPost.isEdited && <span className="ml-1">(edited)</span>}
                     </span>
                     {/* Privacy Indicator */}
-                    {post.privacy !== PostPrivacy.Public && (
+                    {localPost.privacy !== PostPrivacy.Public && (
                       <>
                         <span className="text-text-secondary">·</span>
                         <span className="text-text-secondary text-sm flex items-center">
                           {(() => {
-                            const PrivacyIcon = getPrivacyIcon(post.privacy);
+                            const PrivacyIcon = getPrivacyIcon(localPost.privacy);
                             return <PrivacyIcon className="w-3 h-3 mr-1" />;
                           })()}
-                          {getPrivacyLabel(post.privacy)}
+                          {getPrivacyLabel(localPost.privacy)}
                         </span>
                       </>
                     )}
                   </div>
 
                   {/* Post content */}
-                  {post.content && (
+                  {localPost.content && (
                     <p className="text-foreground whitespace-pre-wrap mb-3">
-                      <ContentHighlight content={post.content} />
+                      <ContentHighlight content={localPost.content} />
                     </p>
                   )}
 
                   {/* Action buttons */}
                   <div className="flex items-center space-x-6">
                     <button
-                      onClick={() => onClose()}
+                      onClick={() => {
+                        onClose();
+                        router.push(`/yap/${localPost.id}`);
+                      }}
                       className="flex items-center space-x-2 text-gray-400 hover:text-blue-400 transition-colors group"
                     >
                       <div className="p-2 rounded-full group-hover:bg-blue-500/10">
                         <MessageCircle className="w-5 h-5" />
                       </div>
-                      <span className="text-sm">{formatNumber(post.commentCount)}</span>
+                      <span className="text-sm">{formatNumber(localPost.commentCount)}</span>
                     </button>
 
                     <button
                       onClick={() => repostMutation.mutate()}
                       disabled={repostMutation.isPending}
                       className={`flex items-center space-x-2 transition-colors group ${
-                        post.isRepostedByCurrentUser
+                        localPost.isRepostedByCurrentUser
                           ? 'text-green-400'
                           : 'text-gray-400 hover:text-green-400'
                       }`}
@@ -280,24 +323,24 @@ export default function FullScreenPhotoViewer({
                       <div className="p-2 rounded-full group-hover:bg-green-500/10">
                         <Repeat2 className="w-5 h-5" />
                       </div>
-                      <span className="text-sm">{formatNumber(post.repostCount)}</span>
+                      <span className="text-sm">{formatNumber(localPost.repostCount)}</span>
                     </button>
 
                     <button
                       onClick={() => likeMutation.mutate()}
                       disabled={likeMutation.isPending}
                       className={`flex items-center space-x-2 transition-colors group ${
-                        post.isLikedByCurrentUser
+                        localPost.isLikedByCurrentUser
                           ? 'text-red-400'
                           : 'text-text-secondary hover:text-red-400'
                       }`}
                     >
                       <div className="p-2 rounded-full group-hover:bg-red-500/10">
                         <Heart
-                          className={`w-5 h-5 ${post.isLikedByCurrentUser ? 'fill-current' : ''}`}
+                          className={`w-5 h-5 ${localPost.isLikedByCurrentUser ? 'fill-current' : ''}`}
                         />
                       </div>
-                      <span className="text-sm">{formatNumber(post.likeCount)}</span>
+                      <span className="text-sm">{formatNumber(localPost.likeCount)}</span>
                     </button>
 
                     <button
@@ -320,7 +363,7 @@ export default function FullScreenPhotoViewer({
       <ShareModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
-        post={post}
+        post={localPost}
       />
     </>
   );
