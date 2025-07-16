@@ -356,7 +356,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
             
             {/* Media Gallery - New multiple media support */}
             {post.mediaItems && post.mediaItems.length > 0 ? (
-              <MediaGallery mediaItems={post.mediaItems} />
+              <MediaGallery mediaItems={post.mediaItems} post={post} />
             ) : (
               <>
                 {/* Legacy single image support */}

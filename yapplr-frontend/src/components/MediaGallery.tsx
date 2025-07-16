@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { PostMedia, MediaType, VideoProcessingStatus } from '@/types';
+import { PostMedia, MediaType, VideoProcessingStatus, Post } from '@/types';
 import { Play, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Image from 'next/image';
+import FullScreenPhotoViewer from './FullScreenPhotoViewer';
+import { PhotoItem } from './PhotoGrid';
 
 interface MediaGalleryProps {
   mediaItems: PostMedia[];
+  post: Post;
   className?: string;
 }
 
@@ -86,7 +89,7 @@ function MediaViewer({ mediaItems, currentIndex, isOpen, onClose, onNext, onPrev
   );
 }
 
-export default function MediaGallery({ mediaItems, className = '' }: MediaGalleryProps) {
+export default function MediaGallery({ mediaItems, post, className = '' }: MediaGalleryProps) {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   if (!mediaItems || mediaItems.length === 0) return null;
@@ -110,6 +113,15 @@ export default function MediaGallery({ mediaItems, className = '' }: MediaGaller
       setViewerIndex(viewerIndex - 1);
     }
   };
+
+  // Convert media items to PhotoItem format for FullScreenPhotoViewer
+  const allPhotos: PhotoItem[] = mediaItems
+    .filter(item => item.mediaType === MediaType.Image && item.imageUrl)
+    .map(item => ({
+      post,
+      mediaItem: item,
+      imageUrl: item.imageUrl!
+    }));
 
   // Single media item
   if (mediaItems.length === 1) {
@@ -157,14 +169,37 @@ export default function MediaGallery({ mediaItems, className = '' }: MediaGaller
           </div>
         ) : null}
 
-        <MediaViewer
-          mediaItems={mediaItems}
-          currentIndex={viewerIndex || 0}
-          isOpen={viewerIndex !== null}
-          onClose={closeViewer}
-          onNext={nextMedia}
-          onPrevious={previousMedia}
-        />
+        {/* Use FullScreenPhotoViewer for images with post actions */}
+        {viewerIndex !== null && mediaItems[viewerIndex]?.mediaType === MediaType.Image && (
+          <FullScreenPhotoViewer
+            post={post}
+            mediaItem={mediaItems[viewerIndex]}
+            allPhotos={allPhotos}
+            currentIndex={allPhotos.findIndex(photo => photo.mediaItem.id === mediaItems[viewerIndex].id)}
+            isOpen={true}
+            onClose={closeViewer}
+            onNavigate={(newIndex) => {
+              // Find the media item index from the photo index
+              const photoItem = allPhotos[newIndex];
+              const mediaIndex = mediaItems.findIndex(item => item.id === photoItem.mediaItem.id);
+              if (mediaIndex !== -1) {
+                setViewerIndex(mediaIndex);
+              }
+            }}
+          />
+        )}
+
+        {/* Use MediaViewer for videos */}
+        {viewerIndex !== null && mediaItems[viewerIndex]?.mediaType === MediaType.Video && (
+          <MediaViewer
+            mediaItems={mediaItems}
+            currentIndex={viewerIndex}
+            isOpen={true}
+            onClose={closeViewer}
+            onNext={nextMedia}
+            onPrevious={previousMedia}
+          />
+        )}
       </div>
     );
   }
@@ -231,14 +266,37 @@ export default function MediaGallery({ mediaItems, className = '' }: MediaGaller
         ))}
       </div>
 
-      <MediaViewer
-        mediaItems={mediaItems}
-        currentIndex={viewerIndex || 0}
-        isOpen={viewerIndex !== null}
-        onClose={closeViewer}
-        onNext={nextMedia}
-        onPrevious={previousMedia}
-      />
+      {/* Use FullScreenPhotoViewer for images with post actions */}
+      {viewerIndex !== null && mediaItems[viewerIndex]?.mediaType === MediaType.Image && (
+        <FullScreenPhotoViewer
+          post={post}
+          mediaItem={mediaItems[viewerIndex]}
+          allPhotos={allPhotos}
+          currentIndex={allPhotos.findIndex(photo => photo.mediaItem.id === mediaItems[viewerIndex].id)}
+          isOpen={true}
+          onClose={closeViewer}
+          onNavigate={(newIndex) => {
+            // Find the media item index from the photo index
+            const photoItem = allPhotos[newIndex];
+            const mediaIndex = mediaItems.findIndex(item => item.id === photoItem.mediaItem.id);
+            if (mediaIndex !== -1) {
+              setViewerIndex(mediaIndex);
+            }
+          }}
+        />
+      )}
+
+      {/* Use MediaViewer for videos */}
+      {viewerIndex !== null && mediaItems[viewerIndex]?.mediaType === MediaType.Video && (
+        <MediaViewer
+          mediaItems={mediaItems}
+          currentIndex={viewerIndex}
+          isOpen={true}
+          onClose={closeViewer}
+          onNext={nextMedia}
+          onPrevious={previousMedia}
+        />
+      )}
     </div>
   );
 }

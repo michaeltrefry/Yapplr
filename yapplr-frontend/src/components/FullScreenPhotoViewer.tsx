@@ -41,8 +41,26 @@ export default function FullScreenPhotoViewer({
 
   // Update local post when prop changes
   useEffect(() => {
+    console.log('FullScreenPhotoViewer: Post prop changed', {
+      postId: post.id,
+      isLiked: post.isLikedByCurrentUser,
+      likeCount: post.likeCount,
+      isReposted: post.isRepostedByCurrentUser,
+      repostCount: post.repostCount
+    });
     setLocalPost(post);
   }, [post]);
+
+  // Debug current local post state
+  useEffect(() => {
+    console.log('FullScreenPhotoViewer: Local post state', {
+      postId: localPost.id,
+      isLiked: localPost.isLikedByCurrentUser,
+      likeCount: localPost.likeCount,
+      isReposted: localPost.isRepostedByCurrentUser,
+      repostCount: localPost.repostCount
+    });
+  }, [localPost]);
 
   // Navigation functions
   const canNavigatePrev = allPhotos && currentIndex !== undefined && currentIndex > 0;
@@ -91,25 +109,44 @@ export default function FullScreenPhotoViewer({
         ? postApi.unlikePost(localPost.id)
         : postApi.likePost(localPost.id),
     onMutate: async () => {
+      // Store the previous state for potential rollback
+      const previousState = {
+        isLikedByCurrentUser: localPost.isLikedByCurrentUser,
+        likeCount: localPost.likeCount
+      };
+
       // Optimistic update
       setLocalPost(prev => ({
         ...prev,
         isLikedByCurrentUser: !prev.isLikedByCurrentUser,
         likeCount: prev.isLikedByCurrentUser ? prev.likeCount - 1 : prev.likeCount + 1
       }));
+
+      console.log('Like mutation onMutate:', {
+        previousLiked: previousState.isLikedByCurrentUser,
+        newLiked: !previousState.isLikedByCurrentUser,
+        previousCount: previousState.likeCount,
+        newCount: previousState.isLikedByCurrentUser ? previousState.likeCount - 1 : previousState.likeCount + 1
+      });
+
+      return { previousState };
     },
     onSuccess: () => {
+      console.log('Like mutation success');
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['userPhotos'] });
       queryClient.invalidateQueries({ queryKey: ['post', localPost.id] });
     },
-    onError: () => {
-      // Revert optimistic update on error
-      setLocalPost(prev => ({
-        ...prev,
-        isLikedByCurrentUser: !prev.isLikedByCurrentUser,
-        likeCount: prev.isLikedByCurrentUser ? prev.likeCount - 1 : prev.likeCount + 1
-      }));
+    onError: (error, variables, context) => {
+      console.log('Like mutation error, reverting to:', context?.previousState);
+      // Revert to the previous state
+      if (context?.previousState) {
+        setLocalPost(prev => ({
+          ...prev,
+          isLikedByCurrentUser: context.previousState.isLikedByCurrentUser,
+          likeCount: context.previousState.likeCount
+        }));
+      }
     },
   });
 
@@ -119,25 +156,44 @@ export default function FullScreenPhotoViewer({
         ? postApi.unrepost(localPost.id)
         : postApi.repost(localPost.id),
     onMutate: async () => {
+      // Store the previous state for potential rollback
+      const previousState = {
+        isRepostedByCurrentUser: localPost.isRepostedByCurrentUser,
+        repostCount: localPost.repostCount
+      };
+
       // Optimistic update
       setLocalPost(prev => ({
         ...prev,
         isRepostedByCurrentUser: !prev.isRepostedByCurrentUser,
         repostCount: prev.isRepostedByCurrentUser ? prev.repostCount - 1 : prev.repostCount + 1
       }));
+
+      console.log('Repost mutation onMutate:', {
+        previousReposted: previousState.isRepostedByCurrentUser,
+        newReposted: !previousState.isRepostedByCurrentUser,
+        previousCount: previousState.repostCount,
+        newCount: previousState.isRepostedByCurrentUser ? previousState.repostCount - 1 : previousState.repostCount + 1
+      });
+
+      return { previousState };
     },
     onSuccess: () => {
+      console.log('Repost mutation success');
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['userPhotos'] });
       queryClient.invalidateQueries({ queryKey: ['post', localPost.id] });
     },
-    onError: () => {
-      // Revert optimistic update on error
-      setLocalPost(prev => ({
-        ...prev,
-        isRepostedByCurrentUser: !prev.isRepostedByCurrentUser,
-        repostCount: prev.isRepostedByCurrentUser ? prev.repostCount - 1 : prev.repostCount + 1
-      }));
+    onError: (error, variables, context) => {
+      console.log('Repost mutation error, reverting to:', context?.previousState);
+      // Revert to the previous state
+      if (context?.previousState) {
+        setLocalPost(prev => ({
+          ...prev,
+          isRepostedByCurrentUser: context.previousState.isRepostedByCurrentUser,
+          repostCount: context.previousState.repostCount
+        }));
+      }
     },
   });
 
