@@ -800,27 +800,7 @@ public class AdminService : IAdminService
         }
     }
 
-    // System Administration - placeholder implementations
-    public async Task<bool> CreateSystemAnnouncementAsync(string title, string content, int createdByUserId, DateTime? expiresAt = null)
-    {
-        // TODO: Implement system announcements
-        await Task.CompletedTask;
-        return true;
-    }
 
-    public async Task<bool> ToggleFeatureFlagAsync(string featureName, bool isEnabled, int changedByUserId)
-    {
-        // TODO: Implement feature flags
-        await Task.CompletedTask;
-        return true;
-    }
-
-    public async Task<Dictionary<string, bool>> GetFeatureFlagsAsync()
-    {
-        // TODO: Implement feature flags
-        await Task.CompletedTask;
-        return new Dictionary<string, bool>();
-    }
 
     // Enhanced Analytics Methods
     public async Task<UserGrowthStatsDto> GetUserGrowthStatsAsync(int days = 30)

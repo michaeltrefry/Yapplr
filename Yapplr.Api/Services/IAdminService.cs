@@ -63,10 +63,7 @@ public interface IAdminService
     Task<bool> BulkApproveAiSuggestedTagsAsync(IEnumerable<int> suggestedTagIds, int approvedByUserId, string? reason = null);
     Task<bool> BulkRejectAiSuggestedTagsAsync(IEnumerable<int> suggestedTagIds, int approvedByUserId, string? reason = null);
 
-    // System Administration
-    Task<bool> CreateSystemAnnouncementAsync(string title, string content, int createdByUserId, DateTime? expiresAt = null);
-    Task<bool> ToggleFeatureFlagAsync(string featureName, bool isEnabled, int changedByUserId);
-    Task<Dictionary<string, bool>> GetFeatureFlagsAsync();
+
 
     // Trust Score Management
     Task<IEnumerable<UserTrustScoreDto>> GetUserTrustScoresAsync(int page = 1, int pageSize = 25, float? minScore = null, float? maxScore = null);
