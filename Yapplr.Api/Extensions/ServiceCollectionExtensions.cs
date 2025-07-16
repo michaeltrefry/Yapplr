@@ -66,6 +66,9 @@ public static class ServiceCollectionExtensions
         // Add external analytics services
         services.AddExternalAnalytics(configuration);
 
+        // Add Prometheus metrics
+        services.AddPrometheusMetrics();
+
         // Add custom services
         services.AddApplicationServices();
         services.AddAdminServices();

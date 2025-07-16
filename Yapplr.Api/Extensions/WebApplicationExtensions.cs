@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Prometheus;
 using Yapplr.Api.Data;
 using Yapplr.Api.Services;
 using Yapplr.Api.Endpoints;
@@ -42,6 +43,9 @@ public static class WebApplicationExtensions
         {
             app.UseCors("AllowSignalR");
         }
+        // Add Prometheus metrics middleware
+        app.UseHttpMetrics();
+
         app.UseAuthentication();
         app.UseMiddleware<UserActivityMiddleware>();
         app.UseMiddleware<ApiRateLimitMiddleware>();
@@ -78,6 +82,9 @@ public static class WebApplicationExtensions
         {
             app.MapCqrsTestEndpoints();
         }
+
+        // Map Prometheus metrics endpoint
+        app.MapMetrics();
 
         return app;
     }

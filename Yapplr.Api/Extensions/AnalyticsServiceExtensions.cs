@@ -1,4 +1,5 @@
 using InfluxDB.Client;
+using Prometheus;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Extensions;
@@ -48,6 +49,58 @@ public static class AnalyticsServiceExtensions
 
         return services;
     }
+
+    /// <summary>
+    /// Add Prometheus metrics collection to the DI container
+    /// </summary>
+    public static IServiceCollection AddPrometheusMetrics(this IServiceCollection services)
+    {
+        // Configure Prometheus metrics
+        services.AddSingleton(provider =>
+        {
+            // Create custom metrics for Yapplr
+            var userActivityCounter = Metrics.CreateCounter(
+                "yapplr_user_activities_total",
+                "Total number of user activities",
+                new[] { "activity_type", "user_id" });
+
+            var contentEngagementCounter = Metrics.CreateCounter(
+                "yapplr_content_engagements_total",
+                "Total number of content engagements",
+                new[] { "content_type", "engagement_type" });
+
+            var performanceHistogram = Metrics.CreateHistogram(
+                "yapplr_request_duration_seconds",
+                "Request duration in seconds",
+                new[] { "method", "endpoint" });
+
+            var errorCounter = Metrics.CreateCounter(
+                "yapplr_errors_total",
+                "Total number of errors",
+                new[] { "error_type", "endpoint" });
+
+            return new PrometheusMetrics
+            {
+                UserActivityCounter = userActivityCounter,
+                ContentEngagementCounter = contentEngagementCounter,
+                PerformanceHistogram = performanceHistogram,
+                ErrorCounter = errorCounter
+            };
+        });
+
+        return services;
+    }
+}
+
+/// <summary>
+/// Container for Prometheus metrics
+/// </summary>
+public class PrometheusMetrics
+{
+    public Counter UserActivityCounter { get; set; } = null!;
+    public Counter ContentEngagementCounter { get; set; } = null!;
+    public Histogram PerformanceHistogram { get; set; } = null!;
+    public Counter ErrorCounter { get; set; } = null!;
 }
 
 /// <summary>

@@ -161,12 +161,31 @@ public class AnalyticsService : IAnalyticsService
             _context.ContentEngagements.Add(engagement);
             await _context.SaveChangesAsync();
 
-            _logger.LogDebug("Tracked content engagement: User {UserId} {EngagementType} {ContentType} {ContentId}", 
+            // Also send to external analytics if dual-write is enabled
+            if (_enableDualWrite)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _externalAnalytics.TrackContentEngagementAsync(
+                            userId, contentType, contentId, engagementType, contentOwnerId,
+                            source, metadata, sessionId, durationMs, position);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send content engagement to external analytics: User {UserId}, Content {ContentId}",
+                            userId, contentId);
+                    }
+                });
+            }
+
+            _logger.LogDebug("Tracked content engagement: User {UserId} {EngagementType} {ContentType} {ContentId}",
                 userId, engagementType, contentType, contentId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to track content engagement for user {UserId}: {EngagementType} {ContentType} {ContentId}", 
+            _logger.LogError(ex, "Failed to track content engagement for user {UserId}: {EngagementType} {ContentType} {ContentId}",
                 userId, engagementType, contentType, contentId);
             // Don't throw - analytics failures shouldn't break the main flow
         }
@@ -360,6 +379,25 @@ public class AnalyticsService : IAnalyticsService
             _context.TagAnalytics.Add(tagAnalytics);
             await _context.SaveChangesAsync();
 
+            // Also send to external analytics if dual-write is enabled
+            if (_enableDualWrite)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _externalAnalytics.TrackTagActionAsync(
+                            tagId, action, userId, relatedContentType, relatedContentId,
+                            source, metadata, sessionId, position, wasSuggested);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send tag action to external analytics: Tag {TagId}, Action {Action}",
+                            tagId, action);
+                    }
+                });
+            }
+
             _logger.LogDebug("Tracked tag action: Tag {TagId} {Action} by user {UserId}",
                 tagId, action, userId);
         }
@@ -438,6 +476,25 @@ public class AnalyticsService : IAnalyticsService
 
             _context.PerformanceMetrics.Add(metric);
             await _context.SaveChangesAsync();
+
+            // Also send to external analytics if dual-write is enabled
+            if (_enableDualWrite)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _externalAnalytics.RecordPerformanceMetricAsync(
+                            metricType, value, unit, source, operation, tags,
+                            instanceId, environment, version, success, errorMessage, userId, sessionId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send performance metric to external analytics: {MetricType} from {Source}",
+                            metricType, source);
+                    }
+                });
+            }
 
             _logger.LogDebug("Recorded performance metric: {MetricType} = {Value} {Unit} from {Source}",
                 metricType, value, unit, source);
