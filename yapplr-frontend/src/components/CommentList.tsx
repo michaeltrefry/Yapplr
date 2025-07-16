@@ -192,7 +192,7 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
                     : 'text-gray-500 hover:text-red-500'
                 }`}
               >
-                <div className="p-1 rounded-full group-hover:bg-red-50">
+                <div className="p-1 rounded-full hover:bg-gray-100">
                   <Heart
                     className={`w-4 h-4 ${comment.isLikedByCurrentUser ? 'fill-current' : ''}`}
                   />
@@ -207,7 +207,7 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
                   className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors group"
                   title="Reply to comment"
                 >
-                  <div className="p-1 rounded-full group-hover:bg-blue-50">
+                  <div className="p-1 rounded-full hover:bg-gray-100">
                     <Reply className="w-4 h-4" />
                   </div>
                   <span className="text-xs">Reply</span>
@@ -221,7 +221,7 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
                   className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors group"
                   title="Report comment"
                 >
-                  <div className="p-1 rounded-full group-hover:bg-red-50">
+                  <div className="p-1 rounded-full hover:bg-gray-100">
                     <Flag className="w-4 h-4" />
                   </div>
                   <span className="text-xs">Report</span>

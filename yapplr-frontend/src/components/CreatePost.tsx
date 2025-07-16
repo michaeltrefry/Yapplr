@@ -607,7 +607,7 @@ export default function CreatePost() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors flex items-center gap-1 sm:gap-2"
+                  className="text-gray-500 hover:bg-gray-100 p-2 rounded-full transition-colors flex items-center gap-1 sm:gap-2"
                   title={`Add photos/videos (${uploadedFiles.length + selectedFiles.length}/10)`}
                   disabled={isUploading || uploadImageMutation.isPending || uploadVideoMutation.isPending || (uploadedFiles.length + selectedFiles.length) >= 10}
                 >

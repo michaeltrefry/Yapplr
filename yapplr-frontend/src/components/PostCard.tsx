@@ -206,7 +206,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
 
   return (
     <>
-      <article className={`p-4 hover:bg-gray-50/50 transition-colors bg-white ${showBorder ? 'border-b border-gray-200' : ''}`}>
+      <article className={`p-4 bg-white ${showBorder ? 'border-b border-gray-200' : ''}`}>
       <div className="flex space-x-3">
         {/* Avatar */}
         <UserAvatar user={post.user} size="lg" />
@@ -427,7 +427,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               onClick={() => setShowComments(!showComments)}
               className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors group"
             >
-              <div className="p-2 rounded-full group-hover:bg-blue-50">
+              <div className="p-2 rounded-full hover:bg-gray-100">
                 <MessageCircle className="w-5 h-5" />
               </div>
               <span className="text-sm">{formatNumber(post.commentCount)}</span>
@@ -442,7 +442,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                   : 'text-gray-500 hover:text-green-500'
               }`}
             >
-              <div className="p-2 rounded-full group-hover:bg-green-50">
+              <div className="p-2 rounded-full hover:bg-gray-100">
                 <Repeat2 className="w-5 h-5" />
               </div>
               <span className="text-sm">{formatNumber(post.repostCount)}</span>
@@ -457,7 +457,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                   : 'text-gray-500 hover:text-red-500'
               }`}
             >
-              <div className="p-2 rounded-full group-hover:bg-red-50">
+              <div className="p-2 rounded-full hover:bg-gray-100">
                 <Heart
                   className={`w-5 h-5 ${post.isLikedByCurrentUser ? 'fill-current' : ''}`}
                 />
@@ -469,7 +469,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               onClick={() => setShowShareModal(true)}
               className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors group"
             >
-              <div className="p-2 rounded-full group-hover:bg-blue-50">
+              <div className="p-2 rounded-full hover:bg-gray-100">
                 <Share className="w-5 h-5" />
               </div>
             </button>
@@ -481,7 +481,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 className="flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors group"
                 title="Report this post"
               >
-                <div className="p-2 rounded-full group-hover:bg-red-50">
+                <div className="p-2 rounded-full hover:bg-gray-100">
                   <Flag className="w-5 h-5" />
                 </div>
               </button>

@@ -345,10 +345,27 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* Button overrides for consistency - only apply to buttons without specific background colors */
-button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-yellow"]):not([class*="bg-purple"]):not([class*="bg-orange"]):not([class*="bg-indigo"]):not([class*="bg-pink"]):not([class*="bg-cyan"]):not([class*="bg-teal"]):not([class*="bg-lime"]):not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-violet"]):not([class*="bg-fuchsia"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-slate"]):not([class*="bg-zinc"]):not([class*="bg-neutral"]):not([class*="bg-stone"]) {
+/* Exclude post interaction buttons and other transparent buttons */
+button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-yellow"]):not([class*="bg-purple"]):not([class*="bg-orange"]):not([class*="bg-indigo"]):not([class*="bg-pink"]):not([class*="bg-cyan"]):not([class*="bg-teal"]):not([class*="bg-lime"]):not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-violet"]):not([class*="bg-fuchsia"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-slate"]):not([class*="bg-zinc"]):not([class*="bg-neutral"]):not([class*="bg-stone"]):not([class*="group"]):not([class*="text-gray-500"]) {
   background-color: var(--surface) !important;
   color: var(--foreground) !important;
   border-color: var(--border) !important;
+}
+
+/* Ensure post interaction buttons remain completely transparent */
+button.group,
+button[class*="text-gray-500"],
+.group button,
+button[class*="group"] {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+/* Ensure the inner divs of post interaction buttons are also transparent by default - but not when parent is hovered */
+.group:not(:hover) button > div,
+button.group:not(:hover) > div,
+button[class*="text-gray-500"]:not(:hover) > div {
+  background-color: transparent !important;
 }
 
 /* Specific hover states */
@@ -358,6 +375,39 @@ button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):n
 
 .hover\\:bg-blue-100:hover {
   background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Ensure group-hover elements are transparent by default - but not when parent is hovered */
+.group:not(:hover) .group-hover\\:bg-blue-50,
+.group:not(:hover) .group-hover\\:bg-red-50,
+.group:not(:hover) .group-hover\\:bg-green-50,
+.group:not(:hover) .group-hover\\:bg-yellow-50 {
+  background-color: transparent !important;
+}
+
+/* Group hover states for post interaction buttons - exactly match sidebar hover:bg-gray-100 behavior */
+/* Use higher specificity to override any conflicting rules */
+button.group:hover .group-hover\\:bg-blue-50,
+button.group:hover .group-hover\\:bg-red-50,
+button.group:hover .group-hover\\:bg-green-50,
+button.group:hover .group-hover\\:bg-yellow-50,
+.group:hover .group-hover\\:bg-blue-50,
+.group:hover .group-hover\\:bg-red-50,
+.group:hover .group-hover\\:bg-green-50,
+.group:hover .group-hover\\:bg-yellow-50 {
+  background-color: var(--surface) !important;
+}
+
+/* Dark mode group hover states - exactly match sidebar hover:bg-gray-100 behavior */
+.dark button.group:hover .group-hover\\:bg-blue-50,
+.dark button.group:hover .group-hover\\:bg-red-50,
+.dark button.group:hover .group-hover\\:bg-green-50,
+.dark button.group:hover .group-hover\\:bg-yellow-50,
+.dark .group:hover .group-hover\\:bg-blue-50,
+.dark .group:hover .group-hover\\:bg-red-50,
+.dark .group:hover .group-hover\\:bg-green-50,
+.dark .group:hover .group-hover\\:bg-yellow-50 {
+  background-color: #374151 !important; /* Exactly same as .dark .hover\\:bg-gray-100:hover */
 }
 
 .hover\\:bg-green-100:hover {
