@@ -51,6 +51,16 @@ body {
   color: var(--foreground);
 }
 
+/* Prevent transitions during initial page load */
+.preload * {
+  transition: none !important;
+}
+
+/* Remove preload class after page loads to enable transitions */
+body:not(.preload) * {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+}
+
 * {
   box-sizing: border-box;
 }
