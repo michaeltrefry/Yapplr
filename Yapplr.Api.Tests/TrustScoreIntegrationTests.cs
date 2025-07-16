@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Yapplr.Api.Data;
+using Yapplr.Api.Extensions;
 using Yapplr.Api.Models;
 using Yapplr.Api.Models.Analytics;
 using Yapplr.Api.Services;
@@ -35,6 +37,18 @@ public class TrustScoreIntegrationTests : IDisposable
         services.AddScoped<ITrustScoreService, TrustScoreService>();
         services.AddScoped<ITrustBasedModerationService, TrustBasedModerationService>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
+
+        // Add analytics dependencies for tests
+        services.AddScoped<IExternalAnalyticsService, NoOpAnalyticsService>();
+
+        // Add configuration for tests
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Analytics:EnableDualWrite"] = "false"
+            })
+            .Build();
+        services.AddSingleton<IConfiguration>(configuration);
 
         _serviceProvider = services.BuildServiceProvider();
         _context = _serviceProvider.GetRequiredService<YapplrDbContext>();
