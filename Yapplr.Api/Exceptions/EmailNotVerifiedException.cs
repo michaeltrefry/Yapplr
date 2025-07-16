@@ -1,18 +1,6 @@
 namespace Yapplr.Api.Exceptions;
 
-public class EmailNotVerifiedException : Exception
+public class EmailNotVerifiedException(string email, string message = "Email address must be verified before logging in.") : Exception(message)
 {
-    public string Email { get; }
-
-    public EmailNotVerifiedException(string email) 
-        : base("Email address must be verified before logging in.")
-    {
-        Email = email;
-    }
-
-    public EmailNotVerifiedException(string email, string message) 
-        : base(message)
-    {
-        Email = email;
-    }
+    public string Email { get; } = email;
 }

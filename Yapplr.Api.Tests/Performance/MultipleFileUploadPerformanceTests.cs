@@ -8,7 +8,6 @@ using Xunit;
 using Xunit.Abstractions;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.DTOs;
-using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Tests.Performance;

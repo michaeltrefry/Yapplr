@@ -104,16 +104,23 @@ export default function FullScreenPhotoViewer({
   }, [isOpen, navigatePrev, navigateNext, onClose]);
 
   const likeMutation = useMutation({
-    mutationFn: () =>
-      localPost.isLikedByCurrentUser
-        ? postApi.unlikePost(localPost.id)
-        : postApi.likePost(localPost.id),
+    mutationFn: async (isCurrentlyLiked: boolean) => {
+      console.log('API call - isCurrentlyLiked:', isCurrentlyLiked);
+
+      if (isCurrentlyLiked) {
+        return await postApi.unlikePost(localPost.id);
+      } else {
+        return await postApi.likePost(localPost.id);
+      }
+    },
     onMutate: async () => {
-      // Store the previous state for potential rollback
+      // Store the previous state for potential rollback and API call
       const previousState = {
         isLikedByCurrentUser: localPost.isLikedByCurrentUser,
         likeCount: localPost.likeCount
       };
+
+      console.log('Like mutation onMutate - before optimistic update:', previousState);
 
       // Optimistic update
       setLocalPost(prev => ({
@@ -121,13 +128,6 @@ export default function FullScreenPhotoViewer({
         isLikedByCurrentUser: !prev.isLikedByCurrentUser,
         likeCount: prev.isLikedByCurrentUser ? prev.likeCount - 1 : prev.likeCount + 1
       }));
-
-      console.log('Like mutation onMutate:', {
-        previousLiked: previousState.isLikedByCurrentUser,
-        newLiked: !previousState.isLikedByCurrentUser,
-        previousCount: previousState.likeCount,
-        newCount: previousState.isLikedByCurrentUser ? previousState.likeCount - 1 : previousState.likeCount + 1
-      });
 
       return { previousState };
     },
@@ -138,7 +138,8 @@ export default function FullScreenPhotoViewer({
       queryClient.invalidateQueries({ queryKey: ['post', localPost.id] });
     },
     onError: (error, variables, context) => {
-      console.log('Like mutation error, reverting to:', context?.previousState);
+      console.log('Like mutation error:', error);
+      console.log('Reverting to:', context?.previousState);
       // Revert to the previous state
       if (context?.previousState) {
         setLocalPost(prev => ({
@@ -151,10 +152,15 @@ export default function FullScreenPhotoViewer({
   });
 
   const repostMutation = useMutation({
-    mutationFn: () =>
-      localPost.isRepostedByCurrentUser
-        ? postApi.unrepost(localPost.id)
-        : postApi.repost(localPost.id),
+    mutationFn: async (isCurrentlyReposted: boolean) => {
+      console.log('Repost API call - isCurrentlyReposted:', isCurrentlyReposted);
+
+      if (isCurrentlyReposted) {
+        return await postApi.unrepost(localPost.id);
+      } else {
+        return await postApi.repost(localPost.id);
+      }
+    },
     onMutate: async () => {
       // Store the previous state for potential rollback
       const previousState = {
@@ -162,19 +168,14 @@ export default function FullScreenPhotoViewer({
         repostCount: localPost.repostCount
       };
 
+      console.log('Repost mutation onMutate - before optimistic update:', previousState);
+
       // Optimistic update
       setLocalPost(prev => ({
         ...prev,
         isRepostedByCurrentUser: !prev.isRepostedByCurrentUser,
         repostCount: prev.isRepostedByCurrentUser ? prev.repostCount - 1 : prev.repostCount + 1
       }));
-
-      console.log('Repost mutation onMutate:', {
-        previousReposted: previousState.isRepostedByCurrentUser,
-        newReposted: !previousState.isRepostedByCurrentUser,
-        previousCount: previousState.repostCount,
-        newCount: previousState.isRepostedByCurrentUser ? previousState.repostCount - 1 : previousState.repostCount + 1
-      });
 
       return { previousState };
     },
@@ -185,7 +186,8 @@ export default function FullScreenPhotoViewer({
       queryClient.invalidateQueries({ queryKey: ['post', localPost.id] });
     },
     onError: (error, variables, context) => {
-      console.log('Repost mutation error, reverting to:', context?.previousState);
+      console.log('Repost mutation error:', error);
+      console.log('Reverting to:', context?.previousState);
       // Revert to the previous state
       if (context?.previousState) {
         setLocalPost(prev => ({
@@ -368,7 +370,7 @@ export default function FullScreenPhotoViewer({
                     </button>
 
                     <button
-                      onClick={() => repostMutation.mutate()}
+                      onClick={() => repostMutation.mutate(localPost.isRepostedByCurrentUser)}
                       disabled={repostMutation.isPending}
                       className={`flex items-center space-x-2 transition-colors group ${
                         localPost.isRepostedByCurrentUser
@@ -383,7 +385,7 @@ export default function FullScreenPhotoViewer({
                     </button>
 
                     <button
-                      onClick={() => likeMutation.mutate()}
+                      onClick={() => likeMutation.mutate(localPost.isLikedByCurrentUser)}
                       disabled={likeMutation.isPending}
                       className={`flex items-center space-x-2 transition-colors group ${
                         localPost.isLikedByCurrentUser

@@ -1,9 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Xunit;
-using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Common;
-using Yapplr.Api.Tests.Common;
 
 namespace Yapplr.Api.Tests;
 

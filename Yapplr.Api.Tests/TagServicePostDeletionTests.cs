@@ -1,12 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using Moq;
 using Xunit;
-using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
-using Yapplr.Api.Tests.Common;
 
 namespace Yapplr.Api.Tests;
 

@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using FluentAssertions;
@@ -10,7 +9,6 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 using Yapplr.Api.Exceptions;
-using Yapplr.Api.Common;
 using Yapplr.Api.CQRS;
 
 namespace Yapplr.Api.Tests;

@@ -1,6 +1,4 @@
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
-using Moq;
 using Xunit;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;

@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
-using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Endpoints;
 

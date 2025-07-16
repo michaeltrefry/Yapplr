@@ -134,9 +134,7 @@ public static class MappingUtilities
             comment.CreatedAt,
             comment.UpdatedAt,
             userDto,
-            isEdited,
-            0, // LikeCount - will be 0 when not provided
-            false // IsLikedByCurrentUser - will be false when not provided
+            isEdited
         );
     }
 

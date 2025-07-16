@@ -11,7 +11,6 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 using Yapplr.Shared.Messages;
-using Yapplr.Shared.Models;
 
 namespace Yapplr.Api.Tests.Services;
 
