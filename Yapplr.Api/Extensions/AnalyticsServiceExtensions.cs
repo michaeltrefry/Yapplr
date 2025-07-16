@@ -42,18 +42,18 @@ public static class AnalyticsServiceExtensions
             // Register InfluxDB analytics service
             services.AddScoped<IExternalAnalyticsService, InfluxAnalyticsService>();
 
-            // TODO: Re-enable admin analytics and migration services
-            // services.AddScoped<IInfluxAdminAnalyticsService, InfluxAdminAnalyticsService>();
-            // services.AddScoped<IAnalyticsMigrationService, AnalyticsMigrationService>();
+            // Register admin analytics and migration services
+            services.AddScoped<IInfluxAdminAnalyticsService, InfluxAdminAnalyticsService>();
+            services.AddScoped<IAnalyticsMigrationService, AnalyticsMigrationService>();
         }
         else
         {
             // Register a no-op analytics service if InfluxDB is disabled
             services.AddScoped<IExternalAnalyticsService, NoOpAnalyticsService>();
 
-            // TODO: Re-enable admin analytics and migration services
-            // services.AddScoped<IInfluxAdminAnalyticsService, NoOpInfluxAdminAnalyticsService>();
-            // services.AddScoped<IAnalyticsMigrationService, NoOpAnalyticsMigrationService>();
+            // Register no-op admin analytics and migration services
+            services.AddScoped<IInfluxAdminAnalyticsService, NoOpInfluxAdminAnalyticsService>();
+            services.AddScoped<IAnalyticsMigrationService, NoOpAnalyticsMigrationService>();
         }
 
         return services;
@@ -173,7 +173,6 @@ public class NoOpAnalyticsService : IExternalAnalyticsService
     }
 }
 
-/*
 /// <summary>
 /// No-operation InfluxDB admin analytics service for when InfluxDB is disabled
 /// </summary>
@@ -265,9 +264,30 @@ public class NoOpInfluxAdminAnalyticsService : IInfluxAdminAnalyticsService
         _logger.LogDebug("No-op: Would get user engagement stats from InfluxDB");
         return Task.FromResult(new UserEngagementStatsDto
         {
-            TotalEngagements = 0,
-            AverageEngagementsPerDay = 0,
-            DailyEngagement = new List<DailyStatsDto>()
+            DailyEngagement = new List<DailyStatsDto>(),
+            AverageSessionDuration = 0,
+            TotalSessions = 0,
+            RetentionRate = 0,
+            EngagementBreakdown = new List<EngagementTypeStatsDto>()
+        });
+    }
+
+    public Task<AnalyticsDataSourceDto> GetDataSourceInfoAsync()
+    {
+        _logger.LogDebug("No-op: Would get analytics data source info from InfluxDB");
+        return Task.FromResult(new AnalyticsDataSourceDto
+        {
+            ConfiguredSource = "Database",
+            InfluxAvailable = false,
+            ActualSource = "Database",
+            DualWriteEnabled = false,
+            LastChecked = DateTime.UtcNow,
+            HealthMetrics = new Dictionary<string, object>
+            {
+                ["influx_enabled"] = false,
+                ["influx_available"] = false
+            },
+            Issues = new List<string> { "InfluxDB is not enabled" }
         });
     }
 }
@@ -342,21 +362,57 @@ public class NoOpAnalyticsMigrationService : IAnalyticsMigrationService
         });
     }
 
-    public Task<MigrationStatus> GetMigrationStatusAsync()
+    public Task<MigrationStatusDto> GetMigrationStatusAsync()
     {
-        return Task.FromResult(new MigrationStatus
+        _logger.LogDebug("No-op: Would get migration status");
+        return Task.FromResult(new MigrationStatusDto
         {
-            IsInProgress = false
+            IsRunning = false,
+            CurrentTable = null,
+            ProgressPercentage = 0,
+            StartTime = null,
+            EstimatedCompletion = null,
+            RecordsProcessed = 0,
+            TotalRecords = 0,
+            CompletedMigrations = new List<MigrationResult>(),
+            Errors = new List<string> { "InfluxDB is not enabled" },
+            Statistics = new Dictionary<string, object>()
         });
     }
 
-    public Task<ValidationResult> ValidateMigrationAsync(DateTime? fromDate = null, DateTime? toDate = null)
+    public Task<DataValidationResult> ValidateMigratedDataAsync(DateTime? fromDate = null, DateTime? toDate = null)
     {
-        return Task.FromResult(new ValidationResult
+        _logger.LogDebug("No-op: Would validate migrated data");
+        return Task.FromResult(new DataValidationResult
         {
             IsValid = false,
-            ErrorMessage = "InfluxDB is not enabled"
+            TableName = "All",
+            DatabaseRecords = 0,
+            InfluxRecords = 0,
+            MissingRecords = 0,
+            ExtraRecords = 0,
+            AccuracyPercentage = 0,
+            ValidationErrors = new List<string> { "InfluxDB is not enabled" },
+            Warnings = new List<string>(),
+            ValidationTime = DateTime.UtcNow,
+            DetailedMetrics = new Dictionary<string, object>()
+        });
+    }
+
+    public Task<MigrationStatsDto> GetMigrationStatsAsync()
+    {
+        _logger.LogDebug("No-op: Would get migration stats");
+        return Task.FromResult(new MigrationStatsDto
+        {
+            TotalMigrations = 0,
+            SuccessfulMigrations = 0,
+            FailedMigrations = 0,
+            TotalRecordsMigrated = 0,
+            LastMigrationTime = null,
+            TotalMigrationTime = TimeSpan.Zero,
+            AverageRecordsPerSecond = 0,
+            TableStats = new Dictionary<string, MigrationTableStats>(),
+            RecentErrors = new List<string> { "InfluxDB is not enabled" }
         });
     }
 }
-*/

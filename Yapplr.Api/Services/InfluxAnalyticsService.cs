@@ -39,8 +39,7 @@ public class InfluxAnalyticsService : IExternalAnalyticsService
 
         try
         {
-            var health = await _influxClient.HealthAsync();
-            return health.Status == HealthCheck.StatusEnum.Pass;
+            return await _influxClient.PingAsync();
         }
         catch (Exception ex)
         {

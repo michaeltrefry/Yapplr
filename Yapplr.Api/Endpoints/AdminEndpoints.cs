@@ -626,27 +626,169 @@ public static class AdminEndpoints
         .RequireAuthorization("Moderator")
         .Produces<UserEngagementStatsDto>();
 
-        // TODO: Re-enable analytics endpoints once services are available
-        /*
         // Analytics data source info endpoint
         admin.MapGet("/analytics/data-source", async (IInfluxAdminAnalyticsService influxService, IConfiguration configuration) =>
         {
-            var useInflux = configuration.GetValue<bool>("Analytics:UseInfluxForAdminDashboard", false);
-            var influxAvailable = await influxService.IsAvailableAsync();
-
-            return Results.Ok(new
-            {
-                configured_source = useInflux ? "InfluxDB" : "Database",
-                influx_available = influxAvailable,
-                actual_source = (useInflux && influxAvailable) ? "InfluxDB" : "Database",
-                dual_write_enabled = configuration.GetValue<bool>("Analytics:EnableDualWrite", false)
-            });
+            var dataSourceInfo = await influxService.GetDataSourceInfoAsync();
+            return Results.Ok(dataSourceInfo);
         })
         .WithName("GetAnalyticsDataSource")
-        .WithSummary("Get information about analytics data source")
+        .WithSummary("Get analytics data source information")
+        .RequireAuthorization("Moderator")
+        .Produces<AnalyticsDataSourceDto>();
+
+        // Migration endpoints
+        admin.MapPost("/analytics/migrate", async (IAnalyticsMigrationService migrationService, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] int batchSize = 1000) =>
+        {
+            var result = await migrationService.MigrateAllAnalyticsAsync(fromDate, toDate, batchSize);
+            return Results.Ok(result);
+        })
+        .WithName("MigrateAllAnalytics")
+        .WithSummary("Migrate all analytics data to InfluxDB")
+        .RequireAuthorization("Admin")
+        .Produces<MigrationResult>();
+
+        admin.MapPost("/analytics/migrate/user-activities", async (IAnalyticsMigrationService migrationService, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] int batchSize = 1000) =>
+        {
+            var result = await migrationService.MigrateUserActivitiesAsync(fromDate, toDate, batchSize);
+            return Results.Ok(result);
+        })
+        .WithName("MigrateUserActivities")
+        .WithSummary("Migrate user activities to InfluxDB")
+        .RequireAuthorization("Admin")
+        .Produces<MigrationResult>();
+
+        admin.MapPost("/analytics/migrate/content-engagements", async (IAnalyticsMigrationService migrationService, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] int batchSize = 1000) =>
+        {
+            var result = await migrationService.MigrateContentEngagementsAsync(fromDate, toDate, batchSize);
+            return Results.Ok(result);
+        })
+        .WithName("MigrateContentEngagements")
+        .WithSummary("Migrate content engagements to InfluxDB")
+        .RequireAuthorization("Admin")
+        .Produces<MigrationResult>();
+
+        admin.MapPost("/analytics/migrate/tag-analytics", async (IAnalyticsMigrationService migrationService, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] int batchSize = 1000) =>
+        {
+            var result = await migrationService.MigrateTagAnalyticsAsync(fromDate, toDate, batchSize);
+            return Results.Ok(result);
+        })
+        .WithName("MigrateTagAnalytics")
+        .WithSummary("Migrate tag analytics to InfluxDB")
+        .RequireAuthorization("Admin")
+        .Produces<MigrationResult>();
+
+        admin.MapPost("/analytics/migrate/performance-metrics", async (IAnalyticsMigrationService migrationService, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] int batchSize = 1000) =>
+        {
+            var result = await migrationService.MigratePerformanceMetricsAsync(fromDate, toDate, batchSize);
+            return Results.Ok(result);
+        })
+        .WithName("MigratePerformanceMetrics")
+        .WithSummary("Migrate performance metrics to InfluxDB")
+        .RequireAuthorization("Admin")
+        .Produces<MigrationResult>();
+
+        admin.MapGet("/analytics/migration/status", async (IAnalyticsMigrationService migrationService) =>
+        {
+            var status = await migrationService.GetMigrationStatusAsync();
+            return Results.Ok(status);
+        })
+        .WithName("GetMigrationStatus")
+        .WithSummary("Get current migration status")
+        .RequireAuthorization("Moderator")
+        .Produces<MigrationStatusDto>();
+
+        admin.MapGet("/analytics/migration/stats", async (IAnalyticsMigrationService migrationService) =>
+        {
+            var stats = await migrationService.GetMigrationStatsAsync();
+            return Results.Ok(stats);
+        })
+        .WithName("GetMigrationStats")
+        .WithSummary("Get migration statistics")
+        .RequireAuthorization("Moderator")
+        .Produces<MigrationStatsDto>();
+
+        admin.MapPost("/analytics/validate", async (IAnalyticsMigrationService migrationService, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate) =>
+        {
+            var result = await migrationService.ValidateMigratedDataAsync(fromDate, toDate);
+            return Results.Ok(result);
+        })
+        .WithName("ValidateMigratedData")
+        .WithSummary("Validate migrated analytics data integrity")
+        .RequireAuthorization("Admin")
+        .Produces<DataValidationResult>();
+
+        // Enhanced analytics endpoints using InfluxDB when available
+        admin.MapGet("/analytics/user-growth-influx", async ([FromQuery] int days, IInfluxAdminAnalyticsService influxService) =>
+        {
+            var stats = await influxService.GetUserGrowthStatsAsync(days);
+            return Results.Ok(stats);
+        })
+        .WithName("GetUserGrowthStatsInflux")
+        .WithSummary("Get user growth analytics from InfluxDB")
+        .RequireAuthorization("Moderator")
+        .Produces<UserGrowthStatsDto>();
+
+        admin.MapGet("/analytics/content-stats-influx", async ([FromQuery] int days, IInfluxAdminAnalyticsService influxService) =>
+        {
+            var stats = await influxService.GetContentStatsAsync(days);
+            return Results.Ok(stats);
+        })
+        .WithName("GetContentStatsInflux")
+        .WithSummary("Get content creation analytics from InfluxDB")
+        .RequireAuthorization("Moderator")
+        .Produces<ContentStatsDto>();
+
+        admin.MapGet("/analytics/moderation-trends-influx", async ([FromQuery] int days, IInfluxAdminAnalyticsService influxService) =>
+        {
+            var stats = await influxService.GetModerationTrendsAsync(days);
+            return Results.Ok(stats);
+        })
+        .WithName("GetModerationTrendsInflux")
+        .WithSummary("Get moderation trends analytics from InfluxDB")
+        .RequireAuthorization("Moderator")
+        .Produces<ModerationTrendsDto>();
+
+        admin.MapGet("/analytics/system-health-influx", async (IInfluxAdminAnalyticsService influxService) =>
+        {
+            var health = await influxService.GetSystemHealthAsync();
+            return Results.Ok(health);
+        })
+        .WithName("GetSystemHealthInflux")
+        .WithSummary("Get system health metrics from InfluxDB")
+        .RequireAuthorization("Moderator")
+        .Produces<SystemHealthDto>();
+
+        admin.MapGet("/analytics/user-engagement-influx", async ([FromQuery] int days, IInfluxAdminAnalyticsService influxService) =>
+        {
+            var engagement = await influxService.GetUserEngagementStatsAsync(days);
+            return Results.Ok(engagement);
+        })
+        .WithName("GetUserEngagementInflux")
+        .WithSummary("Get user engagement analytics from InfluxDB")
+        .RequireAuthorization("Moderator")
+        .Produces<UserEngagementStatsDto>();
+
+        // Analytics health check endpoint
+        admin.MapGet("/analytics/health", async (IInfluxAdminAnalyticsService influxService, IAnalyticsMigrationService migrationService, IExternalAnalyticsService externalAnalytics) =>
+        {
+            var healthReport = new
+            {
+                timestamp = DateTime.UtcNow,
+                influx_admin_available = await influxService.IsAvailableAsync(),
+                external_analytics_available = await externalAnalytics.IsAvailableAsync(),
+                migration_service_available = await migrationService.IsInfluxDbAvailableAsync(),
+                data_source_info = await influxService.GetDataSourceInfoAsync(),
+                migration_status = await migrationService.GetMigrationStatusAsync()
+            };
+
+            return Results.Ok(healthReport);
+        })
+        .WithName("GetAnalyticsHealth")
+        .WithSummary("Get comprehensive analytics system health status")
         .RequireAuthorization("Moderator")
         .Produces<object>();
-        */
+
 
         // AI Suggested Tags Management
         admin.MapGet("/ai-suggestions", async ([FromQuery] int? postId, [FromQuery] int? commentId, [FromQuery] int page, [FromQuery] int pageSize, IAdminService adminService) =>
