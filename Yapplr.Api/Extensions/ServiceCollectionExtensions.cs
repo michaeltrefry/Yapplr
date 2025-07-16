@@ -63,6 +63,9 @@ public static class ServiceCollectionExtensions
         // Add Redis caching
         services.AddRedisCaching(configuration);
 
+        // Add external analytics services
+        services.AddExternalAnalytics(configuration);
+
         // Add custom services
         services.AddApplicationServices();
         services.AddAdminServices();

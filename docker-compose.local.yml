@@ -36,6 +36,14 @@ services:
       - Uploads__BasePath=/app/uploads
       # Redis configuration
       - Redis__ConnectionString=redis:6379
+      # InfluxDB configuration
+      - InfluxDB__Url=http://influxdb:8086
+      - InfluxDB__Token=yapplr-analytics-token-local-dev-only
+      - InfluxDB__Organization=yapplr
+      - InfluxDB__Bucket=analytics
+      - InfluxDB__Enabled=true
+      # Analytics configuration
+      - Analytics__EnableDualWrite=true
     volumes:
       - yapplr_uploads:/app/uploads
     restart: unless-stopped
@@ -49,6 +57,8 @@ services:
       rabbitmq:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      influxdb:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -198,11 +208,92 @@ services:
       start_period: 10s
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
 
+  # Analytics Stack
+  influxdb:
+    image: influxdb:2.7-alpine
+    ports:
+      - "8086:8086"  # InfluxDB API
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=yapplr
+      - DOCKER_INFLUXDB_INIT_PASSWORD=yapplr123
+      - DOCKER_INFLUXDB_INIT_ORG=yapplr
+      - DOCKER_INFLUXDB_INIT_BUCKET=analytics
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=yapplr-analytics-token-local-dev-only
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    ports:
+      - "9090:9090"  # Prometheus UI
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./analytics/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    depends_on:
+      - yapplr-api
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    ports:
+      - "3001:3000"  # Grafana UI (avoid conflict with frontend)
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=yapplr123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./analytics/grafana/provisioning:/etc/grafana/provisioning
+      - ./analytics/grafana/dashboards:/var/lib/grafana/dashboards
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    depends_on:
+      - prometheus
+      - influxdb
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
 volumes:
   yapplr_uploads:
   postgres_data:
   rabbitmq_data:
   redis_data:
+  influxdb_data:
+  influxdb_config:
+  prometheus_data:
+  grafana_data:
 
 networks:
   yapplr-network:

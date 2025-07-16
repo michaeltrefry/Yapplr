@@ -12,20 +12,28 @@ public class AnalyticsService : IAnalyticsService
     private readonly YapplrDbContext _context;
     private readonly ILogger<AnalyticsService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IExternalAnalyticsService _externalAnalytics;
+    private readonly bool _enableDualWrite;
 
     public AnalyticsService(
         YapplrDbContext context,
         ILogger<AnalyticsService> logger,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IExternalAnalyticsService externalAnalytics,
+        IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
+        _externalAnalytics = externalAnalytics;
+        _enableDualWrite = configuration.GetValue<bool>("Analytics:EnableDualWrite", true);
+
+        _logger.LogInformation("Analytics Service initialized. Dual-write enabled: {EnableDualWrite}", _enableDualWrite);
     }
 
-    public async Task TrackUserActivityAsync(int userId, ActivityType activityType, 
-        string? targetEntityType = null, int? targetEntityId = null, 
-        string? metadata = null, string? sessionId = null, 
+    public async Task TrackUserActivityAsync(int userId, ActivityType activityType,
+        string? targetEntityType = null, int? targetEntityId = null,
+        string? metadata = null, string? sessionId = null,
         int? durationMs = null, bool? success = null, string? errorMessage = null)
     {
         try
@@ -53,12 +61,31 @@ public class AnalyticsService : IAnalyticsService
             _context.UserActivities.Add(activity);
             await _context.SaveChangesAsync();
 
-            _logger.LogDebug("Tracked user activity: User {UserId} performed {ActivityType}", 
+            // Also send to external analytics if dual-write is enabled
+            if (_enableDualWrite)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _externalAnalytics.TrackUserActivityAsync(
+                            userId, activityType, targetEntityType, targetEntityId,
+                            metadata, sessionId, durationMs, success, errorMessage);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send user activity to external analytics: User {UserId}, Activity {ActivityType}",
+                            userId, activityType);
+                    }
+                });
+            }
+
+            _logger.LogDebug("Tracked user activity: User {UserId} performed {ActivityType}",
                 userId, activityType);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to track user activity for user {UserId}: {ActivityType}", 
+            _logger.LogError(ex, "Failed to track user activity for user {UserId}: {ActivityType}",
                 userId, activityType);
             // Don't throw - analytics failures shouldn't break the main flow
         }
