@@ -91,7 +91,31 @@ The complete analytics implementation includes powerful admin endpoints:
 # POST /api/admin/analytics/migrate         - Migrate all data to InfluxDB
 ```
 
-### 5. Verify Analytics Data
+### 5. Explore Your Analytics Dashboards
+
+We've created **4 comprehensive Grafana dashboards** for your InfluxDB data:
+
+#### **📊 Available Dashboards**
+1. **Yapplr Comprehensive Analytics** - Complete overview with all metrics
+2. **Yapplr Admin Analytics** - Admin-focused dashboard matching your API endpoints
+3. **Yapplr Real-time Monitoring** - Live performance and system monitoring
+4. **Yapplr Analytics** - Original basic dashboard
+
+#### **🎨 Test Your Dashboards**
+```bash
+# Test all dashboards and validate setup
+./analytics/test-dashboards.sh
+```
+
+#### **🔍 Dashboard Features**
+- **Real-time data** from InfluxDB with Flux queries
+- **User activity tracking** - logins, posts, comments, engagement
+- **Performance monitoring** - response times, errors, system health
+- **Content analytics** - engagement trends, tag usage
+- **Admin insights** - user growth, moderation trends
+- **Interactive visualizations** - time series, pie charts, heatmaps
+
+### 6. Verify Analytics Data
 
 1. Use your application to generate some activity (login, create posts, etc.)
 2. Check InfluxDB for data:
@@ -102,7 +126,7 @@ The complete analytics implementation includes powerful admin endpoints:
      -H "Content-Type: application/vnd.flux" \
      -d 'from(bucket:"analytics") |> range(start:-1h) |> filter(fn:(r) => r._measurement == "user_activities")'
    ```
-3. View the Grafana dashboard at http://localhost:3001
+3. **View your dashboards** at http://localhost:3001 (admin/yapplr123)
 4. Access admin analytics through the API endpoints
 
 ## 🆕 **NEW FEATURES COMPLETED**

@@ -89,8 +89,12 @@ docker volume rm rabbitmq_data || true
 docker volume rm rabbitmq_rabbitmq_data || true
 docker volume rm redis_data || true
 docker volume rm yapplrapi_redis_data || true
+docker volume rm influxdb_data || true
+docker volume rm yapplrapi_influxdb_data || true
 docker volume ls -q | grep postgres | xargs -r docker volume rm || true
 docker volume ls -q | grep redis | xargs -r docker volume rm || true
+docker volume ls -q | grep rabbitmq | xargs -r docker volume rm || true
+docker volume ls -q | grep influxdb | xargs -r docker volume rm || true
 
 # Remove old images to force complete rebuild
 echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"
@@ -101,6 +105,7 @@ docker image rm yapplr-video-processor:latest || true
 docker image rm rabbitmq:latest || true
 docker image rm postgres:latest || true
 docker image rm redis:latest || true
+docker image rm influxdb:latest || true
 docker image prune -f || true
 
 # Set cache bust variable to force frontend rebuild

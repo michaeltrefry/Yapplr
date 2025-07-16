@@ -1,0 +1,298 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Yapplr Admin Analytics Dashboard",
+    "description": "Admin-focused analytics dashboard matching the new InfluxDB admin endpoints",
+    "tags": ["yapplr", "admin", "analytics", "influxdb"],
+    "timezone": "browser",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "hideControls": false,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+      {
+        "id": 1,
+        "title": "User Growth Statistics",
+        "type": "timeseries",
+        "targets": [
+          {
+            "datasource": "InfluxDB",
+            "query": "from(bucket: \"analytics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r.activity_type == \"Register\")\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: false)\n  |> yield(name: \"new_users\")",
+            "refId": "A"
+          },
+          {
+            "datasource": "InfluxDB",
+            "query": "from(bucket: \"analytics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r.activity_type == \"Login\")\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: false)\n  |> yield(name: \"active_users\")",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisPlacement": "auto",
+              "axisLabel": "Users",
+              "axisColorMode": "text",
+              "scaleDistribution": {"type": "linear"},
+              "axisCenteredZero": false,
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "red", "value": 80}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "visible", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 2,
+        "title": "Content Creation Stats",
+        "type": "timeseries",
+        "targets": [
+          {
+            "datasource": "InfluxDB",
+            "query": "from(bucket: \"analytics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r.activity_type == \"CreatePost\")\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: false)\n  |> yield(name: \"posts\")",
+            "refId": "A"
+          },
+          {
+            "datasource": "InfluxDB",
+            "query": "from(bucket: \"analytics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r.activity_type == \"CreateComment\")\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: false)\n  |> yield(name: \"comments\")",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisPlacement": "auto",
+              "axisLabel": "Content Items",
+              "axisColorMode": "text",
+              "scaleDistribution": {"type": "linear"},
+              "axisCenteredZero": false,
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "red", "value": 80}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "visible", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 3,
+        "title": "System Health Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "datasource": "InfluxDB",
+            "query": "from(bucket: \"analytics\")\n  |> range(start: -24h)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r.activity_type == \"Login\")\n  |> group(columns: [\"user_id\"])\n  |> count()\n  |> group()\n  |> sum()",
+            "refId": "A"
+          },
+          {
+            "datasource": "InfluxDB",
+            "query": "from(bucket: \"analytics\")\n  |> range(start: -24h)\n  |> filter(fn: (r) => r._measurement == \"performance_metrics\")\n  |> filter(fn: (r) => r.metric_type == \"ResponseTime\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> mean()",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 8},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 100},
+                {"color": "red", "value": 1000}
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "B"},
+              "properties": [
+                {"id": "unit", "value": "ms"},
+                {"id": "displayName", "value": "Avg Response Time"},
+                {"id": "thresholds", "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "green", "value": null},
+                    {"color": "yellow", "value": 100},
+                    {"color": "red", "value": 500}
+                  ]
+                }}
+              ]
+            },
+            {
+              "matcher": {"id": "byName", "options": "A"},
+              "properties": [
+                {"id": "displayName", "value": "Active Users (24h)"}
+              ]
+            }
+          ]
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 4,
+        "title": "User Engagement Breakdown",
+        "type": "piechart",
+        "targets": [
+          {
+            "datasource": "InfluxDB",
+            "query": "from(bucket: \"analytics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"content_engagement\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> group(columns: [\"engagement_type\"])\n  |> sum()\n  |> yield(name: \"engagement_breakdown\")",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 8},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false}
+            },
+            "mappings": [],
+            "unit": "short"
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "pieType": "pie",
+          "tooltip": {"mode": "single", "sort": "none"},
+          "legend": {"displayMode": "visible", "placement": "right"},
+          "displayLabels": ["name", "value", "percent"]
+        }
+      },
+      {
+        "id": 5,
+        "title": "Moderation Activity Trends",
+        "type": "timeseries",
+        "targets": [
+          {
+            "datasource": "InfluxDB",
+            "query": "from(bucket: \"analytics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r.activity_type =~ /Hide|Ban|Suspend|Moderate/)\n  |> group(columns: [\"activity_type\"])\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: false)\n  |> yield(name: \"moderation\")",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisPlacement": "auto",
+              "axisLabel": "Moderation Actions",
+              "axisColorMode": "text",
+              "scaleDistribution": {"type": "linear"},
+              "axisCenteredZero": false,
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 5},
+                {"color": "red", "value": 20}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "visible", "placement": "bottom"}
+        }
+      }
+    ],
+    "time": {
+      "from": "now-7d",
+      "to": "now"
+    },
+    "timepicker": {},
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    },
+    "refresh": "30s",
+    "schemaVersion": 37,
+    "version": 1,
+    "weekStart": ""
+  }
+}
