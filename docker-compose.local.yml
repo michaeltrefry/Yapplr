@@ -44,6 +44,7 @@ services:
       - InfluxDB__Enabled=true
       # Analytics configuration
       - Analytics__EnableDualWrite=true
+      - Analytics__UseInfluxForAdminDashboard=true
     volumes:
       - yapplr_uploads:/app/uploads
     restart: unless-stopped

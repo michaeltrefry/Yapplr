@@ -40,11 +40,17 @@ public static class AnalyticsServiceExtensions
 
             // Register InfluxDB analytics service
             services.AddScoped<IExternalAnalyticsService, InfluxAnalyticsService>();
+
+            // Register InfluxDB admin analytics service
+            services.AddScoped<IInfluxAdminAnalyticsService, InfluxAdminAnalyticsService>();
         }
         else
         {
             // Register a no-op analytics service if InfluxDB is disabled
             services.AddScoped<IExternalAnalyticsService, NoOpAnalyticsService>();
+
+            // Register a no-op admin analytics service
+            services.AddScoped<IInfluxAdminAnalyticsService, NoOpInfluxAdminAnalyticsService>();
         }
 
         return services;
@@ -161,5 +167,101 @@ public class NoOpAnalyticsService : IExternalAnalyticsService
     {
         _logger.LogDebug("No-op: Would flush analytics data");
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// No-operation InfluxDB admin analytics service for when InfluxDB is disabled
+/// </summary>
+public class NoOpInfluxAdminAnalyticsService : IInfluxAdminAnalyticsService
+{
+    private readonly ILogger<NoOpInfluxAdminAnalyticsService> _logger;
+
+    public NoOpInfluxAdminAnalyticsService(ILogger<NoOpInfluxAdminAnalyticsService> logger)
+    {
+        _logger = logger;
+        _logger.LogInformation("No-op InfluxDB admin analytics service initialized - InfluxDB disabled");
+    }
+
+    public Task<bool> IsAvailableAsync() => Task.FromResult(false);
+
+    public Task<UserGrowthStatsDto> GetUserGrowthStatsAsync(int days = 30)
+    {
+        _logger.LogDebug("No-op: Would get user growth stats from InfluxDB");
+        return Task.FromResult(new UserGrowthStatsDto
+        {
+            TotalNewUsers = 0,
+            TotalActiveUsers = 0,
+            GrowthRate = 0,
+            DailyStats = new List<DailyStatsDto>()
+        });
+    }
+
+    public Task<ContentStatsDto> GetContentStatsAsync(int days = 30)
+    {
+        _logger.LogDebug("No-op: Would get content stats from InfluxDB");
+        return Task.FromResult(new ContentStatsDto
+        {
+            TotalPosts = 0,
+            TotalComments = 0,
+            AveragePostsPerDay = 0,
+            AverageCommentsPerDay = 0,
+            DailyPosts = new List<DailyStatsDto>(),
+            DailyComments = new List<DailyStatsDto>()
+        });
+    }
+
+    public Task<ModerationTrendsDto> GetModerationTrendsAsync(int days = 30)
+    {
+        _logger.LogDebug("No-op: Would get moderation trends from InfluxDB");
+        return Task.FromResult(new ModerationTrendsDto
+        {
+            TotalActions = 0,
+            DailyActions = new List<DailyStatsDto>(),
+            ActionBreakdown = new List<ActionBreakdownDto>()
+        });
+    }
+
+    public Task<SystemHealthDto> GetSystemHealthAsync()
+    {
+        _logger.LogDebug("No-op: Would get system health from InfluxDB");
+        return Task.FromResult(new SystemHealthDto
+        {
+            IsHealthy = false,
+            AverageResponseTime = 0,
+            ActiveConnections = 0,
+            QueueDepth = 0,
+            ErrorRate = 0,
+            LastChecked = DateTime.UtcNow
+        });
+    }
+
+    public Task<TopModeratorsDto> GetTopModeratorsAsync(int days = 30, int limit = 10)
+    {
+        _logger.LogDebug("No-op: Would get top moderators from InfluxDB");
+        return Task.FromResult(new TopModeratorsDto
+        {
+            Moderators = new List<ModeratorStatsDto>()
+        });
+    }
+
+    public Task<ContentTrendsDto> GetContentTrendsAsync(int days = 30)
+    {
+        _logger.LogDebug("No-op: Would get content trends from InfluxDB");
+        return Task.FromResult(new ContentTrendsDto
+        {
+            Trends = new List<ContentTrendDto>()
+        });
+    }
+
+    public Task<UserEngagementStatsDto> GetUserEngagementStatsAsync(int days = 30)
+    {
+        _logger.LogDebug("No-op: Would get user engagement stats from InfluxDB");
+        return Task.FromResult(new UserEngagementStatsDto
+        {
+            TotalEngagements = 0,
+            AverageEngagementsPerDay = 0,
+            DailyEngagement = new List<DailyStatsDto>()
+        });
     }
 }

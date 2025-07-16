@@ -626,6 +626,25 @@ public static class AdminEndpoints
         .RequireAuthorization("Moderator")
         .Produces<UserEngagementStatsDto>();
 
+        // Analytics data source info endpoint
+        admin.MapGet("/analytics/data-source", async (IInfluxAdminAnalyticsService influxService, IConfiguration configuration) =>
+        {
+            var useInflux = configuration.GetValue<bool>("Analytics:UseInfluxForAdminDashboard", false);
+            var influxAvailable = await influxService.IsAvailableAsync();
+
+            return Results.Ok(new
+            {
+                configured_source = useInflux ? "InfluxDB" : "Database",
+                influx_available = influxAvailable,
+                actual_source = (useInflux && influxAvailable) ? "InfluxDB" : "Database",
+                dual_write_enabled = configuration.GetValue<bool>("Analytics:EnableDualWrite", false)
+            });
+        })
+        .WithName("GetAnalyticsDataSource")
+        .WithSummary("Get information about analytics data source")
+        .RequireAuthorization("Moderator")
+        .Produces<object>();
+
         // AI Suggested Tags Management
         admin.MapGet("/ai-suggestions", async ([FromQuery] int? postId, [FromQuery] int? commentId, [FromQuery] int page, [FromQuery] int pageSize, IAdminService adminService) =>
         {
