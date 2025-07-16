@@ -20,5 +20,5 @@ datasources:
       defaultBucket: analytics
       tlsSkipVerify: true
     secureJsonData:
-      token: yapplr-analytics-token-local-dev-only
+      token: yapplr-analytics-token-staging
     editable: true

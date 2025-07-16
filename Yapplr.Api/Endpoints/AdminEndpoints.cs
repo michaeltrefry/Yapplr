@@ -626,6 +626,8 @@ public static class AdminEndpoints
         .RequireAuthorization("Moderator")
         .Produces<UserEngagementStatsDto>();
 
+        // TODO: Re-enable analytics endpoints once services are available
+        /*
         // Analytics data source info endpoint
         admin.MapGet("/analytics/data-source", async (IInfluxAdminAnalyticsService influxService, IConfiguration configuration) =>
         {
@@ -644,67 +646,7 @@ public static class AdminEndpoints
         .WithSummary("Get information about analytics data source")
         .RequireAuthorization("Moderator")
         .Produces<object>();
-
-        // Analytics migration endpoints
-        admin.MapPost("/analytics/migrate", async (IAnalyticsMigrationService migrationService,
-            DateTime? fromDate, DateTime? toDate, int batchSize = 1000, CancellationToken cancellationToken = default) =>
-        {
-            if (!await migrationService.IsInfluxDbAvailableAsync())
-            {
-                return Results.BadRequest(new { error = "InfluxDB is not available" });
-            }
-
-            var result = await migrationService.MigrateAllAnalyticsAsync(fromDate, toDate, batchSize, cancellationToken);
-            return Results.Ok(result);
-        })
-        .WithName("MigrateAnalytics")
-        .WithSummary("Migrate all analytics data from PostgreSQL to InfluxDB")
-        .RequireAuthorization("Admin")
-        .Produces<MigrationResult>();
-
-        admin.MapGet("/analytics/migration/status", async (IAnalyticsMigrationService migrationService) =>
-        {
-            var status = await migrationService.GetMigrationStatusAsync();
-            return Results.Ok(status);
-        })
-        .WithName("GetMigrationStatus")
-        .WithSummary("Get current migration status")
-        .RequireAuthorization("Moderator")
-        .Produces<MigrationStatus>();
-
-        admin.MapPost("/analytics/migration/validate", async (IAnalyticsMigrationService migrationService,
-            DateTime? fromDate, DateTime? toDate) =>
-        {
-            var result = await migrationService.ValidateMigrationAsync(fromDate, toDate);
-            return Results.Ok(result);
-        })
-        .WithName("ValidateMigration")
-        .WithSummary("Validate migrated analytics data")
-        .RequireAuthorization("Moderator")
-        .Produces<ValidationResult>();
-
-        // Individual table migration endpoints
-        admin.MapPost("/analytics/migrate/user-activities", async (IAnalyticsMigrationService migrationService,
-            DateTime? fromDate, DateTime? toDate, int batchSize = 1000, CancellationToken cancellationToken = default) =>
-        {
-            var result = await migrationService.MigrateUserActivitiesAsync(fromDate, toDate, batchSize, cancellationToken);
-            return Results.Ok(result);
-        })
-        .WithName("MigrateUserActivities")
-        .WithSummary("Migrate user activities from PostgreSQL to InfluxDB")
-        .RequireAuthorization("Admin")
-        .Produces<MigrationResult>();
-
-        admin.MapPost("/analytics/migrate/content-engagements", async (IAnalyticsMigrationService migrationService,
-            DateTime? fromDate, DateTime? toDate, int batchSize = 1000, CancellationToken cancellationToken = default) =>
-        {
-            var result = await migrationService.MigrateContentEngagementsAsync(fromDate, toDate, batchSize, cancellationToken);
-            return Results.Ok(result);
-        })
-        .WithName("MigrateContentEngagements")
-        .WithSummary("Migrate content engagements from PostgreSQL to InfluxDB")
-        .RequireAuthorization("Admin")
-        .Produces<MigrationResult>();
+        */
 
         // AI Suggested Tags Management
         admin.MapGet("/ai-suggestions", async ([FromQuery] int? postId, [FromQuery] int? commentId, [FromQuery] int page, [FromQuery] int pageSize, IAdminService adminService) =>

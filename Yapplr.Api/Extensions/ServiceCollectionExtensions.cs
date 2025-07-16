@@ -326,19 +326,7 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddAdminServices(this IServiceCollection services)
     {
-        // Register the original AdminService with a specific name
-        services.AddScoped<AdminService>();
-
-        // Register the hybrid admin service that can use InfluxDB for analytics
-        services.AddScoped<IAdminService>(provider =>
-        {
-            var databaseAdminService = provider.GetRequiredService<AdminService>();
-            var influxAnalyticsService = provider.GetRequiredService<IInfluxAdminAnalyticsService>();
-            var logger = provider.GetRequiredService<ILogger<HybridAdminService>>();
-            var configuration = provider.GetRequiredService<IConfiguration>();
-
-            return new HybridAdminService(databaseAdminService, influxAnalyticsService, logger, configuration);
-        });
+        services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IUserReportService, UserReportService>();
         services.AddScoped<IModerationMessageService, ModerationMessageService>();

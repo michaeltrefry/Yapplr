@@ -912,9 +912,9 @@ public class AdminService : IAdminService
             .ToListAsync();
 
         var totalActions = actionBreakdown.Sum(a => a.Count);
-        var actionStats = actionBreakdown.Select(a => new ActionTypeStatsDto
+        var actionStats = actionBreakdown.Select(a => new ActionBreakdownDto
         {
-            ActionType = a.Action.ToString(),
+            Action = a.Action.ToString(),
             Count = a.Count,
             Percentage = totalActions > 0 ? Math.Round((double)a.Count / totalActions * 100, 2) : 0
         }).ToList();

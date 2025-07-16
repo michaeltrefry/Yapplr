@@ -1,5 +1,6 @@
 using InfluxDB.Client;
 using Prometheus;
+using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Extensions;
@@ -41,22 +42,18 @@ public static class AnalyticsServiceExtensions
             // Register InfluxDB analytics service
             services.AddScoped<IExternalAnalyticsService, InfluxAnalyticsService>();
 
-            // Register InfluxDB admin analytics service
-            services.AddScoped<IInfluxAdminAnalyticsService, InfluxAdminAnalyticsService>();
-
-            // Register analytics migration service
-            services.AddScoped<IAnalyticsMigrationService, AnalyticsMigrationService>();
+            // TODO: Re-enable admin analytics and migration services
+            // services.AddScoped<IInfluxAdminAnalyticsService, InfluxAdminAnalyticsService>();
+            // services.AddScoped<IAnalyticsMigrationService, AnalyticsMigrationService>();
         }
         else
         {
             // Register a no-op analytics service if InfluxDB is disabled
             services.AddScoped<IExternalAnalyticsService, NoOpAnalyticsService>();
 
-            // Register a no-op admin analytics service
-            services.AddScoped<IInfluxAdminAnalyticsService, NoOpInfluxAdminAnalyticsService>();
-
-            // Register a no-op migration service
-            services.AddScoped<IAnalyticsMigrationService, NoOpAnalyticsMigrationService>();
+            // TODO: Re-enable admin analytics and migration services
+            // services.AddScoped<IInfluxAdminAnalyticsService, NoOpInfluxAdminAnalyticsService>();
+            // services.AddScoped<IAnalyticsMigrationService, NoOpAnalyticsMigrationService>();
         }
 
         return services;
@@ -176,6 +173,7 @@ public class NoOpAnalyticsService : IExternalAnalyticsService
     }
 }
 
+/*
 /// <summary>
 /// No-operation InfluxDB admin analytics service for when InfluxDB is disabled
 /// </summary>
@@ -233,12 +231,14 @@ public class NoOpInfluxAdminAnalyticsService : IInfluxAdminAnalyticsService
         _logger.LogDebug("No-op: Would get system health from InfluxDB");
         return Task.FromResult(new SystemHealthDto
         {
-            IsHealthy = false,
+            UptimePercentage = 0,
+            ActiveUsers24h = 0,
+            ErrorCount24h = 0,
             AverageResponseTime = 0,
-            ActiveConnections = 0,
-            QueueDepth = 0,
-            ErrorRate = 0,
-            LastChecked = DateTime.UtcNow
+            DatabaseConnections = 0,
+            MemoryUsage = 0,
+            CpuUsage = 0,
+            Alerts = new List<SystemAlertDto>()
         });
     }
 
@@ -359,3 +359,4 @@ public class NoOpAnalyticsMigrationService : IAnalyticsMigrationService
         });
     }
 }
+*/
