@@ -43,6 +43,9 @@ public static class AnalyticsServiceExtensions
 
             // Register InfluxDB admin analytics service
             services.AddScoped<IInfluxAdminAnalyticsService, InfluxAdminAnalyticsService>();
+
+            // Register analytics migration service
+            services.AddScoped<IAnalyticsMigrationService, AnalyticsMigrationService>();
         }
         else
         {
@@ -51,6 +54,9 @@ public static class AnalyticsServiceExtensions
 
             // Register a no-op admin analytics service
             services.AddScoped<IInfluxAdminAnalyticsService, NoOpInfluxAdminAnalyticsService>();
+
+            // Register a no-op migration service
+            services.AddScoped<IAnalyticsMigrationService, NoOpAnalyticsMigrationService>();
         }
 
         return services;
@@ -262,6 +268,94 @@ public class NoOpInfluxAdminAnalyticsService : IInfluxAdminAnalyticsService
             TotalEngagements = 0,
             AverageEngagementsPerDay = 0,
             DailyEngagement = new List<DailyStatsDto>()
+        });
+    }
+}
+
+/// <summary>
+/// No-operation analytics migration service for when InfluxDB is disabled
+/// </summary>
+public class NoOpAnalyticsMigrationService : IAnalyticsMigrationService
+{
+    private readonly ILogger<NoOpAnalyticsMigrationService> _logger;
+
+    public NoOpAnalyticsMigrationService(ILogger<NoOpAnalyticsMigrationService> logger)
+    {
+        _logger = logger;
+        _logger.LogInformation("No-op analytics migration service initialized - InfluxDB disabled");
+    }
+
+    public Task<bool> IsInfluxDbAvailableAsync() => Task.FromResult(false);
+
+    public Task<MigrationResult> MigrateAllAnalyticsAsync(DateTime? fromDate = null, DateTime? toDate = null, int batchSize = 1000, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("No-op: Would migrate all analytics data");
+        return Task.FromResult(new MigrationResult
+        {
+            Success = false,
+            TableName = "All",
+            ErrorMessage = "InfluxDB is not enabled"
+        });
+    }
+
+    public Task<MigrationResult> MigrateUserActivitiesAsync(DateTime? fromDate = null, DateTime? toDate = null, int batchSize = 1000, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("No-op: Would migrate user activities");
+        return Task.FromResult(new MigrationResult
+        {
+            Success = false,
+            TableName = "UserActivities",
+            ErrorMessage = "InfluxDB is not enabled"
+        });
+    }
+
+    public Task<MigrationResult> MigrateContentEngagementsAsync(DateTime? fromDate = null, DateTime? toDate = null, int batchSize = 1000, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("No-op: Would migrate content engagements");
+        return Task.FromResult(new MigrationResult
+        {
+            Success = false,
+            TableName = "ContentEngagements",
+            ErrorMessage = "InfluxDB is not enabled"
+        });
+    }
+
+    public Task<MigrationResult> MigrateTagAnalyticsAsync(DateTime? fromDate = null, DateTime? toDate = null, int batchSize = 1000, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("No-op: Would migrate tag analytics");
+        return Task.FromResult(new MigrationResult
+        {
+            Success = false,
+            TableName = "TagAnalytics",
+            ErrorMessage = "InfluxDB is not enabled"
+        });
+    }
+
+    public Task<MigrationResult> MigratePerformanceMetricsAsync(DateTime? fromDate = null, DateTime? toDate = null, int batchSize = 1000, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("No-op: Would migrate performance metrics");
+        return Task.FromResult(new MigrationResult
+        {
+            Success = false,
+            TableName = "PerformanceMetrics",
+            ErrorMessage = "InfluxDB is not enabled"
+        });
+    }
+
+    public Task<MigrationStatus> GetMigrationStatusAsync()
+    {
+        return Task.FromResult(new MigrationStatus
+        {
+            IsInProgress = false
+        });
+    }
+
+    public Task<ValidationResult> ValidateMigrationAsync(DateTime? fromDate = null, DateTime? toDate = null)
+    {
+        return Task.FromResult(new ValidationResult
+        {
+            IsValid = false,
+            ErrorMessage = "InfluxDB is not enabled"
         });
     }
 }
