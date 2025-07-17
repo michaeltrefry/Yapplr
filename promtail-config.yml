@@ -42,10 +42,10 @@ scrape_configs:
             - json:
                 expressions:
                   level: level
-                  timestamp: "@t"
-                  message: "@m"
-                  exception: "@x"
-                  properties: "@p"
+                  timestamp: '"@t"'
+                  message: '"@m"'
+                  exception: '"@x"'
+                  properties: '"@p"'
                   request_id: RequestId
                   user_id: UserId
                   correlation_id: CorrelationId
@@ -89,9 +89,9 @@ scrape_configs:
       - json:
           expressions:
             level: level
-            timestamp: "@t"
-            message: "@m"
-            exception: "@x"
+            timestamp: '"@t"'
+            message: '"@m"'
+            exception: '"@x"'
             request_id: RequestId
             user_id: UserId
       

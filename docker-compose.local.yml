@@ -112,7 +112,7 @@ services:
       - INTERNAL_API_URL=http://yapplr-api:8080
     image: yapplr-frontend:local
     ports:
-      - "3000:3000"  # Expose frontend for local access
+      - "3001:3000"  # Expose frontend for local access (3000 used by Grafana)
     restart: unless-stopped
     networks:
       - yapplr-network
