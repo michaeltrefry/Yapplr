@@ -104,6 +104,26 @@ This document lists all the GitHub secrets that need to be configured in your re
 - `PROD_GRAFANA_PASSWORD` - Grafana admin password
 - `PROD_GRAFANA_DOMAIN` - Grafana domain (e.g., grafana.yapplr.com)
 
+## Subdomain Configuration
+
+The nginx configuration includes the following subdomains:
+
+### Staging Subdomains
+- `stg-api.yapplr.com` - Main API
+- `stg.yapplr.com` - Frontend application
+- `stg-logger.yapplr.com` - Seq logging interface
+- `stg-grafana.yapplr.com` - Grafana analytics dashboard
+- `stg-rabbitmq.yapplr.com` - RabbitMQ management UI
+
+### Production Subdomains
+- `api.yapplr.com` - Main API
+- `yapplr.com` / `www.yapplr.com` / `app.yapplr.com` - Frontend application
+- `logger.yapplr.com` - Seq logging interface
+- `grafana.yapplr.com` - Grafana analytics dashboard
+- `rabbitmq.yapplr.com` - RabbitMQ management UI
+
+**Note**: Ensure your SSL certificates cover all these subdomains or use wildcard certificates.
+
 ## How to Add Secrets
 
 1. Go to your GitHub repository
