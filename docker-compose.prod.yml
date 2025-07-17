@@ -151,13 +151,6 @@ services:
     networks:
       - yapplr-network
 
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - /var/www/certbot:/var/www/certbot
-    command: certbot certonly --manual --preferred-challenges=dns --email ${PROD_CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${PROD_CERTBOT_DOMAIN} -d yapplr.com
-
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     environment:
@@ -200,8 +193,23 @@ services:
 
 volumes:
   yapplr_uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/uploads
   rabbitmq_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/rabbitmq
   redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/redis
 
 networks:
   yapplr-network:
