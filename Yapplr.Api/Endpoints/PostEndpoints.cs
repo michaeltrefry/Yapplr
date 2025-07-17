@@ -53,7 +53,8 @@ public static class PostEndpoints
         .WithDescription(@"Create a new post with up to 10 media files (images and videos).
 
 **Requirements:**
-- Content must be 1-256 characters
+- Content is optional when media files are provided (0-256 characters)
+- Either content or media files must be provided
 - Maximum 10 media files per post
 - Media files must be uploaded first using the /api/uploads/media endpoint
 - Use the returned file names in the mediaFiles array

@@ -7,7 +7,7 @@ namespace Yapplr.Api.DTOs;
 /// DTO for creating posts with multiple media files
 /// </summary>
 public record CreatePostWithMediaDto(
-    [Required][StringLength(256, MinimumLength = 1)] string Content,
+    [StringLength(256)] string? Content,
     PostPrivacy Privacy = PostPrivacy.Public,
     [MaxLength(10, ErrorMessage = "Maximum 10 media files allowed")]
     List<MediaFileDto>? MediaFiles = null

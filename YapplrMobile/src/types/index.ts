@@ -130,7 +130,7 @@ export interface CreatePostData {
 }
 
 export interface CreatePostWithMediaData {
-  content: string;
+  content?: string;
   privacy?: PostPrivacy;
   mediaFiles?: MediaFile[];
 }

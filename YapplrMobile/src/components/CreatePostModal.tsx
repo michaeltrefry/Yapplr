@@ -329,8 +329,12 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
   };
 
   const handleSubmit = () => {
-    if (!content.trim()) {
-      Alert.alert('Error', 'Please enter some content for your post.');
+    // Allow submission if either content exists or media files are uploaded
+    const hasContent = content.trim().length > 0;
+    const hasMedia = uploadedFiles.length > 0 || selectedMedia || uploadedFileName;
+
+    if (!hasContent && !hasMedia) {
+      Alert.alert('Error', 'Please enter some content or add media for your post.');
       return;
     }
 
@@ -356,7 +360,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
       }));
 
       const postData: CreatePostWithMediaData = {
-        content: content.trim(),
+        content: content.trim() || undefined,
         privacy,
         mediaFiles,
       };
@@ -449,7 +453,9 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
 
   const remainingChars = 256 - content.length;
   const isOverLimit = remainingChars < 0;
-  const canSubmit = content.trim().length > 0 && !isOverLimit && !createPostMutation.isPending && !createPostWithMediaMutation.isPending && !isUploadingMedia;
+  const hasContent = content.trim().length > 0;
+  const hasMedia = uploadedFiles.length > 0 || selectedMedia || uploadedFileName;
+  const canSubmit = (hasContent || hasMedia) && !isOverLimit && !createPostMutation.isPending && !createPostWithMediaMutation.isPending && !isUploadingMedia;
 
   return (
     <Modal

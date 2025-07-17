@@ -54,7 +54,8 @@ public class MultipleFileUploadValidationTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void CreatePostWithMediaDto_WithInvalidContent_ShouldHaveValidationRequirement(string content)
+    [InlineData(null)]
+    public void CreatePostWithMediaDto_WithEmptyContentButWithMedia_ShouldBeValid(string content)
     {
         // Arrange & Act
         var dto = new CreatePostWithMediaDto(
@@ -65,22 +66,24 @@ public class MultipleFileUploadValidationTests
 
         // Assert
         dto.Content.Should().Be(content);
-        // Note: Actual validation would be performed by the validation framework
+        dto.MediaFiles.Should().HaveCount(1);
+        // Note: Content is optional when media files are provided
     }
 
     [Fact]
-    public void CreatePostWithMediaDto_WithNullContent_ShouldHaveValidationRequirement()
+    public void CreatePostWithMediaDto_WithNullContentAndNoMedia_ShouldRequireValidation()
     {
         // Arrange & Act
         var dto = new CreatePostWithMediaDto(
-            null!,
+            null,
             PostPrivacy.Public,
-            new List<MediaFileDto> { new("image1.jpg", MediaType.Image) }
+            null
         );
 
         // Assert
         dto.Content.Should().BeNull();
-        // Note: Actual validation would be performed by the validation framework
+        dto.MediaFiles.Should().BeNull();
+        // Note: Either content or media files must be provided (validated in service layer)
     }
 
     [Fact]

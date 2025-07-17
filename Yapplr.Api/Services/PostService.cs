@@ -281,6 +281,15 @@ public class PostService : BaseService, IPostService
             throw new InvalidOperationException("Insufficient trust score to create posts");
         }
 
+        // Validate that either content or media files are provided
+        var hasContent = !string.IsNullOrWhiteSpace(createDto.Content);
+        var hasMediaFiles = createDto.MediaFiles != null && createDto.MediaFiles.Count > 0;
+
+        if (!hasContent && !hasMediaFiles)
+        {
+            throw new ArgumentException("Either content or media files must be provided");
+        }
+
         // Validate media files count
         if (createDto.MediaFiles != null && createDto.MediaFiles.Count > 10)
         {
@@ -292,7 +301,7 @@ public class PostService : BaseService, IPostService
 
         var post = new Post
         {
-            Content = createDto.Content,
+            Content = string.IsNullOrWhiteSpace(createDto.Content) ? string.Empty : createDto.Content,
             Privacy = createDto.Privacy,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
