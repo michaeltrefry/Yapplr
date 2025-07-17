@@ -47,7 +47,7 @@ echo -e "${GREEN}✅ Environment variables validated${NC}"
 
 # Create required storage directories
 echo -e "${GREEN}📁 Creating production storage directories...${NC}"
-sudo mkdir -p /mnt/yapplr-prod-storage/{uploads,logs,rabbitmq,redis,seq}
+sudo mkdir -p /mnt/yapplr-prod-storage/{uploads,logs,rabbitmq,redis,seq,influxdb,influxdb-config,prometheus,grafana}
 sudo chown -R $USER:$USER /mnt/yapplr-prod-storage/
 echo -e "${GREEN}✅ Storage directories created${NC}"
 
@@ -87,6 +87,10 @@ docker volume rm yapplr_yapplr_uploads || true
 docker volume rm yapplr_rabbitmq_data || true
 docker volume rm yapplr_redis_data || true
 docker volume rm yapplr_seq_data || true
+docker volume rm yapplr_influxdb_data || true
+docker volume rm yapplr_influxdb_config || true
+docker volume rm yapplr_prometheus_data || true
+docker volume rm yapplr_grafana_data || true
 docker volume prune -f || true
 
 # Remove old images to force complete rebuild
@@ -97,6 +101,10 @@ docker image rm content-moderation:latest || true
 docker image rm yapplr-video-processor:latest || true
 docker image rm rabbitmq:latest || true
 docker image rm redis:latest || true
+docker image rm influxdb:latest || true
+docker image rm prom/prometheus:latest || true
+docker image rm grafana/grafana:latest || true
+docker image rm datalust/seq:latest || true
 docker image prune -f || true
 
 # Set cache bust variable to force frontend rebuild

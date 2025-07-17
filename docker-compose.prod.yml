@@ -41,6 +41,15 @@ services:
       - Uploads__BasePath=/app/uploads
       # Redis configuration
       - Redis__ConnectionString=${PROD_REDIS_CONNECTION_STRING}
+      # InfluxDB configuration
+      - InfluxDB__Url=http://influxdb:8086
+      - InfluxDB__Token=${PROD_INFLUXDB_TOKEN}
+      - InfluxDB__Organization=${PROD_INFLUXDB_ORG:-yapplr}
+      - InfluxDB__Bucket=${PROD_INFLUXDB_BUCKET:-analytics}
+      - InfluxDB__Enabled=true
+      # Analytics configuration
+      - Analytics__EnableDualWrite=true
+      - Analytics__UseInfluxForAdminDashboard=true
     volumes:
       - yapplr_uploads:/app/uploads
       - yapplr_logs:/app/logs
@@ -54,6 +63,8 @@ services:
       rabbitmq:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      influxdb:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -193,6 +204,97 @@ services:
         reservations:
           memory: 512M
 
+  # Analytics Stack
+  influxdb:
+    image: influxdb:2.7-alpine
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${PROD_INFLUXDB_USER:-yapplr}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${PROD_INFLUXDB_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${PROD_INFLUXDB_ORG:-yapplr}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${PROD_INFLUXDB_BUCKET:-analytics}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${PROD_INFLUXDB_TOKEN}
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=90d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./analytics/prometheus.production.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    depends_on:
+      - yapplr-api
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    environment:
+      - GF_SECURITY_ADMIN_USER=${PROD_GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${PROD_GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - GF_SERVER_DOMAIN=${PROD_GRAFANA_DOMAIN:-grafana.yapplr.com}
+      - GF_SERVER_ROOT_URL=https://${PROD_GRAFANA_DOMAIN:-grafana.yapplr.com}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./analytics/grafana/provisioning-production:/etc/grafana/provisioning
+      - ./analytics/grafana/dashboards:/var/lib/grafana/dashboards
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    depends_on:
+      - prometheus
+      - influxdb
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
   # Seq - Structured logging for .NET applications
   seq:
     image: datalust/seq:2024.1
@@ -242,6 +344,30 @@ volumes:
       type: none
       o: bind
       device: /mnt/yapplr-prod-storage/seq
+  influxdb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/influxdb
+  influxdb_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/influxdb-config
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/prometheus
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/grafana
 
 networks:
   yapplr-network:
