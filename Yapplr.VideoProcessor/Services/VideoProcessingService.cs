@@ -1,5 +1,6 @@
 using FFMpegCore;
 using Yapplr.Shared.Models;
+using Serilog.Context;
 
 namespace Yapplr.VideoProcessor.Services;
 
@@ -116,20 +117,30 @@ public class VideoProcessingService : IVideoProcessingService
     }
 
     public async Task<VideoProcessingResult> ProcessVideoAsync(
-        string inputPath, 
-        string outputPath, 
-        string thumbnailPath, 
+        string inputPath,
+        string outputPath,
+        string thumbnailPath,
         VideoProcessingConfig config)
     {
         var startTime = DateTime.UtcNow;
-        
+        var inputFileName = Path.GetFileName(inputPath);
+        var outputFileName = Path.GetFileName(outputPath);
+
+        using var operationScope = LogContext.PushProperty("Operation", "ProcessVideo");
+        using var inputScope = LogContext.PushProperty("InputFile", inputFileName);
+        using var outputScope = LogContext.PushProperty("OutputFile", outputFileName);
+        using var codecScope = LogContext.PushProperty("VideoCodec", config.VideoCodec);
+        using var bitrateScope = LogContext.PushProperty("TargetBitrate", config.TargetBitrate);
+
         try
         {
-            _logger.LogInformation("Starting video processing: {InputPath} -> {OutputPath}", inputPath, outputPath);
+            _logger.LogInformation("Starting video processing: {InputFile} -> {OutputFile} with codec {VideoCodec}",
+                inputFileName, outputFileName, config.VideoCodec);
 
             // Validate input file exists
             if (!File.Exists(inputPath))
             {
+                _logger.LogError("Video processing failed: Input file not found {InputFile}", inputFileName);
                 return new VideoProcessingResult
                 {
                     Success = false,
@@ -137,6 +148,11 @@ public class VideoProcessingService : IVideoProcessingService
                     ProcessingDuration = DateTime.UtcNow - startTime
                 };
             }
+
+            var inputFileSize = new FileInfo(inputPath).Length;
+            using var fileSizeScope = LogContext.PushProperty("InputFileSize", inputFileSize);
+            _logger.LogInformation("Processing video file {InputFile} ({InputFileSize} bytes)",
+                inputFileName, inputFileSize);
 
             // Get original video metadata
             var originalMetadata = await GetVideoMetadataAsync(inputPath);

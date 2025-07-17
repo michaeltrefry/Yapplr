@@ -55,24 +55,8 @@ docker compose -f docker-compose.stage.yml down --remove-orphans --volumes || tr
 
 # Force remove specific containers that might be stuck
 echo -e "${GREEN}🧹 Force removing any stuck containers...${NC}"
-docker rm -f yapplrapi_certbot_1 || true
-docker rm -f yapplrapi_yapplr-api_1 || true
-docker rm -f yapplrapi_nginx_1 || true
-docker rm -f yapplrapi_yapplr-frontend_1 || true
-docker rm -f yapplr-video-processor_1 || true
-docker rm -f yapplrapi_content-moderation_1 || true
-docker rm -f yapplrapi_rabbitmq_1 || true
-docker rm -f yapplrapi_postgres_1 || true
-docker rm -f yapplrapi_redis_1 || true
-
-# Stop and remove all containers with yapplr in the name
-docker ps -a --filter "name=yapplr" --format "{{.Names}}" | xargs -r docker stop || true
-docker ps -a --filter "name=yapplr" --format "{{.Names}}" | xargs -r docker rm -f || true
-
-# Additional cleanup to ensure ports are free
-echo -e "${GREEN}🧹 Cleaning up any remaining containers...${NC}"
+docker kill $(docker ps -q) || true
 docker container prune -f || true
-
 # Clean up networks that might be left behind
 echo -e "${GREEN}🌐 Cleaning up networks...${NC}"
 docker network rm yapplrapi_yapplr-network || true
@@ -91,10 +75,13 @@ docker volume rm redis_data || true
 docker volume rm yapplrapi_redis_data || true
 docker volume rm influxdb_data || true
 docker volume rm yapplrapi_influxdb_data || true
+docker volume rm seq_data || true
+docker volume rm yapplrapi_seq_data || true
 docker volume ls -q | grep postgres | xargs -r docker volume rm || true
 docker volume ls -q | grep redis | xargs -r docker volume rm || true
 docker volume ls -q | grep rabbitmq | xargs -r docker volume rm || true
 docker volume ls -q | grep influxdb | xargs -r docker volume rm || true
+docker volume ls -q | grep seq | xargs -r docker volume rm || true
 
 # Remove old images to force complete rebuild
 echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"
@@ -106,7 +93,16 @@ docker image rm rabbitmq:latest || true
 docker image rm postgres:latest || true
 docker image rm redis:latest || true
 docker image rm influxdb:latest || true
+docker image rm datalust/seq:latest || true
+
+# Additional cleanup from main branch
+docker rm $(docker ps -a -q) || true
+docker system prune -a -f
+docker volume prune -f
+docker network prune -f
 docker image prune -f || true
+docker builder prune
+
 
 # Set cache bust variable to force frontend rebuild
 export CACHE_BUST=$(date +%s)

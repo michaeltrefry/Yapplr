@@ -52,6 +52,7 @@ services:
       - Analytics__UseInfluxForAdminDashboard=true
     volumes:
       - yapplr_uploads:/app/uploads
+      - yapplr_logs:/app/logs
       - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: unless-stopped
     networks:
@@ -105,6 +106,7 @@ services:
       - FFmpeg__LogLevel=info
     volumes:
       - yapplr_uploads:/app/uploads
+      - yapplr_logs:/app/logs
     restart: unless-stopped
     networks:
       - yapplr-network
@@ -315,14 +317,35 @@ services:
         reservations:
           memory: 256M
 
+  # Seq - Structured logging for .NET applications
+  seq:
+    image: datalust/seq:2024.1
+    ports:
+      - "5341:80"  # Expose Seq UI for staging debugging
+    environment:
+      - ACCEPT_EULA=Y
+    volumes:
+      - seq_data:/data
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
 volumes:
   yapplr_uploads:
+  yapplr_logs:
   rabbitmq_data:
   redis_data:
   influxdb_data:
   influxdb_config:
   prometheus_data:
   grafana_data:
+  seq_data:
 
 networks:
   yapplr-network:

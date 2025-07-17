@@ -74,6 +74,9 @@ public static class ServiceCollectionExtensions
         services.AddAdminServices();
         services.AddSeedServices(environment);
 
+        // Add logging enhancement service
+        services.AddScoped<ILoggingEnhancementService, LoggingEnhancementService>();
+
         // Add HTTP clients
         services.AddHttpClients();
 

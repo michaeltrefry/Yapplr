@@ -4,6 +4,7 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services.Unified;
 using Yapplr.Api.Extensions;
+using Serilog.Context;
 
 namespace Yapplr.Api.Services;
 
@@ -13,13 +14,15 @@ public class MessageService : IMessageService
     private readonly IUserService _userService;
     private readonly IUnifiedNotificationService _notificationService;
     private readonly ICountCacheService _countCache;
+    private readonly ILogger<MessageService> _logger;
 
-    public MessageService(YapplrDbContext context, IUserService userService, IUnifiedNotificationService notificationService, ICountCacheService countCache)
+    public MessageService(YapplrDbContext context, IUserService userService, IUnifiedNotificationService notificationService, ICountCacheService countCache, ILogger<MessageService> logger)
     {
         _context = context;
         _userService = userService;
         _notificationService = notificationService;
         _countCache = countCache;
+        _logger = logger;
     }
 
     public async Task<bool> CanUserMessageAsync(int senderId, int recipientId)
@@ -38,11 +41,22 @@ public class MessageService : IMessageService
 
     public async Task<MessageDto?> SendSystemMessageAsync(int recipientId, string content)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "SendSystemMessage");
+        using var recipientScope = LogContext.PushProperty("RecipientId", recipientId);
+        using var messageTypeScope = LogContext.PushProperty("MessageType", "System");
+
+        _logger.LogInformation("Sending system message to user {RecipientId}", recipientId);
+
         // Create a system message using the system user as sender
         // Find or create a system conversation for this user
         var systemConversation = await GetOrCreateSystemConversationAsync(recipientId);
         if (systemConversation == null)
+        {
+            _logger.LogError("Failed to create system conversation for user {RecipientId}", recipientId);
             return null;
+        }
+
+        using var conversationScope = LogContext.PushProperty("ConversationId", systemConversation.Id);
 
         // Find the system user to use as sender
         var systemUser = await _context.Users.FirstOrDefaultAsync(u => u.Role == UserRole.System);

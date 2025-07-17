@@ -3,6 +3,7 @@ using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
+using Serilog.Context;
 
 namespace Yapplr.Api.Services;
 
@@ -197,11 +198,31 @@ public class AdminService : IAdminService
 
     public async Task<bool> HidePostAsync(int postId, int hiddenByUserId, string reason)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "HidePost");
+        using var postScope = LogContext.PushProperty("PostId", postId);
+        using var moderatorScope = LogContext.PushProperty("ModeratorId", hiddenByUserId);
+        using var reasonScope = LogContext.PushProperty("HideReason", reason);
+
+        _logger.LogInformation("Starting post hide operation for post {PostId} by moderator {ModeratorId}",
+            postId, hiddenByUserId);
+
         var post = await _context.Posts.Include(p => p.User).FirstOrDefaultAsync(p => p.Id == postId);
-        if (post == null) return false;
+        if (post == null)
+        {
+            _logger.LogWarning("Hide post failed: Post {PostId} not found", postId);
+            return false;
+        }
+
+        using var postOwnerScope = LogContext.PushProperty("PostOwnerId", post.UserId);
 
         var moderator = await _context.Users.FindAsync(hiddenByUserId);
-        if (moderator == null) return false;
+        if (moderator == null)
+        {
+            _logger.LogWarning("Hide post failed: Moderator {ModeratorId} not found", hiddenByUserId);
+            return false;
+        }
+
+        using var moderatorUsernameScope = LogContext.PushProperty("ModeratorUsername", moderator.Username);
 
         post.IsHidden = true;
         post.HiddenReasonType = PostHiddenReasonType.ModeratorHidden;
@@ -210,10 +231,16 @@ public class AdminService : IAdminService
         post.HiddenAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Post {PostId} hidden successfully by moderator {ModeratorUsername} ({ModeratorId})",
+            postId, moderator.Username, hiddenByUserId);
+
         await _auditService.LogPostHiddenAsync(postId, hiddenByUserId, reason);
 
         // Send notification to the post owner
         await _notificationService.CreateContentHiddenNotificationAsync(post.UserId, "post", postId, reason, moderator.Username);
+
+        _logger.LogInformation("Content hidden notification sent to post owner {PostOwnerId}", post.UserId);
 
         // Update trust score for content being hidden (negative impact)
         try
@@ -225,10 +252,11 @@ public class AdminService : IAdminService
                 postId,
                 $"Post hidden by moderator: {reason}"
             );
+            _logger.LogInformation("Trust score updated for user {PostOwnerId} due to hidden post", post.UserId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update trust score for hidden post by user {UserId}", post.UserId);
+            _logger.LogError(ex, "Failed to update trust score for hidden post by user {PostOwnerId}", post.UserId);
             // Don't fail the moderation action if trust score update fails
         }
 

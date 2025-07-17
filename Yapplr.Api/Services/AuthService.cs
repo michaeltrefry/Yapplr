@@ -11,6 +11,7 @@ using Yapplr.Api.Extensions;
 using Yapplr.Api.Exceptions;
 using Yapplr.Api.CQRS;
 using Yapplr.Api.CQRS.Commands;
+using Serilog.Context;
 
 namespace Yapplr.Api.Services;
 
@@ -33,20 +34,30 @@ public class AuthService : IAuthService
 
     public async Task<RegisterResponseDto?> RegisterAsync(RegisterUserDto registerDto)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "UserRegistration");
+        using var emailScope = LogContext.PushProperty("Email", registerDto.Email);
+        using var usernameScope = LogContext.PushProperty("Username", registerDto.Username);
+
+        _logger.LogInformation("Starting user registration for {Email} with username {Username}",
+            registerDto.Email, registerDto.Username);
+
         // Check if user already exists
         if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
         {
+            _logger.LogWarning("Registration failed: Email {Email} already exists", registerDto.Email);
             return null; // User already exists
         }
 
         if (await _context.Users.AnyAsync(u => u.Username == registerDto.Username))
         {
+            _logger.LogWarning("Registration failed: Username {Username} already taken", registerDto.Username);
             return null; // Username already taken
         }
 
         // Validate terms acceptance
         if (!registerDto.AcceptTerms)
         {
+            _logger.LogWarning("Registration failed: Terms not accepted for {Email}", registerDto.Email);
             throw new ArgumentException("Terms of service must be accepted to create an account");
         }
 
@@ -69,6 +80,9 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
+        using var userScope = LogContext.PushProperty("UserId", user.Id);
+        _logger.LogInformation("User {UserId} created successfully with email {Email}", user.Id, registerDto.Email);
+
         // Generate and send email verification
         var verificationToken = GenerateSecureToken();
         var expiresAt = DateTime.UtcNow.AddHours(24); // Token expires in 24 hours
@@ -85,6 +99,8 @@ public class AuthService : IAuthService
         _context.EmailVerifications.Add(emailVerification);
         await _context.SaveChangesAsync();
 
+        _logger.LogInformation("Email verification token generated for user {UserId}", user.Id);
+
         // Send verification email using CQRS command
         var emailCommand = new SendWelcomeEmailCommand
         {
@@ -100,12 +116,12 @@ public class AuthService : IAuthService
             try
             {
                 await _commandPublisher.PublishAsync(emailCommand);
+                _logger.LogInformation("Welcome email command published for user {UserId}", user.Id);
             }
             catch (Exception ex)
             {
                 // Log error but don't fail registration
-                // In production, you might want to use a proper background service
-                Console.WriteLine($"Failed to publish welcome email command: {ex.Message}");
+                _logger.LogError(ex, "Failed to publish welcome email command for user {UserId}", user.Id);
             }
         });
 
@@ -120,28 +136,45 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto?> LoginAsync(LoginUserDto loginDto)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "UserLogin");
+        using var emailScope = LogContext.PushProperty("Email", loginDto.Email);
+
+        _logger.LogInformation("Login attempt for email {Email}", loginDto.Email);
+
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 
         if (user == null || !VerifyPassword(loginDto.Password, user.PasswordHash))
         {
+            _logger.LogSecurityEvent("LoginFailure",
+                userId: user?.Id,
+                details: new { Email = loginDto.Email, Reason = user == null ? "UserNotFound" : "InvalidPassword" });
             return null; // Invalid credentials
         }
+
+        using var userScope = LogContext.PushProperty("UserId", user.Id);
+        using var usernameScope = LogContext.PushProperty("Username", user.Username);
 
         // Prevent login as system user
         if (user.Role == UserRole.System)
         {
+            _logger.LogWarning("Login failed: System user {UserId} cannot login", user.Id);
             return null; // System user cannot login
         }
 
         // Check if email is verified
         if (!user.EmailVerified)
         {
-            _logger.LogWarning("Login attempt with unverified email: {Email}", user.Email);
+            _logger.LogWarning("Login failed: Unverified email for user {UserId} ({Email})", user.Id, user.Email);
             throw new EmailNotVerifiedException(user.Email);
         }
 
         var token = GenerateJwtToken(user);
         var userDto = user.ToDto();
+
+        _logger.LogSecurityEvent("LoginSuccess",
+            userId: user.Id,
+            details: new { Username = user.Username, Role = user.Role.ToString() },
+            level: LogLevel.Information);
 
         return new AuthResponseDto(token, userDto);
     }

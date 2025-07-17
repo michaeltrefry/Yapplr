@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Models.Analytics;
+using Serilog.Context;
 
 namespace Yapplr.Api.Services;
 
@@ -37,8 +38,15 @@ public class TrustScoreService : ITrustScoreService
 
     public async Task<float> CalculateUserTrustScoreAsync(int userId, bool recalculateFromScratch = false)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "CalculateTrustScore");
+        using var userScope = LogContext.PushProperty("UserId", userId);
+        using var recalcScope = LogContext.PushProperty("RecalculateFromScratch", recalculateFromScratch);
+
         try
         {
+            _logger.LogDebug("Starting trust score calculation for user {UserId} (recalculate: {RecalculateFromScratch})",
+                userId, recalculateFromScratch);
+
             var user = await _context.Users
                 .Include(u => u.Posts)
                 .Include(u => u.Comments)
@@ -50,6 +58,8 @@ public class TrustScoreService : ITrustScoreService
                 _logger.LogWarning("Cannot calculate trust score for non-existent user {UserId}", userId);
                 return 1.0f; // Default score
             }
+
+            using var usernameScope = LogContext.PushProperty("Username", user.Username);
 
             var factors = await CalculateTrustFactorsAsync(user);
             var trustScore = CalculateWeightedScore(factors);

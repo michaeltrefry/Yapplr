@@ -2,6 +2,9 @@ using Yapplr.VideoProcessor;
 using Yapplr.VideoProcessor.Services;
 using Yapplr.Shared.Extensions;
 using MassTransit;
+using Serilog;
+using Serilog.Enrichers;
+
 
 // Auto-detect environment based on Git branch
 EnvironmentExtensions.ConfigureEnvironmentFromGitBranch();
@@ -9,6 +12,27 @@ EnvironmentExtensions.ConfigureEnvironmentFromGitBranch();
 Console.WriteLine($"Environment after detection: {Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}");
 
 var builder = Host.CreateApplicationBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithMachineName()
+    .Enrich.WithProcessId()
+    .Enrich.WithThreadId()
+    .Enrich.WithProperty("Application", "Yapplr.VideoProcessor")
+    .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
+    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.File(
+        path: "/app/logs/yapplr-video-processor-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 7,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.Seq(builder.Configuration.GetValue<string>("Logging:Seq:Url") ?? "http://seq:80")
+    .CreateLogger();
+
+builder.Services.AddSerilog();
 
 Console.WriteLine($"Builder environment: {builder.Environment.EnvironmentName}");
 

@@ -67,8 +67,10 @@ Each CORS policy supports the following configuration options:
     "AllowFrontend": {
       "AllowedOrigins": [
         "http://localhost:3000",
+        "http://localhost:3001",
         "http://localhost:5173",
-        "http://192.168.254.181:3000"
+        "http://192.168.254.181:3000",
+        "http://192.168.254.181:3001"
       ],
       "AllowAnyHeader": true,
       "AllowAnyMethod": true,
@@ -86,7 +88,8 @@ Each CORS policy supports the following configuration options:
       "AllowedOrigins": [
         "https://stg.yapplr.com",
         "https://stg-api.yapplr.com",
-        "http://localhost:3000"
+        "http://localhost:3000",
+        "http://localhost:3001"
       ],
       "AllowAnyHeader": true,
       "AllowAnyMethod": true,

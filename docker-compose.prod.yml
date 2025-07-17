@@ -43,6 +43,7 @@ services:
       - Redis__ConnectionString=${PROD_REDIS_CONNECTION_STRING}
     volumes:
       - yapplr_uploads:/app/uploads
+      - yapplr_logs:/app/logs
       - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: unless-stopped
     networks:
@@ -92,6 +93,7 @@ services:
       - FFmpeg__LogLevel=error
     volumes:
       - yapplr_uploads:/app/uploads
+      - yapplr_logs:/app/logs
     restart: unless-stopped
     networks:
       - yapplr-network
@@ -151,13 +153,6 @@ services:
     networks:
       - yapplr-network
 
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - /var/www/certbot:/var/www/certbot
-    command: certbot certonly --manual --preferred-challenges=dns --email ${PROD_CERTBOT_EMAIL} --server https://acme-v02.api.letsencrypt.org/directory --agree-tos -d ${PROD_CERTBOT_DOMAIN} -d yapplr.com
-
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     environment:
@@ -198,10 +193,55 @@ services:
         reservations:
           memory: 512M
 
+  # Seq - Structured logging for .NET applications
+  seq:
+    image: datalust/seq:2024.1
+    # No external ports exposed - accessed through nginx proxy for security
+    environment:
+      - ACCEPT_EULA=Y
+    volumes:
+      - seq_data:/data
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
 volumes:
   yapplr_uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/uploads
+  yapplr_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/logs
   rabbitmq_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/rabbitmq
   redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/redis
+  seq_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/yapplr-prod-storage/seq
 
 networks:
   yapplr-network:

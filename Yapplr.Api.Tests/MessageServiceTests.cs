@@ -1,6 +1,7 @@
 using Xunit;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
@@ -28,8 +29,9 @@ public class MessageServiceTests : IDisposable
         _mockUserService = new Mock<IUserService>();
         _mockNotificationService = new Mock<IUnifiedNotificationService>();
         _mockCountCache = new Mock<ICountCacheService>();
+        var mockLogger = new Mock<ILogger<MessageService>>();
 
-        _messageService = new MessageService(_context, _mockUserService.Object, _mockNotificationService.Object, _mockCountCache.Object);
+        _messageService = new MessageService(_context, _mockUserService.Object, _mockNotificationService.Object, _mockCountCache.Object, mockLogger.Object);
     }
 
     public void Dispose()

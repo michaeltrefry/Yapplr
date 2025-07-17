@@ -45,6 +45,12 @@ done
 
 echo -e "${GREEN}✅ Environment variables validated${NC}"
 
+# Create required storage directories
+echo -e "${GREEN}📁 Creating production storage directories...${NC}"
+sudo mkdir -p /mnt/yapplr-prod-storage/{uploads,logs,rabbitmq,redis,seq}
+sudo chown -R $USER:$USER /mnt/yapplr-prod-storage/
+echo -e "${GREEN}✅ Storage directories created${NC}"
+
 # Note: Docker images will be built by docker compose with --build flag
 
 # Stop existing containers
@@ -74,6 +80,14 @@ docker container prune -f || true
 echo -e "${GREEN}🌐 Cleaning up networks...${NC}"
 docker network rm yapplrapi_yapplr-network || true
 docker network rm yapplr-network || true
+
+# Clean up volumes that might have configuration mismatches
+echo -e "${GREEN}🗄️ Cleaning up volumes with configuration mismatches...${NC}"
+docker volume rm yapplr_yapplr_uploads || true
+docker volume rm yapplr_rabbitmq_data || true
+docker volume rm yapplr_redis_data || true
+docker volume rm yapplr_seq_data || true
+docker volume prune -f || true
 
 # Remove old images to force complete rebuild
 echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"

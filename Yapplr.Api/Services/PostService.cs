@@ -9,6 +9,7 @@ using Yapplr.Api.Common;
 using MassTransit;
 using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
+using Serilog.Context;
 
 namespace Yapplr.Api.Services;
 
@@ -56,9 +57,24 @@ public class PostService : BaseService, IPostService
 
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
     {
+        using var timedOperation = _logger.BeginTimedOperation("CreatePost", new { UserId = userId });
+        using var operationScope = Serilog.Context.LogContext.PushProperty("Operation", "CreatePost");
+        using var userScope = Serilog.Context.LogContext.PushProperty("UserId", userId);
+
+        var mediaCount = (createDto.MediaFileNames?.Count ?? 0) +
+                        (!string.IsNullOrEmpty(createDto.ImageFileName) ? 1 : 0) +
+                        (!string.IsNullOrEmpty(createDto.VideoFileName) ? 1 : 0);
+
+        using var mediaScope = Serilog.Context.LogContext.PushProperty("MediaCount", mediaCount);
+        using var privacyScope = Serilog.Context.LogContext.PushProperty("Privacy", createDto.Privacy.ToString());
+
+        _logger.LogInformation("Creating post for user {UserId} with {MediaCount} media files and privacy {Privacy}",
+            userId, mediaCount, createDto.Privacy);
+
         // Check trust-based permissions
         if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.CreatePost))
         {
+            _logger.LogWarning("Post creation denied for user {UserId}: Insufficient trust score", userId);
             throw new InvalidOperationException("Insufficient trust score to create posts");
         }
 
@@ -67,6 +83,8 @@ public class PostService : BaseService, IPostService
                        (createDto.MediaFileNames?.Any(fileName =>
                            !string.IsNullOrEmpty(fileName) &&
                            DetermineMediaTypeFromFileName(fileName) == MediaType.Video) == true);
+
+        using var videoScope = Serilog.Context.LogContext.PushProperty("HasVideos", hasVideos);
 
         var post = new Post
         {
@@ -81,6 +99,9 @@ public class PostService : BaseService, IPostService
 
         _context.Posts.Add(post);
         await _context.SaveChangesAsync();
+
+        using var postScope = Serilog.Context.LogContext.PushProperty("PostId", post.Id);
+        _logger.LogInformation("Post {PostId} created successfully for user {UserId}", post.Id, userId);
 
         // Create media records if present
         var hasMedia = false;
