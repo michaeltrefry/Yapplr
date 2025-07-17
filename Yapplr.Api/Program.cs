@@ -2,22 +2,31 @@ using Yapplr.Api.Extensions;
 using Yapplr.Shared.Extensions;
 using Serilog;
 using Serilog.Enrichers;
-using Serilog.Sinks.Grafana.Loki;
+using Serilog.Events;
+
 
 // Auto-detect environment based on Git branch
 EnvironmentExtensions.ConfigureEnvironmentFromGitBranch();
+
+// Enable Serilog self-logging to see any issues
+Serilog.Debugging.SelfLog.Enable(Console.WriteLine);
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog
 builder.Host.UseSerilog((context, configuration) =>
 {
-    var lokiUrl = context.Configuration.GetValue<string>("Logging:Loki:Url") ?? "http://loki:3100";
+
+    var seqUrl = context.Configuration.GetValue<string>("Logging:Seq:Url") ?? "http://seq:80";
     var environment = context.HostingEnvironment.EnvironmentName;
     var applicationName = context.HostingEnvironment.ApplicationName;
 
     configuration
-        .ReadFrom.Configuration(context.Configuration)
+        .MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+        .MinimumLevel.Override("System", LogEventLevel.Warning)
         .Enrich.FromLogContext()
         .Enrich.WithEnvironmentName()
         .Enrich.WithMachineName()
@@ -31,14 +40,8 @@ builder.Host.UseSerilog((context, configuration) =>
             rollingInterval: RollingInterval.Day,
             retainedFileCountLimit: 7,
             outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
-        .WriteTo.GrafanaLoki(
-            uri: lokiUrl,
-            labels: new[]
-            {
-                new LokiLabel { Key = "app", Value = applicationName },
-                new LokiLabel { Key = "environment", Value = environment },
-                new LokiLabel { Key = "service", Value = "yapplr-api" }
-            });
+
+        .WriteTo.Seq(seqUrl, bufferBaseFilename: null);
 });
 
 Console.WriteLine(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));

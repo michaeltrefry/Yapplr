@@ -4,7 +4,7 @@ using Yapplr.Shared.Extensions;
 using MassTransit;
 using Serilog;
 using Serilog.Enrichers;
-using Serilog.Sinks.Grafana.Loki;
+
 
 // Auto-detect environment based on Git branch
 EnvironmentExtensions.ConfigureEnvironmentFromGitBranch();
@@ -29,14 +29,8 @@ Log.Logger = new LoggerConfiguration()
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 7,
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
-    .WriteTo.GrafanaLoki(
-        uri: builder.Configuration.GetValue<string>("Logging:Loki:Url") ?? "http://loki:3100",
-        labels: new[]
-        {
-            new LokiLabel { Key = "app", Value = "Yapplr.VideoProcessor" },
-            new LokiLabel { Key = "environment", Value = builder.Environment.EnvironmentName },
-            new LokiLabel { Key = "service", Value = "yapplr-video-processor" }
-        })
+
+    .WriteTo.Seq(builder.Configuration.GetValue<string>("Logging:Seq:Url") ?? "http://seq:80")
     .CreateLogger();
 
 builder.Services.AddSerilog();
