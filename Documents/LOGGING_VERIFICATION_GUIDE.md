@@ -4,7 +4,7 @@
 
 ### **Access Points**
 - **Grafana UI**: http://localhost:3000 (admin/admin123)
-- **Frontend**: http://localhost:3001 (moved to avoid port conflict)
+- **Frontend**: http://localhost:3001 (moved to avoid port conflict with Grafana)
 - **API**: http://localhost:8080
 - **Loki API**: http://localhost:3100
 
