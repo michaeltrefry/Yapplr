@@ -196,8 +196,7 @@ services:
   # Logging Stack
   loki:
     image: grafana/loki:3.0.0
-    ports:
-      - "3100:3100"
+    # No external ports exposed - accessed through nginx proxy for security
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - loki_data:/loki
@@ -214,10 +213,9 @@ services:
 
   grafana:
     image: grafana/grafana:10.4.0
-    ports:
-      - "3000:3000"
+    # No external ports exposed - accessed through nginx proxy for security
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${PROD_GRAFANA_ADMIN_PASSWORD:-admin123}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_AUTH_ANONYMOUS_ENABLED=false

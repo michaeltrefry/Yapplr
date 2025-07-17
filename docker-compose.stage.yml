@@ -146,7 +146,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "15672:15672"  # RabbitMQ Management UI (staging only)
     volumes:
       - ./nginx.stage.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -219,8 +218,7 @@ services:
   # Logging Stack
   loki:
     image: grafana/loki:3.0.0
-    ports:
-      - "3100:3100"
+    # No external ports exposed - accessed through nginx proxy for security
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - loki_data:/loki
@@ -237,8 +235,7 @@ services:
 
   grafana:
     image: grafana/grafana:10.4.0
-    ports:
-      - "3000:3000"
+    # No external ports exposed - accessed through nginx proxy for security
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${STAGE_GRAFANA_ADMIN_PASSWORD:-admin123}
       - GF_USERS_ALLOW_SIGN_UP=false
