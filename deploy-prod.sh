@@ -112,7 +112,7 @@ fi
 echo -e "${GREEN}🗄️ Database migrations will run automatically when the API starts${NC}"
 
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
-echo -e "${GREEN}Your application is now running at:${NC}"
+echo -e "${GREEN}  Your application is now running at:${NC}"
 echo -e "${GREEN}  Frontend: https://yapplr.com${NC}"
 echo -e "${GREEN}  API: https://$PROD_API_DOMAIN_NAME${NC}"
 

@@ -271,7 +271,7 @@ services:
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./analytics/grafana/provisioning:/etc/grafana/provisioning
+      - ./analytics/grafana/provisioning-local:/etc/grafana/provisioning
       - ./analytics/grafana/dashboards:/var/lib/grafana/dashboards
     restart: unless-stopped
     networks:

@@ -1,320 +1,474 @@
 {
-  "dashboard": {
-    "id": null,
-    "title": "Yapplr Real-time Monitoring",
-    "description": "Real-time performance and system monitoring dashboard",
-    "tags": ["yapplr", "monitoring", "realtime", "performance"],
-    "timezone": "browser",
-    "editable": true,
-    "fiscalYearStartMonth": 0,
-    "graphTooltip": 0,
-    "hideControls": false,
-    "links": [],
-    "liveNow": true,
-    "panels": [
-      {
-        "id": 1,
-        "title": "Live User Activity",
-        "type": "stat",
-        "targets": [
-          {
-            "datasource": "InfluxDB",
-            "query": "from(bucket: \"analytics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> sum()",
-            "refId": "A"
-          }
-        ],
-        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
-        "fieldConfig": {
-          "defaults": {
-            "color": {"mode": "thresholds"},
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "yellow", "value": 10},
-                {"color": "red", "value": 50}
-              ]
-            },
-            "unit": "short"
-          }
-        },
-        "options": {
-          "reduceOptions": {
-            "values": false,
-            "calcs": ["lastNotNull"],
-            "fields": ""
+  "id": null,
+  "title": "Yapplr Real-time Monitoring",
+  "description": "Real-time performance and system monitoring dashboard",
+  "tags": [
+    "yapplr",
+    "monitoring",
+    "realtime",
+    "performance"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "hideControls": false,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Live User Activity",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": "InfluxDB",
+          "query": "from(bucket: \"analytics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> sum()",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
           },
-          "orientation": "auto",
-          "textMode": "auto",
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto"
-        }
-      },
-      {
-        "id": 2,
-        "title": "Response Time (Last 5min)",
-        "type": "stat",
-        "targets": [
-          {
-            "datasource": "InfluxDB",
-            "query": "from(bucket: \"analytics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"performance_metrics\")\n  |> filter(fn: (r) => r.metric_type == \"ResponseTime\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> mean()",
-            "refId": "A"
-          }
-        ],
-        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
-        "fieldConfig": {
-          "defaults": {
-            "color": {"mode": "thresholds"},
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "yellow", "value": 100},
-                {"color": "red", "value": 500}
-              ]
-            },
-            "unit": "ms"
-          }
-        },
-        "options": {
-          "reduceOptions": {
-            "values": false,
-            "calcs": ["lastNotNull"],
-            "fields": ""
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
           },
-          "orientation": "auto",
-          "textMode": "auto",
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto"
+          "unit": "short"
         }
       },
-      {
-        "id": 3,
-        "title": "Error Rate",
-        "type": "stat",
-        "targets": [
-          {
-            "datasource": "InfluxDB",
-            "query": "from(bucket: \"analytics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"performance_metrics\")\n  |> filter(fn: (r) => r.success == \"false\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> sum()",
-            "refId": "A"
-          }
-        ],
-        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
-        "fieldConfig": {
-          "defaults": {
-            "color": {"mode": "thresholds"},
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "yellow", "value": 1},
-                {"color": "red", "value": 5}
-              ]
-            },
-            "unit": "short"
-          }
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
         },
-        "options": {
-          "reduceOptions": {
-            "values": false,
-            "calcs": ["lastNotNull"],
-            "fields": ""
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Response Time (Last 5min)",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": "InfluxDB",
+          "query": "from(bucket: \"analytics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"performance_metrics\")\n  |> filter(fn: (r) => r.metric_type == \"ResponseTime\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> mean()",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
           },
-          "orientation": "auto",
-          "textMode": "auto",
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto"
-        }
-      },
-      {
-        "id": 4,
-        "title": "Active Sessions",
-        "type": "stat",
-        "targets": [
-          {
-            "datasource": "InfluxDB",
-            "query": "from(bucket: \"analytics\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r.session_id != \"\")\n  |> group(columns: [\"session_id\"])\n  |> count()\n  |> group()\n  |> sum()",
-            "refId": "A"
-          }
-        ],
-        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
-        "fieldConfig": {
-          "defaults": {
-            "color": {"mode": "thresholds"},
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "yellow", "value": 50},
-                {"color": "red", "value": 200}
-              ]
-            },
-            "unit": "short"
-          }
-        },
-        "options": {
-          "reduceOptions": {
-            "values": false,
-            "calcs": ["lastNotNull"],
-            "fields": ""
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
+            ]
           },
-          "orientation": "auto",
-          "textMode": "auto",
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto"
+          "unit": "ms"
         }
       },
-      {
-        "id": 5,
-        "title": "Real-time Activity Stream",
-        "type": "timeseries",
-        "targets": [
-          {
-            "datasource": "InfluxDB",
-            "query": "from(bucket: \"analytics\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> aggregateWindow(every: 1m, fn: sum, createEmpty: false)\n  |> yield(name: \"activity_stream\")",
-            "refId": "A"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
-        "fieldConfig": {
-          "defaults": {
-            "color": {"mode": "palette-classic"},
-            "custom": {
-              "drawStyle": "line",
-              "lineInterpolation": "linear",
-              "barAlignment": 0,
-              "lineWidth": 2,
-              "fillOpacity": 20,
-              "gradientMode": "none",
-              "spanNulls": false,
-              "insertNulls": false,
-              "showPoints": "auto",
-              "pointSize": 5,
-              "stacking": {"mode": "none", "group": "A"},
-              "axisPlacement": "auto",
-              "axisLabel": "Activities per minute",
-              "axisColorMode": "text",
-              "scaleDistribution": {"type": "linear"},
-              "axisCenteredZero": false,
-              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
-              "thresholdsStyle": {"mode": "off"}
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "red", "value": 80}
-              ]
-            },
-            "unit": "short"
-          }
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
         },
-        "options": {
-          "tooltip": {"mode": "single", "sort": "none"},
-          "legend": {"displayMode": "visible", "placement": "bottom"}
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Error Rate",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": "InfluxDB",
+          "query": "from(bucket: \"analytics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"performance_metrics\")\n  |> filter(fn: (r) => r.success == \"false\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> sum()",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "short"
         }
       },
-      {
-        "id": 6,
-        "title": "Performance Metrics",
-        "type": "timeseries",
-        "targets": [
-          {
-            "datasource": "InfluxDB",
-            "query": "from(bucket: \"analytics\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"performance_metrics\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> group(columns: [\"metric_type\"])\n  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)\n  |> yield(name: \"performance\")",
-            "refId": "A"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
-        "fieldConfig": {
-          "defaults": {
-            "color": {"mode": "palette-classic"},
-            "custom": {
-              "drawStyle": "line",
-              "lineInterpolation": "linear",
-              "barAlignment": 0,
-              "lineWidth": 2,
-              "fillOpacity": 10,
-              "gradientMode": "none",
-              "spanNulls": false,
-              "insertNulls": false,
-              "showPoints": "auto",
-              "pointSize": 5,
-              "stacking": {"mode": "none", "group": "A"},
-              "axisPlacement": "auto",
-              "axisLabel": "",
-              "axisColorMode": "text",
-              "scaleDistribution": {"type": "linear"},
-              "axisCenteredZero": false,
-              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
-              "thresholdsStyle": {"mode": "off"}
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "yellow", "value": 100},
-                {"color": "red", "value": 500}
-              ]
-            },
-            "unit": "ms"
-          }
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
         },
-        "options": {
-          "tooltip": {"mode": "multi", "sort": "none"},
-          "legend": {"displayMode": "visible", "placement": "bottom"}
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Active Sessions",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": "InfluxDB",
+          "query": "from(bucket: \"analytics\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r.session_id != \"\")\n  |> group(columns: [\"session_id\"])\n  |> count()\n  |> group()\n  |> sum()",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "red",
+                "value": 200
+              }
+            ]
+          },
+          "unit": "short"
         }
       },
-      {
-        "id": 7,
-        "title": "Recent Activity Log",
-        "type": "logs",
-        "targets": [
-          {
-            "datasource": "InfluxDB",
-            "query": "from(bucket: \"analytics\")\n  |> range(start: -10m)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 100)",
-            "refId": "A"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
-        "options": {
-          "showTime": true,
-          "showLabels": false,
-          "showCommonLabels": false,
-          "wrapLogMessage": false,
-          "prettifyLogMessage": false,
-          "enableLogDetails": true,
-          "dedupStrategy": "none",
-          "sortOrder": "Descending"
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Real-time Activity Stream",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": "InfluxDB",
+          "query": "from(bucket: \"analytics\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> aggregateWindow(every: 1m, fn: sum, createEmpty: false)\n  |> yield(name: \"activity_stream\")",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "barAlignment": 0,
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "Activities per minute",
+            "axisColorMode": "text",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "visible",
+          "placement": "bottom"
         }
       }
-    ],
-    "time": {
-      "from": "now-1h",
-      "to": "now"
     },
-    "timepicker": {
-      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    {
+      "id": 6,
+      "title": "Performance Metrics",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": "InfluxDB",
+          "query": "from(bucket: \"analytics\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"performance_metrics\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> group(columns: [\"metric_type\"])\n  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)\n  |> yield(name: \"performance\")",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "barAlignment": 0,
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "text",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
+            ]
+          },
+          "unit": "ms"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "visible",
+          "placement": "bottom"
+        }
+      }
     },
-    "templating": {
-      "list": []
-    },
-    "annotations": {
-      "list": []
-    },
-    "refresh": "5s",
-    "schemaVersion": 37,
-    "version": 1,
-    "weekStart": ""
-  }
+    {
+      "id": 7,
+      "title": "Recent Activity Log",
+      "type": "logs",
+      "targets": [
+        {
+          "datasource": "InfluxDB",
+          "query": "from(bucket: \"analytics\")\n  |> range(start: -10m)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 100)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": false,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    }
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "refresh": "5s",
+  "schemaVersion": 37,
+  "version": 1,
+  "weekStart": ""
 }

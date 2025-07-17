@@ -353,17 +353,15 @@ button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):n
 }
 
 /* Ensure post interaction buttons remain completely transparent */
-button.group,
+/* Only target buttons that are specifically for post interactions, not all group buttons */
 button[class*="text-gray-500"],
-.group button,
-button[class*="group"] {
+.group button[class*="text-gray-500"] {
   background-color: transparent !important;
   border: none !important;
 }
 
 /* Ensure the inner divs of post interaction buttons are also transparent by default - but not when parent is hovered */
-.group:not(:hover) button > div,
-button.group:not(:hover) > div,
+.group:not(:hover) button[class*="text-gray-500"] > div,
 button[class*="text-gray-500"]:not(:hover) > div {
   background-color: transparent !important;
 }

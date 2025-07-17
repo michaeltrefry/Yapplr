@@ -107,6 +107,20 @@ We've created **4 comprehensive Grafana dashboards** for your InfluxDB data:
 ./analytics/test-dashboards.sh
 ```
 
+#### **🔧 Fix Empty Dashboards**
+If your dashboards are empty, it's likely because InfluxDB is disabled:
+
+```bash
+# Enable InfluxDB in your application configuration
+./analytics/enable-influxdb.sh
+
+# Debug data issues
+./analytics/debug-influxdb-data.sh
+
+# Follow the complete fix guide
+cat analytics/FIX_EMPTY_DASHBOARDS.md
+```
+
 #### **🔍 Dashboard Features**
 - **Real-time data** from InfluxDB with Flux queries
 - **User activity tracking** - logins, posts, comments, engagement

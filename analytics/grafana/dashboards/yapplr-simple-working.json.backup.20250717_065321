@@ -1,0 +1,356 @@
+{
+    "id": null,
+    "title": "Yapplr Simple Analytics (Working)",
+    "description": "Simple working dashboard that matches your exact InfluxDB data structure",
+    "tags": ["yapplr", "analytics", "simple", "working"],
+    "timezone": "browser",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "hideControls": false,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total User Activities (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "influxdb"
+            },
+            "query": "from(bucket: \"analytics\")\n  |> range(start: -24h)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> sum()",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 10},
+                {"color": "red", "value": 100}
+              ]
+            },
+            "unit": "short",
+            "displayName": "User Activities"
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Content Engagements (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "influxdb"
+            },
+            "query": "from(bucket: \"analytics\")\n  |> range(start: -24h)\n  |> filter(fn: (r) => r._measurement == \"content_engagement\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> sum()",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 5},
+                {"color": "red", "value": 50}
+              ]
+            },
+            "unit": "short",
+            "displayName": "Content Engagements"
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Tag Actions (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "influxdb"
+            },
+            "query": "from(bucket: \"analytics\")\n  |> range(start: -24h)\n  |> filter(fn: (r) => r._measurement == \"tag_actions\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> sum()",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 3},
+                {"color": "red", "value": 20}
+              ]
+            },
+            "unit": "short",
+            "displayName": "Tag Actions"
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Performance Metrics (Avg)",
+        "type": "stat",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "influxdb"
+            },
+            "query": "from(bucket: \"analytics\")\n  |> range(start: -24h)\n  |> filter(fn: (r) => r._measurement == \"performance_metrics\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> mean()",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 100},
+                {"color": "red", "value": 500}
+              ]
+            },
+            "unit": "ms",
+            "displayName": "Avg Performance"
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 5,
+        "title": "User Activities by Type (Last 6 hours)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "influxdb"
+            },
+            "query": "from(bucket: \"analytics\")\n  |> range(start: -6h)\n  |> filter(fn: (r) => r._measurement == \"user_activities\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> group(columns: [\"activity_type\"])\n  |> aggregateWindow(every: 10m, fn: sum, createEmpty: false)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "auto",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisPlacement": "auto",
+              "axisLabel": "Activities",
+              "axisColorMode": "text",
+              "scaleDistribution": {"type": "linear"},
+              "axisCenteredZero": false,
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "visible", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 6,
+        "title": "Content Engagement by Type (Last 6 hours)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "influxdb"
+            },
+            "query": "from(bucket: \"analytics\")\n  |> range(start: -6h)\n  |> filter(fn: (r) => r._measurement == \"content_engagement\")\n  |> filter(fn: (r) => r._field == \"count\")\n  |> group(columns: [\"engagement_type\"])\n  |> aggregateWindow(every: 10m, fn: sum, createEmpty: false)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "auto",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisPlacement": "auto",
+              "axisLabel": "Engagements",
+              "axisColorMode": "text",
+              "scaleDistribution": {"type": "linear"},
+              "axisCenteredZero": false,
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "visible", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 7,
+        "title": "Raw Data Check - All Measurements",
+        "type": "table",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "influxdb"
+            },
+            "query": "from(bucket: \"analytics\")\n  |> range(start: -1h)\n  |> limit(n: 20)\n  |> sort(columns: [\"_time\"], desc: true)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto",
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null}
+              ]
+            }
+          }
+        },
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "_time"
+            }
+          ]
+        }
+      }
+    ],
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    },
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    },
+    "refresh": "30s",
+    "schemaVersion": 37,
+    "version": 1,
+  "weekStart": ""
+}

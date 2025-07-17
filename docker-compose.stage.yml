@@ -294,8 +294,7 @@ services:
       - GF_SERVER_ROOT_URL=https://${STAGE_GRAFANA_DOMAIN:-stg-grafana.yapplr.com}
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./analytics/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
-      - ./analytics/grafana/provisioning/datasources/datasources.staging.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./analytics/grafana/provisioning-staging:/etc/grafana/provisioning
       - ./analytics/grafana/dashboards:/var/lib/grafana/dashboards
     restart: unless-stopped
     networks:
