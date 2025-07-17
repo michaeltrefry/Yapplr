@@ -31,9 +31,9 @@ RUN dotnet publish "Yapplr.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /
 FROM base AS final
 WORKDIR /app
 
-# Create uploads directory with proper permissions
-RUN mkdir -p /uploads /app/uploads/images /app/uploads/videos /app/uploads/processed /app/uploads/thumbnails /app/uploads/temp \
-    && chmod -R 777 /uploads /app/uploads
+# Create uploads and logs directories with proper permissions
+RUN mkdir -p /uploads /app/uploads/images /app/uploads/videos /app/uploads/processed /app/uploads/thumbnails /app/uploads/temp /app/logs \
+    && chmod -R 777 /uploads /app/uploads /app/logs
 
 # Copy published application
 COPY --from=publish /app/publish .

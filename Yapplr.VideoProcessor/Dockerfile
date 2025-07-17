@@ -51,11 +51,13 @@ RUN dotnet publish "Yapplr.VideoProcessor.csproj" -c $BUILD_CONFIGURATION -o /ap
 FROM base AS final
 WORKDIR /app
 
-# Create upload directories
+# Create upload and logs directories
 RUN mkdir -p /app/uploads/videos \
     && mkdir -p /app/uploads/processed \
     && mkdir -p /app/uploads/thumbnails \
-    && mkdir -p /app/uploads/temp
+    && mkdir -p /app/uploads/temp \
+    && mkdir -p /app/logs \
+    && chmod -R 777 /app/logs
 
 # Copy published application
 COPY --from=publish /app/publish .

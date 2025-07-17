@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
+using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Common;
 
@@ -115,21 +116,35 @@ public abstract class BaseService
     }
 
     /// <summary>
-    /// Log service operation
+    /// Log service operation with enhanced structured logging
     /// </summary>
     protected void LogOperation(string operation, object? parameters = null)
     {
-        _logger.LogInformation("Service operation: {Operation} with parameters: {@Parameters}", 
-            operation, parameters);
+        _logger.LogBusinessOperation(operation, parameters);
     }
 
     /// <summary>
-    /// Log service error
+    /// Log service error with enhanced structured logging
     /// </summary>
     protected void LogError(Exception ex, string operation, object? parameters = null)
     {
-        _logger.LogError(ex, "Service operation failed: {Operation} with parameters: {@Parameters}", 
-            operation, parameters);
+        _logger.LogBusinessError(ex, operation, parameters);
+    }
+
+    /// <summary>
+    /// Log user action with context
+    /// </summary>
+    protected void LogUserAction(int userId, string action, object? details = null)
+    {
+        _logger.LogUserAction(userId, action, details);
+    }
+
+    /// <summary>
+    /// Log entity operation with context
+    /// </summary>
+    protected void LogEntityOperation(string entityType, int entityId, string operation, object? parameters = null)
+    {
+        _logger.LogBusinessOperation(operation, parameters, entityType, entityId);
     }
 
     /// <summary>

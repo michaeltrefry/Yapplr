@@ -43,6 +43,7 @@ services:
       - Redis__ConnectionString=${STAGE_REDIS_CONNECTION_STRING}
     volumes:
       - yapplr_uploads:/app/uploads
+      - yapplr_logs:/app/logs
       - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: unless-stopped
     networks:
@@ -94,6 +95,7 @@ services:
       - FFmpeg__LogLevel=info
     volumes:
       - yapplr_uploads:/app/uploads
+      - yapplr_logs:/app/logs
     restart: unless-stopped
     networks:
       - yapplr-network
@@ -214,10 +216,69 @@ services:
         reservations:
           memory: 256M
 
+  # Logging Stack
+  loki:
+    image: grafana/loki:3.0.0
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+      - ./loki-config.yml:/etc/loki/local-config.yaml:ro
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${STAGE_GRAFANA_ADMIN_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    depends_on:
+      - loki
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    networks:
+      - yapplr-network
+    depends_on:
+      - loki
+
 volumes:
   yapplr_uploads:
+  yapplr_logs:
   rabbitmq_data:
   redis_data:
+  loki_data:
+  grafana_data:
 
 networks:
   yapplr-network:

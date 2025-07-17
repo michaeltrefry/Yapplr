@@ -2,6 +2,9 @@ using Yapplr.VideoProcessor;
 using Yapplr.VideoProcessor.Services;
 using Yapplr.Shared.Extensions;
 using MassTransit;
+using Serilog;
+using Serilog.Enrichers;
+using Serilog.Sinks.Grafana.Loki;
 
 // Auto-detect environment based on Git branch
 EnvironmentExtensions.ConfigureEnvironmentFromGitBranch();
@@ -9,6 +12,40 @@ EnvironmentExtensions.ConfigureEnvironmentFromGitBranch();
 Console.WriteLine($"Environment after detection: {Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}");
 
 var builder = Host.CreateApplicationBuilder(args);
+
+// Configure Serilog
+builder.Services.AddSerilog((serviceProvider, configuration) =>
+{
+    var config = serviceProvider.GetRequiredService<IConfiguration>();
+    var lokiUrl = config.GetValue<string>("Logging:Loki:Url") ?? "http://loki:3100";
+    var environment = builder.Environment.EnvironmentName;
+    var applicationName = "Yapplr.VideoProcessor";
+
+    configuration
+        .ReadFrom.Configuration(config)
+        .Enrich.FromLogContext()
+        .Enrich.WithEnvironmentName()
+        .Enrich.WithMachineName()
+        .Enrich.WithProcessId()
+        .Enrich.WithThreadId()
+        .Enrich.WithProperty("Application", applicationName)
+        .Enrich.WithProperty("Environment", environment)
+        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+        .WriteTo.File(
+            path: "/app/logs/yapplr-video-processor-.log",
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 7,
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+        .WriteTo.GrafanaLoki(
+            uri: lokiUrl,
+            labels: new[]
+            {
+                new LokiLabel { Key = "app", Value = applicationName },
+                new LokiLabel { Key = "environment", Value = environment },
+                new LokiLabel { Key = "service", Value = "yapplr-video-processor" }
+            },
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}");
+});
 
 Console.WriteLine($"Builder environment: {builder.Environment.EnvironmentName}");
 

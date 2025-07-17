@@ -1,0 +1,107 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Docker container logs
+  - job_name: docker
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: docker
+          __path__: /var/lib/docker/containers/*/*log
+    
+    pipeline_stages:
+      # Parse Docker JSON logs
+      - json:
+          expressions:
+            output: log
+            stream: stream
+            attrs:
+      
+      # Extract container name from file path
+      - regex:
+          expression: '^/var/lib/docker/containers/(?P<container_id>[^/]+)/.*\.log$'
+          source: __path__
+      
+      # Add container labels
+      - docker: {}
+      
+      # Parse structured logs from .NET applications
+      - match:
+          selector: '{container_name=~"yapplr.*"}'
+          stages:
+            # Try to parse JSON structured logs
+            - json:
+                expressions:
+                  level: level
+                  timestamp: "@t"
+                  message: "@m"
+                  exception: "@x"
+                  properties: "@p"
+                  request_id: RequestId
+                  user_id: UserId
+                  correlation_id: CorrelationId
+            
+            # Set log level label
+            - labels:
+                level:
+                request_id:
+                user_id:
+                correlation_id:
+            
+            # Format timestamp
+            - timestamp:
+                source: timestamp
+                format: RFC3339Nano
+                fallback_formats:
+                  - "2006-01-02T15:04:05.999999999Z07:00"
+                  - "2006-01-02T15:04:05.999999Z07:00"
+                  - "2006-01-02T15:04:05Z07:00"
+
+  # System logs (optional)
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: system
+          __path__: /var/log/*.log
+
+  # Application-specific log files (if any)
+  - job_name: yapplr-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: yapplr-logs
+          __path__: /app/logs/*.log
+    
+    pipeline_stages:
+      # Parse JSON logs
+      - json:
+          expressions:
+            level: level
+            timestamp: "@t"
+            message: "@m"
+            exception: "@x"
+            request_id: RequestId
+            user_id: UserId
+      
+      # Set labels
+      - labels:
+          level:
+          request_id:
+          user_id:
+      
+      # Format timestamp
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
