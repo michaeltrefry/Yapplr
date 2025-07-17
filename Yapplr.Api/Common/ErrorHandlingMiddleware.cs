@@ -3,6 +3,7 @@ using System.Text.Json;
 using Yapplr.Api.Exceptions;
 using Serilog.Context;
 using System.Security.Claims;
+using Yapplr.Api.Services;
 
 namespace Yapplr.Api.Common;
 
@@ -33,7 +34,7 @@ public class ErrorHandlingMiddleware
         }
     }
 
-    private async Task LogExceptionWithContextAsync(HttpContext context, Exception ex)
+    private Task LogExceptionWithContextAsync(HttpContext context, Exception ex)
     {
         using var exceptionScope = LogContext.PushProperty("ExceptionType", ex.GetType().Name);
         using var messageScope = LogContext.PushProperty("ExceptionMessage", ex.Message);
@@ -79,6 +80,8 @@ public class ErrorHandlingMiddleware
                     details: new { RequestPath = context.Request.Path.Value, Reason = ex.Message });
                 break;
         }
+
+        return Task.CompletedTask;
     }
 
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)

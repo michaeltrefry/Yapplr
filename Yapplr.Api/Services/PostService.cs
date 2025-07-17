@@ -58,15 +58,15 @@ public class PostService : BaseService, IPostService
     public async Task<PostDto?> CreatePostAsync(int userId, CreatePostDto createDto)
     {
         using var timedOperation = _logger.BeginTimedOperation("CreatePost", new { UserId = userId });
-        using var operationScope = LogContext.PushProperty("Operation", "CreatePost");
-        using var userScope = LogContext.PushProperty("UserId", userId);
+        using var operationScope = Serilog.Context.LogContext.PushProperty("Operation", "CreatePost");
+        using var userScope = Serilog.Context.LogContext.PushProperty("UserId", userId);
 
         var mediaCount = (createDto.MediaFileNames?.Count ?? 0) +
                         (!string.IsNullOrEmpty(createDto.ImageFileName) ? 1 : 0) +
                         (!string.IsNullOrEmpty(createDto.VideoFileName) ? 1 : 0);
 
-        using var mediaScope = LogContext.PushProperty("MediaCount", mediaCount);
-        using var privacyScope = LogContext.PushProperty("Privacy", createDto.Privacy.ToString());
+        using var mediaScope = Serilog.Context.LogContext.PushProperty("MediaCount", mediaCount);
+        using var privacyScope = Serilog.Context.LogContext.PushProperty("Privacy", createDto.Privacy.ToString());
 
         _logger.LogInformation("Creating post for user {UserId} with {MediaCount} media files and privacy {Privacy}",
             userId, mediaCount, createDto.Privacy);
@@ -84,7 +84,7 @@ public class PostService : BaseService, IPostService
                            !string.IsNullOrEmpty(fileName) &&
                            DetermineMediaTypeFromFileName(fileName) == MediaType.Video) == true);
 
-        using var videoScope = LogContext.PushProperty("HasVideos", hasVideos);
+        using var videoScope = Serilog.Context.LogContext.PushProperty("HasVideos", hasVideos);
 
         var post = new Post
         {
@@ -100,7 +100,7 @@ public class PostService : BaseService, IPostService
         _context.Posts.Add(post);
         await _context.SaveChangesAsync();
 
-        using var postScope = LogContext.PushProperty("PostId", post.Id);
+        using var postScope = Serilog.Context.LogContext.PushProperty("PostId", post.Id);
         _logger.LogInformation("Post {PostId} created successfully for user {UserId}", post.Id, userId);
 
         // Create media records if present

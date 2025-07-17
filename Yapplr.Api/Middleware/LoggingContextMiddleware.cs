@@ -23,7 +23,7 @@ public class LoggingContextMiddleware
         var correlationId = Guid.NewGuid().ToString("N")[..8];
         
         // Add correlation ID to response headers for debugging
-        context.Response.Headers.Add("X-Correlation-ID", correlationId);
+        context.Response.Headers["X-Correlation-ID"] = correlationId;
 
         var disposables = new List<IDisposable>();
 

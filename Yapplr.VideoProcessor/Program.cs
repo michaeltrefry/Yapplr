@@ -14,38 +14,32 @@ Console.WriteLine($"Environment after detection: {Environment.GetEnvironmentVari
 var builder = Host.CreateApplicationBuilder(args);
 
 // Configure Serilog
-builder.Services.AddSerilog((serviceProvider, configuration) =>
-{
-    var config = serviceProvider.GetRequiredService<IConfiguration>();
-    var lokiUrl = config.GetValue<string>("Logging:Loki:Url") ?? "http://loki:3100";
-    var environment = builder.Environment.EnvironmentName;
-    var applicationName = "Yapplr.VideoProcessor";
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithMachineName()
+    .Enrich.WithProcessId()
+    .Enrich.WithThreadId()
+    .Enrich.WithProperty("Application", "Yapplr.VideoProcessor")
+    .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
+    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.File(
+        path: "/app/logs/yapplr-video-processor-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 7,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.GrafanaLoki(
+        uri: builder.Configuration.GetValue<string>("Logging:Loki:Url") ?? "http://loki:3100",
+        labels: new[]
+        {
+            new LokiLabel { Key = "app", Value = "Yapplr.VideoProcessor" },
+            new LokiLabel { Key = "environment", Value = builder.Environment.EnvironmentName },
+            new LokiLabel { Key = "service", Value = "yapplr-video-processor" }
+        })
+    .CreateLogger();
 
-    configuration
-        .ReadFrom.Configuration(config)
-        .Enrich.FromLogContext()
-        .Enrich.WithEnvironmentName()
-        .Enrich.WithMachineName()
-        .Enrich.WithProcessId()
-        .Enrich.WithThreadId()
-        .Enrich.WithProperty("Application", applicationName)
-        .Enrich.WithProperty("Environment", environment)
-        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
-        .WriteTo.File(
-            path: "/app/logs/yapplr-video-processor-.log",
-            rollingInterval: RollingInterval.Day,
-            retainedFileCountLimit: 7,
-            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
-        .WriteTo.GrafanaLoki(
-            uri: lokiUrl,
-            labels: new[]
-            {
-                new LokiLabel { Key = "app", Value = applicationName },
-                new LokiLabel { Key = "environment", Value = environment },
-                new LokiLabel { Key = "service", Value = "yapplr-video-processor" }
-            },
-            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}");
-});
+builder.Services.AddSerilog();
 
 Console.WriteLine($"Builder environment: {builder.Environment.EnvironmentName}");
 

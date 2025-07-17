@@ -2,6 +2,7 @@ using Xunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Yapplr.Api.Services;
 using Yapplr.Api.Configuration;
@@ -27,7 +28,9 @@ public class ImageServiceTests : IDisposable
         var mockOptions = new Mock<IOptions<UploadsConfiguration>>();
         mockOptions.Setup(o => o.Value).Returns(uploadsConfig);
 
-        _imageService = new ImageService(mockOptions.Object);
+        var mockLogger = new Mock<ILogger<ImageService>>();
+
+        _imageService = new ImageService(mockOptions.Object, mockLogger.Object);
     }
 
     public void Dispose()

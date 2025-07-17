@@ -38,8 +38,7 @@ builder.Host.UseSerilog((context, configuration) =>
                 new LokiLabel { Key = "app", Value = applicationName },
                 new LokiLabel { Key = "environment", Value = environment },
                 new LokiLabel { Key = "service", Value = "yapplr-api" }
-            },
-            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}");
+            });
 });
 
 Console.WriteLine(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));

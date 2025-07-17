@@ -27,11 +27,11 @@ public class VideoProcessingRequestConsumer : IConsumer<VideoProcessingRequest>
         var request = context.Message;
         var startTime = DateTime.UtcNow;
 
-        using var operationScope = LogContext.PushProperty("Operation", "ProcessVideoRequest");
-        using var postScope = LogContext.PushProperty("PostId", request.PostId);
-        using var userScope = LogContext.PushProperty("UserId", request.UserId);
-        using var fileScope = LogContext.PushProperty("OriginalFileName", request.OriginalVideoFileName);
-        using var correlationScope = LogContext.PushProperty("CorrelationId", context.CorrelationId?.ToString() ?? "unknown");
+        using var operationScope = Serilog.Context.LogContext.PushProperty("Operation", "ProcessVideoRequest");
+        using var postScope = Serilog.Context.LogContext.PushProperty("PostId", request.PostId);
+        using var userScope = Serilog.Context.LogContext.PushProperty("UserId", request.UserId);
+        using var fileScope = Serilog.Context.LogContext.PushProperty("OriginalFileName", request.OriginalVideoFileName);
+        using var correlationScope = Serilog.Context.LogContext.PushProperty("CorrelationId", context.CorrelationId?.ToString() ?? "unknown");
 
         _logger.LogInformation("Received video processing request for Post {PostId}, User {UserId}, File: {OriginalFileName}",
             request.PostId, request.UserId, request.OriginalVideoFileName);
