@@ -2,6 +2,7 @@ using MassTransit;
 using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
 using Yapplr.VideoProcessor.Services;
+using Serilog.Context;
 
 namespace Yapplr.VideoProcessor;
 
@@ -26,7 +27,13 @@ public class VideoProcessingRequestConsumer : IConsumer<VideoProcessingRequest>
         var request = context.Message;
         var startTime = DateTime.UtcNow;
 
-        _logger.LogInformation("Received video processing request for Post {PostId}, User {UserId}, File: {FileName}", 
+        using var operationScope = LogContext.PushProperty("Operation", "ProcessVideoRequest");
+        using var postScope = LogContext.PushProperty("PostId", request.PostId);
+        using var userScope = LogContext.PushProperty("UserId", request.UserId);
+        using var fileScope = LogContext.PushProperty("OriginalFileName", request.OriginalVideoFileName);
+        using var correlationScope = LogContext.PushProperty("CorrelationId", context.CorrelationId?.ToString() ?? "unknown");
+
+        _logger.LogInformation("Received video processing request for Post {PostId}, User {UserId}, File: {OriginalFileName}",
             request.PostId, request.UserId, request.OriginalVideoFileName);
 
         try

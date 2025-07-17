@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using Yapplr.Api.Exceptions;
+using Serilog.Context;
+using System.Security.Claims;
 
 namespace Yapplr.Api.Common;
 
@@ -26,9 +28,56 @@ public class ErrorHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred: {ExceptionType} - {Message}",
-                ex.GetType().Name, ex.Message);
+            await LogExceptionWithContextAsync(context, ex);
             await HandleExceptionAsync(context, ex);
+        }
+    }
+
+    private async Task LogExceptionWithContextAsync(HttpContext context, Exception ex)
+    {
+        using var exceptionScope = LogContext.PushProperty("ExceptionType", ex.GetType().Name);
+        using var messageScope = LogContext.PushProperty("ExceptionMessage", ex.Message);
+        using var stackTraceScope = LogContext.PushProperty("StackTrace", ex.StackTrace);
+        using var requestPathScope = LogContext.PushProperty("RequestPath", context.Request.Path.Value);
+        using var httpMethodScope = LogContext.PushProperty("HttpMethod", context.Request.Method);
+        using var queryStringScope = LogContext.PushProperty("QueryString", context.Request.QueryString.Value);
+
+        // Add user context if available
+        if (context.User.Identity?.IsAuthenticated == true)
+        {
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var username = context.User.FindFirst(ClaimTypes.Name)?.Value;
+
+            using var userIdScope = !string.IsNullOrEmpty(userId) ? LogContext.PushProperty("UserId", userId) : null;
+            using var usernameScope = !string.IsNullOrEmpty(username) ? LogContext.PushProperty("Username", username) : null;
+
+            _logger.LogError(ex, "Unhandled exception in {HttpMethod} {RequestPath} for user {UserId} ({Username}): {ExceptionType} - {ExceptionMessage}",
+                context.Request.Method, context.Request.Path, userId, username, ex.GetType().Name, ex.Message);
+        }
+        else
+        {
+            _logger.LogError(ex, "Unhandled exception in {HttpMethod} {RequestPath}: {ExceptionType} - {ExceptionMessage}",
+                context.Request.Method, context.Request.Path, ex.GetType().Name, ex.Message);
+        }
+
+        // Log additional context for specific exception types
+        switch (ex)
+        {
+            case ArgumentException:
+                _logger.LogWarning("Validation error in {RequestPath}: {ExceptionMessage}", context.Request.Path, ex.Message);
+                break;
+            case UnauthorizedAccessException:
+                _logger.LogSecurityEvent("UnauthorizedAccess",
+                    userId: context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value != null ?
+                           int.Parse(context.User.FindFirst(ClaimTypes.NameIdentifier)!.Value) : null,
+                    details: new { RequestPath = context.Request.Path.Value, Method = context.Request.Method });
+                break;
+            case InvalidOperationException when ex.Message.Contains("trust"):
+                _logger.LogSecurityEvent("TrustScoreViolation",
+                    userId: context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value != null ?
+                           int.Parse(context.User.FindFirst(ClaimTypes.NameIdentifier)!.Value) : null,
+                    details: new { RequestPath = context.Request.Path.Value, Reason = ex.Message });
+                break;
         }
     }
 

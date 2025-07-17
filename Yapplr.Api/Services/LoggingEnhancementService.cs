@@ -232,13 +232,80 @@ public static class LoggingExtensions
     /// <summary>
     /// Log performance metrics
     /// </summary>
-    public static void LogPerformance(this ILogger logger, string operation, TimeSpan duration, 
+    public static void LogPerformance(this ILogger logger, string operation, TimeSpan duration,
         object? metrics = null)
     {
         using var opScope = LogContext.PushProperty("PerformanceOperation", operation);
         using var durationScope = LogContext.PushProperty("Duration", duration.TotalMilliseconds);
         using var metricsScope = metrics != null ? LogContext.PushProperty("Metrics", metrics, destructureObjects: true) : null;
-        
+
         logger.LogInformation("Performance: {Operation} completed in {Duration}ms", operation, duration.TotalMilliseconds);
+    }
+
+    /// <summary>
+    /// Create a disposable timer for measuring operation performance
+    /// </summary>
+    public static IDisposable BeginTimedOperation(this ILogger logger, string operation, object? parameters = null)
+    {
+        return new TimedOperation(logger, operation, parameters);
+    }
+}
+
+/// <summary>
+/// Disposable timer for measuring operation performance
+/// </summary>
+public class TimedOperation : IDisposable
+{
+    private readonly ILogger _logger;
+    private readonly string _operation;
+    private readonly object? _parameters;
+    private readonly DateTime _startTime;
+    private readonly List<IDisposable> _scopes;
+    private bool _disposed = false;
+
+    public TimedOperation(ILogger logger, string operation, object? parameters = null)
+    {
+        _logger = logger;
+        _operation = operation;
+        _parameters = parameters;
+        _startTime = DateTime.UtcNow;
+
+        _scopes = new List<IDisposable>
+        {
+            LogContext.PushProperty("TimedOperation", operation)
+        };
+
+        if (parameters != null)
+        {
+            _scopes.Add(LogContext.PushProperty("OperationParameters", parameters, destructureObjects: true));
+        }
+
+        _logger.LogDebug("Started timed operation: {Operation}", operation);
+    }
+
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            var duration = DateTime.UtcNow - _startTime;
+
+            using var durationScope = LogContext.PushProperty("Duration", duration.TotalMilliseconds);
+            _logger.LogInformation("Completed timed operation: {Operation} in {Duration}ms",
+                _operation, duration.TotalMilliseconds);
+
+            foreach (var scope in _scopes)
+            {
+                try
+                {
+                    scope?.Dispose();
+                }
+                catch
+                {
+                    // Ignore disposal errors
+                }
+            }
+
+            _disposed = true;
+        }
     }
 }

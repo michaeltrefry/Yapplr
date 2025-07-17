@@ -4,6 +4,7 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Common;
+using Serilog.Context;
 
 namespace Yapplr.Api.Services;
 
@@ -192,6 +193,12 @@ public class UserService : BaseService, IUserService
 
     public async Task<FollowResponseDto> FollowUserAsync(int followerId, int followingId)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "FollowUser");
+        using var followerScope = LogContext.PushProperty("FollowerId", followerId);
+        using var followingScope = LogContext.PushProperty("FollowingId", followingId);
+
+        _logger.LogUserAction(followerId, "FollowUser", new { TargetUserId = followingId });
+
         // Check if already following
         var existingFollow = await _context.Follows
             .FirstOrDefaultAsync(f => f.FollowerId == followerId && f.FollowingId == followingId);
@@ -438,9 +445,16 @@ public class UserService : BaseService, IUserService
 
     public async Task<bool> UpdateFcmTokenAsync(int userId, string? fcmToken)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "UpdateFcmToken");
+        using var userScope = LogContext.PushProperty("UserId", userId);
+        using var tokenActionScope = LogContext.PushProperty("TokenAction", fcmToken == null ? "Clear" : "Update");
+
         var user = await _context.Users.FindAsync(userId);
         if (user == null)
+        {
+            _logger.LogWarning("Failed to update FCM token: User {UserId} not found", userId);
             return false;
+        }
 
         if (fcmToken == null)
         {
@@ -448,7 +462,9 @@ public class UserService : BaseService, IUserService
         }
         else
         {
-            _logger.LogInformation("Updating FCM token for user {UserId}: {Token}", userId, fcmToken.Substring(0, Math.Min(20, fcmToken.Length)) + "...");
+            var tokenPreview = fcmToken.Substring(0, Math.Min(20, fcmToken.Length)) + "...";
+            using var tokenScope = LogContext.PushProperty("TokenPreview", tokenPreview);
+            _logger.LogInformation("Updating FCM token for user {UserId}: {TokenPreview}", userId, tokenPreview);
         }
 
         user.FcmToken = fcmToken;

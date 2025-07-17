@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using Yapplr.Api.Configuration;
+using Serilog.Context;
 
 namespace Yapplr.Api.Services;
 
@@ -8,9 +9,11 @@ public class ImageService : IImageService
     private readonly string _uploadPath;
     private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
     private readonly long _maxFileSize = 5 * 1024 * 1024; // 5MB
+    private readonly ILogger<ImageService> _logger;
 
-    public ImageService(IOptions<UploadsConfiguration> uploadsConfig)
+    public ImageService(IOptions<UploadsConfiguration> uploadsConfig, ILogger<ImageService> logger)
     {
+        _logger = logger;
         var config = uploadsConfig.Value;
         _uploadPath = Path.GetFullPath(Path.Combine(config.BasePath, "images"));
 
@@ -18,13 +21,23 @@ public class ImageService : IImageService
         if (!Directory.Exists(_uploadPath))
         {
             Directory.CreateDirectory(_uploadPath);
+            _logger.LogInformation("Created image upload directory: {UploadPath}", _uploadPath);
         }
     }
 
     public async Task<string> SaveImageAsync(IFormFile file)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "SaveImage");
+        using var originalNameScope = LogContext.PushProperty("OriginalFileName", file.FileName);
+        using var fileSizeScope = LogContext.PushProperty("FileSize", file.Length);
+        using var contentTypeScope = LogContext.PushProperty("ContentType", file.ContentType);
+
+        _logger.LogInformation("Saving image file {OriginalFileName} ({FileSize} bytes, {ContentType})",
+            file.FileName, file.Length, file.ContentType);
+
         if (!IsValidImageFile(file))
         {
+            _logger.LogWarning("Image upload rejected: Invalid file {OriginalFileName}", file.FileName);
             throw new ArgumentException("Invalid image file");
         }
 
@@ -33,35 +46,47 @@ public class ImageService : IImageService
         var fileName = $"{Guid.NewGuid()}{fileExtension}";
         var filePath = Path.Combine(_uploadPath, fileName);
 
+        using var fileNameScope = LogContext.PushProperty("GeneratedFileName", fileName);
+
         // Save file
         using (var stream = new FileStream(filePath, FileMode.Create))
         {
             await file.CopyToAsync(stream);
         }
 
+        _logger.LogInformation("Image saved successfully as {GeneratedFileName}", fileName);
         return fileName;
     }
 
     public bool DeleteImage(string fileName)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "DeleteImage");
+        using var fileNameScope = LogContext.PushProperty("FileName", fileName);
+
         if (string.IsNullOrEmpty(fileName))
+        {
+            _logger.LogWarning("Image deletion failed: Empty filename provided");
             return false;
+        }
 
         var filePath = Path.Combine(_uploadPath, fileName);
-        
+
         if (File.Exists(filePath))
         {
             try
             {
                 File.Delete(filePath);
+                _logger.LogInformation("Image deleted successfully: {FileName}", fileName);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to delete image file: {FileName}", fileName);
                 return false;
             }
         }
 
+        _logger.LogWarning("Image deletion failed: File not found {FileName}", fileName);
         return false;
     }
 

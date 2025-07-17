@@ -5,6 +5,7 @@ using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Utils;
 using Yapplr.Api.Services.Unified;
+using Serilog.Context;
 
 namespace Yapplr.Api.Services;
 
@@ -13,16 +14,28 @@ public class NotificationService : INotificationService
     private readonly YapplrDbContext _context;
     private readonly IUnifiedNotificationService _notificationService;
     private readonly ICountCacheService _countCache;
+    private readonly ILogger<NotificationService> _logger;
 
-    public NotificationService(YapplrDbContext context, IUnifiedNotificationService notificationService, ICountCacheService countCache)
+    public NotificationService(YapplrDbContext context, IUnifiedNotificationService notificationService, ICountCacheService countCache, ILogger<NotificationService> logger)
     {
         _context = context;
         _notificationService = notificationService;
         _countCache = countCache;
+        _logger = logger;
     }
 
     public async Task<NotificationDto?> CreateNotificationAsync(CreateNotificationDto createDto)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "CreateNotification");
+        using var userScope = LogContext.PushProperty("UserId", createDto.UserId);
+        using var typeScope = LogContext.PushProperty("NotificationType", createDto.Type);
+        using var actorScope = createDto.ActorUserId.HasValue ? LogContext.PushProperty("ActorUserId", createDto.ActorUserId.Value) : null;
+        using var postScope = createDto.PostId.HasValue ? LogContext.PushProperty("PostId", createDto.PostId.Value) : null;
+        using var commentScope = createDto.CommentId.HasValue ? LogContext.PushProperty("CommentId", createDto.CommentId.Value) : null;
+
+        _logger.LogInformation("Creating notification of type {NotificationType} for user {UserId}",
+            createDto.Type, createDto.UserId);
+
         var notification = new Notification
         {
             Type = createDto.Type,
@@ -37,6 +50,10 @@ public class NotificationService : INotificationService
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
 
+        using var notificationScope = LogContext.PushProperty("NotificationId", notification.Id);
+        _logger.LogInformation("Notification {NotificationId} created successfully for user {UserId}",
+            notification.Id, createDto.UserId);
+
         // Invalidate notification count cache
         await _countCache.InvalidateNotificationCountsAsync(createDto.UserId);
 
@@ -45,9 +62,21 @@ public class NotificationService : INotificationService
 
     public async Task CreateMentionNotificationsAsync(string content, int mentioningUserId, int? postId = null, int? commentId = null)
     {
+        using var operationScope = LogContext.PushProperty("Operation", "CreateMentionNotifications");
+        using var mentioningUserScope = LogContext.PushProperty("MentioningUserId", mentioningUserId);
+        using var postScope = postId.HasValue ? LogContext.PushProperty("PostId", postId.Value) : null;
+        using var commentScope = commentId.HasValue ? LogContext.PushProperty("CommentId", commentId.Value) : null;
+
         var mentionedUsernames = MentionParser.ExtractMentions(content);
         if (!mentionedUsernames.Any())
+        {
+            _logger.LogDebug("No mentions found in content for user {MentioningUserId}", mentioningUserId);
             return;
+        }
+
+        using var mentionCountScope = LogContext.PushProperty("MentionCount", mentionedUsernames.Count);
+        _logger.LogInformation("Processing {MentionCount} mentions from user {MentioningUserId}",
+            mentionedUsernames.Count, mentioningUserId);
 
         // Get users that exist and are not the mentioning user
         var mentionedUsers = await _context.Users

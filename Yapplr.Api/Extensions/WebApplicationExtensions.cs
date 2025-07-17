@@ -16,6 +16,9 @@ public static class WebApplicationExtensions
         // Configure forwarded headers for reverse proxy support (must be first)
         app.UseForwardedHeaders();
 
+        // Add logging context middleware (should be early in pipeline)
+        app.UseLoggingContext();
+
         // Add global error handling middleware (should be early in pipeline)
         app.UseErrorHandling();
 
