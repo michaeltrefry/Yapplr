@@ -17,7 +17,7 @@ scrape_configs:
         labels:
           job: docker
           __path__: /var/lib/docker/containers/*/*log
-    
+
     pipeline_stages:
       # Parse Docker JSON logs
       - json:
@@ -25,83 +25,46 @@ scrape_configs:
             output: log
             stream: stream
             attrs:
-      
-      # Extract container name from file path
-      - regex:
-          expression: '^/var/lib/docker/containers/(?P<container_id>[^/]+)/.*\.log$'
-          source: __path__
-      
-      # Add container labels
+
+      # Add container labels (simplified)
       - docker: {}
-      
+
       # Parse structured logs from .NET applications
       - match:
-          selector: '{container_name=~"yapplr.*"}'
+          selector: '{job="docker"} |= "SourceContext"'
           stages:
-            # Try to parse JSON structured logs
+            # Extract log level from the beginning
+            - regex:
+                expression: '^\[[\d:]+\s+(\w+)\]'
+                source: output
+
+            # Extract JSON from the end of the log line
+            - regex:
+                expression: '(\{.*\})$'
+                source: output
+
+            # Parse the JSON data
             - json:
                 expressions:
-                  level: level
-                  timestamp: '"@t"'
-                  message: '"@m"'
-                  exception: '"@x"'
-                  properties: '"@p"'
+                  source_context: SourceContext
                   request_id: RequestId
-                  user_id: UserId
+                  connection_id: ConnectionId
+                  user_agent: UserAgent
+                  ip_address: IpAddress
+                  query_string: QueryString
                   correlation_id: CorrelationId
-            
-            # Set log level label
+                  machine_name: MachineName
+                  thread_id: ThreadId
+                  application: Application
+                  environment_name: EnvironmentName
+                  process_id: ProcessId
+                  environment: Environment
+
+            # Set labels for important fields
             - labels:
-                level:
-                request_id:
-                user_id:
                 correlation_id:
-            
-            # Format timestamp
-            - timestamp:
-                source: timestamp
-                format: RFC3339Nano
-                fallback_formats:
-                  - "2006-01-02T15:04:05.999999999Z07:00"
-                  - "2006-01-02T15:04:05.999999Z07:00"
-                  - "2006-01-02T15:04:05Z07:00"
+                request_id:
+                application:
+                source_context:
 
-  # System logs (optional)
-  - job_name: system
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: system
-          __path__: /var/log/*.log
 
-  # Application-specific log files (if any)
-  - job_name: yapplr-logs
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: yapplr-logs
-          __path__: /app/logs/*.log
-    
-    pipeline_stages:
-      # Parse JSON logs
-      - json:
-          expressions:
-            level: level
-            timestamp: '"@t"'
-            message: '"@m"'
-            exception: '"@x"'
-            request_id: RequestId
-            user_id: UserId
-      
-      # Set labels
-      - labels:
-          level:
-          request_id:
-          user_id:
-      
-      # Format timestamp
-      - timestamp:
-          source: timestamp
-          format: RFC3339Nano

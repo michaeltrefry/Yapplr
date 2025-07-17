@@ -34,7 +34,7 @@ The logging stack consists of:
 ### Production Environment
 - **Grafana UI**: https://api.yapplr.com:3000
 - **Loki API**: https://api.yapplr.com:3100
-- **Credentials**: admin / ${GRAFANA_ADMIN_PASSWORD}
+- **Credentials**: admin / ${PROD_GRAFANA_ADMIN_PASSWORD}
 
 ## Using the Log Viewer
 
@@ -183,7 +183,7 @@ topk(10, count by (message) ({service="yapplr-api", level="Error"}))
 ## Environment Variables
 
 ### Grafana
-- `GRAFANA_ADMIN_PASSWORD`: Admin password for Grafana UI
+- `PROD_GRAFANA_ADMIN_PASSWORD`: Admin password for Grafana UI
 
 ### Loki
 - `Logging:Loki:Url`: Loki server URL for applications

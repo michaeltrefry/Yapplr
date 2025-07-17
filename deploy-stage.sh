@@ -55,53 +55,18 @@ docker compose -f docker-compose.stage.yml down --remove-orphans --volumes || tr
 
 # Force remove specific containers that might be stuck
 echo -e "${GREEN}🧹 Force removing any stuck containers...${NC}"
-docker rm -f yapplrapi_certbot_1 || true
-docker rm -f yapplrapi_yapplr-api_1 || true
-docker rm -f yapplrapi_nginx_1 || true
-docker rm -f yapplrapi_yapplr-frontend_1 || true
-docker rm -f yapplr-video-processor_1 || true
-docker rm -f yapplrapi_content-moderation_1 || true
-docker rm -f yapplrapi_rabbitmq_1 || true
-docker rm -f yapplrapi_postgres_1 || true
-docker rm -f yapplrapi_redis_1 || true
-
-# Stop and remove all containers with yapplr in the name
-docker ps -a --filter "name=yapplr" --format "{{.Names}}" | xargs -r docker stop || true
-docker ps -a --filter "name=yapplr" --format "{{.Names}}" | xargs -r docker rm -f || true
-
-# Additional cleanup to ensure ports are free
-echo -e "${GREEN}🧹 Cleaning up any remaining containers...${NC}"
+docker kill $(docker ps -q) || true
 docker container prune -f || true
-
-# Clean up networks that might be left behind
-echo -e "${GREEN}🌐 Cleaning up networks...${NC}"
-docker network rm yapplrapi_yapplr-network || true
-docker network rm yapplr-network || true
-
-# Clean up any leftover postgres volumes to ensure fresh database
-echo -e "${GREEN}🗄️ Ensuring fresh database by removing any postgres volumes...${NC}"
-docker volume rm postgres_data || true
-docker volume rm yapplrapi_postgres_data || true
-docker volume rm yapplr_uploads || true
-docker volume rm yapplrapi_yapplr_uploads || true
-docker volume rm yapplr-video-processor_yapplr_uploads || true
-docker volume rm rabbitmq_data || true
-docker volume rm rabbitmq_rabbitmq_data || true
-docker volume rm redis_data || true
-docker volume rm yapplrapi_redis_data || true
+docker rm $(docker ps -a -q) || true
+docker system prune -a
 docker volume ls -q | grep postgres | xargs -r docker volume rm || true
 docker volume ls -q | grep redis | xargs -r docker volume rm || true
-
-# Remove old images to force complete rebuild
-echo -e "${GREEN}🗑️ Removing old Docker images...${NC}"
-docker image rm yapplr-api:latest || true
-docker image rm yapplr-frontend:latest || true
-docker image rm content-moderation:latest || true
-docker image rm yapplr-video-processor:latest || true
-docker image rm rabbitmq:latest || true
-docker image rm postgres:latest || true
-docker image rm redis:latest || true
+docker volume prune
+docker network prune
+docker rmi $(docker images -q) || true
 docker image prune -f || true
+docker builder prune
+
 
 # Set cache bust variable to force frontend rebuild
 export CACHE_BUST=$(date +%s)
