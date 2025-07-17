@@ -346,7 +346,7 @@ input:focus, textarea:focus, select:focus {
 
 /* Button overrides for consistency - only apply to buttons without specific background colors */
 /* Exclude post interaction buttons and other transparent buttons */
-button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-yellow"]):not([class*="bg-purple"]):not([class*="bg-orange"]):not([class*="bg-indigo"]):not([class*="bg-pink"]):not([class*="bg-cyan"]):not([class*="bg-teal"]):not([class*="bg-lime"]):not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-violet"]):not([class*="bg-fuchsia"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-slate"]):not([class*="bg-zinc"]):not([class*="bg-neutral"]):not([class*="bg-stone"]):not([class*="text-gray-500"]) {
+button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-yellow"]):not([class*="bg-purple"]):not([class*="bg-orange"]):not([class*="bg-indigo"]):not([class*="bg-pink"]):not([class*="bg-cyan"]):not([class*="bg-teal"]):not([class*="bg-lime"]):not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-violet"]):not([class*="bg-fuchsia"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-slate"]):not([class*="bg-zinc"]):not([class*="bg-neutral"]):not([class*="bg-stone"]):not([class*="text-gray-500"]):not([class*="text-gray-400"]):not([class*="text-text-secondary"]) {
   background-color: var(--surface) !important;
   color: var(--foreground) !important;
   border-color: var(--border) !important;
@@ -355,16 +355,26 @@ button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):n
 /* Ensure post interaction buttons remain completely transparent */
 /* Only target buttons that are specifically for post interactions, not all group buttons */
 button[class*="text-gray-500"],
-.group button[class*="text-gray-500"] {
+button[class*="text-gray-400"],
+button[class*="text-text-secondary"],
+.group button[class*="text-gray-500"],
+.group button[class*="text-gray-400"],
+.group button[class*="text-text-secondary"] {
   background-color: transparent !important;
   border: none !important;
 }
 
-/* Ensure the inner divs of post interaction buttons are also transparent by default - but not when parent is hovered */
+/* Ensure the inner divs of post interaction buttons are transparent by default, but allow hover backgrounds */
 .group:not(:hover) button[class*="text-gray-500"] > div,
-button[class*="text-gray-500"]:not(:hover) > div {
+.group:not(:hover) button[class*="text-gray-400"] > div,
+.group:not(:hover) button[class*="text-text-secondary"] > div,
+button[class*="text-gray-500"]:not(:hover) > div,
+button[class*="text-gray-400"]:not(:hover) > div,
+button[class*="text-text-secondary"]:not(:hover) > div {
   background-color: transparent !important;
 }
+
+
 
 /* Specific hover states */
 .hover\\:bg-blue-50:hover {

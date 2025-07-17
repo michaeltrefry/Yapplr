@@ -361,7 +361,7 @@ export default function FullScreenPhotoViewer({
                         onClose();
                         router.push(`/yap/${localPost.id}`);
                       }}
-                      className="flex items-center space-x-2 text-gray-400 hover:text-blue-400 transition-colors group"
+                      className="flex items-center space-x-2 text-text-secondary hover:text-blue-400 transition-colors group"
                     >
                       <div className="p-2 rounded-full group-hover:bg-blue-500/10">
                         <MessageCircle className="w-5 h-5" />
@@ -374,8 +374,8 @@ export default function FullScreenPhotoViewer({
                       disabled={repostMutation.isPending}
                       className={`flex items-center space-x-2 transition-colors group ${
                         localPost.isRepostedByCurrentUser
-                          ? 'text-green-400'
-                          : 'text-gray-400 hover:text-green-400'
+                          ? 'text-green-400 hover:text-green-500'
+                          : 'text-text-secondary hover:text-green-400'
                       }`}
                     >
                       <div className="p-2 rounded-full group-hover:bg-green-500/10">
@@ -389,7 +389,7 @@ export default function FullScreenPhotoViewer({
                       disabled={likeMutation.isPending}
                       className={`flex items-center space-x-2 transition-colors group ${
                         localPost.isLikedByCurrentUser
-                          ? 'text-red-400'
+                          ? 'text-red-400 hover:text-red-500'
                           : 'text-text-secondary hover:text-red-400'
                       }`}
                     >
