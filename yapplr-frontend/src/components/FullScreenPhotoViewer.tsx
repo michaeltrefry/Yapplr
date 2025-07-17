@@ -230,10 +230,16 @@ export default function FullScreenPhotoViewer({
   return (
     <>
       {/* Full screen overlay */}
-      <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm">
+      <div
+        className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm"
+        onClick={onClose}
+      >
         {/* Close button */}
         <button
-          onClick={onClose}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
           className="absolute top-4 right-4 z-10 p-2 text-foreground hover:bg-surface/50 rounded-full transition-colors"
         >
           <X className="w-6 h-6" />
@@ -246,7 +252,10 @@ export default function FullScreenPhotoViewer({
             {/* Previous button */}
             {canNavigatePrev && (
               <button
-                onClick={navigatePrev}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigatePrev();
+                }}
                 className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black/30 hover:bg-black/60 text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm opacity-80 hover:opacity-100 hover:scale-110"
                 aria-label="Previous photo"
               >
@@ -257,7 +266,10 @@ export default function FullScreenPhotoViewer({
             {/* Next button */}
             {canNavigateNext && (
               <button
-                onClick={navigateNext}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateNext();
+                }}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black/30 hover:bg-black/60 text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm opacity-80 hover:opacity-100 hover:scale-110"
                 aria-label="Next photo"
               >
@@ -267,7 +279,10 @@ export default function FullScreenPhotoViewer({
 
             {/* Photo counter and navigation hint */}
             {allPhotos && currentIndex !== undefined && (
-              <div className="absolute top-4 left-4 flex flex-col items-start space-y-2">
+              <div
+                className="absolute top-4 left-4 flex flex-col items-start space-y-2"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
                   {currentIndex + 1} of {allPhotos.length}
                 </div>
@@ -302,15 +317,19 @@ export default function FullScreenPhotoViewer({
                   src={imageUrl}
                   alt="Photo"
                   className="max-w-full max-h-full object-contain"
+                  onClick={(e) => e.stopPropagation()}
                 />
               ) : (
-                <div className="text-gray-500">No image available</div>
+                <div className="text-gray-500" onClick={(e) => e.stopPropagation()}>No image available</div>
               );
             })()}
           </div>
 
           {/* Post details at bottom */}
-          <div className="bg-surface/90 backdrop-blur-sm border-t border-border">
+          <div
+            className="bg-surface/90 backdrop-blur-sm border-t border-border"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="max-w-4xl mx-auto p-4">
               <div className="flex space-x-3">
                 {/* Avatar */}
