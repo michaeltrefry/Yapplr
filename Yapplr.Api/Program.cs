@@ -16,7 +16,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Configure Serilog
 builder.Host.UseSerilog((context, configuration) =>
 {
-
     var seqUrl = context.Configuration.GetValue<string>("Logging:Seq:Url") ?? "http://seq:80";
     var environment = context.HostingEnvironment.EnvironmentName;
     var applicationName = context.HostingEnvironment.ApplicationName;
@@ -40,8 +39,7 @@ builder.Host.UseSerilog((context, configuration) =>
             rollingInterval: RollingInterval.Day,
             retainedFileCountLimit: 7,
             outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
-
-        .WriteTo.Seq(seqUrl, bufferBaseFilename: null);
+        .WriteTo.Seq(seqUrl);
 });
 
 Console.WriteLine(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));

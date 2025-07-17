@@ -29,7 +29,6 @@ Log.Logger = new LoggerConfiguration()
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 7,
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
-
     .WriteTo.Seq(builder.Configuration.GetValue<string>("Logging:Seq:Url") ?? "http://seq:80")
     .CreateLogger();
 
