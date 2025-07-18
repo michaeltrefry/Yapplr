@@ -37,14 +37,14 @@ public static class WebApplicationExtensions
 
         app.UseHttpsRedirection();
         
-        // Use AllowAll CORS policy for development (temporary fix for Docker)
+        // Use appropriate CORS policy based on environment
         if (app.Environment.IsDevelopment())
         {
             app.UseCors("AllowAll");
         }
         else
         {
-            app.UseCors("AllowSignalR");
+            app.UseCors("AllowFrontend");
         }
         // Add Prometheus metrics middleware
         app.UseHttpMetrics();
