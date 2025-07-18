@@ -89,11 +89,13 @@ services:
       - RABBITMQ_DEFAULT_USER=yapplr
       - RABBITMQ_DEFAULT_PASS=yapplr123
       - RABBITMQ_DEFAULT_VHOST=/
+      - RABBITMQ_CONFIG_FILE=/etc/rabbitmq/rabbitmq
     ports:
       - "5672:5672"    # AMQP port
       - "15672:15672"  # Management UI port
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      - ./config/rabbitmq/rabbitmq-basic.conf:/etc/rabbitmq/rabbitmq.conf:ro
     restart: unless-stopped
     networks:
       - yapplr-network

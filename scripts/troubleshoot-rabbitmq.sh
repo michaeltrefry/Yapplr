@@ -63,20 +63,23 @@ check_rabbitmq_logs() {
 # Function to check RabbitMQ connectivity
 check_rabbitmq_connectivity() {
     echo "🔌 Checking RabbitMQ connectivity..."
-    
+
     CONTAINER_ID=$(docker ps -q -f name=rabbitmq)
     if [ -n "$CONTAINER_ID" ]; then
         echo "🔍 Testing RabbitMQ diagnostics..."
         docker exec $CONTAINER_ID rabbitmq-diagnostics ping
-        
+
         echo "🔍 Checking RabbitMQ status..."
         docker exec $CONTAINER_ID rabbitmq-diagnostics status
-        
+
         echo "🔍 Checking RabbitMQ cluster status..."
         docker exec $CONTAINER_ID rabbitmq-diagnostics cluster_status
-        
+
         echo "🔍 Checking RabbitMQ memory usage..."
         docker exec $CONTAINER_ID rabbitmq-diagnostics memory_breakdown
+
+        echo "🔍 Checking RabbitMQ configuration..."
+        docker exec $CONTAINER_ID rabbitmq-diagnostics environment
     else
         echo "❌ No running RabbitMQ container found"
     fi

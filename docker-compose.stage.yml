@@ -192,22 +192,13 @@ services:
       - RABBITMQ_DEFAULT_USER=${STAGE_RABBITMQ_USERNAME:-yapplr}
       - RABBITMQ_DEFAULT_PASS=${STAGE_RABBITMQ_PASSWORD:-yapplr123}
       - RABBITMQ_DEFAULT_VHOST=/
-      # Increase memory and disk limits for staging
-      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK=0.8
-      - RABBITMQ_DISK_FREE_LIMIT=2GB
-      # Improve startup reliability
-      - RABBITMQ_SERVER_START_ARGS=-rabbit log_levels [{connection,info}]
-      - RABBITMQ_CTL_ERL_ARGS=-setcookie rabbitmq_cookie
-      # Increase timeouts for slower staging environment
-      - RABBITMQ_HANDSHAKE_TIMEOUT=60000
-      - RABBITMQ_CHANNEL_MAX=2047
-      # Disable quorum queues to avoid Ra consensus issues
-      - RABBITMQ_DEFAULT_QUEUE_TYPE=classic
-      - RABBITMQ_QUORUM_QUEUE_ENABLED=false
+      # Use configuration file instead of deprecated environment variables
+      - RABBITMQ_CONFIG_FILE=/etc/rabbitmq/rabbitmq
     # No external ports exposed - accessed through nginx proxy for security
     # AMQP port (5672) and Management UI (15672) only accessible from Docker network
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      - ./config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     tmpfs:
       - /var/lib/rabbitmq/mnesia  # Use tmpfs for mnesia to avoid permission issues
     restart: unless-stopped

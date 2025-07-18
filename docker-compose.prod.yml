@@ -170,9 +170,11 @@ services:
       - RABBITMQ_DEFAULT_USER=${PROD_RABBITMQ_USERNAME}
       - RABBITMQ_DEFAULT_PASS=${PROD_RABBITMQ_PASSWORD}
       - RABBITMQ_DEFAULT_VHOST=/
+      - RABBITMQ_CONFIG_FILE=/etc/rabbitmq/rabbitmq
     # No external ports exposed - only accessible from Docker network
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      - ./config/rabbitmq/rabbitmq-basic.conf:/etc/rabbitmq/rabbitmq.conf:ro
     restart: unless-stopped
     networks:
       - yapplr-network
