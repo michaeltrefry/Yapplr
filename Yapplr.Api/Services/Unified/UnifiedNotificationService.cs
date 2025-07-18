@@ -109,36 +109,36 @@ public class UnifiedNotificationService : IUnifiedNotificationService
 
             // Determine delivery strategy
             var isUserOnline = await _connectionPool.IsUserOnlineAsync(request.UserId);
+            var deliveryMethod = await _preferencesService.GetPreferredDeliveryMethodAsync(request.UserId, request.NotificationType);
 
-            // Check if user prefers email delivery or if email should be sent
-            var shouldSendEmail = await ShouldSendEmailNotificationAsync(request.UserId, request.NotificationType);
-            if (shouldSendEmail)
+            // If user prefers email-only, send email immediately
+            if (deliveryMethod == NotificationDeliveryMethod.EmailOnly)
             {
-                var emailSent = await TrySendEmailNotificationAsync(request);
-                if (emailSent)
+                var shouldSendEmail = await ShouldSendEmailNotificationAsync(request.UserId, request.NotificationType);
+                if (shouldSendEmail)
                 {
-                    Interlocked.Increment(ref _totalNotificationsDelivered);
-                    _logger.LogDebug("Email notification sent to user {UserId}", request.UserId);
-
-                    // Record metrics
-                    await RecordNotificationEventAsync("delivered", request, true);
-
-                    // If email-only delivery method, return here
-                    var deliveryMethod = await _preferencesService.GetPreferredDeliveryMethodAsync(request.UserId, request.NotificationType);
-                    if (deliveryMethod == NotificationDeliveryMethod.EmailOnly)
+                    var emailSent = await TrySendEmailNotificationAsync(request);
+                    if (emailSent)
                     {
+                        Interlocked.Increment(ref _totalNotificationsDelivered);
+                        _logger.LogDebug("Email-only notification sent to user {UserId}", request.UserId);
+                        await RecordNotificationEventAsync("delivered", request, true);
                         return true;
                     }
                 }
+                _logger.LogWarning("Failed to send email-only notification to user {UserId}", request.UserId);
+                return false;
             }
 
+            // Try real-time delivery first if user is online
+            bool realtimeDelivered = false;
             if (isUserOnline && _providerManager != null)
             {
                 // Try immediate delivery
                 var deliveryRequest = CreateDeliveryRequest(request);
-                var delivered = await _providerManager.SendNotificationAsync(deliveryRequest);
+                realtimeDelivered = await _providerManager.SendNotificationAsync(deliveryRequest);
 
-                if (delivered)
+                if (realtimeDelivered)
                 {
                     Interlocked.Increment(ref _totalNotificationsDelivered);
                     _logger.LogDebug("Notification delivered immediately to user {UserId}", request.UserId);
@@ -149,11 +149,32 @@ public class UnifiedNotificationService : IUnifiedNotificationService
                 }
                 else
                 {
-                    _logger.LogWarning("Immediate delivery failed for user {UserId}, queuing notification", request.UserId);
+                    _logger.LogWarning("Immediate delivery failed for user {UserId}, will try email fallback", request.UserId);
                 }
             }
 
-            // Queue for later delivery if user is offline or immediate delivery failed
+            // If real-time delivery failed or user is offline, try email as fallback
+            if (!realtimeDelivered)
+            {
+                var shouldSendEmail = await ShouldSendEmailNotificationAsync(request.UserId, request.NotificationType);
+                if (shouldSendEmail)
+                {
+                    var emailSent = await TrySendEmailNotificationAsync(request);
+                    if (emailSent)
+                    {
+                        Interlocked.Increment(ref _totalNotificationsDelivered);
+                        _logger.LogDebug("Email notification sent as fallback to user {UserId}", request.UserId);
+                        await RecordNotificationEventAsync("delivered", request, true);
+                        return true;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Email fallback also failed for user {UserId}", request.UserId);
+                    }
+                }
+            }
+
+            // Queue for later delivery if both real-time and email failed
             if (_notificationQueue != null)
             {
                 var queuedNotification = CreateQueuedNotification(request, notification.Id);

@@ -401,6 +401,52 @@ public class NotificationPreferencesServiceTests : IDisposable
         result.PreferredMethod.Should().Be(method);
     }
 
+    [Fact]
+    public async Task ShouldSendEmailNotificationAsync_WithEmailOnlyDeliveryMethod_ShouldReturnTrue()
+    {
+        // Arrange
+        var preferences = new NotificationPreferences
+        {
+            UserId = 1,
+            EnableEmailNotifications = true,
+            EnableInstantEmailNotifications = true,
+            EnableLikeNotifications = true,
+            PreferredMethod = NotificationDeliveryMethod.EmailOnly
+        };
+
+        _context.NotificationPreferences.Add(preferences);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _service.ShouldSendEmailNotificationAsync(1, "like");
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ShouldSendEmailNotificationAsync_WithAutoDeliveryMethod_ShouldReturnTrue()
+    {
+        // Arrange - Auto delivery method should allow email as fallback
+        var preferences = new NotificationPreferences
+        {
+            UserId = 1,
+            EnableEmailNotifications = true,
+            EnableInstantEmailNotifications = true,
+            EnableLikeNotifications = true,
+            PreferredMethod = NotificationDeliveryMethod.Auto
+        };
+
+        _context.NotificationPreferences.Add(preferences);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _service.ShouldSendEmailNotificationAsync(1, "like");
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
     public void Dispose()
     {
         _context.Dispose();
