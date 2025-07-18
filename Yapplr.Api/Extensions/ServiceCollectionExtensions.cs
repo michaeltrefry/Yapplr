@@ -333,6 +333,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
         services.AddScoped<IUploadSettingsService, UploadSettingsService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<INotificationDigestService, NotificationDigestService>();
+
+        // Register background services
+        services.AddHostedService<Services.Background.NotificationDigestBackgroundService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<ITagAnalyticsService, TagAnalyticsService>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();

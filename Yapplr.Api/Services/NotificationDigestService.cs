@@ -1,0 +1,214 @@
+using Microsoft.EntityFrameworkCore;
+using Yapplr.Api.Data;
+using Yapplr.Api.Models;
+using Yapplr.Api.Services.EmailTemplates;
+using Yapplr.Api.CQRS.Commands;
+using Yapplr.Api.CQRS;
+
+namespace Yapplr.Api.Services;
+
+public class NotificationDigestService : INotificationDigestService
+{
+    private readonly YapplrDbContext _context;
+    private readonly INotificationPreferencesService _preferencesService;
+    private readonly ICommandPublisher _commandPublisher;
+    private readonly ILogger<NotificationDigestService> _logger;
+
+    public NotificationDigestService(
+        YapplrDbContext context,
+        INotificationPreferencesService preferencesService,
+        ICommandPublisher commandPublisher,
+        ILogger<NotificationDigestService> logger)
+    {
+        _context = context;
+        _preferencesService = preferencesService;
+        _commandPublisher = commandPublisher;
+        _logger = logger;
+    }
+
+    public async Task ProcessDigestEmailsAsync(int frequencyHours)
+    {
+        _logger.LogInformation("Processing digest emails for frequency: {FrequencyHours} hours", frequencyHours);
+
+        // Get users who have digest enabled with this frequency
+        var usersWithDigest = await _context.NotificationPreferences
+            .Where(np => np.EnableEmailDigest && 
+                        np.EnableEmailNotifications && 
+                        np.EmailDigestFrequencyHours == frequencyHours)
+            .Include(np => np.User)
+            .ToListAsync();
+
+        _logger.LogInformation("Found {UserCount} users with {FrequencyHours}h digest enabled", 
+            usersWithDigest.Count, frequencyHours);
+
+        var periodEnd = DateTime.UtcNow;
+        var periodStart = periodEnd.AddHours(-frequencyHours);
+
+        var processedCount = 0;
+        var errorCount = 0;
+
+        foreach (var userPrefs in usersWithDigest)
+        {
+            try
+            {
+                if (await ShouldSendDigestAsync(userPrefs.UserId, frequencyHours))
+                {
+                    var notifications = await GenerateUserDigestAsync(userPrefs.UserId, periodStart, periodEnd);
+                    
+                    // Only send digest if there are notifications or it's been a while
+                    if (notifications.Any() || await ShouldSendEmptyDigestAsync(userPrefs.UserId, frequencyHours))
+                    {
+                        await SendDigestEmailAsync(userPrefs.UserId, notifications, periodStart, periodEnd);
+                        processedCount++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process digest for user {UserId}", userPrefs.UserId);
+                errorCount++;
+            }
+        }
+
+        _logger.LogInformation("Digest processing complete. Processed: {ProcessedCount}, Errors: {ErrorCount}", 
+            processedCount, errorCount);
+    }
+
+    public async Task<List<DigestNotification>> GenerateUserDigestAsync(int userId, DateTime periodStart, DateTime periodEnd)
+    {
+        var notifications = await _context.Notifications
+            .Where(n => n.UserId == userId &&
+                       n.CreatedAt >= periodStart &&
+                       n.CreatedAt <= periodEnd &&
+                       !n.IsRead) // Only include unread notifications
+            .OrderByDescending(n => n.CreatedAt)
+            .Include(n => n.ActorUser)
+            .Include(n => n.Post)
+            .Include(n => n.Comment)
+            .ToListAsync();
+
+        var digestNotifications = notifications.Select(n => new DigestNotification
+        {
+            Type = n.Type.ToString().ToLower(),
+            Title = GenerateNotificationTitle(n),
+            Body = n.Message,
+            CreatedAt = n.CreatedAt,
+            ActionUrl = GenerateActionUrl(n)
+        }).ToList();
+
+        return digestNotifications;
+    }
+
+    public async Task SendDigestEmailAsync(int userId, List<DigestNotification> notifications, DateTime periodStart, DateTime periodEnd)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null || string.IsNullOrEmpty(user.Email))
+        {
+            _logger.LogWarning("Cannot send digest email to user {UserId} - user not found or no email", userId);
+            return;
+        }
+
+        var command = new SendNotificationDigestEmailCommand
+        {
+            ToEmail = user.Email,
+            Username = user.Username,
+            Notifications = notifications,
+            PeriodStart = periodStart,
+            PeriodEnd = periodEnd,
+            UnsubscribeUrl = "https://yapplr.com/settings/notifications"
+        };
+
+        await _commandPublisher.PublishAsync(command);
+        
+        _logger.LogDebug("Digest email command published for user {UserId} with {NotificationCount} notifications", 
+            userId, notifications.Count);
+    }
+
+    public async Task<bool> ShouldSendDigestAsync(int userId, int frequencyHours)
+    {
+        // Check if user has email notifications enabled
+        var shouldSend = await _preferencesService.ShouldSendEmailNotificationAsync(userId, "digest");
+        if (!shouldSend)
+            return false;
+
+        // Check if we've already sent a digest recently
+        var lastDigestTime = await GetLastDigestTimeAsync(userId);
+        if (lastDigestTime.HasValue)
+        {
+            var timeSinceLastDigest = DateTime.UtcNow - lastDigestTime.Value;
+            if (timeSinceLastDigest.TotalHours < frequencyHours * 0.9) // 90% of frequency to avoid spam
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private async Task<bool> ShouldSendEmptyDigestAsync(int userId, int frequencyHours)
+    {
+        // Send empty digest weekly for daily/hourly users, or monthly for weekly users
+        var emptyDigestFrequency = frequencyHours <= 24 ? 168 : 720; // 1 week or 1 month
+        
+        var lastDigestTime = await GetLastDigestTimeAsync(userId);
+        if (!lastDigestTime.HasValue)
+            return true;
+
+        var timeSinceLastDigest = DateTime.UtcNow - lastDigestTime.Value;
+        return timeSinceLastDigest.TotalHours >= emptyDigestFrequency;
+    }
+
+    private async Task<DateTime?> GetLastDigestTimeAsync(int userId)
+    {
+        // This would ideally be stored in a separate table to track digest sends
+        // For now, we'll use a simple approach based on notification preferences update time
+        var preferences = await _context.NotificationPreferences
+            .Where(np => np.UserId == userId)
+            .FirstOrDefaultAsync();
+
+        // Return null if no preferences found (will send digest)
+        return preferences?.UpdatedAt;
+    }
+
+    private string GenerateNotificationTitle(Notification notification)
+    {
+        var actorName = notification.ActorUser?.Username ?? "Someone";
+
+        return notification.Type switch
+        {
+            NotificationType.Like => $"{actorName} liked your post",
+            NotificationType.Comment => $"{actorName} commented on your post",
+            NotificationType.Repost => $"{actorName} reposted your post",
+            NotificationType.Follow => $"{actorName} started following you",
+            NotificationType.FollowRequest => $"{actorName} requested to follow you",
+            NotificationType.Mention => $"{actorName} mentioned you",
+            NotificationType.SystemMessage => "System notification",
+            NotificationType.UserSuspended => "Account suspended",
+            NotificationType.UserBanned => "Account banned",
+            NotificationType.ContentHidden => "Content hidden",
+            NotificationType.VideoProcessingCompleted => "Video processing completed",
+            _ => "New notification"
+        };
+    }
+
+    private string? GenerateActionUrl(Notification notification)
+    {
+        try
+        {
+            return notification.Type switch
+            {
+                NotificationType.Like or NotificationType.Comment or NotificationType.Repost or NotificationType.Mention
+                    when notification.PostId.HasValue => $"https://yapplr.com/post/{notification.PostId}",
+                NotificationType.Follow or NotificationType.FollowRequest
+                    when notification.ActorUserId.HasValue => $"https://yapplr.com/user/{notification.ActorUserId}",
+                NotificationType.Comment when notification.CommentId.HasValue => $"https://yapplr.com/post/{notification.PostId}#comment-{notification.CommentId}",
+                _ => "https://yapplr.com/notifications"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to generate action URL for notification {NotificationId}", notification.Id);
+            return "https://yapplr.com/notifications";
+        }
+    }
+}

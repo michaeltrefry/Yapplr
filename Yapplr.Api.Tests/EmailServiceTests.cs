@@ -244,4 +244,76 @@ public class EmailServiceTests
         // Assert
         Assert.Contains(expectedIcon, htmlBody);
     }
+
+    [Fact]
+    public void NotificationDigestEmailTemplate_ShouldGenerateCorrectContent()
+    {
+        // Arrange
+        var username = "testuser";
+        var notifications = new List<DigestNotification>
+        {
+            new() { Type = "like", Title = "Someone liked your post", Body = "John liked your post about technology", CreatedAt = DateTime.UtcNow.AddHours(-2) },
+            new() { Type = "comment", Title = "New comment", Body = "Jane commented on your post", CreatedAt = DateTime.UtcNow.AddHours(-1) }
+        };
+        var periodStart = DateTime.UtcNow.AddDays(-1);
+        var periodEnd = DateTime.UtcNow;
+        var template = new NotificationDigestEmailTemplate(username, notifications, periodStart, periodEnd);
+
+        // Act
+        var htmlBody = template.GenerateHtmlBody();
+        var textBody = template.GenerateTextBody();
+
+        // Assert
+        Assert.Contains("2 new notifications", template.Subject);
+        Assert.Contains("testuser", htmlBody);
+        Assert.Contains("Someone liked your post", htmlBody);
+        Assert.Contains("New comment", htmlBody);
+        Assert.Contains("❤️", htmlBody); // Like icon
+        Assert.Contains("💭", htmlBody); // Comment icon
+
+        Assert.Contains("testuser", textBody);
+        Assert.Contains("Someone liked your post", textBody);
+        Assert.Contains("New comment", textBody);
+    }
+
+    [Fact]
+    public void NotificationDigestEmailTemplate_WithNoNotifications_ShouldGenerateEmptyDigest()
+    {
+        // Arrange
+        var username = "testuser";
+        var notifications = new List<DigestNotification>();
+        var periodStart = DateTime.UtcNow.AddDays(-1);
+        var periodEnd = DateTime.UtcNow;
+        var template = new NotificationDigestEmailTemplate(username, notifications, periodStart, periodEnd);
+
+        // Act
+        var htmlBody = template.GenerateHtmlBody();
+        var textBody = template.GenerateTextBody();
+
+        // Assert
+        Assert.Contains("digest", template.Subject);
+        Assert.Contains("You're all caught up!", htmlBody);
+        Assert.Contains("No new notifications", htmlBody);
+        Assert.Contains("You're all caught up!", textBody);
+    }
+
+    [Theory]
+    [InlineData(1, "this hour")]
+    [InlineData(24, "today")]
+    [InlineData(168, "this week")]
+    public void NotificationDigestEmailTemplate_ShouldGenerateCorrectTimeframe(int hours, string expectedTimeframe)
+    {
+        // Arrange
+        var username = "testuser";
+        var notifications = new List<DigestNotification>();
+        var periodStart = DateTime.UtcNow.AddHours(-hours);
+        var periodEnd = DateTime.UtcNow;
+        var template = new NotificationDigestEmailTemplate(username, notifications, periodStart, periodEnd);
+
+        // Act
+        var subject = template.Subject;
+
+        // Assert
+        Assert.Contains(expectedTimeframe, subject);
+    }
 }
