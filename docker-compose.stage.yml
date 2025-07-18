@@ -191,6 +191,15 @@ services:
       - RABBITMQ_DEFAULT_USER=${STAGE_RABBITMQ_USERNAME:-yapplr}
       - RABBITMQ_DEFAULT_PASS=${STAGE_RABBITMQ_PASSWORD:-yapplr123}
       - RABBITMQ_DEFAULT_VHOST=/
+      # Increase memory and disk limits for staging
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK=0.8
+      - RABBITMQ_DISK_FREE_LIMIT=2GB
+      # Improve startup reliability
+      - RABBITMQ_SERVER_START_ARGS=-rabbit log_levels [{connection,info}]
+      - RABBITMQ_CTL_ERL_ARGS=-setcookie rabbitmq_cookie
+      # Increase timeouts for slower staging environment
+      - RABBITMQ_HANDSHAKE_TIMEOUT=60000
+      - RABBITMQ_CHANNEL_MAX=2047
     # No external ports exposed - accessed through nginx proxy for security
     # AMQP port (5672) and Management UI (15672) only accessible from Docker network
     volumes:
@@ -201,9 +210,17 @@ services:
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+      timeout: 15s
+      retries: 8
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1GB
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
 
   redis:
     image: redis:7.2-alpine

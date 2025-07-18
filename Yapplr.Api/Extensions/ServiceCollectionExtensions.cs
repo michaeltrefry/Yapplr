@@ -528,6 +528,11 @@ public static class ServiceCollectionExtensions
                 {
                     h.Username(username);
                     h.Password(password);
+
+                    // Add connection resilience for staging/production
+                    h.RequestedConnectionTimeout(TimeSpan.FromSeconds(30));
+                    h.Heartbeat(TimeSpan.FromSeconds(60));
+                    h.RequestedChannelMax(100);
                 });
 
                 // Configure retry policy
