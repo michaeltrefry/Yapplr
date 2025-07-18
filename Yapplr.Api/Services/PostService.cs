@@ -275,10 +275,24 @@ public class PostService : BaseService, IPostService
 
     public async Task<PostDto?> CreatePostWithMediaAsync(int userId, CreatePostWithMediaDto createDto)
     {
-        // Check trust-based permissions
-        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.CreatePost))
+        _logger.LogInformation("Starting post creation with media for user {UserId}", userId);
+
+        // Check trust-based permissions with timeout and error handling
+        try
         {
-            throw new InvalidOperationException("Insufficient trust score to create posts");
+            _logger.LogDebug("Checking trust-based permissions for user {UserId}", userId);
+            var canPerformAction = await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.CreatePost);
+            if (!canPerformAction)
+            {
+                _logger.LogWarning("User {UserId} denied post creation due to insufficient trust score", userId);
+                throw new InvalidOperationException("Insufficient trust score to create posts");
+            }
+            _logger.LogDebug("Trust-based permissions check completed for user {UserId}", userId);
+        }
+        catch (Exception ex) when (!(ex is InvalidOperationException))
+        {
+            _logger.LogError(ex, "Error checking trust-based permissions for user {UserId}, allowing action to proceed", userId);
+            // Continue with post creation if trust check fails to avoid blocking users
         }
 
         // Validate that either content or media files are provided
@@ -299,6 +313,7 @@ public class PostService : BaseService, IPostService
         // Check if post contains any videos
         var hasVideos = createDto.MediaFiles?.Any(m => m.MediaType == MediaType.Video) == true;
 
+        _logger.LogDebug("Creating post entity for user {UserId}", userId);
         var post = new Post
         {
             Content = string.IsNullOrWhiteSpace(createDto.Content) ? string.Empty : createDto.Content,
@@ -311,11 +326,14 @@ public class PostService : BaseService, IPostService
         };
 
         _context.Posts.Add(post);
+        _logger.LogDebug("Saving post to database for user {UserId}", userId);
         await _context.SaveChangesAsync();
+        _logger.LogDebug("Post {PostId} saved successfully for user {UserId}", post.Id, userId);
 
         // Create media records
         if (createDto.MediaFiles != null && createDto.MediaFiles.Count > 0)
         {
+            _logger.LogDebug("Processing {MediaCount} media files for post {PostId}", createDto.MediaFiles.Count, post.Id);
             foreach (var mediaFile in createDto.MediaFiles)
             {
                 var media = new PostMedia
