@@ -14,6 +14,7 @@ public class MultipleFileUploadServiceTests
 {
     private readonly Mock<IImageService> _mockImageService;
     private readonly Mock<IVideoService> _mockVideoService;
+    private readonly Mock<IUploadSettingsService> _mockUploadSettingsService;
     private readonly Mock<ILogger<MultipleFileUploadService>> _mockLogger;
     private readonly Mock<IOptions<UploadsConfiguration>> _mockUploadsConfig;
     private readonly MultipleFileUploadService _service;
@@ -22,14 +23,28 @@ public class MultipleFileUploadServiceTests
     {
         _mockImageService = new Mock<IImageService>();
         _mockVideoService = new Mock<IVideoService>();
+        _mockUploadSettingsService = new Mock<IUploadSettingsService>();
         _mockLogger = new Mock<ILogger<MultipleFileUploadService>>();
         _mockUploadsConfig = new Mock<IOptions<UploadsConfiguration>>();
 
         _mockUploadsConfig.Setup(x => x.Value).Returns(new UploadsConfiguration());
 
+        // Setup upload settings service mock
+        _mockUploadSettingsService.Setup(x => x.GetMaxVideoSizeBytesAsync())
+            .ReturnsAsync(1024L * 1024 * 1024); // 1GB
+        _mockUploadSettingsService.Setup(x => x.GetMaxImageSizeBytesAsync())
+            .ReturnsAsync(5L * 1024 * 1024); // 5MB
+        _mockUploadSettingsService.Setup(x => x.GetMaxMediaFilesPerPostAsync())
+            .ReturnsAsync(10); // 10 files max
+        _mockUploadSettingsService.Setup(x => x.GetAllowedVideoExtensionsAsync())
+            .ReturnsAsync(new[] { ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".mkv", ".3gp" });
+        _mockUploadSettingsService.Setup(x => x.GetAllowedImageExtensionsAsync())
+            .ReturnsAsync(new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" });
+
         _service = new MultipleFileUploadService(
             _mockImageService.Object,
             _mockVideoService.Object,
+            _mockUploadSettingsService.Object,
             _mockLogger.Object,
             _mockUploadsConfig.Object
         );
@@ -56,13 +71,13 @@ public class MultipleFileUploadServiceTests
     }
 
     [Fact]
-    public void MaxVideoSizeBytes_ShouldReturn100MB()
+    public void MaxVideoSizeBytes_ShouldReturn1GB()
     {
         // Act
         var result = _service.MaxVideoSizeBytes;
 
         // Assert
-        result.Should().Be(100 * 1024 * 1024);
+        result.Should().Be(1024L * 1024 * 1024); // 1GB as configured in mock
     }
 
     [Fact]
@@ -159,7 +174,7 @@ public class MultipleFileUploadServiceTests
         // Arrange
         var files = new FormFileCollection();
         var mockFile = new Mock<IFormFile>();
-        mockFile.Setup(f => f.Length).Returns(101 * 1024 * 1024); // 101MB (over 100MB limit)
+        mockFile.Setup(f => f.Length).Returns(2L * 1024 * 1024 * 1024); // 2GB (over 1GB limit)
         mockFile.Setup(f => f.FileName).Returns("large.mp4");
         mockFile.Setup(f => f.ContentType).Returns("video/mp4");
         files.Add(mockFile.Object);

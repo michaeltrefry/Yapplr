@@ -17,6 +17,7 @@ public class MultipleFileUploadPerformanceTests
     private readonly ITestOutputHelper _output;
     private readonly Mock<IImageService> _mockImageService;
     private readonly Mock<IVideoService> _mockVideoService;
+    private readonly Mock<IUploadSettingsService> _mockUploadSettingsService;
     private readonly Mock<ILogger<MultipleFileUploadService>> _mockLogger;
     private readonly Mock<IOptions<UploadsConfiguration>> _mockUploadsConfig;
     private readonly MultipleFileUploadService _service;
@@ -26,10 +27,23 @@ public class MultipleFileUploadPerformanceTests
         _output = output;
         _mockImageService = new Mock<IImageService>();
         _mockVideoService = new Mock<IVideoService>();
+        _mockUploadSettingsService = new Mock<IUploadSettingsService>();
         _mockLogger = new Mock<ILogger<MultipleFileUploadService>>();
         _mockUploadsConfig = new Mock<IOptions<UploadsConfiguration>>();
 
         _mockUploadsConfig.Setup(x => x.Value).Returns(new UploadsConfiguration());
+
+        // Setup upload settings service mock
+        _mockUploadSettingsService.Setup(x => x.GetMaxVideoSizeBytesAsync())
+            .ReturnsAsync(1024L * 1024 * 1024); // 1GB
+        _mockUploadSettingsService.Setup(x => x.GetMaxImageSizeBytesAsync())
+            .ReturnsAsync(5L * 1024 * 1024); // 5MB
+        _mockUploadSettingsService.Setup(x => x.GetMaxMediaFilesPerPostAsync())
+            .ReturnsAsync(10); // 10 files max
+        _mockUploadSettingsService.Setup(x => x.GetAllowedVideoExtensionsAsync())
+            .ReturnsAsync(new[] { ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".mkv", ".3gp" });
+        _mockUploadSettingsService.Setup(x => x.GetAllowedImageExtensionsAsync())
+            .ReturnsAsync(new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" });
 
         // Setup fast mock responses
         _mockImageService.Setup(x => x.SaveImageAsync(It.IsAny<IFormFile>()))
@@ -41,6 +55,7 @@ public class MultipleFileUploadPerformanceTests
         _service = new MultipleFileUploadService(
             _mockImageService.Object,
             _mockVideoService.Object,
+            _mockUploadSettingsService.Object,
             _mockLogger.Object,
             _mockUploadsConfig.Object
         );
