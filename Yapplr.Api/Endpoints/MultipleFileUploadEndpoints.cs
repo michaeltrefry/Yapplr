@@ -23,7 +23,7 @@ public static class MultipleFileUploadEndpoints
                 }
 
                 // Validate files
-                var validation = uploadService.ValidateMultipleFiles(files);
+                var validation = await uploadService.ValidateMultipleFilesAsync(files);
                 if (!validation.IsValid)
                 {
                     return Results.BadRequest(new { 

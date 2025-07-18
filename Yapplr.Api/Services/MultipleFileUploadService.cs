@@ -54,7 +54,7 @@ public class MultipleFileUploadService : IMultipleFileUploadService
         var errors = new List<FileUploadErrorDto>();
 
         // Validate all files first
-        var validation = ValidateMultipleFiles(files);
+        var validation = await ValidateMultipleFilesAsync(files);
         if (!validation.IsValid)
         {
             foreach (var error in validation.Errors)
@@ -179,37 +179,30 @@ public class MultipleFileUploadService : IMultipleFileUploadService
         return new ValidationResult(errors.Count == 0, errors);
     }
 
-    // Keep synchronous version for backward compatibility
-    [Obsolete("Use ValidateMultipleFilesAsync instead")]
-    public ValidationResult ValidateMultipleFiles(IFormFileCollection files)
+    private Task<bool> IsImageFileAsync(IFormFile file, string[] allowedExtensions)
     {
-        return ValidateMultipleFilesAsync(files).GetAwaiter().GetResult();
-    }
-
-    private async Task<bool> IsImageFileAsync(IFormFile file, string[] allowedExtensions)
-    {
-        if (file == null) return false;
+        if (file == null) return Task.FromResult(false);
 
         var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
         var mimeType = file.ContentType?.ToLowerInvariant();
 
-        return !string.IsNullOrEmpty(extension) &&
-               allowedExtensions.Contains(extension) &&
-               !string.IsNullOrEmpty(mimeType) &&
-               _allowedImageMimeTypes.Contains(mimeType);
+        return Task.FromResult(!string.IsNullOrEmpty(extension) &&
+                               allowedExtensions.Contains(extension) &&
+                               !string.IsNullOrEmpty(mimeType) &&
+                               _allowedImageMimeTypes.Contains(mimeType));
     }
 
-    private async Task<bool> IsVideoFileAsync(IFormFile file, string[] allowedExtensions)
+    private Task<bool> IsVideoFileAsync(IFormFile file, string[] allowedExtensions)
     {
-        if (file == null) return false;
+        if (file == null) return Task.FromResult(false);
 
         var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
         var mimeType = file.ContentType?.ToLowerInvariant();
 
-        return !string.IsNullOrEmpty(extension) &&
-               allowedExtensions.Contains(extension) &&
-               !string.IsNullOrEmpty(mimeType) &&
-               _allowedVideoMimeTypes.Contains(mimeType);
+        return Task.FromResult(!string.IsNullOrEmpty(extension) &&
+                               allowedExtensions.Contains(extension) &&
+                               !string.IsNullOrEmpty(mimeType) &&
+                               _allowedVideoMimeTypes.Contains(mimeType));
     }
 
     // Keep synchronous versions for backward compatibility

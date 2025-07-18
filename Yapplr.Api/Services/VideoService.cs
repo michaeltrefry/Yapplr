@@ -40,7 +40,7 @@ public class VideoService : IVideoService
 
     public async Task<string> SaveVideoAsync(IFormFile? file)
     {
-        if (file == null || !IsValidVideoFile(file))
+        if (file == null || !(await IsValidVideoFileAsync(file)))
         {
             throw new ArgumentException("Invalid video file");
         }
@@ -115,13 +115,7 @@ public class VideoService : IVideoService
 
         return true;
     }
-
-    // Keep the synchronous version for backward compatibility, but mark as obsolete
-    [Obsolete("Use IsValidVideoFileAsync instead")]
-    public bool IsValidVideoFile(IFormFile? file)
-    {
-        return IsValidVideoFileAsync(file).GetAwaiter().GetResult();
-    }
+    
 
     public Task<VideoUploadResponse> GetVideoUploadResponseAsync(string fileName, HttpContext httpContext)
     {

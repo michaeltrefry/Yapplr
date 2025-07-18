@@ -81,13 +81,13 @@ public class MultipleFileUploadServiceTests
     }
 
     [Fact]
-    public void ValidateMultipleFiles_WithNullFiles_ShouldReturnInvalid()
+    public async Task ValidateMultipleFiles_WithNullFiles_ShouldReturnInvalid()
     {
         // Arrange
         IFormFileCollection? files = null;
 
         // Act
-        var result = _service.ValidateMultipleFiles(files!);
+        var result = await _service.ValidateMultipleFilesAsync(files!);
 
         // Assert
         result.IsValid.Should().BeFalse();
@@ -95,13 +95,13 @@ public class MultipleFileUploadServiceTests
     }
 
     [Fact]
-    public void ValidateMultipleFiles_WithEmptyFiles_ShouldReturnInvalid()
+    public async Task ValidateMultipleFiles_WithEmptyFiles_ShouldReturnInvalid()
     {
         // Arrange
         var files = new FormFileCollection();
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         result.IsValid.Should().BeFalse();
@@ -109,7 +109,7 @@ public class MultipleFileUploadServiceTests
     }
 
     [Fact]
-    public void ValidateMultipleFiles_WithTooManyFiles_ShouldReturnInvalid()
+    public async Task ValidateMultipleFiles_WithTooManyFiles_ShouldReturnInvalid()
     {
         // Arrange
         var files = new FormFileCollection();
@@ -123,7 +123,7 @@ public class MultipleFileUploadServiceTests
         }
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         result.IsValid.Should().BeFalse();
@@ -131,7 +131,7 @@ public class MultipleFileUploadServiceTests
     }
 
     [Fact]
-    public void ValidateMultipleFiles_WithValidImageFiles_ShouldReturnValid()
+    public async Task ValidateMultipleFiles_WithValidImageFiles_ShouldReturnValid()
     {
         // Arrange
         var files = new FormFileCollection();
@@ -142,7 +142,7 @@ public class MultipleFileUploadServiceTests
         files.Add(mockFile.Object);
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         result.IsValid.Should().BeTrue();
@@ -150,7 +150,7 @@ public class MultipleFileUploadServiceTests
     }
 
     [Fact]
-    public void ValidateMultipleFiles_WithOversizedImage_ShouldReturnInvalid()
+    public async Task ValidateMultipleFiles_WithOversizedImage_ShouldReturnInvalid()
     {
         // Arrange
         var files = new FormFileCollection();
@@ -161,7 +161,7 @@ public class MultipleFileUploadServiceTests
         files.Add(mockFile.Object);
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         result.IsValid.Should().BeFalse();
@@ -169,7 +169,7 @@ public class MultipleFileUploadServiceTests
     }
 
     [Fact]
-    public void ValidateMultipleFiles_WithOversizedVideo_ShouldReturnInvalid()
+    public async Task ValidateMultipleFiles_WithOversizedVideo_ShouldReturnInvalid()
     {
         // Arrange
         var files = new FormFileCollection();
@@ -180,7 +180,7 @@ public class MultipleFileUploadServiceTests
         files.Add(mockFile.Object);
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         result.IsValid.Should().BeFalse();
@@ -188,7 +188,7 @@ public class MultipleFileUploadServiceTests
     }
 
     [Fact]
-    public void ValidateMultipleFiles_WithUnsupportedFileType_ShouldReturnInvalid()
+    public async Task ValidateMultipleFiles_WithUnsupportedFileType_ShouldReturnInvalid()
     {
         // Arrange
         var files = new FormFileCollection();
@@ -199,7 +199,7 @@ public class MultipleFileUploadServiceTests
         files.Add(mockFile.Object);
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         result.IsValid.Should().BeFalse();
@@ -207,7 +207,7 @@ public class MultipleFileUploadServiceTests
     }
 
     [Fact]
-    public void ValidateMultipleFiles_WithEmptyFile_ShouldReturnInvalid()
+    public async Task ValidateMultipleFiles_WithEmptyFile_ShouldReturnInvalid()
     {
         // Arrange
         var files = new FormFileCollection();
@@ -218,7 +218,7 @@ public class MultipleFileUploadServiceTests
         files.Add(mockFile.Object);
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         result.IsValid.Should().BeFalse();
@@ -226,7 +226,7 @@ public class MultipleFileUploadServiceTests
     }
 
     [Fact]
-    public void ValidateMultipleFiles_WithMixedValidFiles_ShouldReturnValid()
+    public async Task ValidateMultipleFiles_WithMixedValidFiles_ShouldReturnValid()
     {
         // Arrange
         var files = new FormFileCollection();
@@ -246,7 +246,7 @@ public class MultipleFileUploadServiceTests
         files.Add(videoFile.Object);
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         result.IsValid.Should().BeTrue();
@@ -258,7 +258,7 @@ public class MultipleFileUploadServiceTests
     [InlineData("image/png", "test.png")]
     [InlineData("image/gif", "test.gif")]
     [InlineData("image/webp", "test.webp")]
-    public void ValidateMultipleFiles_WithSupportedImageFormats_ShouldReturnValid(string contentType, string fileName)
+    public async Task ValidateMultipleFiles_WithSupportedImageFormats_ShouldReturnValid(string contentType, string fileName)
     {
         // Arrange
         var files = new FormFileCollection();
@@ -269,7 +269,7 @@ public class MultipleFileUploadServiceTests
         files.Add(mockFile.Object);
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         result.IsValid.Should().BeTrue();
@@ -281,7 +281,7 @@ public class MultipleFileUploadServiceTests
     [InlineData("video/avi", "test.avi")]
     [InlineData("video/quicktime", "test.mov")]
     [InlineData("video/webm", "test.webm")]
-    public void ValidateMultipleFiles_WithSupportedVideoFormats_ShouldReturnValid(string contentType, string fileName)
+    public async Task ValidateMultipleFiles_WithSupportedVideoFormats_ShouldReturnValid(string contentType, string fileName)
     {
         // Arrange
         var files = new FormFileCollection();
@@ -292,7 +292,7 @@ public class MultipleFileUploadServiceTests
         files.Add(mockFile.Object);
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         result.IsValid.Should().BeTrue();

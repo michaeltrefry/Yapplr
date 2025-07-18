@@ -13,7 +13,7 @@ public interface ITrustBasedModerationService
     /// <summary>
     /// Determine if content should be auto-hidden based on author's trust score
     /// </summary>
-    Task<bool> ShouldAutoHideContentAsync(int authorId, string contentType);
+    Task<bool> ShouldAutoHideContentAsync(int authorId, string? contentType);
 
     /// <summary>
     /// Get moderation priority score for content based on author's trust score

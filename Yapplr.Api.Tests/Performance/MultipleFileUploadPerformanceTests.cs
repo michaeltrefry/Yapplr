@@ -63,14 +63,14 @@ public class MultipleFileUploadPerformanceTests
 
     [Fact]
     [Trait("Category", "Performance")]
-    public void ValidateMultipleFiles_WithMaximumFiles_ShouldCompleteQuickly()
+    public async Task ValidateMultipleFiles_WithMaximumFiles_ShouldCompleteQuickly()
     {
         // Arrange
         var files = CreateMockFiles(10, "image/jpeg", ".jpg", 1024 * 1024);
         var stopwatch = Stopwatch.StartNew();
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         stopwatch.Stop();
@@ -143,14 +143,14 @@ public class MultipleFileUploadPerformanceTests
     [InlineData(5)]
     [InlineData(10)]
     [Trait("Category", "Performance")]
-    public void ValidateMultipleFiles_WithVaryingFileCounts_ShouldScaleLinearly(int fileCount)
+    public async Task ValidateMultipleFiles_WithVaryingFileCounts_ShouldScaleLinearly(int fileCount)
     {
         // Arrange
         var files = CreateMockFiles(fileCount, "image/jpeg", ".jpg", 1024 * 1024);
         var stopwatch = Stopwatch.StartNew();
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         stopwatch.Stop();
@@ -193,7 +193,7 @@ public class MultipleFileUploadPerformanceTests
 
     [Fact]
     [Trait("Category", "Performance")]
-    public void ValidateMultipleFiles_WithInvalidFiles_ShouldFailFast()
+    public async Task ValidateMultipleFiles_WithInvalidFiles_ShouldFailFast()
     {
         // Arrange
         var files = new FormFileCollection();
@@ -208,7 +208,7 @@ public class MultipleFileUploadPerformanceTests
         var stopwatch = Stopwatch.StartNew();
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         stopwatch.Stop();
@@ -253,7 +253,7 @@ public class MultipleFileUploadPerformanceTests
 
     [Fact]
     [Trait("Category", "Stress")]
-    public void ValidateMultipleFiles_WithMaximumSizeFiles_ShouldHandleMemoryEfficiently()
+    public async Task ValidateMultipleFiles_WithMaximumSizeFiles_ShouldHandleMemoryEfficiently()
     {
         // Arrange
         var files = new FormFileCollection();
@@ -275,7 +275,7 @@ public class MultipleFileUploadPerformanceTests
         var stopwatch = Stopwatch.StartNew();
 
         // Act
-        var result = _service.ValidateMultipleFiles(files);
+        var result = await _service.ValidateMultipleFilesAsync(files);
 
         // Assert
         stopwatch.Stop();

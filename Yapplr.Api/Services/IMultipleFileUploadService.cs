@@ -19,8 +19,7 @@ public interface IMultipleFileUploadService
     /// </summary>
     /// <param name="files">Collection of files to validate</param>
     /// <returns>Validation result</returns>
-    ValidationResult ValidateMultipleFiles(IFormFileCollection files);
-
+    Task<ValidationResult> ValidateMultipleFilesAsync(IFormFileCollection files);
     /// <summary>
     /// Get maximum allowed files count
     /// </summary>

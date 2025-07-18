@@ -40,14 +40,6 @@ public interface IVideoService
     Task<bool> IsValidVideoFileAsync(IFormFile? file);
 
     /// <summary>
-    /// Validate if a file is a valid video (synchronous version - deprecated)
-    /// </summary>
-    /// <param name="file">The file to validate</param>
-    /// <returns>True if valid video file</returns>
-    [Obsolete("Use IsValidVideoFileAsync instead")]
-    bool IsValidVideoFile(IFormFile? file);
-
-    /// <summary>
     /// Get video upload response with metadata
     /// </summary>
     /// <param name="fileName">The saved video filename</param>

@@ -50,8 +50,9 @@ public class TrustBasedModerationService : ITrustBasedModerationService
         }
     }
 
-    public async Task<bool> ShouldAutoHideContentAsync(int authorId, string contentType)
+    public async Task<bool> ShouldAutoHideContentAsync(int authorId, string? contentType)
     {
+        if (contentType == null) return false;
         try
         {
             var trustScore = await _analyticsService.GetCurrentUserTrustScoreAsync(authorId);
