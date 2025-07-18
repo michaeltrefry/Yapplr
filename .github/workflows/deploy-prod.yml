@@ -74,35 +74,36 @@ jobs:
           cd /opt/Yapplr
           git pull origin main
 
-          # Create .env file with all secrets (using environment variables)
-          cat > .env << EOF
-          PROD_DATABASE_CONNECTION_STRING=${PROD_DATABASE_CONNECTION_STRING}
-          PROD_JWT_SECRET_KEY=${PROD_JWT_SECRET_KEY}
-          PROD_SENDGRID_API_KEY=${PROD_SENDGRID_API_KEY}
-          PROD_SENDGRID_FROM_EMAIL=${PROD_SENDGRID_FROM_EMAIL}
-          PROD_SENDGRID_FROM_NAME=${PROD_SENDGRID_FROM_NAME}
-          PROD_EMAIL_PROVIDER=${PROD_EMAIL_PROVIDER}
-          PROD_FIREBASE_PROJECT_ID=${PROD_FIREBASE_PROJECT_ID}
-          PROD_API_DOMAIN_NAME=${PROD_API_DOMAIN_NAME}
-          PROD_CERTBOT_EMAIL=${PROD_CERTBOT_EMAIL}
-          PROD_CERTBOT_DOMAIN=${PROD_CERTBOT_DOMAIN}
-          PROD_RABBITMQ_USERNAME=${PROD_RABBITMQ_USERNAME}
-          PROD_RABBITMQ_PASSWORD=${PROD_RABBITMQ_PASSWORD}
-          PROD_REDIS_CONNECTION_STRING=${PROD_REDIS_CONNECTION_STRING}
-          PROD_GRAFANA_USER=${PROD_GRAFANA_USER}
-          PROD_GRAFANA_PASSWORD=${PROD_GRAFANA_PASSWORD}
-          PROD_GRAFANA_DOMAIN=${PROD_GRAFANA_DOMAIN}
-          PROD_INFLUXDB_TOKEN=${PROD_INFLUXDB_TOKEN}
-          PROD_INFLUXDB_USER=${PROD_INFLUXDB_USER}
-          PROD_INFLUXDB_PASSWORD=${PROD_INFLUXDB_PASSWORD}
-          PROD_INFLUXDB_ORG=${PROD_INFLUXDB_ORG}
-          PROD_INFLUXDB_BUCKET=${PROD_INFLUXDB_BUCKET}
-          EOF
+          # Create .env file with all secrets (properly quoted to handle special characters)
+          # Use printf to safely write each variable with proper quoting
+          {
+            printf 'PROD_DATABASE_CONNECTION_STRING="%s"\n' "${PROD_DATABASE_CONNECTION_STRING}"
+            printf 'PROD_JWT_SECRET_KEY="%s"\n' "${PROD_JWT_SECRET_KEY}"
+            printf 'PROD_SENDGRID_API_KEY="%s"\n' "${PROD_SENDGRID_API_KEY}"
+            printf 'PROD_SENDGRID_FROM_EMAIL="%s"\n' "${PROD_SENDGRID_FROM_EMAIL}"
+            printf 'PROD_SENDGRID_FROM_NAME="%s"\n' "${PROD_SENDGRID_FROM_NAME}"
+            printf 'PROD_EMAIL_PROVIDER="%s"\n' "${PROD_EMAIL_PROVIDER}"
+            printf 'PROD_FIREBASE_PROJECT_ID="%s"\n' "${PROD_FIREBASE_PROJECT_ID}"
+            printf 'PROD_API_DOMAIN_NAME="%s"\n' "${PROD_API_DOMAIN_NAME}"
+            printf 'PROD_CERTBOT_EMAIL="%s"\n' "${PROD_CERTBOT_EMAIL}"
+            printf 'PROD_CERTBOT_DOMAIN="%s"\n' "${PROD_CERTBOT_DOMAIN}"
+            printf 'PROD_RABBITMQ_USERNAME="%s"\n' "${PROD_RABBITMQ_USERNAME}"
+            printf 'PROD_RABBITMQ_PASSWORD="%s"\n' "${PROD_RABBITMQ_PASSWORD}"
+            printf 'PROD_REDIS_CONNECTION_STRING="%s"\n' "${PROD_REDIS_CONNECTION_STRING}"
+            printf 'PROD_GRAFANA_USER="%s"\n' "${PROD_GRAFANA_USER}"
+            printf 'PROD_GRAFANA_PASSWORD="%s"\n' "${PROD_GRAFANA_PASSWORD}"
+            printf 'PROD_GRAFANA_DOMAIN="%s"\n' "${PROD_GRAFANA_DOMAIN}"
+            printf 'PROD_INFLUXDB_TOKEN="%s"\n' "${PROD_INFLUXDB_TOKEN}"
+            printf 'PROD_INFLUXDB_USER="%s"\n' "${PROD_INFLUXDB_USER}"
+            printf 'PROD_INFLUXDB_PASSWORD="%s"\n' "${PROD_INFLUXDB_PASSWORD}"
+            printf 'PROD_INFLUXDB_ORG="%s"\n' "${PROD_INFLUXDB_ORG}"
+            printf 'PROD_INFLUXDB_BUCKET="%s"\n' "${PROD_INFLUXDB_BUCKET}"
+          } > .env
 
           cd /opt/Yapplr/Yapplr.Api
           # Create Firebase Service Account Key as a file
-          echo "${PROD_FIREBASE_SERVICE_ACCOUNT_KEY}" > firebase-service-account.json
-          echo 'PROD_FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> ../.env
+          printf '%s\n' "${PROD_FIREBASE_SERVICE_ACCOUNT_KEY}" > firebase-service-account.json
+          printf 'PROD_FIREBASE_SERVICE_ACCOUNT_KEY_FILE="%s"\n' "firebase-service-account.json" >> ../.env
 
           cd /opt/Yapplr
 

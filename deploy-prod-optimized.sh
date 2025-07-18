@@ -27,12 +27,12 @@ if [ ! -f .env ]; then
 fi
 
 # Load environment variables (with proper handling of quoted values)
-set -a
+set -a  # automatically export all variables
 if [ -f .env ]; then
-    # Export variables from .env file, handling quotes properly
-    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+    # Use source instead of xargs to properly handle complex connection strings
+    source .env
 fi
-set +a
+set +a  # turn off automatic export
 
 # Validate required environment variables
 required_vars=("PROD_DATABASE_CONNECTION_STRING" "PROD_JWT_SECRET_KEY" "PROD_API_DOMAIN_NAME" "PROD_FIREBASE_PROJECT_ID" "PROD_FIREBASE_SERVICE_ACCOUNT_KEY")
