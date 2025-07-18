@@ -1374,7 +1374,16 @@ namespace Yapplr.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("EmailDigestFrequencyHours")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("EnableCommentNotifications")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnableEmailDigest")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnableEmailNotifications")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("EnableFollowNotifications")
@@ -1384,6 +1393,9 @@ namespace Yapplr.Api.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<bool>("EnableFrequencyLimits")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnableInstantEmailNotifications")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("EnableLikeNotifications")
