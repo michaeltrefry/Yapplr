@@ -187,6 +187,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
+    user: "999:999"  # RabbitMQ user ID to fix volume permissions
     environment:
       - RABBITMQ_DEFAULT_USER=${STAGE_RABBITMQ_USERNAME:-yapplr}
       - RABBITMQ_DEFAULT_PASS=${STAGE_RABBITMQ_PASSWORD:-yapplr123}
@@ -200,10 +201,15 @@ services:
       # Increase timeouts for slower staging environment
       - RABBITMQ_HANDSHAKE_TIMEOUT=60000
       - RABBITMQ_CHANNEL_MAX=2047
+      # Disable quorum queues to avoid Ra consensus issues
+      - RABBITMQ_DEFAULT_QUEUE_TYPE=classic
+      - RABBITMQ_QUORUM_QUEUE_ENABLED=false
     # No external ports exposed - accessed through nginx proxy for security
     # AMQP port (5672) and Management UI (15672) only accessible from Docker network
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    tmpfs:
+      - /var/lib/rabbitmq/mnesia  # Use tmpfs for mnesia to avoid permission issues
     restart: unless-stopped
     networks:
       - yapplr-network
