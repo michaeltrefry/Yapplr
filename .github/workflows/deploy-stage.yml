@@ -1,13 +1,20 @@
-name: Deploy Yapplr to Stage
+name: Deploy Yapplr to Stage (Optimized)
 
-# This workflow deploys both API and Frontend together
-# Single nginx handles routing for both services
+# This workflow uses optimized deployment with conditional rebuilding
+# Only rebuilds containers when source code has changed
+# Always starts with fresh database
 
 on:
   push:
     branches-ignore: [ main ]
-    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', 'sentiment-analysis/**', '.github/workflows/**']
+    paths: [ 'Yapplr.Api/**', 'yapplr-frontend/**', 'sentiment-analysis/**', 'Yapplr.VideoProcessor/**', '.github/workflows/**']
   workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild all containers'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   test:
@@ -31,24 +38,17 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy to Staging
+    name: Deploy to Staging (Optimized)
     needs: test
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for change detection
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-      
-    - name: Build Docker image
-      run: |
-        docker build -f Yapplr.Api/Dockerfile -t yapplr-api:${{ github.sha }} .
-        docker tag yapplr-api:${{ github.sha }} yapplr-api:latest
-        
-    - name: Save Docker image
-      run: |
-        docker save yapplr-api:latest | gzip > yapplr-api.tar.gz
         
     - name: Debug secrets
       run: |
@@ -72,10 +72,7 @@ jobs:
           git checkout ${{ github.ref_name }}
           git pull origin ${{ github.ref_name }}
 
-          # This deployment only handles the backend API
-          # Frontend deployment is handled separately by deploy-frontend.yml
-
-          # Create .env file with all secrets (using printf to handle special characters)
+          # Create .env file with all secrets
           cat > .env << 'EOF'
           STAGE_POSTGRES_PASSWORD=$STAGE_POSTGRES_PASSWORD
           STAGE_JWT_SECRET_KEY=$STAGE_JWT_SECRET_KEY
@@ -102,15 +99,18 @@ jobs:
 
           cd /opt/Yapplr/Yapplr.Api
 
-          # Create Firebase Service Account Key as a file (more reliable than env var)
+          # Create Firebase Service Account Key as a file
           echo '$STAGE_FIREBASE_SERVICE_ACCOUNT_KEY' > firebase-service-account.json
-          echo 'STAGE_FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> .env
+          echo 'STAGE_FIREBASE_SERVICE_ACCOUNT_KEY_FILE=firebase-service-account.json' >> ..//.env
 
           cd /opt/Yapplr
-          
-          # Run API-only deployment
-          chmod +x deploy-stage.sh
-          ./deploy-stage.sh
+
+          # Set force rebuild flag if requested
+          export FORCE_REBUILD=${{ github.event.inputs.force_rebuild || 'false' }}
+
+          # Run optimized deployment
+          chmod +x deploy-stage-optimized.sh
+          ./deploy-stage-optimized.sh
       env:
         STAGE_POSTGRES_PASSWORD: ${{ secrets.STAGE_POSTGRES_PASSWORD }}
         STAGE_JWT_SECRET_KEY: ${{ secrets.STAGE_JWT_SECRET_KEY }}

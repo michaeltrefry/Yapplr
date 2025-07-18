@@ -5,7 +5,11 @@ services:
     build:
       context: .
       dockerfile: Yapplr.Api/Dockerfile
-    image: yapplr-api:latest
+      cache_from:
+        - yapplr-api:latest
+        - yapplr-api:cache
+      target: runtime
+    image: yapplr-api:${YAPPLR_API_VERSION:-latest}
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=yapplr_db;Username=postgres;Password=${STAGE_POSTGRES_PASSWORD}
@@ -71,7 +75,7 @@ services:
       seq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://yapplr-api:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -81,7 +85,10 @@ services:
     build:
       context: .
       dockerfile: Yapplr.VideoProcessor/Dockerfile
-    image: yapplr-video-processor:latest
+      cache_from:
+        - yapplr-video-processor:latest
+        - yapplr-video-processor:cache
+    image: yapplr-video-processor:${YAPPLR_VIDEO_PROCESSOR_VERSION:-latest}
     environment:
       - DOTNET_ENVIRONMENT=Staging
       # RabbitMQ configuration
@@ -120,13 +127,16 @@ services:
     build:
       context: yapplr-frontend
       dockerfile: Dockerfile
+      cache_from:
+        - yapplr-frontend:latest
+        - yapplr-frontend:cache
       args:
         - NEXT_PUBLIC_API_URL=https://${STAGE_API_DOMAIN_NAME:-stg-api.yapplr.com}
         # Notification provider configuration (SignalR-only for production web)
         - NEXT_PUBLIC_ENABLE_SIGNALR=true
         # Force rebuild by passing current timestamp
         - CACHE_BUST=${CACHE_BUST:-$(date +%s)}
-    image: yapplr-frontend:latest
+    image: yapplr-frontend:${YAPPLR_FRONTEND_VERSION:-latest}
     restart: unless-stopped
     networks:
       - yapplr-network
@@ -135,14 +145,17 @@ services:
     build:
       context: sentiment-analysis
       dockerfile: Dockerfile
-    image: content-moderation:latest
+      cache_from:
+        - content-moderation:latest
+        - content-moderation:cache
+    image: content-moderation:${CONTENT_MODERATION_VERSION:-latest}
     environment:
       - PORT=8000
     restart: unless-stopped
     networks:
       - yapplr-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://content-moderation:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -259,7 +272,7 @@ services:
     networks:
       - yapplr-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      test: ["CMD", "curl", "-f", "http://influxdb::8086/ping"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -289,7 +302,7 @@ services:
     depends_on:
       - yapplr-api
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://prometheus:9090/-/healthy"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -321,7 +334,7 @@ services:
       - prometheus
       - influxdb
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://grafana:3000/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
