@@ -60,12 +60,13 @@ public class EssentialUserSeedService
         };
 
         _context.Users.Add(systemUser);
+        await _context.SaveChangesAsync(); // Save user first to get the ID
         _logger.LogInformation("✅ System user created: {Username} ({Email})", systemUser.Username, systemUser.Email);
 
         // Create notification preferences for system user with email notifications disabled
         var systemPreferences = new NotificationPreferences
         {
-            UserId = systemUser.Id,
+            UserId = systemUser.Id, // Now this has a valid ID
             // Disable all notifications for system user
             EnableEmailNotifications = false,
             EnableEmailDigest = false,
@@ -84,6 +85,7 @@ public class EssentialUserSeedService
         };
 
         _context.NotificationPreferences.Add(systemPreferences);
+        await _context.SaveChangesAsync(); // Save preferences
         _logger.LogInformation("✅ System user notification preferences created (all notifications disabled)");
     }
 }

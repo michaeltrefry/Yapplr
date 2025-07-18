@@ -75,12 +75,13 @@ public class StagingSeedService
         };
 
         _context.Users.Add(adminUser);
+        await _context.SaveChangesAsync(); // Save admin user first to get the ID
         _logger.LogInformation("✅ Admin user created: {Username} ({Email})", adminUser.Username, adminUser.Email);
 
         // Create notification preferences for admin user with email notifications disabled
         var adminPreferences = new NotificationPreferences
         {
-            UserId = adminUser.Id,
+            UserId = adminUser.Id, // Now this has a valid ID
             // Disable email notifications for admin user
             EnableEmailNotifications = false,
             EnableEmailDigest = false,
@@ -100,6 +101,7 @@ public class StagingSeedService
         };
 
         _context.NotificationPreferences.Add(adminPreferences);
+        await _context.SaveChangesAsync(); // Save admin preferences
         _logger.LogInformation("✅ Admin user notification preferences created (email notifications disabled)");
 
         // Suppress async warning since we're not actually using await in this method
@@ -155,6 +157,8 @@ public class StagingSeedService
             _context.Users.Add(user);
         }
 
+        // Save all test users first
+        await _context.SaveChangesAsync();
         _logger.LogInformation("✅ Created 20 test users with pre-verified emails");
 
         // Create notification preferences for all users with email notifications disabled
