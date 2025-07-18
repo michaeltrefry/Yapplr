@@ -8,7 +8,6 @@ services:
       cache_from:
         - yapplr-api:latest
         - yapplr-api:cache
-      target: runtime
     image: yapplr-api:${YAPPLR_API_VERSION:-latest}
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
@@ -272,7 +271,7 @@ services:
     networks:
       - yapplr-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://influxdb::8086/ping"]
+      test: ["CMD", "curl", "-f", "http://influxdb:8086/ping"]
       interval: 30s
       timeout: 10s
       retries: 5

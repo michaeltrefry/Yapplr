@@ -26,9 +26,12 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-# Load environment variables
+# Load environment variables (with proper handling of quoted values)
 set -a
-source .env
+if [ -f .env ]; then
+    # Export variables from .env file, handling quotes properly
+    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+fi
 set +a
 
 # Validate required environment variables
