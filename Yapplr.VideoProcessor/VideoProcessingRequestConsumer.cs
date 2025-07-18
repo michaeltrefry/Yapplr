@@ -51,28 +51,7 @@ public class VideoProcessingRequestConsumer : IConsumer<VideoProcessingRequest>
             var outputPath = Path.Combine(config.OutputPath, processedFileName);
             var thumbnailPath = Path.Combine(config.ThumbnailPath, thumbnailFileName);
 
-            // Validate video before processing
-            var (isValid, validationError) = await _videoProcessingService.ValidateVideoAsync(
-                inputPath, 
-                config.MaxFileSizeBytes, 
-                config.MaxDurationSeconds);
-
-            if (!isValid)
-            {
-                _logger.LogWarning("Video validation failed for Post {PostId}: {Error}", request.PostId, validationError);
-                
-                await context.Publish(new VideoProcessingFailed
-                {
-                    PostId = request.PostId,
-                    UserId = request.UserId,
-                    OriginalVideoFileName = request.OriginalVideoFileName,
-                    ErrorMessage = validationError ?? "Video validation failed",
-                    FailedAt = DateTime.UtcNow
-                });
-                return;
-            }
-
-            // Process the video
+            // Process the video (validation should have been done by the API before sending this request)
             var result = await _videoProcessingService.ProcessVideoAsync(
                 inputPath, 
                 outputPath, 
@@ -159,8 +138,6 @@ public class VideoProcessingRequestConsumer : IConsumer<VideoProcessingRequest>
             InputPath = section.GetValue<string>("InputPath", "/app/uploads/videos")!,
             OutputPath = section.GetValue<string>("OutputPath", "/app/uploads/processed")!,
             ThumbnailPath = section.GetValue<string>("ThumbnailPath", "/app/uploads/thumbnails")!,
-            MaxFileSizeBytes = section.GetValue<long>("MaxFileSizeBytes", 104857600), // 100MB
-            MaxDurationSeconds = section.GetValue<int>("MaxDurationSeconds", 300), // 5 minutes
             DeleteOriginalAfterProcessing = section.GetValue<bool>("DeleteOriginalAfterProcessing", true)
         };
     }

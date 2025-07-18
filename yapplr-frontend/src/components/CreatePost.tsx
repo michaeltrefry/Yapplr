@@ -29,6 +29,25 @@ export default function CreatePost() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Fetch current upload limits
+  const { data: maxVideoSize } = useQuery({
+    queryKey: ['maxVideoSize'],
+    queryFn: multipleUploadApi.getMaxVideoSize,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const { data: maxImageSize } = useQuery({
+    queryKey: ['maxImageSize'],
+    queryFn: multipleUploadApi.getMaxImageSize,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const { data: allowedExtensions } = useQuery({
+    queryKey: ['allowedExtensions'],
+    queryFn: multipleUploadApi.getAllowedExtensions,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   // Privacy helper functions
   const getPrivacyIcon = (privacyLevel: PostPrivacy) => {
     switch (privacyLevel) {
@@ -232,23 +251,31 @@ export default function CreatePost() {
       if (isVideo) {
         const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/x-msvideo', 'video/mov', 'video/quicktime', 'video/wmv', 'video/flv', 'video/webm', 'video/x-matroska'];
         if (!allowedVideoTypes.includes(file.type)) {
-          errors.push(`${file.name}: Unsupported video format. Supported: MP4, AVI, MOV, WMV, FLV, WebM, MKV`);
+          const supportedFormats = allowedExtensions?.allowedVideoExtensions?.join(', ') || 'MP4, AVI, MOV, WMV, FLV, WebM, MKV, 3GP';
+          errors.push(`${file.name}: Unsupported video format. Supported: ${supportedFormats}`);
           continue;
         }
 
-        if (file.size > 100 * 1024 * 1024) {
-          errors.push(`${file.name}: Video file too large. Maximum size is 100MB.`);
+        const maxVideoSizeBytes = maxVideoSize?.maxVideoSizeBytes || (100 * 1024 * 1024); // Fallback to 100MB
+        if (file.size > maxVideoSizeBytes) {
+          const maxSizeDisplay = maxVideoSizeBytes >= (1024 * 1024 * 1024)
+            ? `${Math.round(maxVideoSizeBytes / (1024 * 1024 * 1024) * 10) / 10}GB`
+            : `${Math.round(maxVideoSizeBytes / (1024 * 1024))}MB`;
+          errors.push(`${file.name}: Video file too large. Maximum size is ${maxSizeDisplay}.`);
           continue;
         }
       } else if (isImage) {
         const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedImageTypes.includes(file.type)) {
-          errors.push(`${file.name}: Unsupported image format. Supported: JPG, PNG, GIF, WebP`);
+          const supportedFormats = allowedExtensions?.allowedImageExtensions?.join(', ') || 'JPG, PNG, GIF, WebP';
+          errors.push(`${file.name}: Unsupported image format. Supported: ${supportedFormats}`);
           continue;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-          errors.push(`${file.name}: Image file too large. Maximum size is 5MB.`);
+        const maxImageSizeBytes = maxImageSize?.maxImageSizeBytes || (5 * 1024 * 1024); // Fallback to 5MB
+        if (file.size > maxImageSizeBytes) {
+          const maxSizeDisplay = `${Math.round(maxImageSizeBytes / (1024 * 1024))}MB`;
+          errors.push(`${file.name}: Image file too large. Maximum size is ${maxSizeDisplay}.`);
           continue;
         }
       }

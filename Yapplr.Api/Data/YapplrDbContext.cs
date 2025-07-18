@@ -53,6 +53,9 @@ public class YapplrDbContext : DbContext
     public DbSet<ContentPage> ContentPages { get; set; }
     public DbSet<ContentPageVersion> ContentPageVersions { get; set; }
 
+    // System Configuration entities
+    public DbSet<UploadSettings> UploadSettings { get; set; }
+
     // Analytics entities
     public DbSet<UserActivity> UserActivities { get; set; }
     public DbSet<ContentEngagement> ContentEngagements { get; set; }
@@ -780,6 +783,18 @@ public class YapplrDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UploadSettings configuration
+        modelBuilder.Entity<UploadSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UpdatedAt);
+
+            entity.HasOne(e => e.UpdatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.UpdatedByUserId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

@@ -9,17 +9,20 @@ public class VideoService : IVideoService
     private readonly string _uploadPath;
     private readonly string _processedPath;
     private readonly string _thumbnailPath;
-    private readonly string[] _allowedExtensions = { ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".mkv" };
     private readonly string[] _allowedMimeTypes = {
         "video/mp4", "video/avi", "video/x-msvideo", "video/quicktime", "video/x-ms-wmv",
         "video/x-flv", "video/webm", "video/x-matroska"
     };
-    private readonly long _maxFileSize = 100 * 1024 * 1024; // 100MB
+    private readonly IUploadSettingsService _uploadSettingsService;
     private readonly ILogger<VideoService> _logger;
 
-    public VideoService(IOptions<UploadsConfiguration> uploadsConfig, ILogger<VideoService> logger)
+    public VideoService(
+        IOptions<UploadsConfiguration> uploadsConfig,
+        IUploadSettingsService uploadSettingsService,
+        ILogger<VideoService> logger)
     {
         _logger = logger;
+        _uploadSettingsService = uploadSettingsService;
         var config = uploadsConfig.Value;
 
         _uploadPath = Path.GetFullPath(config.GetVideosFullPath());
@@ -84,19 +87,21 @@ public class VideoService : IVideoService
         return DeleteFileIfExists(filePath);
     }
 
-    public bool IsValidVideoFile(IFormFile? file)
+    public async Task<bool> IsValidVideoFileAsync(IFormFile? file)
     {
         if (file == null || file.Length == 0)
             return false;
 
-        if (file.Length > _maxFileSize)
+        var maxFileSize = await _uploadSettingsService.GetMaxVideoSizeBytesAsync();
+        if (file.Length > maxFileSize)
         {
-            _logger.LogWarning("Video file too large: {Size} bytes (max: {MaxSize})", file.Length, _maxFileSize);
+            _logger.LogWarning("Video file too large: {Size} bytes (max: {MaxSize})", file.Length, maxFileSize);
             return false;
         }
 
+        var allowedExtensions = await _uploadSettingsService.GetAllowedVideoExtensionsAsync();
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (!_allowedExtensions.Contains(extension))
+        if (!allowedExtensions.Contains(extension))
         {
             _logger.LogWarning("Invalid video extension: {Extension}", extension);
             return false;
@@ -109,6 +114,13 @@ public class VideoService : IVideoService
         }
 
         return true;
+    }
+
+    // Keep the synchronous version for backward compatibility, but mark as obsolete
+    [Obsolete("Use IsValidVideoFileAsync instead")]
+    public bool IsValidVideoFile(IFormFile? file)
+    {
+        return IsValidVideoFileAsync(file).GetAwaiter().GetResult();
     }
 
     public Task<VideoUploadResponse> GetVideoUploadResponseAsync(string fileName, HttpContext httpContext)

@@ -92,7 +92,7 @@ services:
       - VideoProcessing__ThumbnailPath=/app/uploads/thumbnails
       - VideoProcessing__TempPath=/app/uploads/temp
       - VideoProcessing__DeleteOriginalAfterProcessing=true
-      - VideoProcessing__MaxFileSizeBytes=104857600
+
       - VideoProcessing__MaxDurationSeconds=300
       - VideoProcessing__VideoCodec=libx264
       - VideoProcessing__AudioCodec=aac

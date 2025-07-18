@@ -170,10 +170,10 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
 
           // Validate file size based on type
           if (isVideo) {
-            // Video size limit: 100MB (matching backend)
-            const maxVideoSize = 100 * 1024 * 1024; // 100MB in bytes
+            // Video size limit: 1GB (matching backend)
+            const maxVideoSize = 1024 * 1024 * 1024; // 1GB in bytes
             if (asset.fileSize && asset.fileSize > maxVideoSize) {
-              errors.push(`${fileName}: Video too large (max 100MB)`);
+              errors.push(`${fileName}: Video too large (max 1GB)`);
               continue;
             }
 

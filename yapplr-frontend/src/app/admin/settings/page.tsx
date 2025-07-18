@@ -15,7 +15,11 @@ import {
   RotateCcw,
   Bell,
   Bug,
-  ArrowRight
+  ArrowRight,
+  Upload,
+  Image,
+  Video,
+  FileText
 } from 'lucide-react';
 import Link from 'next/link';
 import { NotificationStatus } from '@/components/NotificationStatus';
@@ -31,6 +35,22 @@ interface RateLimitConfig {
   applyToAdmins: boolean;
   applyToModerators: boolean;
   fallbackMultiplier: number;
+}
+
+interface UploadSettings {
+  maxImageSizeBytes: number;
+  maxVideoSizeBytes: number;
+  maxVideoDurationSeconds: number;
+  maxMediaFilesPerPost: number;
+  allowedImageExtensions: string;
+  allowedVideoExtensions: string;
+  deleteOriginalAfterProcessing: boolean;
+  videoTargetBitrate: number;
+  videoMaxWidth: number;
+  videoMaxHeight: number;
+  updatedAt: string;
+  updatedByUsername?: string;
+  updateReason?: string;
 }
 
 export default function AdminSettingsPage() {
@@ -51,6 +71,23 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Upload settings state
+  const [uploadSettings, setUploadSettings] = useState<UploadSettings>({
+    maxImageSizeBytes: 5 * 1024 * 1024, // 5MB
+    maxVideoSizeBytes: 1024 * 1024 * 1024, // 1GB
+    maxVideoDurationSeconds: 300, // 5 minutes
+    maxMediaFilesPerPost: 10,
+    allowedImageExtensions: '.jpg,.jpeg,.png,.gif,.webp',
+    allowedVideoExtensions: '.mp4,.avi,.mov,.wmv,.flv,.webm,.mkv,.3gp',
+    deleteOriginalAfterProcessing: true,
+    videoTargetBitrate: 2000,
+    videoMaxWidth: 1920,
+    videoMaxHeight: 1080,
+    updatedAt: new Date().toISOString(),
+  });
+  const [uploadLoading, setUploadLoading] = useState(true);
+  const [uploadSaving, setUploadSaving] = useState(false);
+
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
@@ -64,6 +101,7 @@ export default function AdminSettingsPage() {
       }
 
       fetchConfig();
+      fetchUploadSettings();
     }
   }, [user, isLoading, router]);
 
@@ -111,7 +149,64 @@ export default function AdminSettingsPage() {
     });
   };
 
-  if (isLoading || loading) {
+  // Upload settings functions
+  const fetchUploadSettings = async () => {
+    try {
+      setUploadLoading(true);
+      const response = await api.get('/admin/upload-settings');
+      setUploadSettings(response.data);
+    } catch (error) {
+      console.error('Failed to fetch upload settings');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const saveUploadSettings = async () => {
+    try {
+      setUploadSaving(true);
+      await api.put('/admin/upload-settings', {
+        ...uploadSettings,
+        updateReason: 'Updated via admin settings interface',
+      });
+      setMessage({ type: 'success', text: 'Upload settings updated successfully!' });
+      setTimeout(() => setMessage(null), 5000);
+    } catch (error) {
+      console.error('Error saving upload settings:', error);
+      setMessage({ type: 'error', text: 'Failed to update upload settings. Please try again.' });
+      setTimeout(() => setMessage(null), 5000);
+    } finally {
+      setUploadSaving(false);
+    }
+  };
+
+  const resetUploadToDefaults = async () => {
+    try {
+      setUploadSaving(true);
+      const response = await api.post('/admin/upload-settings/reset', {
+        reason: 'Reset to defaults via admin interface'
+      });
+      setUploadSettings(response.data);
+      setMessage({ type: 'success', text: 'Upload settings reset to defaults!' });
+      setTimeout(() => setMessage(null), 5000);
+    } catch (error) {
+      console.error('Error resetting upload settings:', error);
+      setMessage({ type: 'error', text: 'Failed to reset upload settings. Please try again.' });
+      setTimeout(() => setMessage(null), 5000);
+    } finally {
+      setUploadSaving(false);
+    }
+  };
+
+  // Helper functions for unit conversion
+  const bytesToMB = (bytes: number) => Math.round(bytes / (1024 * 1024));
+  const bytesToGB = (bytes: number) => Math.round(bytes / (1024 * 1024 * 1024) * 10) / 10;
+  const mbToBytes = (mb: number) => mb * 1024 * 1024;
+  const gbToBytes = (gb: number) => gb * 1024 * 1024 * 1024;
+  const secondsToMinutes = (seconds: number) => Math.round(seconds / 60);
+  const minutesToSeconds = (minutes: number) => minutes * 60;
+
+  if (isLoading || loading || uploadLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -391,6 +486,266 @@ export default function AdminSettingsPage() {
                 <Save className="w-4 h-4 mr-2" />
               )}
               {saving ? 'Saving...' : 'Save Configuration'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Upload Settings Configuration */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center mb-6">
+          <Upload className="w-6 h-6 text-green-600 mr-3" />
+          <h2 className="text-xl font-semibold text-gray-900">Upload Settings Configuration</h2>
+        </div>
+
+        <div className="space-y-6">
+          {/* File Size Limits */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <FileText className="w-5 h-5 mr-2" />
+              File Size Limits
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Maximum Image Size (MB)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={bytesToMB(uploadSettings.maxImageSizeBytes)}
+                  onChange={(e) => setUploadSettings({
+                    ...uploadSettings,
+                    maxImageSizeBytes: mbToBytes(parseInt(e.target.value) || 5)
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Current: {bytesToMB(uploadSettings.maxImageSizeBytes)}MB</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Maximum Video Size (GB)
+                </label>
+                <input
+                  type="number"
+                  min="0.1"
+                  max="10"
+                  step="0.1"
+                  value={bytesToGB(uploadSettings.maxVideoSizeBytes)}
+                  onChange={(e) => setUploadSettings({
+                    ...uploadSettings,
+                    maxVideoSizeBytes: gbToBytes(parseFloat(e.target.value) || 1)
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Current: {bytesToGB(uploadSettings.maxVideoSizeBytes)}GB</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Media Limits */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <Video className="w-5 h-5 mr-2" />
+              Media Limits
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Maximum Video Duration (minutes)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={secondsToMinutes(uploadSettings.maxVideoDurationSeconds)}
+                  onChange={(e) => setUploadSettings({
+                    ...uploadSettings,
+                    maxVideoDurationSeconds: minutesToSeconds(parseInt(e.target.value) || 5)
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Current: {secondsToMinutes(uploadSettings.maxVideoDurationSeconds)} minutes</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Maximum Files Per Post
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={uploadSettings.maxMediaFilesPerPost}
+                  onChange={(e) => setUploadSettings({
+                    ...uploadSettings,
+                    maxMediaFilesPerPost: parseInt(e.target.value) || 10
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Current: {uploadSettings.maxMediaFilesPerPost} files</p>
+              </div>
+            </div>
+          </div>
+
+          {/* File Extensions */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <Image className="w-5 h-5 mr-2" />
+              Allowed File Extensions
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Image Extensions
+                </label>
+                <input
+                  type="text"
+                  value={uploadSettings.allowedImageExtensions}
+                  onChange={(e) => setUploadSettings({
+                    ...uploadSettings,
+                    allowedImageExtensions: e.target.value
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder=".jpg,.jpeg,.png,.gif,.webp"
+                />
+                <p className="text-xs text-gray-500 mt-1">Comma-separated list of extensions</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Video Extensions
+                </label>
+                <input
+                  type="text"
+                  value={uploadSettings.allowedVideoExtensions}
+                  onChange={(e) => setUploadSettings({
+                    ...uploadSettings,
+                    allowedVideoExtensions: e.target.value
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder=".mp4,.avi,.mov,.wmv,.flv,.webm,.mkv"
+                />
+                <p className="text-xs text-gray-500 mt-1">Comma-separated list of extensions</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Processing Settings */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <Settings className="w-5 h-5 mr-2" />
+              Video Processing Settings
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Target Bitrate (kbps)
+                </label>
+                <input
+                  type="number"
+                  min="500"
+                  max="10000"
+                  value={uploadSettings.videoTargetBitrate}
+                  onChange={(e) => setUploadSettings({
+                    ...uploadSettings,
+                    videoTargetBitrate: parseInt(e.target.value) || 2000
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Max Width (pixels)
+                </label>
+                <input
+                  type="number"
+                  min="480"
+                  max="4096"
+                  value={uploadSettings.videoMaxWidth}
+                  onChange={(e) => setUploadSettings({
+                    ...uploadSettings,
+                    videoMaxWidth: parseInt(e.target.value) || 1920
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Max Height (pixels)
+                </label>
+                <input
+                  type="number"
+                  min="360"
+                  max="2160"
+                  value={uploadSettings.videoMaxHeight}
+                  onChange={(e) => setUploadSettings({
+                    ...uploadSettings,
+                    videoMaxHeight: parseInt(e.target.value) || 1080
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Processing Options */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Processing Options</h3>
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <div className="font-medium text-gray-900">Delete Original After Processing</div>
+                <div className="text-sm text-gray-600">Remove original video files after successful processing</div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={uploadSettings.deleteOriginalAfterProcessing}
+                  onChange={(e) => setUploadSettings({
+                    ...uploadSettings,
+                    deleteOriginalAfterProcessing: e.target.checked
+                  })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+              </label>
+            </div>
+          </div>
+
+          {/* Last Updated Info */}
+          {uploadSettings.updatedByUsername && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="text-sm text-blue-800">
+                <strong>Last updated:</strong> {new Date(uploadSettings.updatedAt).toLocaleString()} by @{uploadSettings.updatedByUsername}
+                {uploadSettings.updateReason && (
+                  <div className="mt-1">
+                    <strong>Reason:</strong> {uploadSettings.updateReason}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex justify-between pt-6 border-t border-gray-200">
+            <button
+              onClick={resetUploadToDefaults}
+              disabled={uploadSaving}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Reset to Defaults
+            </button>
+            <button
+              onClick={saveUploadSettings}
+              disabled={uploadSaving}
+              className="inline-flex items-center px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {uploadSaving ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              {uploadSaving ? 'Saving...' : 'Save Upload Settings'}
             </button>
           </div>
         </div>

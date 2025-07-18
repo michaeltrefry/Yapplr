@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { messageApi, imageApi, videoApi } from '@/lib/api';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { messageApi, imageApi, videoApi, multipleUploadApi } from '@/lib/api';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { Send, Image as ImageIcon, X } from 'lucide-react';
 import Image from 'next/image';
@@ -22,6 +22,19 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
   const { refreshUnreadCount } = useNotifications();
+
+  // Fetch current upload limits
+  const { data: maxVideoSize } = useQuery({
+    queryKey: ['maxVideoSize'],
+    queryFn: multipleUploadApi.getMaxVideoSize,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const { data: maxImageSize } = useQuery({
+    queryKey: ['maxImageSize'],
+    queryFn: multipleUploadApi.getMaxImageSize,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const uploadImageMutation = useMutation({
     mutationFn: imageApi.uploadImage,
@@ -83,9 +96,13 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
           return;
         }
 
-        // Validate video file size (100MB)
-        if (file.size > 100 * 1024 * 1024) {
-          alert('Video file size must be less than 100MB');
+        // Validate video file size
+        const maxVideoSizeBytes = maxVideoSize?.maxVideoSizeBytes || (100 * 1024 * 1024); // Fallback to 100MB
+        if (file.size > maxVideoSizeBytes) {
+          const maxSizeDisplay = maxVideoSizeBytes >= (1024 * 1024 * 1024)
+            ? `${Math.round(maxVideoSizeBytes / (1024 * 1024 * 1024) * 10) / 10}GB`
+            : `${Math.round(maxVideoSizeBytes / (1024 * 1024))}MB`;
+          alert(`Video file size must be less than ${maxSizeDisplay}`);
           return;
         }
 
@@ -112,9 +129,11 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
           return;
         }
 
-        // Validate image file size (5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          alert('Image file size must be less than 5MB');
+        // Validate image file size
+        const maxImageSizeBytes = maxImageSize?.maxImageSizeBytes || (5 * 1024 * 1024); // Fallback to 5MB
+        if (file.size > maxImageSizeBytes) {
+          const maxSizeDisplay = `${Math.round(maxImageSizeBytes / (1024 * 1024))}MB`;
+          alert(`Image file size must be less than ${maxSizeDisplay}`);
           return;
         }
 

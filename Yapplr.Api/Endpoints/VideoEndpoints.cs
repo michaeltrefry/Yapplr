@@ -21,9 +21,9 @@ public static class VideoEndpoints
                     return Results.BadRequest(new { message = "No file provided" });
                 }
 
-                if (!videoService.IsValidVideoFile(file))
+                if (!await videoService.IsValidVideoFileAsync(file))
                 {
-                    return Results.BadRequest(new { message = "Invalid video file. Supported formats: MP4, AVI, MOV, WMV, FLV, WebM, MKV. Max size: 100MB" });
+                    return Results.BadRequest(new { message = "Invalid video file. Please check file format and size limits." });
                 }
 
                 var fileName = await videoService.SaveVideoAsync(file);

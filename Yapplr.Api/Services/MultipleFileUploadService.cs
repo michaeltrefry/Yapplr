@@ -12,15 +12,18 @@ public class MultipleFileUploadService : IMultipleFileUploadService
 {
     private readonly IImageService _imageService;
     private readonly IVideoService _videoService;
+    private readonly IUploadSettingsService _uploadSettingsService;
     private readonly ILogger<MultipleFileUploadService> _logger;
     private readonly UploadsConfiguration _uploadsConfig;
 
-    public int MaxFilesAllowed => 10;
-    public long MaxImageSizeBytes => 5 * 1024 * 1024; // 5MB
-    public long MaxVideoSizeBytes => 100 * 1024 * 1024; // 100MB
+    public async Task<int> GetMaxFilesAllowedAsync() => await _uploadSettingsService.GetMaxMediaFilesPerPostAsync();
+    public async Task<long> GetMaxImageSizeBytesAsync() => await _uploadSettingsService.GetMaxImageSizeBytesAsync();
+    public async Task<long> GetMaxVideoSizeBytesAsync() => await _uploadSettingsService.GetMaxVideoSizeBytesAsync();
 
-    private readonly string[] _allowedImageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-    private readonly string[] _allowedVideoExtensions = { ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".mkv" };
+    // Keep synchronous properties for backward compatibility
+    public int MaxFilesAllowed => GetMaxFilesAllowedAsync().GetAwaiter().GetResult();
+    public long MaxImageSizeBytes => GetMaxImageSizeBytesAsync().GetAwaiter().GetResult();
+    public long MaxVideoSizeBytes => GetMaxVideoSizeBytesAsync().GetAwaiter().GetResult();
     
     private readonly string[] _allowedImageMimeTypes = {
         "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"
@@ -34,11 +37,13 @@ public class MultipleFileUploadService : IMultipleFileUploadService
     public MultipleFileUploadService(
         IImageService imageService,
         IVideoService videoService,
+        IUploadSettingsService uploadSettingsService,
         ILogger<MultipleFileUploadService> logger,
         IOptions<UploadsConfiguration> uploadsConfig)
     {
         _imageService = imageService;
         _videoService = videoService;
+        _uploadSettingsService = uploadSettingsService;
         _logger = logger;
         _uploadsConfig = uploadsConfig.Value;
     }
@@ -120,7 +125,7 @@ public class MultipleFileUploadService : IMultipleFileUploadService
         );
     }
 
-    public ValidationResult ValidateMultipleFiles(IFormFileCollection files)
+    public async Task<ValidationResult> ValidateMultipleFilesAsync(IFormFileCollection files)
     {
         var errors = new List<string>();
 
@@ -130,10 +135,16 @@ public class MultipleFileUploadService : IMultipleFileUploadService
             return new ValidationResult(false, errors);
         }
 
-        if (files.Count > MaxFilesAllowed)
+        var maxFilesAllowed = await GetMaxFilesAllowedAsync();
+        if (files.Count > maxFilesAllowed)
         {
-            errors.Add($"Maximum {MaxFilesAllowed} files allowed, but {files.Count} files provided");
+            errors.Add($"Maximum {maxFilesAllowed} files allowed, but {files.Count} files provided");
         }
+
+        var maxImageSize = await GetMaxImageSizeBytesAsync();
+        var maxVideoSize = await GetMaxVideoSizeBytesAsync();
+        var allowedImageExtensions = await _uploadSettingsService.GetAllowedImageExtensionsAsync();
+        var allowedVideoExtensions = await _uploadSettingsService.GetAllowedVideoExtensionsAsync();
 
         foreach (var file in files)
         {
@@ -143,38 +154,75 @@ public class MultipleFileUploadService : IMultipleFileUploadService
                 continue;
             }
 
-            var isImage = IsImageFile(file);
-            var isVideo = IsVideoFile(file);
+            var isImage = await IsImageFileAsync(file, allowedImageExtensions);
+            var isVideo = await IsVideoFileAsync(file, allowedVideoExtensions);
 
             if (!isImage && !isVideo)
             {
-                errors.Add($"File '{file.FileName}' has unsupported type. Supported: images (JPG, PNG, GIF, WebP) and videos (MP4, AVI, MOV, WMV, FLV, WebM, MKV)");
+                var imageExts = string.Join(", ", allowedImageExtensions);
+                var videoExts = string.Join(", ", allowedVideoExtensions);
+                errors.Add($"File '{file.FileName}' has unsupported type. Supported images: {imageExts}. Supported videos: {videoExts}");
                 continue;
             }
 
-            if (isImage && file.Length > MaxImageSizeBytes)
+            if (isImage && file.Length > maxImageSize)
             {
-                errors.Add($"Image '{file.FileName}' exceeds maximum size of {MaxImageSizeBytes / (1024 * 1024)}MB");
+                errors.Add($"Image '{file.FileName}' exceeds maximum size of {maxImageSize / (1024 * 1024)}MB");
             }
 
-            if (isVideo && file.Length > MaxVideoSizeBytes)
+            if (isVideo && file.Length > maxVideoSize)
             {
-                errors.Add($"Video '{file.FileName}' exceeds maximum size of {MaxVideoSizeBytes / (1024 * 1024)}MB");
+                errors.Add($"Video '{file.FileName}' exceeds maximum size of {maxVideoSize / (1024 * 1024 * 1024)}GB");
             }
         }
 
         return new ValidationResult(errors.Count == 0, errors);
     }
 
-    private bool IsImageFile(IFormFile file)
+    // Keep synchronous version for backward compatibility
+    [Obsolete("Use ValidateMultipleFilesAsync instead")]
+    public ValidationResult ValidateMultipleFiles(IFormFileCollection files)
+    {
+        return ValidateMultipleFilesAsync(files).GetAwaiter().GetResult();
+    }
+
+    private async Task<bool> IsImageFileAsync(IFormFile file, string[] allowedExtensions)
     {
         if (file == null) return false;
 
         var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
         var mimeType = file.ContentType?.ToLowerInvariant();
 
-        return !string.IsNullOrEmpty(extension) && 
-               _allowedImageExtensions.Contains(extension) &&
+        return !string.IsNullOrEmpty(extension) &&
+               allowedExtensions.Contains(extension) &&
+               !string.IsNullOrEmpty(mimeType) &&
+               _allowedImageMimeTypes.Contains(mimeType);
+    }
+
+    private async Task<bool> IsVideoFileAsync(IFormFile file, string[] allowedExtensions)
+    {
+        if (file == null) return false;
+
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        var mimeType = file.ContentType?.ToLowerInvariant();
+
+        return !string.IsNullOrEmpty(extension) &&
+               allowedExtensions.Contains(extension) &&
+               !string.IsNullOrEmpty(mimeType) &&
+               _allowedVideoMimeTypes.Contains(mimeType);
+    }
+
+    // Keep synchronous versions for backward compatibility
+    private bool IsImageFile(IFormFile file)
+    {
+        if (file == null) return false;
+
+        var allowedExtensions = _uploadSettingsService.GetAllowedImageExtensionsAsync().GetAwaiter().GetResult();
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        var mimeType = file.ContentType?.ToLowerInvariant();
+
+        return !string.IsNullOrEmpty(extension) &&
+               allowedExtensions.Contains(extension) &&
                !string.IsNullOrEmpty(mimeType) &&
                _allowedImageMimeTypes.Contains(mimeType);
     }
@@ -183,11 +231,12 @@ public class MultipleFileUploadService : IMultipleFileUploadService
     {
         if (file == null) return false;
 
+        var allowedExtensions = _uploadSettingsService.GetAllowedVideoExtensionsAsync().GetAwaiter().GetResult();
         var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
         var mimeType = file.ContentType?.ToLowerInvariant();
 
-        return !string.IsNullOrEmpty(extension) && 
-               _allowedVideoExtensions.Contains(extension) &&
+        return !string.IsNullOrEmpty(extension) &&
+               allowedExtensions.Contains(extension) &&
                !string.IsNullOrEmpty(mimeType) &&
                _allowedVideoMimeTypes.Contains(mimeType);
     }

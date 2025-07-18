@@ -269,6 +269,11 @@ export const postApi = {
     return response.data;
   },
 
+  getUserVideos: async (userId: number, page = 1, pageSize = 25): Promise<Post[]> => {
+    const response = await api.get(`/posts/user/${userId}/videos?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
   updatePost: async (id: number, data: UpdatePostData): Promise<Post> => {
     const response = await api.put(`/posts/${id}`, data);
     return response.data;
@@ -378,6 +383,22 @@ export const multipleUploadApi = {
 
   getUploadLimits: async (): Promise<UploadLimits> => {
     const response = await api.get('/uploads/limits');
+    return response.data;
+  },
+
+  // Get current upload settings for validation
+  getMaxVideoSize: async (): Promise<{ maxVideoSizeBytes: number }> => {
+    const response = await api.get('/admin/upload-settings/max-video-size');
+    return response.data;
+  },
+
+  getMaxImageSize: async (): Promise<{ maxImageSizeBytes: number }> => {
+    const response = await api.get('/admin/upload-settings/max-image-size');
+    return response.data;
+  },
+
+  getAllowedExtensions: async (): Promise<{ allowedImageExtensions: string[], allowedVideoExtensions: string[] }> => {
+    const response = await api.get('/admin/upload-settings/allowed-extensions');
     return response.data;
   },
 };

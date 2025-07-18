@@ -9,13 +9,16 @@ import { formatDate } from '@/lib/utils';
 import { Calendar, Shield, ShieldOff, MessageCircle } from 'lucide-react';
 import { Post, PostMedia } from '@/types';
 import { PhotoItem } from '@/components/PhotoGrid';
+import { VideoItem } from '@/components/VideoGrid';
 
 import UserTimeline from '@/components/UserTimeline';
 import Sidebar from '@/components/Sidebar';
 import UserAvatar from '@/components/UserAvatar';
 import UserList from '@/components/UserList';
 import PhotoGrid from '@/components/PhotoGrid';
+import VideoGrid from '@/components/VideoGrid';
 import FullScreenPhotoViewer from '@/components/FullScreenPhotoViewer';
+import FullScreenVideoViewer from '@/components/FullScreenVideoViewer';
 
 interface ProfilePageProps {
   params: Promise<{
@@ -29,11 +32,17 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'photos' | 'following' | 'followers'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'photos' | 'videos' | 'following' | 'followers'>('posts');
   const [selectedPhoto, setSelectedPhoto] = useState<Post | null>(null);
   const [selectedMediaItem, setSelectedMediaItem] = useState<PostMedia | null>(null);
   const [allPhotos, setAllPhotos] = useState<PhotoItem[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState<number>(0);
+
+  // Video-related state
+  const [selectedVideo, setSelectedVideo] = useState<Post | null>(null);
+  const [selectedVideoMediaItem, setSelectedVideoMediaItem] = useState<PostMedia | null>(null);
+  const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState<number>(0);
 
   const handlePhotoClick = (post: Post, mediaItem?: PostMedia, photos?: PhotoItem[], index?: number) => {
     setSelectedPhoto(post);
@@ -50,6 +59,24 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       setSelectedPhoto(newPhoto.post);
       setSelectedMediaItem(newPhoto.mediaItem);
       setCurrentPhotoIndex(newIndex);
+    }
+  };
+
+  const handleVideoClick = (post: Post, mediaItem?: PostMedia, videos?: VideoItem[], index?: number) => {
+    setSelectedVideo(post);
+    setSelectedVideoMediaItem(mediaItem || null);
+    if (videos && index !== undefined) {
+      setAllVideos(videos);
+      setCurrentVideoIndex(index);
+    }
+  };
+
+  const handleVideoNavigate = (newIndex: number) => {
+    if (allVideos && newIndex >= 0 && newIndex < allVideos.length) {
+      const newVideo = allVideos[newIndex];
+      setSelectedVideo(newVideo.post);
+      setSelectedVideoMediaItem(newVideo.mediaItem);
+      setCurrentVideoIndex(newIndex);
     }
   };
 
@@ -345,6 +372,16 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   Photos
                 </button>
                 <button
+                  onClick={() => setActiveTab('videos')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'videos'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Videos
+                </button>
+                <button
                   onClick={() => setActiveTab('following')}
                   className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === 'following'
@@ -373,6 +410,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             )}
             {activeTab === 'photos' && (
               <PhotoGrid userId={profile.id} onPhotoClick={handlePhotoClick} />
+            )}
+            {activeTab === 'videos' && (
+              <VideoGrid userId={profile.id} onVideoClick={handleVideoClick} />
             )}
             {activeTab === 'following' && (
               <UserList userId={profile.id} type="following" />
@@ -428,6 +468,24 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             setCurrentPhotoIndex(0);
           }}
           onNavigate={handlePhotoNavigate}
+        />
+      )}
+
+      {/* Full Screen Video Viewer */}
+      {selectedVideo && (
+        <FullScreenVideoViewer
+          post={selectedVideo}
+          mediaItem={selectedVideoMediaItem || undefined}
+          allVideos={allVideos}
+          currentIndex={currentVideoIndex}
+          isOpen={!!selectedVideo}
+          onClose={() => {
+            setSelectedVideo(null);
+            setSelectedVideoMediaItem(null);
+            setAllVideos([]);
+            setCurrentVideoIndex(0);
+          }}
+          onNavigate={handleVideoNavigate}
         />
       )}
 

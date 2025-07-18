@@ -17,7 +17,5 @@ public record VideoProcessingConfig
     public string InputPath { get; init; } = "/app/uploads/videos";
     public string OutputPath { get; init; } = "/app/uploads/processed";
     public string ThumbnailPath { get; init; } = "/app/uploads/thumbnails";
-    public long MaxFileSizeBytes { get; init; } = 104857600; // 100MB
-    public int MaxDurationSeconds { get; init; } = 300; // 5 minutes
     public bool DeleteOriginalAfterProcessing { get; init; } = true;
 }

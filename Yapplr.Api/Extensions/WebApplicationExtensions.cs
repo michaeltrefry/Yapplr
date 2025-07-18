@@ -78,6 +78,7 @@ public static class WebApplicationExtensions
         app.MapUserReportEndpoints();
         app.MapContentEndpoints();
         app.MapAdminEndpoints();
+        app.MapUploadSettingsEndpoints();
         app.MapCorsConfigurationEndpoints();
 
         // Only register test endpoints in development environment

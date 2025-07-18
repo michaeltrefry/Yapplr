@@ -33,10 +33,18 @@ public interface IVideoService
     bool DeleteVideoThumbnail(string fileName);
 
     /// <summary>
-    /// Validate if a file is a valid video
+    /// Validate if a file is a valid video (async version)
     /// </summary>
     /// <param name="file">The file to validate</param>
     /// <returns>True if valid video file</returns>
+    Task<bool> IsValidVideoFileAsync(IFormFile? file);
+
+    /// <summary>
+    /// Validate if a file is a valid video (synchronous version - deprecated)
+    /// </summary>
+    /// <param name="file">The file to validate</param>
+    /// <returns>True if valid video file</returns>
+    [Obsolete("Use IsValidVideoFileAsync instead")]
     bool IsValidVideoFile(IFormFile? file);
 
     /// <summary>

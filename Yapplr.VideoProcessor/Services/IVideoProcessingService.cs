@@ -24,16 +24,4 @@ public interface IVideoProcessingService
     /// <param name="videoPath">Path to the video file</param>
     /// <returns>Video metadata</returns>
     Task<VideoMetadata?> GetVideoMetadataAsync(string videoPath);
-
-    /// <summary>
-    /// Validate if a video file is processable
-    /// </summary>
-    /// <param name="videoPath">Path to the video file</param>
-    /// <param name="maxFileSizeBytes">Maximum allowed file size</param>
-    /// <param name="maxDurationSeconds">Maximum allowed duration</param>
-    /// <returns>True if video is valid for processing</returns>
-    Task<(bool IsValid, string? ErrorMessage)> ValidateVideoAsync(
-        string videoPath, 
-        long maxFileSizeBytes, 
-        int maxDurationSeconds);
 }

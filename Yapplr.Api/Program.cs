@@ -13,6 +13,12 @@ Serilog.Debugging.SelfLog.Enable(Console.WriteLine);
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel server options for large file uploads
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 2L * 1024 * 1024 * 1024; // 2GB
+});
+
 // Configure Serilog
 builder.Host.UseSerilog((context, configuration) =>
 {
@@ -46,6 +52,14 @@ Console.WriteLine(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
 
 // Add services to the container
 builder.Services.AddYapplrServices(builder.Configuration, builder.Environment);
+
+// Configure form options for large file uploads
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = 2L * 1024 * 1024 * 1024; // 2GB
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
 
 var app = builder.Build();
 

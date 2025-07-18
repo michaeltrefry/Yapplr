@@ -157,7 +157,22 @@ Each media file object should include:
             return Results.Ok(userPhotos);
         })
         .WithName("GetUserPhotos")
-        .WithSummary("Get posts with photos by user")
+        .WithSummary("Get photos by user")
+        .Produces<IEnumerable<PostDto>>(200);
+
+        // Get user videos
+        posts.MapGet("/user/{userId}/videos", async (int userId, ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 25) =>
+        {
+            var currentUserId = user?.Identity?.IsAuthenticated == true
+                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
+                : (int?)null;
+
+            var userVideos = await postService.GetUserVideosAsync(userId, currentUserId, page, pageSize);
+
+            return Results.Ok(userVideos);
+        })
+        .WithName("GetUserVideos")
+        .WithSummary("Get videos by user")
         .Produces<IEnumerable<PostDto>>(200);
 
         // Update post

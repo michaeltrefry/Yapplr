@@ -270,43 +270,7 @@ public class VideoProcessingService : IVideoProcessingService
         }
     }
 
-    public async Task<(bool IsValid, string? ErrorMessage)> ValidateVideoAsync(
-        string videoPath, 
-        long maxFileSizeBytes, 
-        int maxDurationSeconds)
-    {
-        try
-        {
-            if (!File.Exists(videoPath))
-            {
-                return (false, "Video file not found");
-            }
 
-            var fileInfo = new FileInfo(videoPath);
-            if (fileInfo.Length > maxFileSizeBytes)
-            {
-                return (false, $"Video file too large: {fileInfo.Length} bytes (max: {maxFileSizeBytes} bytes)");
-            }
-
-            var mediaInfo = await FFProbe.AnalyseAsync(videoPath);
-            if (mediaInfo.Duration.TotalSeconds > maxDurationSeconds)
-            {
-                return (false, $"Video too long: {mediaInfo.Duration.TotalSeconds:F1} seconds (max: {maxDurationSeconds} seconds)");
-            }
-
-            if (mediaInfo.PrimaryVideoStream == null)
-            {
-                return (false, "No video stream found in file");
-            }
-
-            return (true, null);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error validating video: {VideoPath}", videoPath);
-            return (false, $"Validation error: {ex.Message}");
-        }
-    }
 
     private async Task ProcessVideoFileAsync(string inputPath, string outputPath, VideoProcessingConfig config)
     {

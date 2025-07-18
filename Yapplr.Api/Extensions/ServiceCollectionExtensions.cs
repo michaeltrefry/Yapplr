@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.IIS;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -59,6 +62,24 @@ public static class ServiceCollectionExtensions
 
         // Add memory cache
         services.AddMemoryCache();
+
+        // Configure request size limits for file uploads
+        services.Configure<IISServerOptions>(options =>
+        {
+            options.MaxRequestBodySize = 2L * 1024 * 1024 * 1024; // 2GB
+        });
+
+        services.Configure<KestrelServerOptions>(options =>
+        {
+            options.Limits.MaxRequestBodySize = 2L * 1024 * 1024 * 1024; // 2GB
+        });
+
+        services.Configure<FormOptions>(options =>
+        {
+            options.ValueLengthLimit = int.MaxValue;
+            options.MultipartBodyLengthLimit = 2L * 1024 * 1024 * 1024; // 2GB
+            options.MultipartHeadersLengthLimit = int.MaxValue;
+        });
 
         // Add Redis caching
         services.AddRedisCaching(configuration);
@@ -310,6 +331,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMultipleFileUploadService, MultipleFileUploadService>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
+        services.AddScoped<IUploadSettingsService, UploadSettingsService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<ITagAnalyticsService, TagAnalyticsService>();

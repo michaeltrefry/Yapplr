@@ -669,6 +669,44 @@ public class PostService : BaseService, IPostService
         return posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext));
     }
 
+    public async Task<IEnumerable<PostDto>> GetUserVideosAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
+    {
+        // Check if current user is blocked by the profile owner or has blocked them
+        if (currentUserId.HasValue && currentUserId.Value != userId)
+        {
+            var isBlocked = await _blockService.IsUserBlockedAsync(currentUserId.Value, userId) ||
+                           await _blockService.IsBlockedByUserAsync(currentUserId.Value, userId);
+            if (isBlocked)
+            {
+                return new List<PostDto>(); // Return empty list if blocked
+            }
+        }
+
+        // Check if current user is following the target user
+        var isFollowing = false;
+        if (currentUserId.HasValue && currentUserId.Value != userId)
+        {
+            isFollowing = await _context.Follows
+                .AnyAsync(f => f.FollowerId == currentUserId.Value && f.FollowingId == userId);
+        }
+
+        var blockedUserIds = currentUserId.HasValue
+            ? await _context.GetBlockedUserIdsAsync(currentUserId.Value)
+            : new HashSet<int>();
+        var followingIds = isFollowing ? new HashSet<int> { userId } : new HashSet<int>();
+
+        var posts = await _context.GetPostsForFeed()
+            .Where(p => p.UserId == userId && // Only posts from this user
+                   p.PostMedia.Any(pm => pm.MediaType == MediaType.Video)) // Only posts with videos
+            .ApplyVisibilityFilters(currentUserId, blockedUserIds, followingIds)
+            .OrderByDescending(p => p.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext));
+    }
+
     public async Task<IEnumerable<TimelineItemDto>> GetUserTimelineAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
     {
         // Check if current user is blocked by the profile owner or has blocked them
