@@ -1,21 +1,37 @@
-# Optimized Staging Deployment System
+# Optimized Deployment System (Staging & Production)
 
-This system dramatically reduces staging deployment times by only rebuilding containers when their source code has actually changed, while still maintaining fresh datasets on each deploy.
+This system dramatically reduces deployment times by only rebuilding containers when their source code has actually changed. For staging, it maintains fresh datasets on each deploy. For production, it preserves ALL data while optimizing container rebuilds.
 
 ## 🚀 Key Benefits
 
+### Staging Environment
 - **Faster Deployments**: Only rebuilds changed services (saves ~6-8 minutes per deployment)
 - **Fresh Data**: Always starts with clean database and message queues
 - **Smart Caching**: Uses Docker layer caching and source code change detection
+
+### Production Environment
+- **Faster Deployments**: Only rebuilds changed services (saves ~8-12 minutes per deployment)
+- **Data Preservation**: NEVER clears production data - all volumes preserved
+- **Zero Downtime**: Rolling updates with health checks
+
+### Both Environments
 - **Selective Rebuilds**: Force rebuild specific services when needed
 - **Status Monitoring**: Check what will be rebuilt before deploying
+- **GitHub Actions Integration**: Automatic optimization in CI/CD
 
 ## 📁 Files Overview
 
 ### Core Scripts
-- `deploy-stage-optimized.sh` - Main optimized deployment script
-- `check-deployment-status.sh` - Check current status and what needs rebuilding
-- `force-rebuild.sh` - Force rebuild specific services or all services
+
+#### Staging Environment
+- `deploy-stage-optimized.sh` - Main optimized staging deployment script
+- `check-deployment-status.sh` - Check staging status and what needs rebuilding
+- `force-rebuild.sh` - Force rebuild specific staging services
+
+#### Production Environment
+- `deploy-prod-optimized.sh` - Main optimized production deployment script
+- `check-deployment-status-prod.sh` - Check production status and what needs rebuilding
+- `force-rebuild-prod.sh` - Force rebuild specific production services
 
 ### Configuration Files
 - `docker-compose.stage.yml` - Updated with cache optimization
@@ -48,10 +64,18 @@ The system calculates MD5 hashes of source files for each service:
 Shows which services need rebuilding and estimated deployment time.
 
 ### Deploy with Optimizations
+
+#### Staging (Fresh Data)
 ```bash
 ./deploy-stage-optimized.sh
 ```
-Automatically detects changes and rebuilds only what's needed.
+Automatically detects changes and rebuilds only what's needed. Always starts with fresh database.
+
+#### Production (Preserve All Data)
+```bash
+./deploy-prod-optimized.sh
+```
+Automatically detects changes and rebuilds only what's needed. PRESERVES ALL PRODUCTION DATA.
 
 ### Force Rebuild Specific Services
 ```bash
