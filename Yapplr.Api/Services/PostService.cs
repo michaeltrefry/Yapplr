@@ -1628,6 +1628,7 @@ public class PostService : BaseService, IPostService
             }
 
             // Publish video processing request to RabbitMQ
+            _logger.LogDebug("Preparing video processing request for Post {PostId}, Video: {VideoFileName}", postId, videoFileName);
             var videoProcessingRequest = new VideoProcessingRequest
             {
                 PostId = postId,
@@ -1638,7 +1639,20 @@ public class PostService : BaseService, IPostService
                 PostContent = postContent
             };
 
-            await _publishEndpoint.Publish(videoProcessingRequest);
+            _logger.LogDebug("Publishing video processing request to RabbitMQ for Post {PostId}", postId);
+
+            // Add timeout to prevent hanging on RabbitMQ issues (like disk space alarms)
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            try
+            {
+                await _publishEndpoint.Publish(videoProcessingRequest, cts.Token);
+                _logger.LogDebug("Video processing request published successfully to RabbitMQ for Post {PostId}", postId);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("RabbitMQ publish timeout for Post {PostId} - likely RabbitMQ disk space alarm", postId);
+                throw new InvalidOperationException("Video processing service is temporarily unavailable. Please try again later.");
+            }
 
             _logger.LogInformation("Video processing request published successfully for Post {PostId}", postId);
         }
