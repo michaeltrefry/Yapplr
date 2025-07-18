@@ -55,6 +55,10 @@ jobs:
         echo "PROD_SERVER_HOST is set: ${{ secrets.PROD_SERVER_HOST != '' }}"
         echo "PROD_SERVER_USER is set: ${{ secrets.PROD_SERVER_USER != '' }}"
         echo "PROD_SERVER_SSH_KEY is set: ${{ secrets.PROD_SERVER_SSH_KEY != '' }}"
+        echo "PROD_DATABASE_CONNECTION_STRING is set: ${{ secrets.PROD_DATABASE_CONNECTION_STRING != '' }}"
+        echo "PROD_JWT_SECRET_KEY is set: ${{ secrets.PROD_JWT_SECRET_KEY != '' }}"
+        echo "PROD_SENDGRID_API_KEY is set: ${{ secrets.PROD_SENDGRID_API_KEY != '' }}"
+        echo "PROD_SENDGRID_FROM_EMAIL is set: ${{ secrets.PROD_SENDGRID_FROM_EMAIL != '' }}"
 
     - name: Deploy to Linode
       uses: appleboy/ssh-action@v1.0.3
