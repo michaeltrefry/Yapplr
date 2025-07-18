@@ -110,7 +110,7 @@ jobs:
           export FORCE_REBUILD=${{ github.event.inputs.force_rebuild || 'false' }}
 
           # Run optimized deployment (preserves all data)
-          chmod +x deploy-prod-optimized.sh
+          chmod +x deploy-prod.sh
           ./deploy-prod.sh
       env:
         PROD_DATABASE_CONNECTION_STRING: ${{ secrets.PROD_DATABASE_CONNECTION_STRING }}
