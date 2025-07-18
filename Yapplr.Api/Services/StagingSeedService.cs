@@ -77,6 +77,31 @@ public class StagingSeedService
         _context.Users.Add(adminUser);
         _logger.LogInformation("✅ Admin user created: {Username} ({Email})", adminUser.Username, adminUser.Email);
 
+        // Create notification preferences for admin user with email notifications disabled
+        var adminPreferences = new NotificationPreferences
+        {
+            UserId = adminUser.Id,
+            // Disable email notifications for admin user
+            EnableEmailNotifications = false,
+            EnableEmailDigest = false,
+            EnableInstantEmailNotifications = false,
+            // Keep other notification types enabled for admin testing
+            EnableMessageNotifications = true,
+            EnableMentionNotifications = true,
+            EnableReplyNotifications = true,
+            EnableCommentNotifications = true,
+            EnableFollowNotifications = true,
+            EnableLikeNotifications = true,
+            EnableRepostNotifications = true,
+            EnableFollowRequestNotifications = true,
+            PreferredMethod = NotificationDeliveryMethod.SignalROnly,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.NotificationPreferences.Add(adminPreferences);
+        _logger.LogInformation("✅ Admin user notification preferences created (email notifications disabled)");
+
         // Suppress async warning since we're not actually using await in this method
         await Task.CompletedTask;
     }
@@ -132,8 +157,64 @@ public class StagingSeedService
 
         _logger.LogInformation("✅ Created 20 test users with pre-verified emails");
 
+        // Create notification preferences for all users with email notifications disabled
+        await CreateNotificationPreferencesAsync();
+
         // Suppress async warning since we're not actually using await in this method
         await Task.CompletedTask;
+    }
+
+    private async Task CreateNotificationPreferencesAsync()
+    {
+        _logger.LogInformation("🔔 Creating notification preferences for all users (email notifications disabled)...");
+
+        // Get all users that need notification preferences
+        var users = await _context.Users.ToListAsync();
+        var existingPreferences = await _context.NotificationPreferences
+            .Select(np => np.UserId)
+            .ToListAsync();
+
+        var usersNeedingPreferences = users
+            .Where(u => !existingPreferences.Contains(u.Id))
+            .ToList();
+
+        foreach (var user in usersNeedingPreferences)
+        {
+            var preferences = new NotificationPreferences
+            {
+                UserId = user.Id,
+                // Disable email notifications for all seed users
+                EnableEmailNotifications = false,
+                EnableEmailDigest = false,
+                EnableInstantEmailNotifications = false,
+                // Keep other notification types enabled for testing
+                EnableMessageNotifications = true,
+                EnableMentionNotifications = true,
+                EnableReplyNotifications = true,
+                EnableCommentNotifications = true,
+                EnableFollowNotifications = true,
+                EnableLikeNotifications = true,
+                EnableRepostNotifications = true,
+                EnableFollowRequestNotifications = true,
+                // Use SignalR for real-time notifications
+                PreferredMethod = NotificationDeliveryMethod.SignalROnly,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.NotificationPreferences.Add(preferences);
+        }
+
+        if (usersNeedingPreferences.Any())
+        {
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("✅ Created notification preferences for {Count} users with email notifications disabled",
+                usersNeedingPreferences.Count);
+        }
+        else
+        {
+            _logger.LogInformation("ℹ️ All users already have notification preferences");
+        }
     }
 
     private async Task CreateSampleContentAsync()

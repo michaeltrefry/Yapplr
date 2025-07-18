@@ -61,5 +61,29 @@ public class EssentialUserSeedService
 
         _context.Users.Add(systemUser);
         _logger.LogInformation("✅ System user created: {Username} ({Email})", systemUser.Username, systemUser.Email);
+
+        // Create notification preferences for system user with email notifications disabled
+        var systemPreferences = new NotificationPreferences
+        {
+            UserId = systemUser.Id,
+            // Disable all notifications for system user
+            EnableEmailNotifications = false,
+            EnableEmailDigest = false,
+            EnableInstantEmailNotifications = false,
+            EnableMessageNotifications = false,
+            EnableMentionNotifications = false,
+            EnableReplyNotifications = false,
+            EnableCommentNotifications = false,
+            EnableFollowNotifications = false,
+            EnableLikeNotifications = false,
+            EnableRepostNotifications = false,
+            EnableFollowRequestNotifications = false,
+            PreferredMethod = NotificationDeliveryMethod.Disabled,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.NotificationPreferences.Add(systemPreferences);
+        _logger.LogInformation("✅ System user notification preferences created (all notifications disabled)");
     }
 }
