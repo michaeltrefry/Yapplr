@@ -57,11 +57,13 @@ public class Post : IUserOwnedEntity
     public bool IsDeletedByUser { get; set; } = false;
     public DateTime? DeletedByUserAt { get; set; }
     
-    // Foreign key
+    // Foreign keys
     public int UserId { get; set; }
-    
+    public int? GroupId { get; set; } // Optional - null for regular posts, set for group posts
+
     // Navigation properties
     public User User { get; set; } = null!;
+    public Group? Group { get; set; } // Optional - only set for group posts
     public ICollection<Like> Likes { get; set; } = new List<Like>();
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<Repost> Reposts { get; set; } = new List<Repost>();

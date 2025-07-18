@@ -10,7 +10,8 @@ public record CreatePostWithMediaDto(
     [StringLength(256)] string? Content,
     PostPrivacy Privacy = PostPrivacy.Public,
     [MaxLength(10, ErrorMessage = "Maximum 10 media files allowed")]
-    List<MediaFileDto>? MediaFiles = null
+    List<MediaFileDto>? MediaFiles = null,
+    int? GroupId = null // Optional - for creating posts in groups
 );
 
 /// <summary>

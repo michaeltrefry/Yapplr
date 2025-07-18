@@ -63,6 +63,7 @@ public static class WebApplicationExtensions
         app.MapAuthEndpoints();
         app.MapUserEndpoints();
         app.MapPostEndpoints();
+        app.MapGroupEndpoints();
         app.MapBlockEndpoints();
         app.MapImageEndpoints();
         app.MapVideoEndpoints();

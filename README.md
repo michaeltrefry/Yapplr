@@ -45,6 +45,22 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Fallback System**: Automatic fallback between notification providers for reliability
 - **Dark Mode**: Complete dark theme support with user preferences and persistent storage
 
+### 👥 Groups & Communities
+- **Open Groups**: Create and join public groups where anyone can participate
+- **Group Management**: Create groups with custom names, descriptions, and images
+- **Group Discovery**: Search and browse all available groups with pagination
+- **Member Management**: View group members with join dates and roles (Member, Moderator, Admin)
+- **Group Posts**: Post content directly in groups with automatic public visibility
+- **Public Group Content**: All posts in groups are public regardless of user privacy settings
+- **Group Ownership**: Group creators become owners with full management permissions
+- **Easy Joining**: One-click join/leave functionality for all groups
+- **Group Navigation**: Dedicated group pages showing posts, members, and group information
+- **User Group Lists**: View all groups a user is a member of
+- **Group Statistics**: Real-time member counts and post counts for each group
+- **Group Validation**: Automatic validation of group membership before posting
+- **Unique Group Names**: Enforced unique group names across the platform
+- **RESTful Group API**: Complete REST API with 12 endpoints for all group operations
+
 ### 🛡️ Admin & Moderation System
 - **Comprehensive Admin Dashboard**: Full-featured admin interface with role-based access control
   - **Admin Roles**: Support for Admin and Moderator roles with different permission levels
@@ -201,6 +217,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **SendGrid** - Email service for verification and password reset (with AWS SES fallback)
 - **File System Storage** - Image and video upload and serving with multi-media support
 - **Multi-Media Processing** - Support for up to 10 photos/videos per post with PostMedia entity relationships
+- **Groups & Communities** - Complete group system with membership management and public group posts
 - **Video Processing Service** - FFmpeg-based video processing with RabbitMQ messaging
 - **RabbitMQ** - Message queue for asynchronous video processing tasks
 - **Redis** - High-performance caching for count operations and real-time data
@@ -310,6 +327,49 @@ Yapplr provides comprehensive API endpoints for multi-media post creation and ph
 - **File Validation**: Automatic format detection, size limits (5MB images, 100MB videos)
 - **Privacy Aware**: All photo library queries respect post privacy settings and user relationships
 - **Performance Optimized**: Efficient database queries with proper indexing for fast photo retrieval
+
+## 👥 Groups & Communities API
+
+Yapplr provides comprehensive group functionality allowing users to create, join, and participate in public communities.
+
+### Core Features
+- **Open Groups**: All groups are public and open for anyone to join
+- **Group Management**: Create, update, and delete groups with proper ownership controls
+- **Member Management**: Join/leave groups with automatic membership tracking
+- **Group Posts**: Post content directly in groups with automatic public visibility
+- **Search & Discovery**: Full-text search across group names and descriptions
+- **Member Roles**: Support for Member, Moderator, and Admin roles (extensible for future features)
+
+### API Endpoints
+
+#### Group Management
+- `POST /api/groups` - Create a new group (requires authentication)
+- `GET /api/groups` - Get all groups (paginated)
+- `GET /api/groups/search?query={query}` - Search groups by name or description
+- `GET /api/groups/{id}` - Get group details by ID
+- `GET /api/groups/name/{name}` - Get group details by name
+- `PUT /api/groups/{id}` - Update group (owner only)
+- `DELETE /api/groups/{id}` - Delete group (owner only)
+
+#### Group Membership
+- `POST /api/groups/{id}/join` - Join a group
+- `POST /api/groups/{id}/leave` - Leave a group (owners cannot leave)
+- `GET /api/groups/{id}/members` - Get group members (paginated)
+- `GET /api/groups/me` - Get current user's groups
+- `GET /api/groups/user/{userId}` - Get groups for a specific user
+
+#### Group Content
+- `GET /api/groups/{id}/posts` - Get posts in a group (paginated)
+- `POST /api/posts` - Create post (with optional `groupId` for group posts)
+
+### Technical Implementation
+- **Database Schema**: Groups, GroupMembers, and Posts tables with proper foreign key relationships
+- **Unique Constraints**: Group names must be unique across the platform
+- **Cascade Deletes**: Proper cleanup when groups or users are deleted
+- **Performance Indexes**: Optimized queries for group discovery, membership, and content retrieval
+- **Public Content**: All group posts are automatically public regardless of user privacy settings
+- **Membership Validation**: Users must be group members to post in groups
+- **Role-Based Permissions**: Group owners have full management rights
 
 ## 🤖 AI Content Moderation System
 

@@ -14,6 +14,7 @@ public record PostDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     UserDto User,
+    GroupDto? Group, // Optional - only set for group posts
     int LikeCount,
     int CommentCount,
     int RepostCount,

@@ -9,5 +9,6 @@ public record CreatePostDto(
     string? VideoFileName = null,
     PostPrivacy Privacy = PostPrivacy.Public,
     [MaxLength(10, ErrorMessage = "Maximum 10 media files allowed")]
-    List<string>? MediaFileNames = null
+    List<string>? MediaFileNames = null,
+    int? GroupId = null // Optional - for creating posts in groups
 );

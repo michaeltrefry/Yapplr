@@ -101,6 +101,10 @@ public class User : IEntity
     public ICollection<Mention> MentionsReceived { get; set; } = new List<Mention>(); // Mentions of this user
     public ICollection<Mention> MentionsMade { get; set; } = new List<Mention>(); // Mentions made by this user
 
+    // Group relationships
+    public ICollection<Group> CreatedGroups { get; set; } = new List<Group>(); // Groups created by this user
+    public ICollection<GroupMember> GroupMemberships { get; set; } = new List<GroupMember>(); // Groups this user is a member of
+
     // Admin relationships
     public ICollection<User> SuspendedUsers { get; set; } = new List<User>(); // Users suspended by this admin/moderator
     public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>(); // Audit logs for actions on this user

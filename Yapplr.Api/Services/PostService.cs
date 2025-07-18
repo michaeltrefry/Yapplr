@@ -78,6 +78,31 @@ public class PostService : BaseService, IPostService
             throw new InvalidOperationException("Insufficient trust score to create posts");
         }
 
+        // If posting to a group, validate group membership and override privacy
+        PostPrivacy effectivePrivacy = createDto.Privacy;
+        if (createDto.GroupId.HasValue)
+        {
+            // Check if group exists
+            var group = await _context.Groups.FindAsync(createDto.GroupId.Value);
+            if (group == null)
+            {
+                throw new InvalidOperationException("Group not found");
+            }
+
+            // Check if user is a member of the group
+            var isMember = await _context.GroupMembers
+                .AnyAsync(gm => gm.GroupId == createDto.GroupId.Value && gm.UserId == userId);
+
+            if (!isMember)
+            {
+                throw new InvalidOperationException("You must be a member of the group to post in it");
+            }
+
+            // Posts in groups are always public
+            effectivePrivacy = PostPrivacy.Public;
+            _logger.LogInformation("Post will be created in group {GroupId} with public privacy", createDto.GroupId.Value);
+        }
+
         // Check if post contains any videos
         var hasVideos = !string.IsNullOrEmpty(createDto.VideoFileName) ||
                        (createDto.MediaFileNames?.Any(fileName =>
@@ -89,8 +114,9 @@ public class PostService : BaseService, IPostService
         var post = new Post
         {
             Content = createDto.Content,
-            Privacy = createDto.Privacy,
+            Privacy = effectivePrivacy,
             UserId = userId,
+            GroupId = createDto.GroupId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             // Hide posts with videos during processing so they're only visible to the author
@@ -259,6 +285,7 @@ public class PostService : BaseService, IPostService
         // Load the post with user data
         var createdPost = await _context.Posts
             .Include(p => p.User)
+            .Include(p => p.Group)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)
@@ -295,6 +322,31 @@ public class PostService : BaseService, IPostService
             // Continue with post creation if trust check fails to avoid blocking users
         }
 
+        // If posting to a group, validate group membership and override privacy
+        PostPrivacy effectivePrivacy = createDto.Privacy;
+        if (createDto.GroupId.HasValue)
+        {
+            // Check if group exists
+            var group = await _context.Groups.FindAsync(createDto.GroupId.Value);
+            if (group == null)
+            {
+                throw new InvalidOperationException("Group not found");
+            }
+
+            // Check if user is a member of the group
+            var isMember = await _context.GroupMembers
+                .AnyAsync(gm => gm.GroupId == createDto.GroupId.Value && gm.UserId == userId);
+
+            if (!isMember)
+            {
+                throw new InvalidOperationException("You must be a member of the group to post in it");
+            }
+
+            // Posts in groups are always public
+            effectivePrivacy = PostPrivacy.Public;
+            _logger.LogInformation("Post will be created in group {GroupId} with public privacy", createDto.GroupId.Value);
+        }
+
         // Validate that either content or media files are provided
         var hasContent = !string.IsNullOrWhiteSpace(createDto.Content);
         var hasMediaFiles = createDto.MediaFiles != null && createDto.MediaFiles.Count > 0;
@@ -317,8 +369,9 @@ public class PostService : BaseService, IPostService
         var post = new Post
         {
             Content = string.IsNullOrWhiteSpace(createDto.Content) ? string.Empty : createDto.Content,
-            Privacy = createDto.Privacy,
+            Privacy = effectivePrivacy,
             UserId = userId,
+            GroupId = createDto.GroupId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             // Hide posts with videos during processing so they're only visible to the author
@@ -434,6 +487,7 @@ public class PostService : BaseService, IPostService
         // Load the post with user data
         var createdPost = await _context.Posts
             .Include(p => p.User)
+            .Include(p => p.Group)
             .Include(p => p.Likes)
             .Include(p => p.Comments)
             .Include(p => p.Reposts)

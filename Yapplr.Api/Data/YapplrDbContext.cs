@@ -20,6 +20,8 @@ public class YapplrDbContext : DbContext
     public DbSet<Follow> Follows { get; set; }
     public DbSet<FollowRequest> FollowRequests { get; set; }
     public DbSet<Block> Blocks { get; set; }
+    public DbSet<Group> Groups { get; set; }
+    public DbSet<GroupMember> GroupMembers { get; set; }
     public DbSet<PasswordReset> PasswordResets { get; set; }
     public DbSet<EmailVerification> EmailVerifications { get; set; }
     public DbSet<Conversation> Conversations { get; set; }
@@ -101,9 +103,15 @@ public class YapplrDbContext : DbContext
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasOne(e => e.Group)
+                  .WithMany(e => e.Posts)
+                  .HasForeignKey(e => e.GroupId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
             // Performance indexes for common query patterns
             entity.HasIndex(e => new { e.UserId, e.CreatedAt }); // User profile posts ordered by date
             entity.HasIndex(e => new { e.Privacy, e.CreatedAt }); // Public timeline queries
+            entity.HasIndex(e => new { e.GroupId, e.CreatedAt }); // Group posts ordered by date
             entity.HasIndex(e => e.CreatedAt); // General timeline ordering
 
             // Optimized index for hybrid hiding system
@@ -237,6 +245,49 @@ public class YapplrDbContext : DbContext
                   .WithMany(e => e.BlockedByUsers)
                   .HasForeignKey(e => e.BlockedId)
                   .OnDelete(DeleteBehavior.Restrict); // Don't cascade delete when blocked user is deleted
+        });
+
+        // Group configuration
+        modelBuilder.Entity<Group>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name).IsUnique(); // Group names must be unique
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.ImageFileName).HasMaxLength(255);
+
+            entity.HasOne(e => e.User)
+                  .WithMany(e => e.CreatedGroups)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Performance indexes
+            entity.HasIndex(e => e.CreatedAt); // For ordering groups by creation date
+            entity.HasIndex(e => e.UserId); // For finding groups created by a user
+        });
+
+        // GroupMember configuration
+        modelBuilder.Entity<GroupMember>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.GroupId, e.UserId }).IsUnique(); // Prevent duplicate memberships
+            entity.Property(e => e.Role)
+                  .HasConversion<int>()
+                  .HasDefaultValue(GroupMemberRole.Member);
+
+            entity.HasOne(e => e.Group)
+                  .WithMany(e => e.Members)
+                  .HasForeignKey(e => e.GroupId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                  .WithMany(e => e.GroupMemberships)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Performance indexes
+            entity.HasIndex(e => e.GroupId); // For finding members of a group
+            entity.HasIndex(e => e.UserId); // For finding groups a user is member of
+            entity.HasIndex(e => e.JoinedAt); // For ordering members by join date
         });
 
         // PasswordReset configuration

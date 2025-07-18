@@ -325,6 +325,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IPostService, PostService>();
+        services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<IBlockService, BlockService>();
         services.AddScoped<IImageService, ImageService>();
         services.AddScoped<IVideoService, VideoService>();

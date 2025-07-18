@@ -316,6 +316,25 @@ public static class MappingUtilities
         // Map media items
         var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto(httpContext)).ToList();
 
+        // Map group information if post is in a group
+        GroupDto? groupDto = null;
+        if (post.Group != null)
+        {
+            groupDto = new GroupDto(
+                post.Group.Id,
+                post.Group.Name,
+                post.Group.Description,
+                post.Group.ImageFileName,
+                post.Group.CreatedAt,
+                post.Group.UpdatedAt,
+                post.Group.IsOpen,
+                post.Group.User.MapToUserDto(),
+                post.Group.Members?.Count ?? 0,
+                post.Group.Posts?.Count ?? 0,
+                false // IsCurrentUserMember - we don't have this info in this context
+            );
+        }
+
         return new PostDto(
             post.Id,
             post.Content,
@@ -327,6 +346,7 @@ public static class MappingUtilities
             post.CreatedAt,
             post.UpdatedAt,
             userDto,
+            groupDto,
             post.Likes.Count,
             post.Comments.Count,
             post.Reposts.Count,
@@ -437,6 +457,25 @@ public static class MappingUtilities
         // Map media items
         var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto(httpContext)).ToList();
 
+        // Map group information if post is in a group
+        GroupDto? groupDto = null;
+        if (post.Group != null)
+        {
+            groupDto = new GroupDto(
+                post.Group.Id,
+                post.Group.Name,
+                post.Group.Description,
+                post.Group.ImageFileName,
+                post.Group.CreatedAt,
+                post.Group.UpdatedAt,
+                post.Group.IsOpen,
+                post.Group.User.MapToUserDto(),
+                post.Group.Members?.Count ?? 0,
+                post.Group.Posts?.Count ?? 0,
+                false // IsCurrentUserMember - we don't have this info in this context
+            );
+        }
+
         return new PostDto(
             post.Id,
             post.Content,
@@ -448,6 +487,7 @@ public static class MappingUtilities
             post.CreatedAt,
             post.UpdatedAt,
             userDto,
+            groupDto,
             likeCount,
             commentCount,
             repostCount,

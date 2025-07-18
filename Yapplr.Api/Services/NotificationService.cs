@@ -611,6 +611,7 @@ public class NotificationService : INotificationService
                 notification.Post.CreatedAt,
                 notification.Post.UpdatedAt,
                 notification.Post.User.ToDto(),
+                null, // Group - not loaded for notifications
                 0, // LikeCount - we don't need this for notifications
                 0, // CommentCount - we don't need this for notifications
                 0, // RepostCount - we don't need this for notifications
@@ -660,6 +661,7 @@ public class NotificationService : INotificationService
                     notification.Comment.Post.CreatedAt,
                     notification.Comment.Post.UpdatedAt,
                     notification.Comment.Post.User.ToDto(),
+                    null, // Group - not loaded for notifications
                     0, // LikeCount - we don't need this for notifications
                     0, // CommentCount - we don't need this for notifications
                     0, // RepostCount - we don't need this for notifications

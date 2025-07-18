@@ -18,6 +18,7 @@ public static class QueryUtilities
     {
         return context.Posts
             .Include(p => p.User)
+            .Include(p => p.Group)
             .Include(p => p.Likes)
             .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden))
             .Include(p => p.Reposts)

@@ -46,6 +46,57 @@ export interface UserProfile {
   requiresFollowApproval: boolean;
 }
 
+export enum GroupMemberRole {
+  Member = 0,
+  Moderator = 1,
+  Admin = 2,
+}
+
+export interface Group {
+  id: number;
+  name: string;
+  description: string;
+  imageFileName?: string;
+  createdAt: string;
+  updatedAt: string;
+  isOpen: boolean;
+  user: User;
+  memberCount: number;
+  postCount: number;
+  isCurrentUserMember: boolean;
+}
+
+export interface GroupList {
+  id: number;
+  name: string;
+  description: string;
+  imageFileName?: string;
+  createdAt: string;
+  creatorUsername: string;
+  memberCount: number;
+  postCount: number;
+  isCurrentUserMember: boolean;
+}
+
+export interface GroupMember {
+  id: number;
+  joinedAt: string;
+  role: GroupMemberRole;
+  user: User;
+}
+
+export interface CreateGroup {
+  name: string;
+  description?: string;
+  imageFileName?: string;
+}
+
+export interface UpdateGroup {
+  name: string;
+  description: string;
+  imageFileName?: string;
+}
+
 export enum LinkPreviewStatus {
   Pending = 0,
   Success = 1,
@@ -81,6 +132,7 @@ export interface Post {
   createdAt: string;
   updatedAt: string;
   user: User;
+  group?: Group;
   likeCount: number;
   commentCount: number;
   repostCount: number;
@@ -137,6 +189,7 @@ export interface CreatePostData {
   content: string;
   imageFileName?: string;
   privacy?: PostPrivacy;
+  groupId?: number;
 }
 
 export interface UpdatePostData {
