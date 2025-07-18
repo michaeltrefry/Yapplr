@@ -9,5 +9,6 @@ public record SendNotificationEmailCommand : BaseCommand
     public required string Username { get; init; }
     public required string Subject { get; init; }
     public required string Message { get; init; }
-    public string NotificationType { get; init; } = "system";
+    public string? NotificationType { get; init; } = "system";
+    public string? ActionUrl { get; init; }
 }

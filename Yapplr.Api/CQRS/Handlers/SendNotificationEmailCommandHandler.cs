@@ -1,6 +1,7 @@
 using MassTransit;
 using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.EmailTemplates;
 
 namespace Yapplr.Api.CQRS.Handlers;
 
@@ -20,23 +21,21 @@ public class SendNotificationEmailCommandHandler : BaseCommandHandler<SendNotifi
 
     protected override async Task HandleAsync(SendNotificationEmailCommand command, ConsumeContext<SendNotificationEmailCommand> context)
     {
-        var htmlBody = $@"
-            <h1>{command.Subject}</h1>
-            <p>Hi {command.Username},</p>
-            <p>{command.Message}</p>
-            <p>Best regards,<br>The Yapplr Team</p>";
+        // Create notification email template
+        var template = new NotificationEmailTemplate(
+            username: command.Username,
+            notificationTitle: command.Subject,
+            notificationBody: command.Message,
+            notificationType: command.NotificationType ?? "notification",
+            actionUrl: command.ActionUrl
+        );
 
-        var textBody = $@"
-            {command.Subject}
-
-            Hi {command.Username},
-
-            {command.Message}
-
-            Best regards,
-            The Yapplr Team";
-
-        var success = await _emailService.SendEmailAsync(command.ToEmail, command.Subject, htmlBody, textBody);
+        var success = await _emailService.SendEmailAsync(
+            command.ToEmail,
+            template.Subject,
+            template.GenerateHtmlBody(),
+            template.GenerateTextBody()
+        );
 
         if (!success)
         {

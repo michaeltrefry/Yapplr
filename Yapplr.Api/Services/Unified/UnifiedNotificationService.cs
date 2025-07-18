@@ -1539,7 +1539,9 @@ public class UnifiedNotificationService : IUnifiedNotificationService
                 ToEmail = user.Email,
                 Username = user.Username,
                 Subject = request.Title,
-                Message = request.Body
+                Message = request.Body,
+                NotificationType = request.NotificationType,
+                ActionUrl = GenerateActionUrl(request)
             };
 
             // Send via CQRS command
@@ -1552,6 +1554,33 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         {
             _logger.LogError(ex, "Failed to send email notification to user {UserId}", request.UserId);
             return false;
+        }
+    }
+
+    private string? GenerateActionUrl(NotificationRequest request)
+    {
+        try
+        {
+            // Generate appropriate action URLs based on notification type and data
+            return request.NotificationType?.ToLower() switch
+            {
+                "like" or "comment" or "repost" when request.Data?.ContainsKey("postId") == true
+                    => $"https://yapplr.com/post/{request.Data["postId"]}",
+                "follow" or "follow_request" when request.Data?.ContainsKey("fromUserId") == true
+                    => $"https://yapplr.com/user/{request.Data["fromUserId"]}",
+                "message" when request.Data?.ContainsKey("conversationId") == true
+                    => $"https://yapplr.com/messages/{request.Data["conversationId"]}",
+                "mention" when request.Data?.ContainsKey("postId") == true
+                    => $"https://yapplr.com/post/{request.Data["postId"]}",
+                "reply" when request.Data?.ContainsKey("postId") == true
+                    => $"https://yapplr.com/post/{request.Data["postId"]}",
+                _ => "https://yapplr.com/notifications"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to generate action URL for notification type {NotificationType}", request.NotificationType);
+            return "https://yapplr.com/notifications";
         }
     }
 

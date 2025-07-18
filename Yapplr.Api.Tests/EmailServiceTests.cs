@@ -175,4 +175,73 @@ public class EmailServiceTests
         Assert.Contains(appealUrl, textBody);
         Assert.DoesNotContain("<!DOCTYPE html>", textBody);
     }
+
+    [Fact]
+    public void NotificationEmailTemplate_ShouldGenerateCorrectContent()
+    {
+        // Arrange
+        var username = "testuser";
+        var title = "You have a new like!";
+        var body = "Someone liked your post about technology.";
+        var notificationType = "like";
+        var actionUrl = "https://yapplr.com/post/123";
+        var template = new NotificationEmailTemplate(username, title, body, notificationType, actionUrl);
+
+        // Act
+        var htmlBody = template.GenerateHtmlBody();
+        var textBody = template.GenerateTextBody();
+
+        // Assert
+        Assert.Equal(title, template.Subject);
+        Assert.Contains("testuser", htmlBody);
+        Assert.Contains("You have a new like!", htmlBody);
+        Assert.Contains("Someone liked your post about technology.", htmlBody);
+        Assert.Contains("❤️", htmlBody); // Like icon
+        Assert.Contains("https://yapplr.com/post/123", htmlBody);
+        Assert.Contains("View on Yapplr", htmlBody);
+
+        Assert.Contains("testuser", textBody);
+        Assert.Contains("You have a new like!", textBody);
+        Assert.Contains("Someone liked your post about technology.", textBody);
+        Assert.Contains("https://yapplr.com/post/123", textBody);
+    }
+
+    [Fact]
+    public void NotificationEmailTemplate_WithoutActionUrl_ShouldNotIncludeButton()
+    {
+        // Arrange
+        var template = new NotificationEmailTemplate("testuser", "System Message", "Your account has been updated.", "system");
+
+        // Act
+        var htmlBody = template.GenerateHtmlBody();
+        var textBody = template.GenerateTextBody();
+
+        // Assert
+        Assert.DoesNotContain("View on Yapplr", htmlBody);
+        Assert.Contains("🔔", htmlBody); // System notification icon
+        Assert.DoesNotContain("View on Yapplr:", textBody);
+    }
+
+    [Theory]
+    [InlineData("message", "💬")]
+    [InlineData("mention", "🏷️")]
+    [InlineData("reply", "↩️")]
+    [InlineData("comment", "💭")]
+    [InlineData("follow", "👥")]
+    [InlineData("like", "❤️")]
+    [InlineData("repost", "🔄")]
+    [InlineData("follow_request", "👋")]
+    [InlineData("system", "🔔")]
+    [InlineData("unknown", "🔔")]
+    public void NotificationEmailTemplate_ShouldUseCorrectIcon(string notificationType, string expectedIcon)
+    {
+        // Arrange
+        var template = new NotificationEmailTemplate("testuser", "Test", "Test message", notificationType);
+
+        // Act
+        var htmlBody = template.GenerateHtmlBody();
+
+        // Assert
+        Assert.Contains(expectedIcon, htmlBody);
+    }
 }
