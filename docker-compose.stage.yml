@@ -213,8 +213,6 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-    tmpfs:
-      - /var/lib/rabbitmq/mnesia  # Use tmpfs for mnesia to avoid permission issues
     restart: unless-stopped
     networks:
       - yapplr-network
