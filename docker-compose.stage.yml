@@ -68,6 +68,8 @@ services:
         condition: service_healthy
       influxdb:
         condition: service_healthy
+      seq:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
