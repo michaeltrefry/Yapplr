@@ -344,6 +344,7 @@ public class YapplrDbContext : DbContext
                   .HasConversion<int>();
             entity.Property(e => e.Message).HasMaxLength(500);
             entity.HasIndex(e => new { e.UserId, e.IsRead }); // For efficient querying of unread notifications
+            entity.HasIndex(e => new { e.UserId, e.IsSeen }); // For efficient querying of unseen notifications
             entity.HasIndex(e => new { e.UserId, e.CreatedAt }); // For notification timeline ordering
             entity.HasOne(e => e.User)
                   .WithMany(u => u.Notifications)

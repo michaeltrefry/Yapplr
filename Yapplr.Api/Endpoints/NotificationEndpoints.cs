@@ -89,6 +89,49 @@ public static class NotificationEndpoints
         .Produces(200)
         .Produces(401);
 
+        // Mark notification as seen
+        notifications.MapPut("/{notificationId:int}/seen", async (int notificationId, ClaimsPrincipal user, INotificationService notificationService) =>
+        {
+            var userId = user.GetUserId(true);
+            var success = await notificationService.MarkNotificationAsSeenAsync(notificationId, userId);
+
+            return success ? Results.Ok(new { message = "Notification marked as seen" }) : Results.NotFound(new { message = "Notification not found" });
+        })
+        .WithName("MarkNotificationAsSeen")
+        .WithSummary("Mark a specific notification as seen")
+        .RequireAuthorization("ActiveUser")
+        .Produces(200)
+        .Produces(404)
+        .Produces(401);
+
+        // Mark multiple notifications as seen
+        notifications.MapPut("/seen", async (int[] notificationIds, ClaimsPrincipal user, INotificationService notificationService) =>
+        {
+            var userId = user.GetUserId(true);
+            var success = await notificationService.MarkNotificationsAsSeenAsync(notificationIds, userId);
+
+            return Results.Ok(new { message = success ? "Notifications marked as seen" : "No unseen notifications found" });
+        })
+        .WithName("MarkNotificationsAsSeen")
+        .WithSummary("Mark multiple notifications as seen")
+        .RequireAuthorization("ActiveUser")
+        .Produces(200)
+        .Produces(401);
+
+        // Mark all notifications as seen
+        notifications.MapPut("/seen-all", async (ClaimsPrincipal user, INotificationService notificationService) =>
+        {
+            var userId = user.GetUserId(true);
+            var success = await notificationService.MarkAllNotificationsAsSeenAsync(userId);
+
+            return Results.Ok(new { message = success ? "All notifications marked as seen" : "No unseen notifications found" });
+        })
+        .WithName("MarkAllNotificationsAsSeen")
+        .WithSummary("Mark all notifications as seen for the user")
+        .RequireAuthorization("ActiveUser")
+        .Produces(200)
+        .Produces(401);
+
         // Test notification endpoints - only available in development
         if (app.Environment.IsDevelopment())
         {

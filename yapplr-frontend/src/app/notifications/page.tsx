@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { notificationApi, followRequestsApi } from '@/lib/api';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Bell, Heart, MessageCircle, Repeat, UserPlus, AtSign, Check, X, Shield, Ban, AlertTriangle, Eye, Trash2, RotateCcw, CheckCircle, XCircle, Info } from 'lucide-react';
@@ -73,6 +73,8 @@ export default function NotificationsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 25;
   const [processedRequests, setProcessedRequests] = useState<Record<number, 'approved' | 'denied'>>({});
+  const [seenNotifications, setSeenNotifications] = useState<Set<number>>(new Set());
+  const seenTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: notificationData, isLoading, error } = useQuery({
     queryKey: ['notifications', page],
@@ -92,6 +94,13 @@ export default function NotificationsPage() {
     mutationFn: notificationApi.markAllAsRead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      refreshNotificationCount();
+    },
+  });
+
+  const markAsSeenMutation = useMutation({
+    mutationFn: notificationApi.markMultipleAsSeen,
+    onSuccess: () => {
       refreshNotificationCount();
     },
   });
@@ -125,6 +134,45 @@ export default function NotificationsPage() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
+
+  // Auto-mark notifications as seen after 5 seconds
+  useEffect(() => {
+    if (!notificationData?.notifications?.length) return;
+
+    // Clear any existing timer
+    if (seenTimerRef.current) {
+      clearTimeout(seenTimerRef.current);
+    }
+
+    // Get unseen notifications that haven't been processed yet
+    const unseenNotifications = notificationData.notifications.filter(
+      n => !n.isSeen && !seenNotifications.has(n.id)
+    );
+
+    if (unseenNotifications.length === 0) return;
+
+    // Set timer to mark notifications as seen after 5 seconds
+    seenTimerRef.current = setTimeout(() => {
+      const notificationIds = unseenNotifications.map(n => n.id);
+
+      // Mark them as seen locally to prevent duplicate API calls
+      setSeenNotifications(prev => {
+        const newSet = new Set(prev);
+        notificationIds.forEach(id => newSet.add(id));
+        return newSet;
+      });
+
+      // Call API to mark as seen
+      markAsSeenMutation.mutate(notificationIds);
+    }, 5000); // 5 seconds
+
+    // Cleanup timer on unmount or dependency change
+    return () => {
+      if (seenTimerRef.current) {
+        clearTimeout(seenTimerRef.current);
+      }
+    };
+  }, [notificationData?.notifications, seenNotifications, markAsSeenMutation]);
 
   if (authLoading) {
     return (

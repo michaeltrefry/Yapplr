@@ -120,12 +120,12 @@ public class CountCacheService : ICountCacheService
     // Notification counts
     public async Task<int> GetUnreadNotificationCountAsync(int userId)
     {
-        var key = $"count:notifications:unread:{userId}";
+        var key = $"count:notifications:unseen:{userId}";
         return await _cache.GetOrSetValueAsync(key, async () =>
         {
             var count = await _context.Notifications
-                .CountAsync(n => n.UserId == userId && !n.IsRead);
-            _logger.LogDebug("Calculated unread notification count for user {UserId}: {Count}", userId, count);
+                .CountAsync(n => n.UserId == userId && !n.IsSeen);
+            _logger.LogDebug("Calculated unseen notification count for user {UserId}: {Count}", userId, count);
             return count;
         }, NotificationCountExpiration);
     }
@@ -249,7 +249,7 @@ public class CountCacheService : ICountCacheService
 
     public async Task InvalidateNotificationCountsAsync(int userId)
     {
-        await _cache.RemoveAsync($"count:notifications:unread:{userId}");
+        await _cache.RemoveAsync($"count:notifications:unseen:{userId}");
         await _cache.RemoveAsync($"count:messages:unread:{userId}");
         _logger.LogDebug("Invalidated notification counts for user {UserId}", userId);
     }

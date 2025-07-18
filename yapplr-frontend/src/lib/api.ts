@@ -514,6 +514,21 @@ export const notificationApi = {
     return response.data;
   },
 
+  markAsSeen: async (notificationId: number): Promise<{ message: string }> => {
+    const response = await api.put(`/notifications/${notificationId}/seen`);
+    return response.data;
+  },
+
+  markMultipleAsSeen: async (notificationIds: number[]): Promise<{ message: string }> => {
+    const response = await api.put('/notifications/seen', notificationIds);
+    return response.data;
+  },
+
+  markAllAsSeen: async (): Promise<{ message: string }> => {
+    const response = await api.put('/notifications/seen-all');
+    return response.data;
+  },
+
   sendTestNotification: async (): Promise<{ success: boolean; message: string }> => {
     const response = await api.post('/notification-config/test/current-user');
     return response.data;

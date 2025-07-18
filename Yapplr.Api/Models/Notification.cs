@@ -12,10 +12,14 @@ public class Notification
     public string Message { get; set; } = string.Empty;
     
     public bool IsRead { get; set; } = false;
-    
+
+    public bool IsSeen { get; set; } = false;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     public DateTime? ReadAt { get; set; }
+
+    public DateTime? SeenAt { get; set; }
 
     [StringLength(20)]
     public string? Status { get; set; } // For follow requests: "approved", "denied", null for pending

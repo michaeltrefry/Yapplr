@@ -83,7 +83,7 @@ public abstract class SoftDeletableCrudService<TEntity, TDto, TCreateDto, TUpdat
     /// <summary>
     /// Get deleted entities (admin/moderator only)
     /// </summary>
-    public virtual async Task<ServiceResult<PaginatedResult<TDto>>> GetDeletedAsync(
+    public virtual Task<ServiceResult<PaginatedResult<TDto>>> GetDeletedAsync(
         int page = 1,
         int pageSize = 25,
         int currentUserId = 0)
@@ -92,12 +92,12 @@ public abstract class SoftDeletableCrudService<TEntity, TDto, TCreateDto, TUpdat
         {
             // Note: This method should be updated to use ClaimsPrincipal for permission checks
             // For now, we'll restrict access to prevent unauthorized access
-            return ServiceResult<PaginatedResult<TDto>>.Failure("Access denied - use ClaimsPrincipal-based method");
+            return Task.FromResult(ServiceResult<PaginatedResult<TDto>>.Failure("Access denied - use ClaimsPrincipal-based method"));
         }
         catch (Exception ex)
         {
             LogError(ex, nameof(GetDeletedAsync), new { page, pageSize, currentUserId });
-            return ServiceResult<PaginatedResult<TDto>>.Failure("An error occurred while retrieving deleted entities", ex);
+            return Task.FromResult(ServiceResult<PaginatedResult<TDto>>.Failure("An error occurred while retrieving deleted entities", ex));
         }
     }
 

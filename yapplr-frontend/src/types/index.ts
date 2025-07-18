@@ -430,8 +430,10 @@ export interface Notification {
   type: NotificationType;
   message: string;
   isRead: boolean;
+  isSeen: boolean;
   createdAt: string;
   readAt?: string;
+  seenAt?: string;
   status?: string;
   actorUser?: User;
   post?: Post;

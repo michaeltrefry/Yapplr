@@ -12,7 +12,7 @@ public interface INotificationService
     /// <summary>
     /// Creates mention notifications for users mentioned in content
     /// </summary>
-    Task CreateMentionNotificationsAsync(string content, int mentioningUserId, int? postId = null, int? commentId = null);
+    Task CreateMentionNotificationsAsync(string? content, int mentioningUserId, int? postId = null, int? commentId = null);
     
     /// <summary>
     /// Gets notifications for a user with pagination
@@ -33,6 +33,21 @@ public interface INotificationService
     /// Marks all notifications as read for a user
     /// </summary>
     Task<bool> MarkAllNotificationsAsReadAsync(int userId);
+
+    /// <summary>
+    /// Marks a notification as seen
+    /// </summary>
+    Task<bool> MarkNotificationAsSeenAsync(int notificationId, int userId);
+
+    /// <summary>
+    /// Marks multiple notifications as seen
+    /// </summary>
+    Task<bool> MarkNotificationsAsSeenAsync(int[] notificationIds, int userId);
+
+    /// <summary>
+    /// Marks all notifications as seen for a user
+    /// </summary>
+    Task<bool> MarkAllNotificationsAsSeenAsync(int userId);
     
     /// <summary>
     /// Creates a like notification

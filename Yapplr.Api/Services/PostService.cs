@@ -383,7 +383,7 @@ public class PostService : BaseService, IPostService
                 TrustScoreAction.PostCreated,
                 "post",
                 post.Id,
-                $"Created post with {createDto.Content.Length} characters and {createDto.MediaFiles?.Count ?? 0} media files"
+                $"Created post with {createDto.Content?.Length} characters and {createDto.MediaFiles?.Count ?? 0} media files"
             );
         }
         catch (Exception ex)
@@ -1229,8 +1229,9 @@ public class PostService : BaseService, IPostService
         return blockedByUser.Concat(blockedByOthers).Distinct().ToList();
     }
 
-    private async Task ProcessPostTagsAsync(int postId, string content)
+    private async Task ProcessPostTagsAsync(int postId, string? content)
     {
+        if (content == null) return;
         // Extract hashtags from the content
         var tagNames = TagParser.ExtractTags(content);
 
@@ -1286,8 +1287,9 @@ public class PostService : BaseService, IPostService
         }
     }
 
-    private async Task ProcessPostLinkPreviewsAsync(int postId, string content)
+    private async Task ProcessPostLinkPreviewsAsync(int postId, string? content)
     {
+        if (content == null) return;
         try
         {
             // Extract and process link previews
@@ -1433,8 +1435,9 @@ public class PostService : BaseService, IPostService
         }
     }
 
-    private async Task ProcessContentModerationAsync(int postId, string content, int userId)
+    private async Task ProcessContentModerationAsync(int postId, string? content, int userId)
     {
+        if (content == null) return;
         try
         {
             var moderationEnabled = _configuration.GetValue("ContentModeration:Enabled", true);
@@ -1542,7 +1545,7 @@ public class PostService : BaseService, IPostService
         }
     }
 
-    private async Task ProcessVideoAsync(int postId, int userId, string videoFileName, string postContent)
+    private async Task ProcessVideoAsync(int postId, int userId, string videoFileName, string? postContent)
     {
         try
         {

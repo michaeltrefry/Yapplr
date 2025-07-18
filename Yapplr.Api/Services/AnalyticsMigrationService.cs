@@ -318,7 +318,7 @@ public class AnalyticsMigrationService : IAnalyticsMigrationService
         }
     }
 
-    public async Task<MigrationStatusDto> GetMigrationStatusAsync()
+    public Task<MigrationStatusDto> GetMigrationStatusAsync()
     {
         var status = new MigrationStatusDto
         {
@@ -349,7 +349,7 @@ public class AnalyticsMigrationService : IAnalyticsMigrationService
             }
         }
 
-        return status;
+        return Task.FromResult(status);
     }
 
     public async Task<DataValidationResult> ValidateMigratedDataAsync(DateTime? fromDate = null, DateTime? toDate = null)
@@ -399,7 +399,7 @@ public class AnalyticsMigrationService : IAnalyticsMigrationService
         }
     }
 
-    public async Task<MigrationStatsDto> GetMigrationStatsAsync()
+    public Task<MigrationStatsDto> GetMigrationStatsAsync()
     {
         try
         {
@@ -456,15 +456,15 @@ public class AnalyticsMigrationService : IAnalyticsMigrationService
                 MigrationDuration = TimeSpan.Zero
             };
 
-            return stats;
+            return Task.FromResult(stats);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get migration statistics");
-            return new MigrationStatsDto
+            return Task.FromResult(new MigrationStatsDto
             {
                 RecentErrors = new List<string> { ex.Message }
-            };
+            });
         }
     }
 

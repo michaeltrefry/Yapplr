@@ -8,8 +8,10 @@ public class NotificationDto
     public NotificationType Type { get; set; }
     public string Message { get; set; } = string.Empty;
     public bool IsRead { get; set; }
+    public bool IsSeen { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? ReadAt { get; set; }
+    public DateTime? SeenAt { get; set; }
     public string? Status { get; set; }
 
     // Actor information (user who triggered the notification)

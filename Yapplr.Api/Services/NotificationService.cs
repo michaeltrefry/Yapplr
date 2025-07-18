@@ -60,8 +60,11 @@ public class NotificationService : INotificationService
         return await GetNotificationByIdAsync(notification.Id);
     }
 
-    public async Task CreateMentionNotificationsAsync(string content, int mentioningUserId, int? postId = null, int? commentId = null)
+    public async Task CreateMentionNotificationsAsync(string? content, int mentioningUserId, int? postId = null, int? commentId = null)
     {
+        if (string.IsNullOrWhiteSpace(content))
+            return;
+
         using var operationScope = LogContext.PushProperty("Operation", "CreateMentionNotifications");
         using var mentioningUserScope = LogContext.PushProperty("MentioningUserId", mentioningUserId);
         using var postScope = postId.HasValue ? LogContext.PushProperty("PostId", postId.Value) : null;
@@ -214,10 +217,82 @@ public class NotificationService : INotificationService
         if (!unreadNotifications.Any())
             return false;
 
+        var now = DateTime.UtcNow;
         foreach (var notification in unreadNotifications)
         {
             notification.IsRead = true;
-            notification.ReadAt = DateTime.UtcNow;
+            notification.ReadAt = now;
+            // Also mark as seen when marking as read
+            if (!notification.IsSeen)
+            {
+                notification.IsSeen = true;
+                notification.SeenAt = now;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        return true;
+    }
+
+    public async Task<bool> MarkNotificationAsSeenAsync(int notificationId, int userId)
+    {
+        var notification = await _context.Notifications
+            .FirstOrDefaultAsync(n => n.Id == notificationId && n.UserId == userId);
+
+        if (notification == null || notification.IsSeen)
+            return false;
+
+        notification.IsSeen = true;
+        notification.SeenAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        return true;
+    }
+
+    public async Task<bool> MarkNotificationsAsSeenAsync(int[] notificationIds, int userId)
+    {
+        var notifications = await _context.Notifications
+            .Where(n => notificationIds.Contains(n.Id) && n.UserId == userId && !n.IsSeen)
+            .ToListAsync();
+
+        if (!notifications.Any())
+            return false;
+
+        foreach (var notification in notifications)
+        {
+            notification.IsSeen = true;
+            notification.SeenAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        return true;
+    }
+
+    public async Task<bool> MarkAllNotificationsAsSeenAsync(int userId)
+    {
+        var unseenNotifications = await _context.Notifications
+            .Where(n => n.UserId == userId && !n.IsSeen)
+            .ToListAsync();
+
+        if (!unseenNotifications.Any())
+            return false;
+
+        foreach (var notification in unseenNotifications)
+        {
+            notification.IsSeen = true;
+            notification.SeenAt = DateTime.UtcNow;
         }
 
         await _context.SaveChangesAsync();
@@ -501,8 +576,10 @@ public class NotificationService : INotificationService
             Type = notification.Type,
             Message = notification.Message,
             IsRead = notification.IsRead,
+            IsSeen = notification.IsSeen,
             CreatedAt = notification.CreatedAt,
             ReadAt = notification.ReadAt,
+            SeenAt = notification.SeenAt,
             Status = status,
             ActorUser = notification.ActorUser?.ToDto()
         };

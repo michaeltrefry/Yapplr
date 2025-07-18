@@ -429,79 +429,79 @@ public class InfluxAdminAnalyticsService : IInfluxAdminAnalyticsService
         }
     }
 
-    public async Task<TopModeratorsDto> GetTopModeratorsAsync(int days = 30, int limit = 10)
+    public Task<TopModeratorsDto> GetTopModeratorsAsync(int days = 30, int limit = 10)
     {
         if (!_isEnabled || _influxClient == null)
         {
-            return new TopModeratorsDto
+            return Task.FromResult(new TopModeratorsDto
             {
                 Moderators = new List<ModeratorStatsDto>(),
                 TotalModerators = 0,
                 TotalActions = 0
-            };
+            });
         }
 
         try
         {
             // This would require more complex queries to get moderator statistics
             // For now, return empty result
-            return new TopModeratorsDto
+            return Task.FromResult(new TopModeratorsDto
             {
                 Moderators = new List<ModeratorStatsDto>(),
                 TotalModerators = 0,
                 TotalActions = 0
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get top moderators from InfluxDB");
-            return new TopModeratorsDto
+            return Task.FromResult(new TopModeratorsDto
             {
                 Moderators = new List<ModeratorStatsDto>(),
                 TotalModerators = 0,
                 TotalActions = 0
-            };
+            });
         }
     }
 
-    public async Task<ContentTrendsDto> GetContentTrendsAsync(int days = 30)
+    public Task<ContentTrendsDto> GetContentTrendsAsync(int days = 30)
     {
         if (!_isEnabled || _influxClient == null)
         {
-            return new ContentTrendsDto
+            return Task.FromResult(new ContentTrendsDto
             {
                 TrendingHashtags = new List<HashtagStatsDto>(),
                 EngagementTrends = new List<DailyStatsDto>(),
                 Trends = new List<ContentTrendDto>(),
                 TotalHashtags = 0,
                 AverageEngagementRate = 0
-            };
+            });
         }
 
         try
         {
             // This would require complex queries for trending analysis
             // For now, return empty result
-            return new ContentTrendsDto
+            return Task.FromResult(new ContentTrendsDto
             {
                 TrendingHashtags = new List<HashtagStatsDto>(),
                 EngagementTrends = new List<DailyStatsDto>(),
                 Trends = new List<ContentTrendDto>(),
                 TotalHashtags = 0,
                 AverageEngagementRate = 0
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get content trends from InfluxDB");
-            return new ContentTrendsDto
+            return Task.FromResult(new ContentTrendsDto
             {
                 TrendingHashtags = new List<HashtagStatsDto>(),
                 EngagementTrends = new List<DailyStatsDto>(),
                 Trends = new List<ContentTrendDto>(),
                 TotalHashtags = 0,
                 AverageEngagementRate = 0
-            };
+            });
         }
     }
 
