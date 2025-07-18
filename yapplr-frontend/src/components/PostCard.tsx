@@ -21,9 +21,11 @@ interface PostCardProps {
   post: Post;
   showCommentsDefault?: boolean; // For profile pages
   showBorder?: boolean;
+  onPostUpdate?: (updatedPost: Post) => void;
+  onPostDelete?: (deletedPostId: number) => void;
 }
 
-export default function PostCard({ post, showCommentsDefault = false, showBorder = true }: PostCardProps) {
+export default function PostCard({ post, showCommentsDefault = false, showBorder = true, onPostUpdate, onPostDelete }: PostCardProps) {
   const [showComments, setShowComments] = useState(showCommentsDefault);
   const [commentText, setCommentText] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
@@ -31,6 +33,18 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
+
+  // Temporary debug logging
+  if (post.id && ((post.mediaItems && post.mediaItems.length > 0) || post.imageUrl)) {
+    console.log('PostCard - Post with media:', {
+      postId: post.id,
+      content: post.content?.substring(0, 50),
+      imageUrl: post.imageUrl,
+      mediaItems: post.mediaItems,
+      mediaItemsCount: post.mediaItems?.length || 0
+    });
+  }
+
   const [editPrivacy, setEditPrivacy] = useState(post.privacy);
   const [showEditPrivacyDropdown, setShowEditPrivacyDropdown] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -88,6 +102,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
       queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
       setShowDeleteConfirm(false);
+      onPostDelete?.(post.id);
     },
   });
 
@@ -221,6 +236,19 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
             >
               @{post.user.username}
             </Link>
+            {/* Group Context */}
+            {post.group && (
+              <>
+                <span className="text-gray-500">in</span>
+                <Link
+                  href={`/groups/${post.group.id}`}
+                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline flex items-center space-x-1"
+                >
+                  <Users className="w-3 h-3" />
+                  <span>{post.group.name}</span>
+                </Link>
+              </>
+            )}
             <span className="text-gray-500">·</span>
             <span className="text-gray-500 text-sm">
               {formatDate(post.createdAt)}

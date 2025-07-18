@@ -71,6 +71,12 @@ import type {
   ContentPage,
   ContentPageVersion,
   CreateContentPageVersionDto,
+  Group,
+  GroupList,
+  GroupMember,
+  CreateGroup,
+  UpdateGroup,
+  PaginatedResult,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -588,6 +594,98 @@ export const userReportApi = {
 
   getMyReports: async (page: number = 1, pageSize: number = 25): Promise<UserReport[]> => {
     const response = await api.get(`/reports/my-reports?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+};
+
+// Group API
+export const groupApi = {
+  // Get all groups (paginated)
+  getGroups: async (page = 1, pageSize = 20): Promise<PaginatedResult<GroupList>> => {
+    const response = await api.get(`/groups?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  // Search groups
+  searchGroups: async (query: string, page = 1, pageSize = 20): Promise<PaginatedResult<GroupList>> => {
+    const response = await api.get(`/groups/search?query=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  // Get group by ID
+  getGroup: async (id: number): Promise<Group> => {
+    const response = await api.get(`/groups/${id}`);
+    return response.data;
+  },
+
+  // Get group by name
+  getGroupByName: async (name: string): Promise<Group> => {
+    const response = await api.get(`/groups/name/${encodeURIComponent(name)}`);
+    return response.data;
+  },
+
+  // Create group
+  createGroup: async (data: CreateGroup): Promise<Group> => {
+    const response = await api.post('/groups', data);
+    return response.data;
+  },
+
+  // Update group
+  updateGroup: async (id: number, data: UpdateGroup): Promise<Group> => {
+    const response = await api.put(`/groups/${id}`, data);
+    return response.data;
+  },
+
+  // Delete group
+  deleteGroup: async (id: number): Promise<void> => {
+    await api.delete(`/groups/${id}`);
+  },
+
+  // Join group
+  joinGroup: async (id: number): Promise<{ message: string }> => {
+    const response = await api.post(`/groups/${id}/join`);
+    return response.data;
+  },
+
+  // Leave group
+  leaveGroup: async (id: number): Promise<{ message: string }> => {
+    const response = await api.post(`/groups/${id}/leave`);
+    return response.data;
+  },
+
+  // Get group members
+  getGroupMembers: async (id: number, page = 1, pageSize = 20): Promise<PaginatedResult<GroupMember>> => {
+    const response = await api.get(`/groups/${id}/members?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  // Get group posts
+  getGroupPosts: async (id: number, page = 1, pageSize = 20): Promise<PaginatedResult<Post>> => {
+    const response = await api.get(`/groups/${id}/posts?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  // Get user's groups
+  getUserGroups: async (userId: number, page = 1, pageSize = 20): Promise<PaginatedResult<GroupList>> => {
+    const response = await api.get(`/groups/user/${userId}?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  // Get current user's groups
+  getMyGroups: async (page = 1, pageSize = 20): Promise<PaginatedResult<GroupList>> => {
+    const response = await api.get(`/groups/me?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  // Upload group image
+  uploadGroupImage: async (file: File): Promise<{ fileName: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/images/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };

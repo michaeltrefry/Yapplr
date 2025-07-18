@@ -244,7 +244,15 @@ public static class MappingUtilities
         var userDto = post.User.MapToUserDto();
         var isLiked = currentUserId.HasValue && post.Likes.Any(l => l.UserId == currentUserId.Value);
         var isReposted = currentUserId.HasValue && post.Reposts.Any(r => r.UserId == currentUserId.Value);
+
+        // Generate legacy imageUrl - use Post.ImageFileName if available, otherwise use first image from PostMedia
         var imageUrl = GenerateImageUrl(post.ImageFileName, httpContext);
+        if (string.IsNullOrEmpty(imageUrl) && post.PostMedia.Any(pm => pm.MediaType == MediaType.Image && !string.IsNullOrEmpty(pm.ImageFileName)))
+        {
+            var firstImage = post.PostMedia.First(pm => pm.MediaType == MediaType.Image && !string.IsNullOrEmpty(pm.ImageFileName));
+            imageUrl = GenerateImageUrl(firstImage.ImageFileName, httpContext);
+        }
+
         var isEdited = IsEdited(post.CreatedAt, post.UpdatedAt);
 
         // Map tags
@@ -376,7 +384,15 @@ public static class MappingUtilities
         var userDto = post.User.MapToUserDto();
         var isLiked = currentUserId.HasValue && post.Likes.Any(l => l.UserId == currentUserId.Value);
         var isReposted = currentUserId.HasValue && post.Reposts.Any(r => r.UserId == currentUserId.Value);
+
+        // Generate legacy imageUrl - use Post.ImageFileName if available, otherwise use first image from PostMedia
         var imageUrl = GenerateImageUrl(post.ImageFileName, httpContext);
+        if (string.IsNullOrEmpty(imageUrl) && post.PostMedia.Any(pm => pm.MediaType == MediaType.Image && !string.IsNullOrEmpty(pm.ImageFileName)))
+        {
+            var firstImage = post.PostMedia.First(pm => pm.MediaType == MediaType.Image && !string.IsNullOrEmpty(pm.ImageFileName));
+            imageUrl = GenerateImageUrl(firstImage.ImageFileName, httpContext);
+        }
+
         var isEdited = IsEdited(post.CreatedAt, post.UpdatedAt);
 
         // Map tags
@@ -556,6 +572,8 @@ public static class MappingUtilities
     /// </summary>
     public static PostMediaDto MapToPostMediaDto(this PostMedia media, HttpContext? httpContext = null)
     {
+
+
         string? imageUrl = null;
         string? videoUrl = null;
         string? videoThumbnailUrl = null;

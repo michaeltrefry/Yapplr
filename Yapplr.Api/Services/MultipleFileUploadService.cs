@@ -2,6 +2,7 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Configuration;
 using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
 
 namespace Yapplr.Api.Services;
 
@@ -74,26 +75,39 @@ public class MultipleFileUploadService : IMultipleFileUploadService
 
                 if (isImage)
                 {
+                    _logger.LogInformation("Processing image file {FileName}", file.FileName);
+
+                    // Get image dimensions BEFORE saving (to avoid stream consumption issue)
+                    var (width, height) = await GetImageDimensionsAsync(file);
+                    _logger.LogInformation("Extracted dimensions for {FileName}: {Width}x{Height}", file.FileName, width, height);
+
                     var fileName = await _imageService.SaveImageAsync(file);
                     var imageUrl = GenerateImageUrl(fileName);
-                    
+                    _logger.LogInformation("Creating UploadedFileDto for {FileName} with dimensions {Width}x{Height}", fileName, width, height);
+
                     uploadedFiles.Add(new UploadedFileDto(
                         fileName,
                         imageUrl,
                         MediaType.Image,
-                        file.Length
+                        file.Length,
+                        width,
+                        height
                     ));
                 }
                 else if (isVideo)
                 {
                     var fileName = await _videoService.SaveVideoAsync(file);
                     var videoUrl = GenerateVideoUrl(fileName);
-                    
+
+                    // For videos, we'll set dimensions to null for now
+                    // Video dimension extraction would require FFmpeg or similar
                     uploadedFiles.Add(new UploadedFileDto(
                         fileName,
                         videoUrl,
                         MediaType.Video,
-                        file.Length
+                        file.Length,
+                        null, // width - would need video processing to extract
+                        null  // height - would need video processing to extract
                     ));
                 }
                 else
@@ -238,6 +252,48 @@ public class MultipleFileUploadService : IMultipleFileUploadService
     {
         // This should be updated to use proper URL generation with HttpContext
         return $"/api/images/{fileName}";
+    }
+
+    private async Task<(int? width, int? height)> GetImageDimensionsAsync(IFormFile file)
+    {
+        try
+        {
+            _logger.LogInformation("Extracting dimensions for image file {FileName}", file.FileName);
+            using var stream = file.OpenReadStream();
+            using var image = await SixLabors.ImageSharp.Image.LoadAsync(stream);
+            var dimensions = (image.Width, image.Height);
+            _logger.LogInformation("Successfully extracted dimensions for {FileName}: {Width}x{Height}", file.FileName, dimensions.Width, dimensions.Height);
+
+            // Reset stream position for subsequent operations
+            stream.Position = 0;
+
+            return dimensions;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get image dimensions for file {FileName}", file.FileName);
+            return (null, null);
+        }
+    }
+
+    /// <summary>
+    /// Extract dimensions from an existing image file on disk
+    /// </summary>
+    public async Task<(int? width, int? height)> GetImageDimensionsFromFileAsync(string filePath)
+    {
+        try
+        {
+            _logger.LogInformation("Extracting dimensions from existing image file {FilePath}", filePath);
+            using var image = await SixLabors.ImageSharp.Image.LoadAsync(filePath);
+            var dimensions = (image.Width, image.Height);
+            _logger.LogInformation("Successfully extracted dimensions from {FilePath}: {Width}x{Height}", filePath, dimensions.Width, dimensions.Height);
+            return dimensions;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get image dimensions from file {FilePath}", filePath);
+            return (null, null);
+        }
     }
 
     private string GenerateVideoUrl(string fileName)

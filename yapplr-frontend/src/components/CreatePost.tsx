@@ -7,7 +7,12 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Image as ImageIcon, Video, X, Hash, Globe, Users, Lock, ChevronDown, AlertCircle } from 'lucide-react';
 import { PostPrivacy, UserStatus, MediaType, MediaFile, UploadedFile } from '@/types';
 
-export default function CreatePost() {
+interface CreatePostProps {
+  groupId?: number;
+  onPostCreated?: () => void;
+}
+
+export default function CreatePost({ groupId, onPostCreated }: CreatePostProps = {}) {
   const [content, setContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedFileUrls, setSelectedFileUrls] = useState<string[]>([]);
@@ -152,7 +157,8 @@ export default function CreatePost() {
   // New multiple file upload mutation
   const multipleUploadMutation = useMutation({
     mutationFn: multipleUploadApi.uploadMultipleFiles,
-    onMutate: () => {
+    onMutate: (files) => {
+      console.log('Upload mutation starting with files:', files.map(f => f.name));
       setIsUploading(true);
     },
     onSuccess: (data) => {
@@ -181,7 +187,8 @@ export default function CreatePost() {
         alert(`Some files failed to upload:\n${errorMessages}`);
       }
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Upload mutation failed:', error);
       setIsUploading(false);
       alert('Failed to upload files. Please try again.');
     },
@@ -192,6 +199,7 @@ export default function CreatePost() {
     onSuccess: () => {
       resetForm();
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      onPostCreated?.();
     },
   });
 
@@ -200,6 +208,7 @@ export default function CreatePost() {
     onSuccess: () => {
       resetForm();
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      onPostCreated?.();
     },
   });
 
@@ -291,6 +300,7 @@ export default function CreatePost() {
       setSelectedFiles(prev => [...prev, ...validFiles]);
 
       // Upload files immediately
+      console.log('About to upload files:', validFiles.map(f => f.name));
       multipleUploadMutation.mutate(validFiles);
     }
 
@@ -356,6 +366,7 @@ export default function CreatePost() {
         content: content.trim() || undefined,
         privacy: privacy,
         mediaFiles: mediaFiles,
+        groupId: groupId,
       });
     } else {
       // Use legacy API for backward compatibility
@@ -364,6 +375,7 @@ export default function CreatePost() {
         imageFileName: uploadedFileName || undefined,
         videoFileName: uploadedVideoFileName || undefined,
         privacy: privacy,
+        groupId: groupId,
       });
     }
   };

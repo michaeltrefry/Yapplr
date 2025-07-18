@@ -10,15 +10,18 @@ namespace Yapplr.Api.Services;
 
 public class GroupService : BaseService, IGroupService
 {
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly INotificationService _notificationService;
     private readonly ICountCacheService _countCache;
 
     public GroupService(
         YapplrDbContext context,
+        IHttpContextAccessor httpContextAccessor,
         INotificationService notificationService,
         ICountCacheService countCache,
         ILogger<GroupService> logger) : base(context, logger)
     {
+        _httpContextAccessor = httpContextAccessor;
         _notificationService = notificationService;
         _countCache = countCache;
     }
@@ -417,7 +420,7 @@ public class GroupService : BaseService, IGroupService
             .Take(pageSize)
             .ToListAsync();
 
-        var postDtos = posts.Select(p => p.MapToPostDto(currentUserId)).ToList();
+        var postDtos = posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext)).ToList();
 
         return PaginatedResult<PostDto>.Create(postDtos, page, pageSize, totalCount);
     }

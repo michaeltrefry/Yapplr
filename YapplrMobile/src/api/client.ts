@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, RegisterResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, CreatePostWithMediaData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag, ContentPageVersion, MultipleFileUploadResponse, UploadLimits } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, RegisterResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, CreatePostWithMediaData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag, ContentPageVersion, MultipleFileUploadResponse, UploadLimits, Group, GroupList, GroupMember, CreateGroup, UpdateGroup, PaginatedResult } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -529,6 +529,97 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
       getPublishedContentBySlug: async (slug: string): Promise<ContentPageVersion> => {
         const response = await client.get(`/api/content/pages/${slug}`);
+        return response.data;
+      },
+    },
+
+    groups: {
+      // Get all groups (paginated)
+      getGroups: async (page: number = 1, pageSize: number = 20): Promise<PaginatedResult<GroupList>> => {
+        const response = await client.get(`/api/groups?page=${page}&pageSize=${pageSize}`);
+        return response.data;
+      },
+
+      // Search groups
+      searchGroups: async (query: string, page: number = 1, pageSize: number = 20): Promise<PaginatedResult<GroupList>> => {
+        const response = await client.get(`/api/groups/search?query=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`);
+        return response.data;
+      },
+
+      // Get group by ID
+      getGroup: async (id: number): Promise<Group> => {
+        const response = await client.get(`/api/groups/${id}`);
+        return response.data;
+      },
+
+      // Get group by name
+      getGroupByName: async (name: string): Promise<Group> => {
+        const response = await client.get(`/api/groups/name/${encodeURIComponent(name)}`);
+        return response.data;
+      },
+
+      // Create group
+      createGroup: async (data: CreateGroup): Promise<Group> => {
+        const response = await client.post('/api/groups', data);
+        return response.data;
+      },
+
+      // Update group
+      updateGroup: async (id: number, data: UpdateGroup): Promise<Group> => {
+        const response = await client.put(`/api/groups/${id}`, data);
+        return response.data;
+      },
+
+      // Delete group
+      deleteGroup: async (id: number): Promise<void> => {
+        await client.delete(`/api/groups/${id}`);
+      },
+
+      // Join group
+      joinGroup: async (id: number): Promise<{ message: string }> => {
+        const response = await client.post(`/api/groups/${id}/join`);
+        return response.data;
+      },
+
+      // Leave group
+      leaveGroup: async (id: number): Promise<{ message: string }> => {
+        const response = await client.post(`/api/groups/${id}/leave`);
+        return response.data;
+      },
+
+      // Get group members
+      getGroupMembers: async (id: number, page: number = 1, pageSize: number = 20): Promise<PaginatedResult<GroupMember>> => {
+        const response = await client.get(`/api/groups/${id}/members?page=${page}&pageSize=${pageSize}`);
+        return response.data;
+      },
+
+      // Get group posts
+      getGroupPosts: async (id: number, page: number = 1, pageSize: number = 20): Promise<PaginatedResult<Post>> => {
+        const response = await client.get(`/api/groups/${id}/posts?page=${page}&pageSize=${pageSize}`);
+        return response.data;
+      },
+
+      // Get user's groups
+      getUserGroups: async (userId: number, page: number = 1, pageSize: number = 20): Promise<PaginatedResult<GroupList>> => {
+        const response = await client.get(`/api/groups/user/${userId}?page=${page}&pageSize=${pageSize}`);
+        return response.data;
+      },
+
+      // Get current user's groups
+      getMyGroups: async (page: number = 1, pageSize: number = 20): Promise<PaginatedResult<GroupList>> => {
+        const response = await client.get(`/api/groups/me?page=${page}&pageSize=${pageSize}`);
+        return response.data;
+      },
+
+      // Upload group image
+      uploadGroupImage: async (file: any): Promise<{ fileName: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await client.post('/api/groups/upload-image', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
         return response.data;
       },
     },

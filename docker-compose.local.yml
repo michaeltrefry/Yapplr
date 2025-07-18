@@ -117,7 +117,7 @@ services:
         # Notification provider configuration (SignalR-only for local web)
         - NEXT_PUBLIC_ENABLE_SIGNALR=true
         # Force rebuild by passing current timestamp
-        - CACHE_BUST=${CACHE_BUST:-$(date +%s)}
+        - CACHE_BUST=$(date +%s)
     environment:
       # Internal API URL for server-side operations (image optimization)
       - INTERNAL_API_URL=http://yapplr-api:8080

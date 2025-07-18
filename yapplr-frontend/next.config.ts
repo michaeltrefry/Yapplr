@@ -5,6 +5,31 @@ const nextConfig: NextConfig = {
     // Disable ESLint during builds
     ignoreDuringBuilds: true,
   },
+  // Add cache-busting headers for development
+  async headers() {
+    if (process.env.NODE_ENV === 'development') {
+      return [
+        {
+          source: '/(.*)',
+          headers: [
+            {
+              key: 'Cache-Control',
+              value: 'no-cache, no-store, must-revalidate',
+            },
+            {
+              key: 'Pragma',
+              value: 'no-cache',
+            },
+            {
+              key: 'Expires',
+              value: '0',
+            },
+          ],
+        },
+      ];
+    }
+    return [];
+  },
   images: {
     // Disable image optimization for local development to avoid Docker networking issues
     unoptimized: process.env.NODE_ENV === 'development',

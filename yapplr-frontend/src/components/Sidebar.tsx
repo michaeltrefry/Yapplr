@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { Home, Search, LogOut, Settings, MessageCircle, Bell, TestTube, TrendingUp, Shield } from 'lucide-react';
+import { Home, Search, LogOut, Settings, MessageCircle, Bell, TestTube, TrendingUp, Shield, Users } from 'lucide-react';
 import { UserRole } from '@/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -61,6 +61,14 @@ export default function Sidebar() {
           >
             <TrendingUp className="w-6 h-6" />
             <span className="text-lg hidden lg:block">Trending</span>
+          </Link>
+
+          <Link
+            href="/groups"
+            className="flex items-center justify-center lg:justify-start lg:space-x-3 px-1 lg:px-3 py-2 rounded-lg hover:bg-gray-100 text-foreground"
+          >
+            <Users className="w-6 h-6" />
+            <span className="text-lg hidden lg:block">Groups</span>
           </Link>
 
           <Link

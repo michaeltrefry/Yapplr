@@ -17,23 +17,32 @@ public static class MultipleFileUploadEndpoints
         {
             try
             {
+                Console.WriteLine($"DEBUG: Multiple file upload endpoint called with {files?.Count ?? 0} files");
+
                 if (files == null || files.Count == 0)
                 {
                     return Results.BadRequest(new { message = "No files provided" });
+                }
+
+                foreach (var file in files)
+                {
+                    Console.WriteLine($"DEBUG: Processing file: {file.FileName}, Size: {file.Length}, ContentType: {file.ContentType}");
                 }
 
                 // Validate files
                 var validation = await uploadService.ValidateMultipleFilesAsync(files);
                 if (!validation.IsValid)
                 {
-                    return Results.BadRequest(new { 
-                        message = "File validation failed", 
-                        errors = validation.Errors 
+                    return Results.BadRequest(new {
+                        message = "File validation failed",
+                        errors = validation.Errors
                     });
                 }
 
                 // Upload files
+                Console.WriteLine("DEBUG: About to call UploadMultipleMediaFilesAsync");
                 var result = await uploadService.UploadMultipleMediaFilesAsync(files);
+                Console.WriteLine($"DEBUG: Upload completed. Successful: {result.SuccessfulUploads}, Failed: {result.FailedUploads}");
 
                 // Generate full URLs for uploaded files
                 var uploadedFilesWithUrls = result.UploadedFiles.Select(file => file with

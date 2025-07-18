@@ -158,6 +158,16 @@ export interface UpdateGroup {
   imageFileName?: string;
 }
 
+export interface PaginatedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export enum MediaType {
   Image = 0,
   Video = 1,

@@ -34,9 +34,12 @@ import CreatePostScreen from '../screens/main/CreatePostScreen';
 import NotificationDebugScreen from '../screens/main/NotificationDebugScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 import NotificationTestScreen from '../screens/NotificationTestScreen';
+import GroupsScreen from '../screens/main/GroupsScreen';
+import GroupDetailScreen from '../screens/main/GroupDetailScreen';
+import CreateGroupScreen from '../screens/main/CreateGroupScreen';
 import PrivacyPolicyScreen from '../screens/legal/PrivacyPolicyScreen';
 import TermsOfServiceScreen from '../screens/legal/TermsOfServiceScreen';
-import { Post } from '../types';
+import { Post, Group } from '../types';
 import NotificationNavigationService from '../services/NotificationNavigationService';
 
 export type RootStackParamList = {
@@ -51,6 +54,10 @@ export type RootStackParamList = {
   NotificationDebug: undefined;
   NotificationTest: undefined;
   Notifications: undefined;
+  Groups: undefined;
+  GroupDetail: { groupId: number };
+  CreateGroup: undefined;
+  EditGroup: { group: Group };
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
   Conversation: {
@@ -124,8 +131,8 @@ function MainTabs() {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Search') {
-            iconName = focused ? 'search' : 'search-outline';
+          } else if (route.name === 'Groups') {
+            iconName = focused ? 'people' : 'people-outline';
           } else if (route.name === 'CreatePost') {
             return (
               <View style={{
@@ -186,7 +193,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
+      <Tab.Screen name="Groups" component={GroupsScreen} />
       <Tab.Screen
         name="CreatePost"
         component={CreatePostScreen}
@@ -259,6 +266,16 @@ function MainStack() {
       <Stack.Screen
         name="Notifications"
         component={NotificationsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GroupDetail"
+        component={GroupDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CreateGroup"
+        component={CreateGroupScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

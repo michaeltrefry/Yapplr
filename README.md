@@ -51,6 +51,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Group Discovery**: Search and browse all available groups with pagination
 - **Member Management**: View group members with join dates and roles (Member, Moderator, Admin)
 - **Group Posts**: Post content directly in groups with automatic public visibility
+- **Group Media Support**: Full image and video support in group posts with proper URL generation
 - **Public Group Content**: All posts in groups are public regardless of user privacy settings
 - **Group Ownership**: Group creators become owners with full management permissions
 - **Easy Joining**: One-click join/leave functionality for all groups
