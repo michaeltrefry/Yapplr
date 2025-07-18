@@ -42,4 +42,9 @@ public class UpdateNotificationPreferencesDto
     public bool? EnableMessageHistory { get; set; }
     public int? MessageHistoryDays { get; set; }
     public bool? EnableOfflineReplay { get; set; }
+
+    public bool? EnableEmailNotifications { get; set; }
+    public bool? EnableEmailDigest { get; set; }
+    public int? EmailDigestFrequencyHours { get; set; }
+    public bool? EnableInstantEmailNotifications { get; set; }
 }

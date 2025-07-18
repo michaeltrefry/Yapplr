@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Utils;
+using Yapplr.Api.CQRS.Commands;
+using Yapplr.Api.CQRS;
 
 namespace Yapplr.Api.Services.Unified;
 
@@ -22,6 +24,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
     private readonly INotificationProviderManager? _providerManager;
     private readonly INotificationQueue? _notificationQueue;
     private readonly INotificationEnhancementService? _enhancementService;
+    private readonly ICommandPublisher? _commandPublisher;
     
     // Statistics tracking
     private long _totalNotificationsSent;
@@ -39,7 +42,8 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         ILogger<UnifiedNotificationService> logger,
         INotificationProviderManager? providerManager = null,
         INotificationQueue? notificationQueue = null,
-        INotificationEnhancementService? enhancementService = null)
+        INotificationEnhancementService? enhancementService = null,
+        ICommandPublisher? commandPublisher = null)
     {
         _context = context;
         _preferencesService = preferencesService;
@@ -49,6 +53,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         _providerManager = providerManager;
         _notificationQueue = notificationQueue;
         _enhancementService = enhancementService;
+        _commandPublisher = commandPublisher;
     }
 
     #region Core Notification Methods
@@ -104,18 +109,40 @@ public class UnifiedNotificationService : IUnifiedNotificationService
 
             // Determine delivery strategy
             var isUserOnline = await _connectionPool.IsUserOnlineAsync(request.UserId);
-            
+
+            // Check if user prefers email delivery or if email should be sent
+            var shouldSendEmail = await ShouldSendEmailNotificationAsync(request.UserId, request.NotificationType);
+            if (shouldSendEmail)
+            {
+                var emailSent = await TrySendEmailNotificationAsync(request);
+                if (emailSent)
+                {
+                    Interlocked.Increment(ref _totalNotificationsDelivered);
+                    _logger.LogDebug("Email notification sent to user {UserId}", request.UserId);
+
+                    // Record metrics
+                    await RecordNotificationEventAsync("delivered", request, true);
+
+                    // If email-only delivery method, return here
+                    var deliveryMethod = await _preferencesService.GetPreferredDeliveryMethodAsync(request.UserId, request.NotificationType);
+                    if (deliveryMethod == NotificationDeliveryMethod.EmailOnly)
+                    {
+                        return true;
+                    }
+                }
+            }
+
             if (isUserOnline && _providerManager != null)
             {
                 // Try immediate delivery
                 var deliveryRequest = CreateDeliveryRequest(request);
                 var delivered = await _providerManager.SendNotificationAsync(deliveryRequest);
-                
+
                 if (delivered)
                 {
                     Interlocked.Increment(ref _totalNotificationsDelivered);
                     _logger.LogDebug("Notification delivered immediately to user {UserId}", request.UserId);
-                    
+
                     // Record metrics
                     await RecordNotificationEventAsync("delivered", request, true);
                     return true;
@@ -1472,6 +1499,60 @@ public class UnifiedNotificationService : IUnifiedNotificationService
             return message;
 
         return message.Substring(0, maxLength - 3) + "...";
+    }
+
+    private async Task<bool> ShouldSendEmailNotificationAsync(int userId, string notificationType)
+    {
+        try
+        {
+            return await _preferencesService.ShouldSendEmailNotificationAsync(userId, notificationType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check email notification preferences for user {UserId}", userId);
+            return false;
+        }
+    }
+
+    private async Task<bool> TrySendEmailNotificationAsync(NotificationRequest request)
+    {
+        try
+        {
+            // Check if command publisher is available
+            if (_commandPublisher == null)
+            {
+                _logger.LogWarning("Command publisher not available - cannot send email notification to user {UserId}", request.UserId);
+                return false;
+            }
+
+            // Get user information for email
+            var user = await _context.Users.FindAsync(request.UserId);
+            if (user == null || string.IsNullOrEmpty(user.Email))
+            {
+                _logger.LogWarning("Cannot send email notification to user {UserId} - no email address", request.UserId);
+                return false;
+            }
+
+            // Create email notification command
+            var emailCommand = new SendNotificationEmailCommand
+            {
+                ToEmail = user.Email,
+                Username = user.Username,
+                Subject = request.Title,
+                Message = request.Body
+            };
+
+            // Send via CQRS command
+            await _commandPublisher.PublishAsync(emailCommand);
+
+            _logger.LogDebug("Email notification command published for user {UserId}", request.UserId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send email notification to user {UserId}", request.UserId);
+            return false;
+        }
     }
 
     #endregion

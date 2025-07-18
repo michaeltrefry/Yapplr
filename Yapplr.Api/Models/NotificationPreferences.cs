@@ -53,7 +53,13 @@ public class NotificationPreferences
     public bool EnableMessageHistory { get; set; } = true;
     public int MessageHistoryDays { get; set; } = 30;
     public bool EnableOfflineReplay { get; set; } = true;
-    
+
+    // Email notification preferences
+    public bool EnableEmailNotifications { get; set; } = true;
+    public bool EnableEmailDigest { get; set; } = false;
+    public int EmailDigestFrequencyHours { get; set; } = 24; // Daily digest by default
+    public bool EnableInstantEmailNotifications { get; set; } = true;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     

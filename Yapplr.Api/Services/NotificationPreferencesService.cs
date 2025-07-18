@@ -110,6 +110,15 @@ public class NotificationPreferencesService : INotificationPreferencesService
         if (updateDto.EnableOfflineReplay.HasValue)
             preferences.EnableOfflineReplay = updateDto.EnableOfflineReplay.Value;
 
+        if (updateDto.EnableEmailNotifications.HasValue)
+            preferences.EnableEmailNotifications = updateDto.EnableEmailNotifications.Value;
+        if (updateDto.EnableEmailDigest.HasValue)
+            preferences.EnableEmailDigest = updateDto.EnableEmailDigest.Value;
+        if (updateDto.EmailDigestFrequencyHours.HasValue)
+            preferences.EmailDigestFrequencyHours = updateDto.EmailDigestFrequencyHours.Value;
+        if (updateDto.EnableInstantEmailNotifications.HasValue)
+            preferences.EnableInstantEmailNotifications = updateDto.EnableInstantEmailNotifications.Value;
+
         preferences.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -158,6 +167,28 @@ public class NotificationPreferencesService : INotificationPreferencesService
         }
 
         return true;
+    }
+
+    public async Task<bool> ShouldSendEmailNotificationAsync(int userId, string notificationType)
+    {
+        var preferences = await GetUserPreferencesAsync(userId);
+
+        // Check if email notifications are globally enabled
+        if (!preferences.EnableEmailNotifications)
+        {
+            _logger.LogDebug("Email notifications are disabled for user {UserId}", userId);
+            return false;
+        }
+
+        // Check if instant email notifications are enabled (for immediate notifications)
+        if (!preferences.EnableInstantEmailNotifications)
+        {
+            _logger.LogDebug("Instant email notifications are disabled for user {UserId}", userId);
+            return false;
+        }
+
+        // Use the same logic as regular notifications for type-specific checks
+        return await ShouldSendNotificationAsync(userId, notificationType);
     }
 
     public async Task<NotificationDeliveryMethod> GetPreferredDeliveryMethodAsync(int userId, string notificationType)
