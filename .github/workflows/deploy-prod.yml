@@ -111,7 +111,7 @@ jobs:
 
           # Run optimized deployment (preserves all data)
           chmod +x deploy-prod-optimized.sh
-          ./deploy-prod-optimized.sh
+          ./deploy-prod.sh
       env:
         PROD_DATABASE_CONNECTION_STRING: ${{ secrets.PROD_DATABASE_CONNECTION_STRING }}
         PROD_JWT_SECRET_KEY: ${{ secrets.PROD_JWT_SECRET_KEY }}
