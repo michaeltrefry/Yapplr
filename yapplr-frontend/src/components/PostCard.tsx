@@ -52,24 +52,90 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const { user } = useAuth();
 
   const likeMutation = useMutation({
-    mutationFn: () => 
-      post.isLikedByCurrentUser 
-        ? postApi.unlikePost(post.id)
-        : postApi.likePost(post.id),
+    mutationFn: async (isCurrentlyLiked: boolean) => {
+      if (isCurrentlyLiked) {
+        return await postApi.unlikePost(post.id);
+      } else {
+        return await postApi.likePost(post.id);
+      }
+    },
+    onMutate: async () => {
+      // Store the previous state for potential rollback
+      const previousState = {
+        isLikedByCurrentUser: post.isLikedByCurrentUser,
+        likeCount: post.likeCount
+      };
+
+      // Create optimistically updated post
+      const updatedPost = {
+        ...post,
+        isLikedByCurrentUser: !post.isLikedByCurrentUser,
+        likeCount: post.isLikedByCurrentUser ? post.likeCount - 1 : post.likeCount + 1
+      };
+
+      // Update parent component's state immediately
+      onPostUpdate?.(updatedPost);
+
+      return { previousState };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['post', post.id] });
     },
+    onError: (error, variables, context) => {
+      // Revert to the previous state
+      if (context?.previousState) {
+        const revertedPost = {
+          ...post,
+          isLikedByCurrentUser: context.previousState.isLikedByCurrentUser,
+          likeCount: context.previousState.likeCount
+        };
+        onPostUpdate?.(revertedPost);
+      }
+    },
   });
 
   const repostMutation = useMutation({
-    mutationFn: () => 
-      post.isRepostedByCurrentUser 
-        ? postApi.unrepost(post.id)
-        : postApi.repost(post.id),
+    mutationFn: async (isCurrentlyReposted: boolean) => {
+      if (isCurrentlyReposted) {
+        return await postApi.unrepost(post.id);
+      } else {
+        return await postApi.repost(post.id);
+      }
+    },
+    onMutate: async () => {
+      // Store the previous state for potential rollback
+      const previousState = {
+        isRepostedByCurrentUser: post.isRepostedByCurrentUser,
+        repostCount: post.repostCount
+      };
+
+      // Create optimistically updated post
+      const updatedPost = {
+        ...post,
+        isRepostedByCurrentUser: !post.isRepostedByCurrentUser,
+        repostCount: post.isRepostedByCurrentUser ? post.repostCount - 1 : post.repostCount + 1
+      };
+
+      // Update parent component's state immediately
+      onPostUpdate?.(updatedPost);
+
+      return { previousState };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['post', post.id] });
+    },
+    onError: (error, variables, context) => {
+      // Revert to the previous state
+      if (context?.previousState) {
+        const revertedPost = {
+          ...post,
+          isRepostedByCurrentUser: context.previousState.isRepostedByCurrentUser,
+          repostCount: context.previousState.repostCount
+        };
+        onPostUpdate?.(revertedPost);
+      }
     },
   });
 
@@ -107,11 +173,11 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   });
 
   const handleLike = () => {
-    likeMutation.mutate();
+    likeMutation.mutate(post.isLikedByCurrentUser);
   };
 
   const handleRepost = () => {
-    repostMutation.mutate();
+    repostMutation.mutate(post.isRepostedByCurrentUser);
   };
 
   const handleComment = (e: React.FormEvent) => {
