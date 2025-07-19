@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ContentHighlight } from '@/utils/contentUtils';
 import MediaGallery from './MediaGallery';
 import ReactionPicker from './ReactionPicker';
+import ReactionCountsDisplay from './ReactionCountsDisplay';
 import LinkPreviewList from './LinkPreviewList';
 import HiddenPostBanner from './HiddenPostBanner';
 
@@ -676,8 +677,20 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
             )}
           </div>
 
+          {/* Reaction Counts Display */}
+          <ReactionCountsDisplay reactionCounts={post.reactionCounts || []} />
+
           {/* Actions */}
           <div className="flex items-center justify-between mt-3 max-w-md">
+            <ReactionPicker
+              reactionCounts={post.reactionCounts || []}
+              currentUserReaction={post.currentUserReaction || null}
+              totalReactionCount={post.totalReactionCount || post.likeCount || 0}
+              onReact={handleReact}
+              onRemoveReaction={handleRemoveReaction}
+              disabled={reactMutation.isPending || removeReactionMutation.isPending}
+            />
+
             <button
               onClick={() => setShowComments(!showComments)}
               className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors group"
@@ -702,15 +715,6 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               </div>
               <span className="text-sm">{formatNumber(post.repostCount)}</span>
             </button>
-
-            <ReactionPicker
-              reactionCounts={post.reactionCounts || []}
-              currentUserReaction={post.currentUserReaction || null}
-              totalReactionCount={post.totalReactionCount || post.likeCount || 0}
-              onReact={handleReact}
-              onRemoveReaction={handleRemoveReaction}
-              disabled={reactMutation.isPending || removeReactionMutation.isPending}
-            />
 
             <button
               onClick={() => setShowShareModal(true)}

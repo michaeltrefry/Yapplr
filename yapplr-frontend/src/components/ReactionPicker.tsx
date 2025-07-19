@@ -30,12 +30,12 @@ interface ReactionPickerProps {
 }
 
 const reactionConfig = {
-  [ReactionType.Heart]: { emoji: '❤️', icon: Heart, color: 'text-red-500', hoverColor: 'hover:text-red-500' },
-  [ReactionType.ThumbsUp]: { emoji: '👍', icon: ThumbsUp, color: 'text-blue-500', hoverColor: 'hover:text-blue-500' },
-  [ReactionType.Laugh]: { emoji: '😂', icon: Laugh, color: 'text-yellow-500', hoverColor: 'hover:text-yellow-500' },
-  [ReactionType.Surprised]: { emoji: '😮', icon: Meh, color: 'text-purple-500', hoverColor: 'hover:text-purple-500' },
-  [ReactionType.Sad]: { emoji: '😢', icon: Frown, color: 'text-blue-400', hoverColor: 'hover:text-blue-400' },
-  [ReactionType.Angry]: { emoji: '😡', icon: Angry, color: 'text-red-600', hoverColor: 'hover:text-red-600' }
+  [ReactionType.Heart]: { emoji: '❤️', icon: Heart, color: 'text-red-500', hoverColor: 'hover:text-red-500', bgHoverColor: 'hover:bg-red-100' },
+  [ReactionType.ThumbsUp]: { emoji: '👍', icon: ThumbsUp, color: 'text-blue-500', hoverColor: 'hover:text-blue-500', bgHoverColor: 'hover:bg-blue-100' },
+  [ReactionType.Laugh]: { emoji: '😂', icon: Laugh, color: 'text-yellow-500', hoverColor: 'hover:text-yellow-500', bgHoverColor: 'hover:bg-yellow-100' },
+  [ReactionType.Surprised]: { emoji: '😮', icon: Meh, color: 'text-purple-500', hoverColor: 'hover:text-purple-500', bgHoverColor: 'hover:bg-purple-100' },
+  [ReactionType.Sad]: { emoji: '😢', icon: Frown, color: 'text-blue-400', hoverColor: 'hover:text-blue-400', bgHoverColor: 'hover:bg-blue-100' },
+  [ReactionType.Angry]: { emoji: '😡', icon: Angry, color: 'text-red-600', hoverColor: 'hover:text-red-600', bgHoverColor: 'hover:bg-red-100' }
 };
 
 export default function ReactionPicker({
@@ -95,53 +95,42 @@ export default function ReactionPicker({
       >
         <div className="p-2 rounded-full hover:bg-gray-100">
           <CurrentIcon
-            className={`w-5 h-5 ${currentUserReaction ? 'fill-current' : ''}`}
+            className={`w-5 h-5 ${currentUserReaction ? currentReactionConfig?.color || 'text-red-500' : ''}`}
           />
         </div>
         <span className="text-sm">{formatNumber(totalReactionCount)}</span>
       </button>
 
       {showPicker && (
-        <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex space-x-1 z-10">
+        <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-2 flex space-x-1 z-10">
           {Object.entries(reactionConfig).map(([type, config]) => {
             const reactionType = parseInt(type) as ReactionType;
             const count = reactionCounts?.find(r => r.reactionType === reactionType)?.count || 0;
             const Icon = config.icon;
-            
+
             return (
               <button
                 key={type}
                 onClick={() => handleReactionClick(reactionType)}
-                className={`p-2 rounded-full transition-colors ${config.hoverColor} hover:bg-gray-100 relative group`}
+                className={`p-2 rounded-full transition-all duration-200 ${config.bgHoverColor} hover:scale-110 relative group`}
                 title={`${config.emoji} ${count > 0 ? `(${count})` : ''}`}
               >
-                <Icon className="w-5 h-5" />
+                {/* SVG Icon - hidden by default, colored and visible on hover */}
+                <Icon className={`w-6 h-6 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-all duration-200 ${config.color}`} />
+
+                {/* Emoji - visible by default, grayscale to color transition on hover */}
+                <span className="text-2xl filter grayscale group-hover:grayscale-0 group-hover:opacity-0 transition-all duration-200">
+                  {config.emoji}
+                </span>
+
                 {count > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-gray-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-gray-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center z-10">
                     {count > 9 ? '9+' : count}
                   </span>
                 )}
               </button>
             );
           })}
-        </div>
-      )}
-
-      {/* Reaction counts display */}
-      {reactionCounts && reactionCounts.length > 0 && (
-        <div className="flex space-x-1 mt-1">
-          {reactionCounts
-            .filter(r => r.count > 0)
-            .slice(0, 3) // Show top 3 reactions
-            .map(reaction => (
-              <span
-                key={reaction.reactionType}
-                className="text-xs text-gray-500 flex items-center space-x-1"
-              >
-                <span>{reaction.emoji}</span>
-                <span>{reaction.count}</span>
-              </span>
-            ))}
         </div>
       )}
     </div>

@@ -20,6 +20,7 @@ public static class QueryUtilities
             .Include(p => p.User)
             .Include(p => p.Group)
             .Include(p => p.Likes)
+            .Include(p => p.Reactions)
             .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden))
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
@@ -43,6 +44,7 @@ public static class QueryUtilities
         return context.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
+            .Include(p => p.Reactions)
             .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden).Take(3)) // Limit comments for performance
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
@@ -119,6 +121,8 @@ public static class QueryUtilities
                 .ThenInclude(p => p.User)
             .Include(r => r.Post)
                 .ThenInclude(p => p.Likes)
+            .Include(r => r.Post)
+                .ThenInclude(p => p.Reactions)
             .Include(r => r.Post)
                 .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden))
             .Include(r => r.Post)

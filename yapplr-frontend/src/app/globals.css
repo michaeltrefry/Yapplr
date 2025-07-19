@@ -450,6 +450,14 @@ button.group:hover .group-hover\\:bg-yellow-50,
   background-color: rgba(239, 68, 68, 0.2) !important;
 }
 
+.hover\\:bg-purple-100:hover {
+  background-color: rgba(139, 92, 246, 0.1) !important;
+}
+
+.hover\\:bg-purple-200:hover {
+  background-color: rgba(139, 92, 246, 0.2) !important;
+}
+
 .hover\\:text-blue-600:hover {
   color: var(--primary) !important;
 }
@@ -758,6 +766,12 @@ a.text-white,
 .hover\\:bg-red-200.text-red-800:hover {
   background-color: rgba(239, 68, 68, 0.1) !important;
   color: #991b1b !important;
+}
+
+.hover\\:bg-purple-100.text-purple-800:hover,
+.hover\\:bg-purple-200.text-purple-800:hover {
+  background-color: rgba(139, 92, 246, 0.1) !important;
+  color: #581c87 !important;
 }
 
 /* Ensure buttons with colored backgrounds maintain their styling - removed problematic rule */

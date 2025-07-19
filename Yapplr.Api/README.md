@@ -117,8 +117,10 @@ The API will be available at:
 - `DELETE /api/posts/{id}` - Delete yap (authenticated, own yaps only)
 
 ### Social Features
-- `POST /api/posts/{id}/like` - Like a yap (authenticated)
-- `DELETE /api/posts/{id}/like` - Unlike a yap (authenticated)
+- `POST /api/posts/{id}/like` - Like a yap (authenticated) - Legacy endpoint, automatically converts to heart reaction
+- `DELETE /api/posts/{id}/like` - Unlike a yap (authenticated) - Legacy endpoint
+- `POST /api/posts/{id}/react` - React to a yap with specific emoji type (authenticated)
+- `DELETE /api/posts/{id}/react` - Remove reaction from a yap (authenticated)
 - `POST /api/posts/{id}/repost` - Reyap a yap (authenticated)
 - `DELETE /api/posts/{id}/repost` - Remove reyap (authenticated)
 
@@ -213,6 +215,54 @@ Authorization: Bearer <your-jwt-token>
 - **Public**: Visible to everyone
 - **Followers**: Only visible to followers and the author
 - **Private**: Only visible to the author
+
+## Emoji Reaction System
+
+The API features a comprehensive emoji reaction system that replaces simple likes with rich emotional responses.
+
+### Reaction Types
+- **Heart** (❤️): Love/Like reaction (ReactionType.Heart = 1)
+- **ThumbsUp** (👍): Approval reaction (ReactionType.ThumbsUp = 2)
+- **Laugh** (😂): Funny reaction (ReactionType.Laugh = 3)
+- **Surprised** (😮): Surprise reaction (ReactionType.Surprised = 4)
+- **Sad** (😢): Sad reaction (ReactionType.Sad = 5)
+- **Angry** (😡): Angry reaction (ReactionType.Angry = 6)
+
+### API Endpoints
+- `POST /api/posts/{id}/react` - React to a post with specific emoji type
+  ```json
+  {
+    "reactionType": 1
+  }
+  ```
+- `DELETE /api/posts/{id}/react` - Remove user's reaction from a post
+- `POST /api/posts/{postId}/comments/{commentId}/react` - React to a comment
+- `DELETE /api/posts/{postId}/comments/{commentId}/react` - Remove reaction from comment
+
+### Data Models
+
+#### PostReaction
+- User (who reacted)
+- Post (target post)
+- ReactionType (enum value 1-6)
+- CreatedAt timestamp
+
+#### CommentReaction
+- User (who reacted)
+- Comment (target comment)
+- ReactionType (enum value 1-6)
+- CreatedAt timestamp
+
+#### ReactionCount (Response Model)
+- ReactionType (enum value)
+- Emoji (string representation)
+- DisplayName (human-readable name)
+- Count (number of reactions)
+
+### Legacy Compatibility
+- Existing `POST /api/posts/{id}/like` endpoints automatically convert to heart reactions
+- All existing likes are migrated to heart reactions during database migration
+- Frontend can use either legacy like endpoints or new reaction endpoints
 
 ## Trust Score System
 

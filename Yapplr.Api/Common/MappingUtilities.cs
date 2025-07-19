@@ -343,6 +343,23 @@ public static class MappingUtilities
             );
         }
 
+        // Get reaction data
+        var reactionCounts = post.Reactions
+            .GroupBy(r => r.ReactionType)
+            .Select(g => new ReactionCountDto(
+                g.Key,
+                g.Key.GetEmoji(),
+                g.Key.GetDisplayName(),
+                g.Count()
+            ))
+            .ToList();
+
+        var currentUserReaction = currentUserId.HasValue
+            ? post.Reactions.FirstOrDefault(r => r.UserId == currentUserId.Value)?.ReactionType
+            : null;
+
+        var totalReactionCount = post.Reactions.Count;
+
         return new PostDto(
             post.Id,
             post.Content,
@@ -365,7 +382,10 @@ public static class MappingUtilities
             isEdited,
             moderationInfo,
             videoMetadata,
-            mediaItems
+            mediaItems,
+            reactionCounts,
+            currentUserReaction,
+            totalReactionCount
         );
     }
 
@@ -378,6 +398,9 @@ public static class MappingUtilities
         int likeCount,
         int commentCount,
         int repostCount,
+        IEnumerable<ReactionCountDto>? reactionCounts = null,
+        ReactionType? currentUserReaction = null,
+        int totalReactionCount = 0,
         HttpContext? httpContext = null,
         bool includeModeration = false)
     {
@@ -514,7 +537,10 @@ public static class MappingUtilities
             isEdited,
             moderationInfo,
             videoMetadata,
-            mediaItems
+            mediaItems,
+            reactionCounts,
+            currentUserReaction,
+            totalReactionCount
         );
     }
 

@@ -22,7 +22,8 @@ public class EmailSenderFactory : IEmailSenderFactory
             "awsses" => _serviceProvider.GetRequiredService<AwsSesEmailSender>(),
             "smtp" => _serviceProvider.GetRequiredService<SmtpEmailSender>(),
             "sendgrid" => _serviceProvider.GetRequiredService<SendGridEmailSender>(),
-            _ => _serviceProvider.GetRequiredService<AwsSesEmailSender>() // Default to AWS SES
+            "console" => _serviceProvider.GetRequiredService<ConsoleEmailSender>(),
+            _ => throw new InvalidOperationException($"Unknown email provider: {emailProvider}. Supported providers: AwsSes, Smtp, SendGrid, Console")
         };
     }
 }

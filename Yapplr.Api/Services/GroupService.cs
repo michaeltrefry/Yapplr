@@ -405,6 +405,7 @@ public class GroupService : BaseService, IGroupService
             .Include(p => p.User)
             .Include(p => p.Group)
             .Include(p => p.Likes)
+            .Include(p => p.Reactions)
             .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden))
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)

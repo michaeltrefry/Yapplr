@@ -497,6 +497,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Services.EmailSenders.AwsSesEmailSender>();
         services.AddScoped<Services.EmailSenders.SendGridEmailSender>();
         services.AddScoped<Services.EmailSenders.SmtpEmailSender>();
+        services.AddScoped<Services.EmailSenders.ConsoleEmailSender>();
         services.AddScoped<IEmailSenderFactory, EmailSenderFactory>();
 
         // Register the email sender based on configuration
