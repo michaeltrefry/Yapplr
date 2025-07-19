@@ -9,6 +9,7 @@ import GroupMembersList from '@/components/GroupMembersList';
 import EditGroupModal from '@/components/EditGroupModal';
 import GroupTimeline from '@/components/GroupTimeline';
 import CreatePost from '@/components/CreatePost';
+import Sidebar from '@/components/Sidebar';
 import { MessageSquare, Users, FileText } from 'lucide-react';
 
 interface GroupPageProps {
@@ -114,7 +115,17 @@ export default function GroupPage({ params }: GroupPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto flex">
+        {/* Left Sidebar */}
+        {user && (
+          <div className="w-16 lg:w-64 fixed h-full z-10">
+            <Sidebar />
+          </div>
+        )}
+
+        {/* Main Content */}
+        <div className={`flex-1 ${user ? 'ml-16 lg:ml-64' : ''}`}>
+          <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Group Header */}
         <div className="mb-6">
           <GroupHeader
@@ -194,6 +205,8 @@ export default function GroupPage({ params }: GroupPageProps) {
             onGroupUpdated={handleGroupUpdate}
           />
         )}
+          </div>
+        </div>
       </div>
     </div>
   );

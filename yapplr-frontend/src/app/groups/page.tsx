@@ -5,6 +5,7 @@ import { Group } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import GroupList from '@/components/GroupList';
 import CreateGroupModal from '@/components/CreateGroupModal';
+import Sidebar from '@/components/Sidebar';
 import { Search, Plus, Users, TrendingUp } from 'lucide-react';
 
 export default function GroupsPage() {
@@ -30,7 +31,17 @@ export default function GroupsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto flex">
+        {/* Left Sidebar */}
+        {user && (
+          <div className="w-16 lg:w-64 fixed h-full z-10">
+            <Sidebar />
+          </div>
+        )}
+
+        {/* Main Content */}
+        <div className={`flex-1 ${user ? 'ml-16 lg:ml-64' : ''}`}>
+          <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -167,6 +178,8 @@ export default function GroupsPage() {
           onClose={() => setShowCreateModal(false)}
           onGroupCreated={handleGroupCreated}
         />
+          </div>
+        </div>
       </div>
     </div>
   );
