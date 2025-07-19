@@ -1,8 +1,21 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Heart, ThumbsUp, Laugh, Frown, Angry, Meh } from 'lucide-react';
+import { Heart, ThumbsUp, Laugh, Frown, Angry } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
+
+// Custom Surprise SVG Component
+const SurpriseIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    stroke="none"
+  >
+    <path d="M12,2A10,10,0,1,0,22,12,10,10,0,0,0,12,2Zm0,18a8,8,0,1,1,8-8A8,8,0,0,1,12,20ZM10,9a1,1,0,1,0-1,1A1,1,0,0,0,10,9Zm5-1a1,1,0,1,0,1,1A1,1,0,0,0,15,8Zm-3,3a3.39,3.39,0,0,0-3.25,3.5A3.39,3.39,0,0,0,12,18a3.39,3.39,0,0,0,3.25-3.5A3.39,3.39,0,0,0,12,11Zm0,5a1.39,1.39,0,0,1-1.25-1.5A1.39,1.39,0,0,1,12,13a1.39,1.39,0,0,1,1.25,1.5A1.39,1.39,0,0,1,12,16Z" />
+  </svg>
+);
 
 export enum ReactionType {
   Heart = 1,
@@ -33,7 +46,7 @@ const reactionConfig = {
   [ReactionType.Heart]: { emoji: '❤️', icon: Heart, color: 'text-red-500', hoverColor: 'hover:text-red-500', bgHoverColor: 'hover:bg-red-100' },
   [ReactionType.ThumbsUp]: { emoji: '👍', icon: ThumbsUp, color: 'text-blue-500', hoverColor: 'hover:text-blue-500', bgHoverColor: 'hover:bg-blue-100' },
   [ReactionType.Laugh]: { emoji: '😂', icon: Laugh, color: 'text-yellow-500', hoverColor: 'hover:text-yellow-500', bgHoverColor: 'hover:bg-yellow-100' },
-  [ReactionType.Surprised]: { emoji: '😮', icon: Meh, color: 'text-purple-500', hoverColor: 'hover:text-purple-500', bgHoverColor: 'hover:bg-purple-100' },
+  [ReactionType.Surprised]: { emoji: '😮', icon: SurpriseIcon, color: 'text-purple-500', hoverColor: 'hover:text-purple-500', bgHoverColor: 'hover:bg-purple-100' },
   [ReactionType.Sad]: { emoji: '😢', icon: Frown, color: 'text-blue-400', hoverColor: 'hover:text-blue-400', bgHoverColor: 'hover:bg-blue-100' },
   [ReactionType.Angry]: { emoji: '😡', icon: Angry, color: 'text-red-600', hoverColor: 'hover:text-red-600', bgHoverColor: 'hover:bg-red-100' }
 };
