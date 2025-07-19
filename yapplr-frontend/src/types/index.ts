@@ -173,6 +173,22 @@ export enum MediaType {
   Video = 1,
 }
 
+export enum ReactionType {
+  Heart = 1,
+  ThumbsUp = 2,
+  Laugh = 3,
+  Surprised = 4,
+  Sad = 5,
+  Angry = 6
+}
+
+export interface ReactionCount {
+  reactionType: ReactionType;
+  emoji: string;
+  displayName: string;
+  count: number;
+}
+
 export interface PostMedia {
   id: number;
   mediaType: MediaType;
@@ -226,16 +242,19 @@ export interface Post {
   updatedAt: string;
   user: User;
   group?: Group;
-  likeCount: number;
+  likeCount: number; // Legacy - will be replaced by reactionCounts
   commentCount: number;
   repostCount: number;
   tags: Tag[];
   linkPreviews: LinkPreview[];
-  isLikedByCurrentUser: boolean;
+  isLikedByCurrentUser: boolean; // Legacy - will be replaced by currentUserReaction
   isRepostedByCurrentUser: boolean;
   isEdited: boolean;
   moderationInfo?: PostModerationInfo;
   mediaItems?: PostMedia[];
+  reactionCounts?: ReactionCount[];
+  currentUserReaction?: ReactionType | null;
+  totalReactionCount?: number;
 }
 
 export interface PostModerationInfo {
@@ -729,11 +748,13 @@ export interface AdminPost {
   createdAt: string;
   updatedAt: string;
   user: User;
-  likeCount: number;
+  likeCount: number; // Legacy - will be replaced by reactionCounts
   commentCount: number;
   repostCount: number;
   systemTags: SystemTag[];
   aiSuggestedTags: AiSuggestedTag[];
+  reactionCounts?: ReactionCount[];
+  totalReactionCount?: number;
 }
 
 export interface AdminComment {

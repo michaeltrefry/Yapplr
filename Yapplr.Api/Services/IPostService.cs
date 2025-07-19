@@ -1,4 +1,5 @@
 using Yapplr.Api.DTOs;
+using Yapplr.Api.Models;
 
 namespace Yapplr.Api.Services;
 
@@ -18,8 +19,10 @@ public interface IPostService
     Task<bool> DeletePostAsync(int postId, int userId);
 
     // Social features
-    Task<bool> LikePostAsync(int postId, int userId);
-    Task<bool> UnlikePostAsync(int postId, int userId);
+    Task<bool> LikePostAsync(int postId, int userId); // Legacy - will be removed
+    Task<bool> UnlikePostAsync(int postId, int userId); // Legacy - will be removed
+    Task<bool> ReactToPostAsync(int postId, int userId, ReactionType reactionType);
+    Task<bool> RemovePostReactionAsync(int postId, int userId);
     Task<bool> RepostAsync(int postId, int userId);
     Task<bool> UnrepostAsync(int postId, int userId);
 
@@ -31,6 +34,8 @@ public interface IPostService
     Task<bool> DeleteCommentAsync(int commentId, int userId);
 
     // Comment likes
-    Task<bool> LikeCommentAsync(int commentId, int userId);
-    Task<bool> UnlikeCommentAsync(int commentId, int userId);
+    Task<bool> LikeCommentAsync(int commentId, int userId); // Legacy - will be removed
+    Task<bool> UnlikeCommentAsync(int commentId, int userId); // Legacy - will be removed
+    Task<bool> ReactToCommentAsync(int commentId, int userId, ReactionType reactionType);
+    Task<bool> RemoveCommentReactionAsync(int commentId, int userId);
 }

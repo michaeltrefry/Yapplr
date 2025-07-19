@@ -64,7 +64,8 @@ public class Post : IUserOwnedEntity
     // Navigation properties
     public User User { get; set; } = null!;
     public Group? Group { get; set; } // Optional - only set for group posts
-    public ICollection<Like> Likes { get; set; } = new List<Like>();
+    public ICollection<Like> Likes { get; set; } = new List<Like>(); // Legacy - will be removed
+    public ICollection<PostReaction> Reactions { get; set; } = new List<PostReaction>();
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<Repost> Reposts { get; set; } = new List<Repost>();
     public ICollection<PostTag> PostTags { get; set; } = new List<PostTag>();
@@ -74,9 +75,15 @@ public class Post : IUserOwnedEntity
     public ICollection<PostMedia> PostMedia { get; set; } = new List<PostMedia>();
 
     // Computed properties
-    public int LikeCount => Likes.Count;
+    public int LikeCount => Likes.Count; // Legacy - will be replaced with reaction counts
+    public int ReactionCount => Reactions.Count;
     public int CommentCount => Comments.Count;
     public int RepostCount => Reposts.Count;
+
+    // Reaction count helpers
+    public int GetReactionCount(ReactionType reactionType) => Reactions.Count(r => r.ReactionType == reactionType);
+    public Dictionary<ReactionType, int> GetReactionCounts() =>
+        Reactions.GroupBy(r => r.ReactionType).ToDictionary(g => g.Key, g => g.Count());
 
     // Media convenience properties for backward compatibility
     public PostMedia? ImageMedia => PostMedia.FirstOrDefault(m => m.MediaType == MediaType.Image);

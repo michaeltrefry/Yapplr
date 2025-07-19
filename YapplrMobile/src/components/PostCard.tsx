@@ -12,15 +12,18 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useAuth } from '../contexts/AuthContext';
-import { TimelineItem, Post, VideoProcessingStatus } from '../types';
+import { TimelineItem, Post, VideoProcessingStatus, ReactionType } from '../types';
 import ImageViewer from './ImageViewer';
 import { ContentHighlight } from '../utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
 import ReportModal from './ReportModal';
+import ReactionPicker from './ReactionPicker';
 
 interface PostCardProps {
   item: TimelineItem;
-  onLike: (postId: number) => void;
+  onLike: (postId: number) => void; // Legacy - will be replaced by onReact
+  onReact?: (postId: number, reactionType: ReactionType) => void;
+  onRemoveReaction?: (postId: number) => void;
   onRepost: (postId: number) => void;
   onUserPress?: (username: string) => void;
   onCommentPress?: (post: Post) => void;
@@ -30,7 +33,7 @@ interface PostCardProps {
   onHashtagPress?: (hashtag: string) => void;
 }
 
-export default function PostCard({ item, onLike, onRepost, onUserPress, onCommentPress, onCommentCountUpdate, onDelete, onUnrepost, onHashtagPress }: PostCardProps) {
+export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRepost, onUserPress, onCommentPress, onCommentCountUpdate, onDelete, onUnrepost, onHashtagPress }: PostCardProps) {
   const colors = useThemeColors();
   const { user, api } = useAuth();
   const [imageLoading, setImageLoading] = useState(true);
@@ -241,17 +244,13 @@ export default function PostCard({ item, onLike, onRepost, onUserPress, onCommen
       )}
 
       <View style={styles.postActions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => onLike(item.post.id)}
-        >
-          <Ionicons
-            name={item.post.isLikedByCurrentUser ? "heart" : "heart-outline"}
-            size={20}
-            color={item.post.isLikedByCurrentUser ? "#EF4444" : "#6B7280"}
-          />
-          <Text style={styles.actionText}>{item.post.likeCount}</Text>
-        </TouchableOpacity>
+        <ReactionPicker
+          reactionCounts={item.post.reactionCounts}
+          currentUserReaction={item.post.currentUserReaction}
+          totalReactionCount={item.post.totalReactionCount || item.post.likeCount || 0}
+          onReact={(reactionType) => onReact ? onReact(item.post.id, reactionType) : onLike(item.post.id)}
+          onRemoveReaction={() => onRemoveReaction ? onRemoveReaction(item.post.id) : onLike(item.post.id)}
+        />
 
         <TouchableOpacity
           style={styles.actionButton}

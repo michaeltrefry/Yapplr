@@ -225,11 +225,40 @@ Each media file object should include:
         {
             var userId = user.GetUserId(true);
             var success = await postService.UnlikePostAsync(id, userId);
-            
+
             return success ? Results.Ok() : Results.BadRequest(new { message = "Not liked" });
         })
         .WithName("UnlikePost")
         .WithSummary("Unlike a post")
+        .RequireAuthorization("ActiveUser")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
+
+        // React/Remove reaction from post
+        posts.MapPost("/{id:int}/react", async (int id, ReactionDto dto, ClaimsPrincipal user, IPostService postService) =>
+        {
+            var userId = user.GetUserId(true);
+            var success = await postService.ReactToPostAsync(id, userId, dto.ReactionType);
+
+            return success ? Results.Ok() : Results.BadRequest(new { message = "Already reacted with this type" });
+        })
+        .WithName("ReactToPost")
+        .WithSummary("React to a post with an emoji")
+        .RequireAuthorization("ActiveUser")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
+
+        posts.MapDelete("/{id:int}/react", async (int id, ClaimsPrincipal user, IPostService postService) =>
+        {
+            var userId = user.GetUserId(true);
+            var success = await postService.RemovePostReactionAsync(id, userId);
+
+            return success ? Results.Ok() : Results.BadRequest(new { message = "No reaction to remove" });
+        })
+        .WithName("RemovePostReaction")
+        .WithSummary("Remove reaction from a post")
         .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)
@@ -354,6 +383,35 @@ Each media file object should include:
         })
         .WithName("UnlikeComment")
         .WithSummary("Unlike a comment")
+        .RequireAuthorization("ActiveUser")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
+
+        // Comment reactions
+        posts.MapPost("/{postId:int}/comments/{commentId:int}/react", async (int postId, int commentId, ReactionDto dto, ClaimsPrincipal user, IPostService postService) =>
+        {
+            var userId = user.GetUserId(true);
+            var success = await postService.ReactToCommentAsync(commentId, userId, dto.ReactionType);
+
+            return success ? Results.Ok() : Results.BadRequest(new { message = "Already reacted with this type" });
+        })
+        .WithName("ReactToComment")
+        .WithSummary("React to a comment with an emoji")
+        .RequireAuthorization("ActiveUser")
+        .Produces(200)
+        .Produces(400)
+        .Produces(401);
+
+        posts.MapDelete("/{postId:int}/comments/{commentId:int}/react", async (int postId, int commentId, ClaimsPrincipal user, IPostService postService) =>
+        {
+            var userId = user.GetUserId(true);
+            var success = await postService.RemoveCommentReactionAsync(commentId, userId);
+
+            return success ? Results.Ok() : Results.BadRequest(new { message = "No reaction to remove" });
+        })
+        .WithName("RemoveCommentReaction")
+        .WithSummary("Remove reaction from a comment")
         .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)

@@ -15,15 +15,18 @@ public record PostDto(
     DateTime UpdatedAt,
     UserDto User,
     GroupDto? Group, // Optional - only set for group posts
-    int LikeCount,
+    int LikeCount, // Legacy - will be replaced by ReactionCounts
     int CommentCount,
     int RepostCount,
     IEnumerable<TagDto> Tags,
     IEnumerable<LinkPreviewDto> LinkPreviews,
-    bool IsLikedByCurrentUser = false,
+    bool IsLikedByCurrentUser = false, // Legacy - will be replaced by CurrentUserReaction
     bool IsRepostedByCurrentUser = false,
     bool IsEdited = false,
     PostModerationInfoDto? ModerationInfo = null,
     VideoMetadata? VideoMetadata = null,
-    IEnumerable<PostMediaDto>? MediaItems = null
+    IEnumerable<PostMediaDto>? MediaItems = null,
+    IEnumerable<ReactionCountDto>? ReactionCounts = null,
+    ReactionType? CurrentUserReaction = null,
+    int TotalReactionCount = 0
 );

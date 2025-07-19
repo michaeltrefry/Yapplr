@@ -20,8 +20,8 @@ export default function PublicTimeline() {
     queryKey: ['publicTimeline'],
     queryFn: ({ pageParam = 1 }) => postApi.getPublicTimeline(pageParam, 25),
     getNextPageParam: (lastPage, allPages) => {
-      // If the last page has fewer than 25 items, we've reached the end
-      if (lastPage.length < 25) {
+      // If the last page is null/undefined or has fewer than 25 items, we've reached the end
+      if (!lastPage || !Array.isArray(lastPage) || lastPage.length < 25) {
         return undefined;
       }
       return allPages.length + 1;

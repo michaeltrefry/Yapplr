@@ -15,12 +15,15 @@ A clean, responsive Twitter-like social media frontend built with Next.js 15, Ty
 - **User Blocking**: Block/unblock users with automatic unfollowing and content filtering
 - **Settings Management**: Dedicated settings page with blocklist management
 - **Yap Privacy**: Create yaps with Public, Followers, or Private visibility
-- **Social Features**: Yaps, likes, comments, reyaps with timeline integration
+- **Emoji Reaction System**: Rich reactions with 6 emoji types (❤️👍😂😮😢😡) replacing simple likes
+- **Interactive Reaction Picker**: Hover-based emoji selection with real-time count display
+- **Reaction Analytics**: Visual breakdown of reaction counts per emoji type
+- **Social Features**: Yaps, reactions, comments, reyaps with timeline integration
 - **Mentions System**: @username mentions with clickable links and real-time notifications
 - **Real-time Notifications**: Firebase-powered instant push notifications for all social interactions
-- **Comprehensive Notifications**: Complete notification system for mentions, likes, reposts, follows, and comments
+- **Comprehensive Notifications**: Complete notification system for mentions, reactions, reposts, follows, and comments
 - **Follow Notifications**: Instant alerts when someone follows you with navigation to their profile
-- **Like Notifications**: Real-time notifications when someone likes your posts with direct post navigation
+- **Reaction Notifications**: Real-time notifications when someone reacts to your posts with emoji display
 - **Repost Notifications**: Immediate alerts when someone reposts your content with navigation to the post
 - **Smart Navigation**: Click notifications to navigate directly to relevant content with automatic scrolling
 - **Background Notifications**: Push notifications work even when the app is minimized or closed

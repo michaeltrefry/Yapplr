@@ -26,7 +26,16 @@ export function ContentFooter({
       <div className="flex space-x-6">
         <div className="flex items-center">
           <Heart className="h-4 w-4 mr-1" />
-          <span>{post.likeCount || 0} likes</span>
+          <span>{post.totalReactionCount || post.likeCount || 0} reactions</span>
+          {post.reactionCounts && post.reactionCounts.length > 0 && (
+            <div className="ml-2 flex space-x-1">
+              {post.reactionCounts.slice(0, 3).map((reaction) => (
+                <span key={reaction.reactionType} className="text-xs">
+                  {reaction.emoji}{reaction.count}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center">
           <MessageSquare className="h-4 w-4 mr-1" />

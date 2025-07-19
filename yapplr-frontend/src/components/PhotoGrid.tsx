@@ -30,8 +30,8 @@ export default function PhotoGrid({ userId, onPhotoClick }: PhotoGridProps) {
     queryKey: ['userPhotos', userId],
     queryFn: ({ pageParam = 1 }) => postApi.getUserPhotos(userId, pageParam, 25),
     getNextPageParam: (lastPage, allPages) => {
-      // If the last page has fewer than 25 items, we've reached the end
-      if (lastPage.length < 25) {
+      // If the last page is null/undefined or has fewer than 25 items, we've reached the end
+      if (!lastPage || !Array.isArray(lastPage) || lastPage.length < 25) {
         return undefined;
       }
       return allPages.length + 1;

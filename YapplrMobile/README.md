@@ -79,7 +79,9 @@ React Native mobile application for the Yapplr social media platform.
 - ✅ **Video Support**: Upload videos up to 100MB in multiple formats (MP4, MOV, AVI, WMV, FLV, WebM, MKV)
 - ✅ **File Validation**: Automatic format detection and size validation with user-friendly error messages
 - ✅ **Timeline Display**: Posts with images, videos, and interactions
-- ✅ **Like/Repost**: Social interaction features
+- ✅ **Emoji Reactions**: Rich reaction system with 6 emoji types (❤️👍😂😮😢😡) for posts and comments
+- ✅ **Reaction Picker**: Modal-based emoji selection with real-time counts and haptic feedback
+- ✅ **Like/Repost**: Social interaction features (legacy like support maintained)
 - ✅ **Comments System**: Full commenting functionality with dedicated screens
 - ✅ **Comment Replies**: Reply to specific comments with automatic @username prefilling
 - ✅ **Mentions**: @username mention system with clickable links and notifications
@@ -340,7 +342,7 @@ The Yapplr mobile app now has **full feature parity** with the web frontend for 
 - ✅ **Timeline**: Posts with images, likes, reposts, and user profile images
 - ✅ **Post Creation**: Text, image, and video posts with unified gallery picker
 - ✅ **Image Viewing**: Full-screen viewer with pinch-to-zoom
-- ✅ **Social Features**: Like, repost, and user interactions
+- ✅ **Social Features**: Emoji reactions, repost, and user interactions
 - ✅ **User Profiles**: Navigate to user profiles by tapping avatars/names
 - ✅ **Profile Images**: Upload, display, and manage user profile pictures
 - ✅ **Profile Timeline**: View any user's posts and profile information with images

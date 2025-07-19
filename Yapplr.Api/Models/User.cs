@@ -74,8 +74,10 @@ public class User : IEntity
 
     // Navigation properties
     public ICollection<Post> Posts { get; set; } = new List<Post>();
-    public ICollection<Like> Likes { get; set; } = new List<Like>();
-    public ICollection<CommentLike> CommentLikes { get; set; } = new List<CommentLike>();
+    public ICollection<Like> Likes { get; set; } = new List<Like>(); // Legacy - will be removed
+    public ICollection<PostReaction> PostReactions { get; set; } = new List<PostReaction>();
+    public ICollection<CommentLike> CommentLikes { get; set; } = new List<CommentLike>(); // Legacy - will be removed
+    public ICollection<CommentReaction> CommentReactions { get; set; } = new List<CommentReaction>();
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<Repost> Reposts { get; set; } = new List<Repost>();
 

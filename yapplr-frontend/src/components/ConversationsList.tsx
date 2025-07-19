@@ -22,7 +22,7 @@ export default function ConversationsList() {
     queryKey: ['conversations'],
     queryFn: ({ pageParam = 1 }) => messageApi.getConversations(pageParam, 25),
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.length < 25) {
+      if (!lastPage || !Array.isArray(lastPage) || lastPage.length < 25) {
         return undefined;
       }
       return allPages.length + 1;

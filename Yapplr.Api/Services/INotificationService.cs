@@ -1,4 +1,5 @@
 using Yapplr.Api.DTOs;
+using Yapplr.Api.Models;
 
 namespace Yapplr.Api.Services;
 
@@ -58,6 +59,16 @@ public interface INotificationService
     /// Creates a comment like notification
     /// </summary>
     Task CreateCommentLikeNotificationAsync(int commentOwnerId, int likingUserId, int postId, int commentId);
+
+    /// <summary>
+    /// Creates a reaction notification
+    /// </summary>
+    Task CreateReactionNotificationAsync(int reactedUserId, int reactingUserId, int postId, ReactionType reactionType);
+
+    /// <summary>
+    /// Creates a comment reaction notification
+    /// </summary>
+    Task CreateCommentReactionNotificationAsync(int commentOwnerId, int reactingUserId, int postId, int commentId, ReactionType reactionType);
 
     /// <summary>
     /// Creates a repost notification

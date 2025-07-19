@@ -372,6 +372,77 @@ public class NotificationService : INotificationService
         await _notificationService.SendCommentLikeNotificationAsync(commentOwnerId, likingUser.Username, postId, commentId);
     }
 
+    public async Task CreateReactionNotificationAsync(int reactedUserId, int reactingUserId, int postId, ReactionType reactionType)
+    {
+        // Don't notify if user reacts to their own post
+        if (reactedUserId == reactingUserId)
+            return;
+
+        // Check if user has blocked the reacting user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == reactedUserId && b.BlockedId == reactingUserId);
+
+        if (isBlocked)
+            return;
+
+        var reactingUser = await _context.Users.FindAsync(reactingUserId);
+        if (reactingUser == null)
+            return;
+
+        var reactionEmoji = reactionType.GetEmoji();
+        var notification = new Notification
+        {
+            Type = NotificationType.Like, // Reuse like type for now, could add new reaction type later
+            Message = $"@{reactingUser.Username} reacted {reactionEmoji} to your post",
+            UserId = reactedUserId,
+            ActorUserId = reactingUserId,
+            PostId = postId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification (Firebase with SignalR fallback)
+        await _notificationService.SendLikeNotificationAsync(reactedUserId, reactingUser.Username, postId);
+    }
+
+    public async Task CreateCommentReactionNotificationAsync(int commentOwnerId, int reactingUserId, int postId, int commentId, ReactionType reactionType)
+    {
+        // Don't notify if user reacts to their own comment
+        if (commentOwnerId == reactingUserId)
+            return;
+
+        // Check if user has blocked the reacting user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == commentOwnerId && b.BlockedId == reactingUserId);
+
+        if (isBlocked)
+            return;
+
+        var reactingUser = await _context.Users.FindAsync(reactingUserId);
+        if (reactingUser == null)
+            return;
+
+        var reactionEmoji = reactionType.GetEmoji();
+        var notification = new Notification
+        {
+            Type = NotificationType.Like, // Reuse like type for now, could add new reaction type later
+            Message = $"@{reactingUser.Username} reacted {reactionEmoji} to your comment",
+            UserId = commentOwnerId,
+            ActorUserId = reactingUserId,
+            PostId = postId,
+            CommentId = commentId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Send real-time notification (Firebase with SignalR fallback)
+        await _notificationService.SendCommentLikeNotificationAsync(commentOwnerId, reactingUser.Username, postId, commentId);
+    }
+
     public async Task CreateRepostNotificationAsync(int originalUserId, int repostingUserId, int postId)
     {
         // Don't notify if user reposts their own post

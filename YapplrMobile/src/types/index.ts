@@ -267,6 +267,22 @@ export interface UpdateGroup {
   imageFileName?: string;
 }
 
+export enum ReactionType {
+  Heart = 1,
+  ThumbsUp = 2,
+  Laugh = 3,
+  Surprised = 4,
+  Sad = 5,
+  Angry = 6
+}
+
+export interface ReactionCount {
+  reactionType: ReactionType;
+  emoji: string;
+  displayName: string;
+  count: number;
+}
+
 export interface Post {
   id: number;
   content: string;
@@ -280,15 +296,18 @@ export interface Post {
   privacy: PostPrivacy;
   user: User;
   group?: Group;
-  likeCount: number;
+  likeCount: number; // Legacy - will be replaced by reactionCounts
   commentCount: number;
   repostCount: number;
   tags: Tag[];
   linkPreviews: LinkPreview[];
-  isLikedByCurrentUser: boolean;
+  isLikedByCurrentUser: boolean; // Legacy - will be replaced by currentUserReaction
   isRepostedByCurrentUser: boolean;
   moderationInfo?: PostModerationInfo;
   mediaItems?: PostMedia[];
+  reactionCounts?: ReactionCount[];
+  currentUserReaction?: ReactionType | null;
+  totalReactionCount?: number;
 }
 
 export interface Comment {

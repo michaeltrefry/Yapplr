@@ -10,12 +10,15 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Photo Library**: Dedicated photo library showing all user images with slideshow navigation and theme-aware full-screen viewing
 - **Reyaps**: Reyap content with proper attribution in timeline feeds
 - **Comments**: Full-featured commenting system with dedicated comment screens, real-time count updates, auto-scroll to new comments, and reply functionality
-- **Comment Likes**: Like and unlike comments with real-time counts, visual feedback, and consistent UI matching post interactions
+- **Emoji Reactions**: Rich reaction system with 6 emoji types (❤️ Heart, 👍 Like, 😂 Laugh, 😮 Surprised, 😢 Sad, 😡 Angry) for posts and comments
+- **Reaction Picker**: Interactive emoji picker with real-time counts and visual feedback
+- **Reaction Analytics**: View detailed reaction breakdowns showing count per emoji type
+- **Comment Reactions**: Full emoji reaction support for comments with same rich interaction as posts
+- **Legacy Compatibility**: Existing likes automatically converted to heart reactions during migration
 - **Mentions**: @username mention system with clickable links and real-time notifications
 - **Hashtags**: Complete #hashtag system with searchable tags, trending topics, clickable links, dedicated trending page with time periods, hashtag suggestions in post creation, and trending widgets
 - **Link Previews**: Automatic visual previews for URLs in posts with title, description, images, and error handling for broken links
 - **Comment Replies**: Reply to specific comments with automatic @username prefilling and smart reply context
-- **Likes**: Like and unlike yaps with real-time counts
 - **Follow System**: Follow/unfollow users with instant UI updates and optional follow approval system
 - **Following/Followers Lists**: Tabbed interface on profile pages showing Posts, Following (count), and Followers (count) with detailed user lists and navigation to their profiles
 - **User Profiles**: Complete profile management with bio, pronouns, tagline, birthday, and profile images
@@ -37,7 +40,7 @@ A complete Twitter-like social media platform built with modern web technologies
 - **Comment Notifications**: Instant notifications when someone comments on your posts with smart duplicate prevention (no double notifications when mentioned)
 - **Follow Notifications**: Get notified when someone starts following you with direct navigation to their profile
 - **Follow Request System**: Optional follow approval with request/accept/decline workflow and persistent status tracking
-- **Like Notifications**: Instant notifications when someone likes your posts with navigation to the liked post
+- **Reaction Notifications**: Instant notifications when someone reacts to your posts or comments with emoji type display
 - **Repost Notifications**: Real-time alerts when someone reposts your content with direct post navigation
 - **Smart Navigation**: Click notifications to navigate directly to mentioned posts, comments, or user profiles with automatic scrolling and highlighting
 - **Background Notifications**: Push notifications work even when mobile apps are minimized or closed
@@ -1446,6 +1449,17 @@ The deployment includes these containerized services:
 See individual README files for detailed deployment instructions:
 - [Backend Deployment Guide](Yapplr.Api/Production-Deployment-Guide.md)
 - [SendGrid Email Setup](#6-sendgrid-setup-required-for-email-verification--password-reset)
+
+## 🆕 Recent Updates
+
+### Emoji Reaction System (Latest)
+- **Rich Reactions**: Replaced simple likes with 6 emoji reaction types (❤️👍😂😮😢😡)
+- **Interactive UI**: New reaction picker with hover effects and real-time counts
+- **Database Migration**: Automatic conversion of existing likes to heart reactions
+- **Full Coverage**: Reactions available for both posts and comments
+- **Mobile Support**: Complete React Native implementation with modal picker
+- **Admin Interface**: Updated admin views to show reaction breakdowns
+- **Backward Compatibility**: Maintains existing like functionality during transition
 
 ## 📄 License
 

@@ -38,7 +38,7 @@ export default function HashtagPage() {
     queryKey: ['tag-posts', decodedTag],
     queryFn: ({ pageParam = 1 }) => tagApi.getPostsByTag(decodedTag, pageParam, 25),
     getNextPageParam: (lastPage, pages) => {
-      return lastPage.length === 25 ? pages.length + 1 : undefined;
+      return lastPage && Array.isArray(lastPage) && lastPage.length === 25 ? pages.length + 1 : undefined;
     },
     initialPageParam: 1,
     enabled: !!decodedTag,

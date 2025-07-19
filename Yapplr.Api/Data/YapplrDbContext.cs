@@ -13,9 +13,11 @@ public class YapplrDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Post> Posts { get; set; }
     public DbSet<PostMedia> PostMedia { get; set; }
-    public DbSet<Like> Likes { get; set; }
+    public DbSet<Like> Likes { get; set; } // Legacy - will be removed
+    public DbSet<PostReaction> PostReactions { get; set; }
     public DbSet<Comment> Comments { get; set; }
-    public DbSet<CommentLike> CommentLikes { get; set; }
+    public DbSet<CommentLike> CommentLikes { get; set; } // Legacy - will be removed
+    public DbSet<CommentReaction> CommentReactions { get; set; }
     public DbSet<Repost> Reposts { get; set; }
     public DbSet<Follow> Follows { get; set; }
     public DbSet<FollowRequest> FollowRequests { get; set; }
@@ -179,6 +181,42 @@ public class YapplrDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.Comment)
                   .WithMany(e => e.CommentLikes)
+                  .HasForeignKey(e => e.CommentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // PostReaction configuration
+        modelBuilder.Entity<PostReaction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.PostId }).IsUnique(); // Prevent duplicate reactions per user per post
+            entity.HasIndex(e => new { e.PostId, e.ReactionType }); // For efficient reaction count queries
+            entity.Property(e => e.ReactionType)
+                  .HasConversion<int>(); // Store as integer in database
+            entity.HasOne(e => e.User)
+                  .WithMany(e => e.PostReactions)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Post)
+                  .WithMany(e => e.Reactions)
+                  .HasForeignKey(e => e.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // CommentReaction configuration
+        modelBuilder.Entity<CommentReaction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.CommentId }).IsUnique(); // Prevent duplicate reactions per user per comment
+            entity.HasIndex(e => new { e.CommentId, e.ReactionType }); // For efficient reaction count queries
+            entity.Property(e => e.ReactionType)
+                  .HasConversion<int>(); // Store as integer in database
+            entity.HasOne(e => e.User)
+                  .WithMany(e => e.CommentReactions)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Comment)
+                  .WithMany(e => e.Reactions)
                   .HasForeignKey(e => e.CommentId)
                   .OnDelete(DeleteBehavior.Cascade);
         });

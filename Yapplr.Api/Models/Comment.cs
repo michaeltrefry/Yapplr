@@ -39,7 +39,17 @@ public class Comment : IUserOwnedEntity
     // Navigation properties
     public User User { get; set; } = null!;
     public Post Post { get; set; } = null!;
-    public ICollection<CommentLike> CommentLikes { get; set; } = new List<CommentLike>();
+    public ICollection<CommentLike> CommentLikes { get; set; } = new List<CommentLike>(); // Legacy - will be removed
+    public ICollection<CommentReaction> Reactions { get; set; } = new List<CommentReaction>();
     public ICollection<CommentSystemTag> CommentSystemTags { get; set; } = new List<CommentSystemTag>();
     public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
+
+    // Computed properties
+    public int LikeCount => CommentLikes.Count; // Legacy - will be replaced with reaction counts
+    public int ReactionCount => Reactions.Count;
+
+    // Reaction count helpers
+    public int GetReactionCount(ReactionType reactionType) => Reactions.Count(r => r.ReactionType == reactionType);
+    public Dictionary<ReactionType, int> GetReactionCounts() =>
+        Reactions.GroupBy(r => r.ReactionType).ToDictionary(g => g.Key, g => g.Count());
 }

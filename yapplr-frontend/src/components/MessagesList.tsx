@@ -26,7 +26,7 @@ export default function MessagesList({ conversationId }: MessagesListProps) {
     queryKey: ['messages', conversationId],
     queryFn: ({ pageParam = 1 }) => messageApi.getMessages(conversationId, pageParam, 25),
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.length < 25) {
+      if (!lastPage || !Array.isArray(lastPage) || lastPage.length < 25) {
         return undefined;
       }
       return allPages.length + 1;

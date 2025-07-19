@@ -130,6 +130,14 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         await client.post(`/api/posts/${postId}/like`);
       },
 
+      reactToPost: async (postId: number, reactionType: number): Promise<void> => {
+        await client.post(`/api/posts/${postId}/react`, { reactionType });
+      },
+
+      removePostReaction: async (postId: number): Promise<void> => {
+        await client.delete(`/api/posts/${postId}/react`);
+      },
+
       repostPost: async (postId: number): Promise<void> => {
         await client.post(`/api/posts/${postId}/repost`);
       },

@@ -13,7 +13,7 @@ RUN npm ci
 COPY . .
 
 # Cache busting argument to force rebuild
-ARG CACHE_BUST=1
+ARG CACHE_BUST=reaction-fix-v3
 
 # Define build arguments for environment variables
 ARG NEXT_PUBLIC_API_URL=https://api.yapplr.com

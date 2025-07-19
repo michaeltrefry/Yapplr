@@ -1,3 +1,5 @@
+using Yapplr.Api.Models;
+
 namespace Yapplr.Api.Services;
 
 /// <summary>
@@ -11,13 +13,21 @@ public interface ICountCacheService
     Task<int> GetPostCountAsync(int userId);
     
     // Post counts
-    Task<int> GetLikeCountAsync(int postId);
+    Task<int> GetLikeCountAsync(int postId); // Legacy - will be removed
+    Task<int> GetPostReactionCountAsync(int postId, ReactionType reactionType);
+    Task<Dictionary<ReactionType, int>> GetPostReactionCountsAsync(int postId);
+    Task<int> GetTotalPostReactionCountAsync(int postId);
+    Task<ReactionType?> GetUserPostReactionAsync(int postId, int userId);
     Task<int> GetCommentCountAsync(int postId);
     Task<int> GetRepostCountAsync(int postId);
 
     // Comment counts
-    Task<int> GetCommentLikeCountAsync(int commentId);
-    Task<bool> HasUserLikedCommentAsync(int commentId, int userId);
+    Task<int> GetCommentLikeCountAsync(int commentId); // Legacy - will be removed
+    Task<int> GetCommentReactionCountAsync(int commentId, ReactionType reactionType);
+    Task<Dictionary<ReactionType, int>> GetCommentReactionCountsAsync(int commentId);
+    Task<int> GetTotalCommentReactionCountAsync(int commentId);
+    Task<ReactionType?> GetUserCommentReactionAsync(int commentId, int userId);
+    Task<bool> HasUserLikedCommentAsync(int commentId, int userId); // Legacy - will be removed
 
     // Notification counts
     Task<int> GetUnreadNotificationCountAsync(int userId);

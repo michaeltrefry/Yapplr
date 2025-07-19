@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Post, PostPrivacy, VideoProcessingStatus } from '@/types';
+import { Post, PostPrivacy, VideoProcessingStatus, ReactionType } from '@/types';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag, Play } from 'lucide-react';
 import { postApi } from '@/lib/api';
@@ -14,6 +14,7 @@ import ReportModal from './ReportModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentHighlight } from '@/utils/contentUtils';
 import MediaGallery from './MediaGallery';
+import ReactionPicker from './ReactionPicker';
 import LinkPreviewList from './LinkPreviewList';
 import HiddenPostBanner from './HiddenPostBanner';
 
@@ -94,6 +95,158 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
       }
     },
   });
+
+  const reactMutation = useMutation({
+    mutationFn: async (reactionType: ReactionType) => {
+      return await postApi.reactToPost(post.id, reactionType);
+    },
+    onMutate: async (reactionType: ReactionType) => {
+      // Store the previous state for potential rollback
+      const previousState = {
+        currentUserReaction: post.currentUserReaction,
+        reactionCounts: post.reactionCounts,
+        totalReactionCount: post.totalReactionCount || 0
+      };
+
+      // Update reaction counts optimistically
+      const currentReactionCounts = post.reactionCounts || [];
+      const newReactionCounts = [...currentReactionCounts];
+      const existingReactionIndex = newReactionCounts.findIndex(r => r.reactionType === reactionType);
+
+      // Remove previous reaction count if user had one
+      if (post.currentUserReaction) {
+        const prevReactionIndex = newReactionCounts.findIndex(r => r.reactionType === post.currentUserReaction);
+        if (prevReactionIndex >= 0) {
+          newReactionCounts[prevReactionIndex] = {
+            ...newReactionCounts[prevReactionIndex],
+            count: Math.max(0, newReactionCounts[prevReactionIndex].count - 1)
+          };
+        }
+      }
+
+      // Add new reaction count
+      if (existingReactionIndex >= 0) {
+        newReactionCounts[existingReactionIndex] = {
+          ...newReactionCounts[existingReactionIndex],
+          count: newReactionCounts[existingReactionIndex].count + 1
+        };
+      } else {
+        // Add new reaction type
+        newReactionCounts.push({
+          reactionType,
+          emoji: getReactionEmoji(reactionType),
+          displayName: getReactionDisplayName(reactionType),
+          count: 1
+        });
+      }
+
+      const newTotalCount = post.currentUserReaction
+        ? (post.totalReactionCount || 0) // Same total if changing reaction
+        : (post.totalReactionCount || 0) + 1; // +1 if adding new reaction
+
+      const updatedPost = {
+        ...post,
+        currentUserReaction: reactionType,
+        reactionCounts: newReactionCounts,
+        totalReactionCount: newTotalCount
+      };
+
+      onPostUpdate?.(updatedPost);
+      return { previousState };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['post', post.id] });
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousState) {
+        const revertedPost = {
+          ...post,
+          currentUserReaction: context.previousState.currentUserReaction,
+          reactionCounts: context.previousState.reactionCounts,
+          totalReactionCount: context.previousState.totalReactionCount
+        };
+        onPostUpdate?.(revertedPost);
+      }
+    },
+  });
+
+  const removeReactionMutation = useMutation({
+    mutationFn: async () => {
+      return await postApi.removePostReaction(post.id);
+    },
+    onMutate: async () => {
+      const previousState = {
+        currentUserReaction: post.currentUserReaction,
+        reactionCounts: post.reactionCounts,
+        totalReactionCount: post.totalReactionCount || 0
+      };
+
+      if (post.currentUserReaction) {
+        const currentReactionCounts = post.reactionCounts || [];
+        const newReactionCounts = [...currentReactionCounts];
+        const reactionIndex = newReactionCounts.findIndex(r => r.reactionType === post.currentUserReaction);
+
+        if (reactionIndex >= 0) {
+          newReactionCounts[reactionIndex] = {
+            ...newReactionCounts[reactionIndex],
+            count: Math.max(0, newReactionCounts[reactionIndex].count - 1)
+          };
+        }
+
+        const updatedPost = {
+          ...post,
+          currentUserReaction: null,
+          reactionCounts: newReactionCounts,
+          totalReactionCount: Math.max(0, (post.totalReactionCount || 0) - 1)
+        };
+
+        onPostUpdate?.(updatedPost);
+      }
+
+      return { previousState };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['post', post.id] });
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousState) {
+        const revertedPost = {
+          ...post,
+          currentUserReaction: context.previousState.currentUserReaction,
+          reactionCounts: context.previousState.reactionCounts,
+          totalReactionCount: context.previousState.totalReactionCount
+        };
+        onPostUpdate?.(revertedPost);
+      }
+    },
+  });
+
+  // Helper functions for reactions
+  const getReactionEmoji = (reactionType: ReactionType): string => {
+    switch (reactionType) {
+      case ReactionType.Heart: return '❤️';
+      case ReactionType.ThumbsUp: return '👍';
+      case ReactionType.Laugh: return '😂';
+      case ReactionType.Surprised: return '😮';
+      case ReactionType.Sad: return '😢';
+      case ReactionType.Angry: return '😡';
+      default: return '❤️';
+    }
+  };
+
+  const getReactionDisplayName = (reactionType: ReactionType): string => {
+    switch (reactionType) {
+      case ReactionType.Heart: return 'Love';
+      case ReactionType.ThumbsUp: return 'Like';
+      case ReactionType.Laugh: return 'Laugh';
+      case ReactionType.Surprised: return 'Surprised';
+      case ReactionType.Sad: return 'Sad';
+      case ReactionType.Angry: return 'Angry';
+      default: return 'Love';
+    }
+  };
 
   const repostMutation = useMutation({
     mutationFn: async (isCurrentlyReposted: boolean) => {
@@ -248,6 +401,14 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const handleCancelReply = () => {
     setReplyingTo(null);
     setCommentText('');
+  };
+
+  const handleReact = (reactionType: ReactionType) => {
+    reactMutation.mutate(reactionType);
+  };
+
+  const handleRemoveReaction = () => {
+    removeReactionMutation.mutate();
   };
 
   const isOwner = user && user.id === post.user.id;
@@ -542,22 +703,14 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
               <span className="text-sm">{formatNumber(post.repostCount)}</span>
             </button>
 
-            <button
-              onClick={handleLike}
-              disabled={likeMutation.isPending}
-              className={`flex items-center space-x-2 transition-colors group ${
-                post.isLikedByCurrentUser
-                  ? 'text-red-500'
-                  : 'text-gray-500 hover:text-red-500'
-              }`}
-            >
-              <div className="p-2 rounded-full hover:bg-gray-100">
-                <Heart
-                  className={`w-5 h-5 ${post.isLikedByCurrentUser ? 'fill-current' : ''}`}
-                />
-              </div>
-              <span className="text-sm">{formatNumber(post.likeCount)}</span>
-            </button>
+            <ReactionPicker
+              reactionCounts={post.reactionCounts || []}
+              currentUserReaction={post.currentUserReaction || null}
+              totalReactionCount={post.totalReactionCount || post.likeCount || 0}
+              onReact={handleReact}
+              onRemoveReaction={handleRemoveReaction}
+              disabled={reactMutation.isPending || removeReactionMutation.isPending}
+            />
 
             <button
               onClick={() => setShowShareModal(true)}

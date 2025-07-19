@@ -1077,6 +1077,219 @@ public class PostService : BaseService, IPostService
         return true;
     }
 
+    public async Task<bool> ReactToPostAsync(int postId, int userId, ReactionType reactionType)
+    {
+        // Check trust-based permissions
+        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.LikeContent))
+        {
+            throw new InvalidOperationException("Insufficient trust score to react to content");
+        }
+
+        // Check if user already has a reaction on this post
+        var existingReaction = await _context.PostReactions
+            .FirstOrDefaultAsync(r => r.PostId == postId && r.UserId == userId);
+
+        if (existingReaction != null)
+        {
+            // If same reaction type, do nothing (already reacted)
+            if (existingReaction.ReactionType == reactionType)
+                return false;
+
+            // Update existing reaction to new type
+            existingReaction.ReactionType = reactionType;
+            existingReaction.UpdatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            // Create new reaction
+            var reaction = new PostReaction
+            {
+                PostId = postId,
+                UserId = userId,
+                ReactionType = reactionType,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.PostReactions.Add(reaction);
+        }
+
+        await _context.SaveChangesAsync();
+
+        // Invalidate post reaction count cache
+        await _countCache.InvalidatePostCountsAsync(postId);
+
+        // Get the post owner to create notification
+        var post = await _context.Posts.FindAsync(postId);
+        if (post != null)
+        {
+            await _notificationService.CreateReactionNotificationAsync(post.UserId, userId, postId, reactionType);
+        }
+
+        // Update trust score for reaction given
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.LikeGiven, // Reuse like action for now
+                "post",
+                postId,
+                $"Reacted to a post with {reactionType.GetDisplayName()}"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for reaction by user {UserId}", userId);
+            // Don't fail the reaction action if trust score update fails
+        }
+
+        return true;
+    }
+
+    public async Task<bool> RemovePostReactionAsync(int postId, int userId)
+    {
+        var reaction = await _context.PostReactions
+            .FirstOrDefaultAsync(r => r.PostId == postId && r.UserId == userId);
+
+        if (reaction == null)
+            return false;
+
+        _context.PostReactions.Remove(reaction);
+        await _context.SaveChangesAsync();
+
+        // Invalidate post reaction count cache
+        await _countCache.InvalidatePostCountsAsync(postId);
+
+        return true;
+    }
+
+    public async Task<bool> ReactToCommentAsync(int commentId, int userId, ReactionType reactionType)
+    {
+        // Check trust-based permissions
+        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.LikeContent))
+        {
+            throw new InvalidOperationException("Insufficient trust score to react to content");
+        }
+
+        // Check if user already has a reaction on this comment
+        var existingReaction = await _context.CommentReactions
+            .FirstOrDefaultAsync(r => r.CommentId == commentId && r.UserId == userId);
+
+        if (existingReaction != null)
+        {
+            // If same reaction type, do nothing (already reacted)
+            if (existingReaction.ReactionType == reactionType)
+                return false;
+
+            // Update existing reaction to new type
+            existingReaction.ReactionType = reactionType;
+            existingReaction.UpdatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            // Create new reaction
+            var reaction = new CommentReaction
+            {
+                CommentId = commentId,
+                UserId = userId,
+                ReactionType = reactionType,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.CommentReactions.Add(reaction);
+        }
+
+        await _context.SaveChangesAsync();
+
+        // Invalidate comment reaction count cache
+        await _countCache.InvalidateCommentCountsAsync(commentId);
+
+        // Get the comment owner to create notification
+        var comment = await _context.Comments.FindAsync(commentId);
+        if (comment != null)
+        {
+            await _notificationService.CreateCommentReactionNotificationAsync(comment.UserId, userId, comment.PostId, commentId, reactionType);
+        }
+
+        // Update trust score for reaction given
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.LikeGiven, // Reuse like action for now
+                "comment",
+                commentId,
+                $"Reacted to a comment with {reactionType.GetDisplayName()}"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update trust score for comment reaction by user {UserId}", userId);
+            // Don't fail the reaction action if trust score update fails
+        }
+
+        // Track analytics for comment reaction
+        try
+        {
+            await _analyticsService.TrackContentEngagementAsync(
+                userId,
+                ContentType.Comment,
+                commentId,
+                EngagementType.Like, // Reuse like engagement type for now
+                comment?.UserId,
+                "comment_reaction_button",
+                $"User reacted to a comment with {reactionType.GetDisplayName()}"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to track analytics for comment reaction by user {UserId}", userId);
+            // Don't fail the reaction action if analytics tracking fails
+        }
+
+        return true;
+    }
+
+    public async Task<bool> RemoveCommentReactionAsync(int commentId, int userId)
+    {
+        var reaction = await _context.CommentReactions
+            .FirstOrDefaultAsync(r => r.CommentId == commentId && r.UserId == userId);
+
+        if (reaction == null)
+            return false;
+
+        // Get comment info before removing the reaction for analytics
+        var comment = await _context.Comments.FindAsync(commentId);
+
+        _context.CommentReactions.Remove(reaction);
+        await _context.SaveChangesAsync();
+
+        // Invalidate comment reaction count cache
+        await _countCache.InvalidateCommentCountsAsync(commentId);
+
+        // Track analytics for comment reaction removal
+        try
+        {
+            await _analyticsService.TrackContentEngagementAsync(
+                userId,
+                ContentType.Comment,
+                commentId,
+                EngagementType.Unlike, // Reuse unlike engagement type for now
+                comment?.UserId,
+                "comment_reaction_button",
+                "User removed reaction from a comment"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to track analytics for comment reaction removal by user {UserId}", userId);
+            // Don't fail the reaction removal action if analytics tracking fails
+        }
+
+        return true;
+    }
+
     public async Task<bool> RepostAsync(int postId, int userId)
     {
         // Check if already reposted
