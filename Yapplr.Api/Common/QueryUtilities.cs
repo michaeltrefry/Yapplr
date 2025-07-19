@@ -55,6 +55,7 @@ public static class QueryUtilities
 
     /// <summary>
     /// Apply hybrid post visibility filters (post-level permanent hiding + real-time user checks)
+    /// Excludes group posts from general feeds - group posts should only appear in group-specific queries
     /// </summary>
     public static IQueryable<Post> ApplyVisibilityFilters(this IQueryable<Post> query,
         int? currentUserId,
@@ -62,6 +63,9 @@ public static class QueryUtilities
         HashSet<int> followingIds)
     {
         return query.Where(p =>
+            // GROUP POST FILTERING - exclude group posts from general feeds
+            p.GroupId == null &&
+
             // PERMANENT POST-LEVEL HIDING (single optimized check)
             (!p.IsHidden ||
              (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing &&
@@ -81,11 +85,15 @@ public static class QueryUtilities
 
     /// <summary>
     /// Apply hybrid post visibility filters for public-only content
+    /// Excludes group posts from public timeline - group posts should only appear in group-specific queries
     /// </summary>
     public static IQueryable<Post> ApplyPublicVisibilityFilters(this IQueryable<Post> query,
         HashSet<int> blockedUserIds)
     {
         return query.Where(p =>
+            // GROUP POST FILTERING - exclude group posts from public timeline
+            p.GroupId == null &&
+
             // PERMANENT POST-LEVEL HIDING (no video processing exception for public timeline)
             !p.IsHidden &&
 
@@ -206,6 +214,7 @@ public static class QueryUtilities
 
     /// <summary>
     /// Filter posts for visibility (used in timeline methods)
+    /// Excludes group posts from general feeds - group posts should only appear in group-specific queries
     /// </summary>
     public static IQueryable<Post> FilterForVisibility(this IQueryable<Post> query,
         int userId,
@@ -216,6 +225,9 @@ public static class QueryUtilities
         var followingSet = followingIds.ToHashSet();
 
         return query.Where(p =>
+            // GROUP POST FILTERING - exclude group posts from general feeds
+            p.GroupId == null &&
+
             // PERMANENT POST-LEVEL HIDING
             (!p.IsHidden ||
              (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing && p.UserId == userId)) &&
@@ -243,6 +255,7 @@ public static class QueryUtilities
 
     /// <summary>
     /// Filter posts for visibility based on user and privacy settings (hybrid approach)
+    /// Excludes group posts from general feeds - group posts should only appear in group-specific queries
     /// </summary>
     public static IQueryable<Post> FilterForVisibility(
         this IQueryable<Post> query,
@@ -251,6 +264,9 @@ public static class QueryUtilities
         List<int>? followingUserIds = null,
         bool includeHidden = false)
     {
+        // GROUP POST FILTERING - exclude group posts from general feeds
+        query = query.Where(p => p.GroupId == null);
+
         // PERMANENT POST-LEVEL HIDING
         if (!includeHidden)
         {

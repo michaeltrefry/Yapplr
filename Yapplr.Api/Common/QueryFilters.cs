@@ -10,11 +10,15 @@ public static class QueryFilters
 {
     /// <summary>
     /// Filter posts for a specific user's visibility
+    /// Excludes group posts from general feeds - group posts should only appear in group-specific queries
     /// </summary>
     public static QueryBuilder<Post> ForUser(this QueryBuilder<Post> builder, int? currentUserId,
         List<int>? blockedUserIds = null, List<int>? followingUserIds = null)
     {
         return builder.Where(p =>
+            // GROUP POST FILTERING - exclude group posts from general feeds
+            p.GroupId == null &&
+
             // PERMANENT POST-LEVEL HIDING
             (!p.IsHidden ||
              (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing &&
