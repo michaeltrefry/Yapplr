@@ -338,12 +338,12 @@ export default function NotificationsPage() {
                             {formatTimeAgo(notification.createdAt)}
                           </span>
                         </div>
-                        {notification.post && (
+                        {notification.post && notification.post.content && notification.post.content.trim() && (
                           <div className="mt-2 p-2 bg-gray-100 rounded text-sm text-gray-700">
                             {notification.post.content}
                           </div>
                         )}
-                        {notification.comment && (
+                        {notification.comment && notification.comment.content && notification.comment.content.trim() && (
                           <div className="mt-2 p-2 bg-gray-100 rounded text-sm text-gray-700">
                             {notification.comment.content}
                           </div>

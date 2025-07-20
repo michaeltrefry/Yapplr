@@ -139,7 +139,7 @@ export default function GifPicker({ visible, onClose, onSelectGif }: GifPickerPr
       onPress={() => handleGifSelect(item)}
     >
       <Image
-        source={{ uri: item.media[0]?.tinygif?.url || item.media[0]?.nanogif?.url }}
+        source={{ uri: item.media_formats?.tinygif?.url || item.media_formats?.nanogif?.url }}
         style={styles.gifImage}
         resizeMode="cover"
       />

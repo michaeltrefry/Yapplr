@@ -247,7 +247,7 @@ export default function GifPicker({ isOpen, onClose, onSelectGif }: GifPickerPro
                     className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all group"
                   >
                     <img
-                      src={gif.media[0]?.tinygif?.url || gif.media[0]?.nanogif?.url}
+                      src={gif.media_formats?.tinygif?.url || gif.media_formats?.nanogif?.url}
                       alt={gif.title || gif.content_description}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       loading="lazy"

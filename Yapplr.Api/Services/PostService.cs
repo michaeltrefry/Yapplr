@@ -906,6 +906,11 @@ public class PostService : BaseService, IPostService
         post.HiddenReason = "Post deleted by user";
 
         await _context.SaveChangesAsync();
+
+        // Delete social interaction notifications for the deleted post
+        // This preserves system/moderation notifications but removes likes, comments, reposts, mentions
+        await _notificationService.DeleteSocialNotificationsForPostAsync(postId);
+
         return true;
     }
 

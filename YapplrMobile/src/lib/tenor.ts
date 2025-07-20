@@ -1,49 +1,51 @@
 // Tenor API configuration and utilities for React Native
-const TENOR_API_KEY = 'LIVDSRZULELA'; // Demo key - replace with your own
-const TENOR_BASE_URL = 'https://g.tenor.com/v1';
+// Note: Mobile app calls Yapplr API endpoints, not Tenor directly
+const API_BASE_URL = 'https://api.yapplr.com'; // Update this to match your API URL
 
 export interface TenorGif {
   id: string;
   title: string;
   content_description: string;
-  content_rating: string;
-  h1_title: string;
-  media: Array<{
+  media_formats: {
     gif?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     mediumgif?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     tinygif?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     nanogif?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
-  }>;
+    preview?: {
+      url: string;
+      duration: number;
+      dims: [number, number];
+      size: number;
+    };
+  };
   created: number;
   itemurl: string;
   url: string;
   tags: string[];
-  flags: string[];
+  flags: string;
   hasaudio: boolean;
+  hascaption: boolean;
+  bg_color: string;
 }
 
 export interface TenorSearchResponse {
@@ -63,19 +65,25 @@ export interface SelectedGif {
 // Search for GIFs
 export async function searchGifs(query: string, limit: number = 20, pos?: string): Promise<TenorSearchResponse> {
   const params = new URLSearchParams({
-    key: TENOR_API_KEY,
     q: query,
     limit: limit.toString(),
-    media_filter: 'gif,tinygif',
-    ar_range: 'all',
   });
 
   if (pos) {
     params.append('pos', pos);
   }
 
-  const response = await fetch(`${TENOR_BASE_URL}/search?${params}`);
-  
+  // Get auth token from AsyncStorage (you'll need to implement this)
+  // const token = await AsyncStorage.getItem('token');
+  const token = 'YOUR_AUTH_TOKEN'; // TODO: Get from AsyncStorage
+
+  const response = await fetch(`${API_BASE_URL}/api/gif/search?${params}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
   if (!response.ok) {
     throw new Error(`Tenor API error: ${response.status}`);
   }
@@ -86,18 +94,24 @@ export async function searchGifs(query: string, limit: number = 20, pos?: string
 // Get trending GIFs
 export async function getTrendingGifs(limit: number = 20, pos?: string): Promise<TenorSearchResponse> {
   const params = new URLSearchParams({
-    key: TENOR_API_KEY,
     limit: limit.toString(),
-    media_filter: 'gif,tinygif',
-    ar_range: 'all',
   });
 
   if (pos) {
     params.append('pos', pos);
   }
 
-  const response = await fetch(`${TENOR_BASE_URL}/trending?${params}`);
-  
+  // Get auth token from AsyncStorage (you'll need to implement this)
+  // const token = await AsyncStorage.getItem('token');
+  const token = 'YOUR_AUTH_TOKEN'; // TODO: Get from AsyncStorage
+
+  const response = await fetch(`${API_BASE_URL}/api/gif/trending?${params}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
   if (!response.ok) {
     throw new Error(`Tenor API error: ${response.status}`);
   }
@@ -107,12 +121,12 @@ export async function getTrendingGifs(limit: number = 20, pos?: string): Promise
 
 // Convert Tenor GIF to our SelectedGif format
 export function convertTenorGifToSelected(gif: TenorGif): SelectedGif {
-  // Get the first media object (Tenor API returns an array with one object)
-  const media = gif.media[0];
+  // In v2 API, media_formats is a direct object (not an array)
+  const mediaFormats = gif.media_formats;
 
   // Use tinygif for preview and gif for full size
-  const preview = media.tinygif || media.nanogif;
-  const full = media.gif || media.mediumgif;
+  const preview = mediaFormats.tinygif || mediaFormats.nanogif || mediaFormats.preview;
+  const full = mediaFormats.gif || mediaFormats.mediumgif;
 
   if (!preview || !full) {
     throw new Error('GIF media formats not available');

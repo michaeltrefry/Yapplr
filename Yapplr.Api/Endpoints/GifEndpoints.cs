@@ -5,6 +5,8 @@ namespace Yapplr.Api.Endpoints;
 
 public static class GifEndpoints
 {
+    private const string TenorBaseUrl = "https://tenor.googleapis.com/v2/";
+    private const string TenorClient = "yapplr";
     public static void MapGifEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/gif")
@@ -43,8 +45,6 @@ public static class GifEndpoints
                 logger.LogError("Tenor API key is not configured");
                 return Results.Problem("Tenor API key is not configured", statusCode: 500);
             }
-
-            var baseUrl = "https://g.tenor.com/v1/search";
             
             var queryParams = new List<string>
             {
@@ -52,7 +52,8 @@ public static class GifEndpoints
                 $"q={Uri.EscapeDataString(q)}",
                 $"limit={limit}",
                 "media_filter=gif,tinygif",
-                "ar_range=all"
+                "ar_range=all",
+                $"client={TenorClient}"
             };
 
             if (!string.IsNullOrEmpty(pos))
@@ -60,7 +61,7 @@ public static class GifEndpoints
                 queryParams.Add($"pos={Uri.EscapeDataString(pos)}");
             }
 
-            var url = $"{baseUrl}?{string.Join("&", queryParams)}";
+            var url = $"{TenorBaseUrl}search?{string.Join("&", queryParams)}";
             
             logger.LogInformation("Fetching GIFs from Tenor: {Url}", url);
             
@@ -101,15 +102,14 @@ public static class GifEndpoints
                 logger.LogError("Tenor API key is not configured");
                 return Results.Problem("Tenor API key is not configured", statusCode: 500);
             }
-
-            var baseUrl = "https://g.tenor.com/v1/trending";
             
             var queryParams = new List<string>
             {
                 $"key={apiKey}",
                 $"limit={limit}",
                 "media_filter=gif,tinygif",
-                "ar_range=all"
+                "ar_range=all",
+                $"client={TenorClient}"
             };
 
             if (!string.IsNullOrEmpty(pos))
@@ -117,7 +117,7 @@ public static class GifEndpoints
                 queryParams.Add($"pos={Uri.EscapeDataString(pos)}");
             }
 
-            var url = $"{baseUrl}?{string.Join("&", queryParams)}";
+            var url = $"{TenorBaseUrl}featured?{string.Join("&", queryParams)}";
             
             logger.LogInformation("Fetching trending GIFs from Tenor: {Url}", url);
             
@@ -156,16 +156,15 @@ public static class GifEndpoints
                 logger.LogError("Tenor API key is not configured");
                 return Results.Problem("Tenor API key is not configured", statusCode: 500);
             }
-
-            var baseUrl = "https://g.tenor.com/v1/categories";
             
             var queryParams = new List<string>
             {
                 $"key={apiKey}",
-                "type=trending"
+                "type=featured",
+                $"client={TenorClient}"
             };
 
-            var url = $"{baseUrl}?{string.Join("&", queryParams)}";
+            var url = $"{TenorBaseUrl}categories?{string.Join("&", queryParams)}";
             
             logger.LogInformation("Fetching GIF categories from Tenor: {Url}", url);
             

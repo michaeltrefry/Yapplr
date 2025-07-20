@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
+using Yapplr.Api.Services;
 
 namespace Yapplr.Api.CQRS.Handlers;
 
@@ -13,14 +14,17 @@ public class ApplyModerationActionCommandHandler : BaseCommandHandler<ApplyModer
 {
     private readonly YapplrDbContext _dbContext;
     private readonly ICommandPublisher _commandPublisher;
+    private readonly INotificationService _notificationService;
 
     public ApplyModerationActionCommandHandler(
         YapplrDbContext dbContext,
         ICommandPublisher commandPublisher,
+        INotificationService notificationService,
         ILogger<ApplyModerationActionCommandHandler> logger) : base(logger)
     {
         _dbContext = dbContext;
         _commandPublisher = commandPublisher;
+        _notificationService = notificationService;
     }
 
     protected override async Task HandleAsync(ApplyModerationActionCommand command, ConsumeContext<ApplyModerationActionCommand> context)
@@ -103,6 +107,9 @@ public class ApplyModerationActionCommandHandler : BaseCommandHandler<ApplyModer
                 post.FlaggedAt = DateTime.UtcNow;
                 break;
             case "delete":
+                // Delete social interaction notifications before removing the post
+                // This preserves system/moderation notifications but removes likes, comments, reposts, mentions
+                await _notificationService.DeleteSocialNotificationsForPostAsync(command.ContentId);
                 _dbContext.Posts.Remove(post);
                 break;
         }
@@ -128,6 +135,8 @@ public class ApplyModerationActionCommandHandler : BaseCommandHandler<ApplyModer
                 comment.FlaggedAt = DateTime.UtcNow;
                 break;
             case "delete":
+                // Delete notifications related to the comment before removing it
+                await _notificationService.DeleteCommentNotificationsAsync(command.ContentId);
                 _dbContext.Comments.Remove(comment);
                 break;
         }

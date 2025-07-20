@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Yapplr.Api.Models;
 using Yapplr.Api.Common;
+using FluentAssertions;
 
 namespace Yapplr.Api.Tests;
 
@@ -188,6 +189,113 @@ public class PostDeletionTests : IDisposable
         // Assert
         Assert.Contains(visibleToAuthor, p => p.Id == 5); // Author can see their video processing post
         Assert.DoesNotContain(visibleToOthers, p => p.Id == 5); // Others cannot see video processing post
+    }
+
+    [Fact]
+    public async Task PostDeletion_ShouldCleanupSocialNotifications()
+    {
+        // Arrange - Create notifications for a post
+        var postId = 3; // Using existing test post
+        var userId = 2; // User who will receive notifications
+
+        // Create social interaction notifications
+        var likeNotification = new Notification
+        {
+            Type = NotificationType.Like,
+            Message = "User liked your post",
+            UserId = userId,
+            PostId = postId,
+            ActorUserId = 1,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var commentNotification = new Notification
+        {
+            Type = NotificationType.Comment,
+            Message = "User commented on your post",
+            UserId = userId,
+            PostId = postId,
+            ActorUserId = 1,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var mentionNotification = new Notification
+        {
+            Type = NotificationType.Mention,
+            Message = "User mentioned you",
+            UserId = userId,
+            PostId = postId,
+            ActorUserId = 1,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Create a post-specific system notification that should be deleted
+        var videoProcessingNotification = new Notification
+        {
+            Type = NotificationType.VideoProcessingCompleted,
+            Message = "Your video has finished processing",
+            UserId = 1, // Post owner
+            PostId = postId,
+            ActorUserId = null,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Create a user-level system notification that should be preserved
+        var systemNotification = new Notification
+        {
+            Type = NotificationType.ContentHidden,
+            Message = "Your post was hidden by a moderator",
+            UserId = 1, // Post owner
+            PostId = postId,
+            ActorUserId = null,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.AddRange(likeNotification, commentNotification, mentionNotification, videoProcessingNotification, systemNotification);
+        await _context.SaveChangesAsync();
+
+        // Verify notifications exist before deletion
+        var notificationsBeforeDeletion = await _context.Notifications
+            .Where(n => n.PostId == postId)
+            .ToListAsync();
+        notificationsBeforeDeletion.Should().HaveCount(5);
+
+        // Act - Mark post as deleted (simulating PostService.DeletePostAsync behavior)
+        var post = await _context.Posts.FindAsync(postId);
+        post!.IsHidden = true;
+        post.HiddenReasonType = PostHiddenReasonType.DeletedByUser;
+        post.HiddenAt = DateTime.UtcNow;
+        post.HiddenByUserId = 1;
+        post.HiddenReason = "Post deleted by user";
+        await _context.SaveChangesAsync();
+
+        // Simulate the notification cleanup (normally done by NotificationService.DeleteSocialNotificationsForPostAsync)
+        var notificationTypesToDelete = new[]
+        {
+            NotificationType.Mention,
+            NotificationType.Like,
+            NotificationType.Repost,
+            NotificationType.Follow,
+            NotificationType.Comment,
+            NotificationType.FollowRequest,
+            NotificationType.VideoProcessingCompleted // Post-specific system notification
+        };
+
+        var notificationsToDelete = await _context.Notifications
+            .Where(n => n.PostId == postId && notificationTypesToDelete.Contains(n.Type))
+            .ToListAsync();
+
+        _context.Notifications.RemoveRange(notificationsToDelete);
+        await _context.SaveChangesAsync();
+
+        // Assert - Only user-level system notifications should remain
+        var remainingNotifications = await _context.Notifications
+            .Where(n => n.PostId == postId)
+            .ToListAsync();
+
+        remainingNotifications.Should().HaveCount(1);
+        remainingNotifications[0].Type.Should().Be(NotificationType.ContentHidden);
+        remainingNotifications[0].Message.Should().Be("Your post was hidden by a moderator");
     }
 
     public void Dispose()

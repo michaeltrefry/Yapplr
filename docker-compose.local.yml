@@ -45,8 +45,6 @@ services:
       # Analytics configuration
       - Analytics__EnableDualWrite=true
       - Analytics__UseInfluxForAdminDashboard=true
-      # Tenor GIF API configuration
-      - Tenor__ApiKey=LIVDSRZULELA
     volumes:
       - yapplr_uploads:/app/uploads
       - yapplr_logs:/app/logs

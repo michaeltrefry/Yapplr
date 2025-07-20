@@ -94,7 +94,12 @@ public interface INotificationService
     /// Deletes notifications related to a post (when post is deleted)
     /// </summary>
     Task DeletePostNotificationsAsync(int postId);
-    
+
+    /// <summary>
+    /// Deletes social interaction and post-specific notifications for a post, preserving user-level system/moderation notifications
+    /// </summary>
+    Task DeleteSocialNotificationsForPostAsync(int postId);
+
     /// <summary>
     /// Deletes notifications related to a comment (when comment is deleted)
     /// </summary>

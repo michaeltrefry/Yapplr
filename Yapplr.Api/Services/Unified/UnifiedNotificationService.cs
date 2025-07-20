@@ -788,6 +788,45 @@ public class UnifiedNotificationService : IUnifiedNotificationService
     }
 
     /// <summary>
+    /// Deletes social interaction and post-specific notifications for a post, preserving user-level system/moderation notifications
+    /// </summary>
+    public async Task DeleteSocialNotificationsForPostAsync(int postId)
+    {
+        // Delete social interaction notifications and post-specific system notifications
+        // Preserve user-level system/moderation notifications (suspensions, bans, appeals, etc.)
+        var notificationTypesToDelete = new[]
+        {
+            NotificationType.Mention,                    // 1
+            NotificationType.Like,                       // 2
+            NotificationType.Repost,                     // 3
+            NotificationType.Follow,                     // 4 (shouldn't be post-related but included for completeness)
+            NotificationType.Comment,                    // 5
+            NotificationType.FollowRequest,              // 6 (shouldn't be post-related but included for completeness)
+            NotificationType.VideoProcessingCompleted   // 110 (post-specific, should be deleted with the post)
+        };
+
+        var notificationsToDelete = await _context.Notifications
+            .Where(n => n.PostId == postId && notificationTypesToDelete.Contains(n.Type))
+            .ToListAsync();
+
+        if (notificationsToDelete.Any())
+        {
+            _context.Notifications.RemoveRange(notificationsToDelete);
+            await _context.SaveChangesAsync();
+
+            // Invalidate notification count cache for affected users
+            var affectedUserIds = notificationsToDelete.Select(n => n.UserId).Distinct();
+            foreach (var userId in affectedUserIds)
+            {
+                await _countCache.InvalidateNotificationCountsAsync(userId);
+            }
+
+            _logger.LogInformation("Deleted {Count} post-related notifications for deleted post {PostId}",
+                notificationsToDelete.Count, postId);
+        }
+    }
+
+    /// <summary>
     /// Deletes notifications related to a comment (when comment is deleted)
     /// </summary>
     public async Task DeleteCommentNotificationsAsync(int commentId)

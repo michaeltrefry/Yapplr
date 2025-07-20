@@ -7,93 +7,88 @@ export interface TenorGif {
   id: string;
   title: string;
   content_description: string;
-  content_rating: string;
-  h1_title: string;
-  media: Array<{
+  media_formats: {
     gif?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     mediumgif?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     tinygif?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     nanogif?: {
       url: string;
       duration: number;
-      preview: string;
+      dims: [number, number];
+      size: number;
+    };
+    preview?: {
+      url: string;
+      duration: number;
       dims: [number, number];
       size: number;
     };
     mp4?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     loopedmp4?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     tinymp4?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     nanomp4?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     webm?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     tinywebm?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
     nanowebm?: {
       url: string;
       duration: number;
-      preview: string;
       dims: [number, number];
       size: number;
     };
-  }>;
+  };
   created: number;
   itemurl: string;
   url: string;
   tags: string[];
-  flags: string[];
+  flags: string;
   hasaudio: boolean;
+  hascaption: boolean;
+  bg_color: string;
 }
 
 export interface TenorSearchResponse {
@@ -195,12 +190,12 @@ export async function getGifCategories(): Promise<TenorCategoriesResponse> {
 
 // Convert Tenor GIF to our SelectedGif format
 export function convertTenorGifToSelected(gif: TenorGif): SelectedGif {
-  // Get the first media object (Tenor API returns an array with one object)
-  const media = gif.media[0];
+  // In v2 API, media_formats is a direct object (not an array)
+  const mediaFormats = gif.media_formats;
 
   // Use tinygif for preview and gif for full size
-  const preview = media.tinygif || media.nanogif;
-  const full = media.gif || media.mediumgif;
+  const preview = mediaFormats.tinygif || mediaFormats.nanogif || mediaFormats.preview;
+  const full = mediaFormats.gif || mediaFormats.mediumgif;
 
   if (!preview || !full) {
     throw new Error('GIF media formats not available');
