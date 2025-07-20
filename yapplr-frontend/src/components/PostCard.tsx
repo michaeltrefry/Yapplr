@@ -90,6 +90,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
       queryClient.invalidateQueries({ queryKey: ['post', post.id] });
     },
     onError: (error, variables, context) => {
@@ -165,6 +166,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
       queryClient.invalidateQueries({ queryKey: ['post', post.id] });
     },
     onError: (error, variables, context) => {
@@ -217,6 +219,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
       queryClient.invalidateQueries({ queryKey: ['post', post.id] });
     },
     onError: (error, variables, context) => {
@@ -286,6 +289,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
       queryClient.invalidateQueries({ queryKey: ['post', post.id] });
     },
     onError: (error, variables, context) => {
@@ -310,6 +314,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
       setSelectedCommentGif(null);
       setReplyingTo(null);
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
       queryClient.invalidateQueries({ queryKey: ['post', post.id] });
       queryClient.invalidateQueries({ queryKey: ['comments', post.id] });
     },
