@@ -1,5 +1,5 @@
 flask==3.0.0
-gunicorn==21.2.0
+gunicorn==23.0.0
 vaderSentiment==3.3.2
 textblob==0.17.1
 requests==2.31.0
