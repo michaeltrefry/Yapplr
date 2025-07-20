@@ -15,7 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
-import { TimelineItem, Post } from '../../types';
+import { TimelineItem, Post, ReactionType } from '../../types';
 import PostCard from '../../components/PostCard';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
@@ -171,6 +171,24 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     }
   };
 
+  const handleReact = async (postId: number, reactionType: ReactionType) => {
+    try {
+      await api.posts.reactToPost(postId, reactionType);
+      refetchTimeline();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to react to post');
+    }
+  };
+
+  const handleRemoveReaction = async (postId: number) => {
+    try {
+      await api.posts.removePostReaction(postId);
+      refetchTimeline();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to remove reaction');
+    }
+  };
+
   const onRefresh = async () => {
     await Promise.all([refetchProfile(), refetchTimeline()]);
   };
@@ -276,6 +294,8 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     <PostCard
       item={item}
       onLike={handleLikePost}
+      onReact={handleReact}
+      onRemoveReaction={handleRemoveReaction}
       onRepost={handleRepost}
       onUserPress={handleUserPress}
       onCommentPress={handleCommentPress}
