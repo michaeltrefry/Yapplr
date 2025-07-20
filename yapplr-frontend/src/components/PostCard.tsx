@@ -357,7 +357,12 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     const hasText = commentText.trim();
     const hasGif = selectedCommentGif;
 
-    if (!hasText && !hasGif) return;
+    console.log('handleComment called:', { hasText: !!hasText, hasGif: !!hasGif, commentText, selectedCommentGif });
+
+    if (!hasText && !hasGif) {
+      console.log('No text or GIF, returning early');
+      return;
+    }
 
     // Prepare final comment content
     let finalCommentText = commentText;
@@ -860,6 +865,14 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                         type="submit"
                         disabled={(!commentText.trim() && !selectedCommentGif) || commentMutation.isPending}
                         className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        onClick={(e) => {
+                          console.log('Reply button clicked:', {
+                            disabled: (!commentText.trim() && !selectedCommentGif) || commentMutation.isPending,
+                            commentText: commentText.trim(),
+                            selectedCommentGif,
+                            isPending: commentMutation.isPending
+                          });
+                        }}
                       >
                         {commentMutation.isPending ? 'Replying...' : 'Reply'}
                       </button>
