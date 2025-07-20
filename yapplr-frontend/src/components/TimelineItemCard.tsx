@@ -1,6 +1,6 @@
 'use client';
 
-import { TimelineItem } from '@/types';
+import { TimelineItem, Post } from '@/types';
 import PostCard from './PostCard';
 import UserAvatar from './UserAvatar';
 import { Repeat2, Trash2 } from 'lucide-react';
@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { postApi } from '@/lib/api';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface TimelineItemCardProps {
   item: TimelineItem;
@@ -16,11 +16,25 @@ interface TimelineItemCardProps {
 
 export default function TimelineItemCard({ item }: TimelineItemCardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [localItem, setLocalItem] = useState(item);
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Update local state when item prop changes
+  useEffect(() => {
+    setLocalItem(item);
+  }, [item]);
+
+  // Handle post updates from child PostCard components
+  const handlePostUpdate = (updatedPost: Post) => {
+    setLocalItem(prev => ({
+      ...prev,
+      post: updatedPost
+    }));
+  };
+
   const deleteRepostMutation = useMutation({
-    mutationFn: () => postApi.unrepost(item.post.id),
+    mutationFn: () => postApi.unrepost(localItem.post.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
@@ -32,13 +46,13 @@ export default function TimelineItemCard({ item }: TimelineItemCardProps) {
     deleteRepostMutation.mutate();
   };
 
-  if (item.type === 'post') {
+  if (localItem.type === 'post') {
     // Regular post
-    return <PostCard post={item.post} />;
+    return <PostCard post={localItem.post} onPostUpdate={handlePostUpdate} />;
   }
 
   // Repost
-  const isRepostOwner = user && user.id === item.repostedBy!.id;
+  const isRepostOwner = user && user.id === localItem.repostedBy!.id;
 
   return (
     <>
@@ -46,12 +60,12 @@ export default function TimelineItemCard({ item }: TimelineItemCardProps) {
         {/* Repost header */}
         <div className="flex items-center px-4 pt-3 pb-2 text-gray-500 text-sm">
           <Repeat2 className="w-4 h-4 mr-2" />
-          <UserAvatar user={item.repostedBy!} size="sm" />
+          <UserAvatar user={localItem.repostedBy!} size="sm" />
           <span className="ml-2">
-            <span className="font-semibold text-gray-700">{item.repostedBy!.username}</span> reyapped
+            <span className="font-semibold text-gray-700">{localItem.repostedBy!.username}</span> reyapped
           </span>
           <span className="ml-2">·</span>
-          <span className="ml-2">{formatDate(item.createdAt)}</span>
+          <span className="ml-2">{formatDate(localItem.createdAt)}</span>
           {isRepostOwner && (
             <div className="ml-auto">
               <button
@@ -68,7 +82,7 @@ export default function TimelineItemCard({ item }: TimelineItemCardProps) {
 
         {/* Original post content */}
         <div className="ml-4 border-l-2 border-gray-100 pl-4">
-          <PostCard post={item.post} showBorder={false} />
+          <PostCard post={localItem.post} showBorder={false} onPostUpdate={handlePostUpdate} />
         </div>
       </div>
 
