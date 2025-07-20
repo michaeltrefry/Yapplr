@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test GIF Parsing</title>
+</head>
+<body>
+    <h1>Test GIF Parsing</h1>
+    <div id="test-content"></div>
+    
+    <script>
+        // Test the GIF parsing logic
+        function parseGifEmbed(text) {
+            const gifRegex = /\[GIF:([^:]+):([^:]+):([^:]+):(\d+):(\d+):([^\]]*)\]/;
+            const match = text.match(gifRegex);
+            
+            if (!match) return null;
+            
+            return {
+                id: match[1],
+                url: match[2],
+                previewUrl: match[3],
+                width: parseInt(match[4], 10),
+                height: parseInt(match[5], 10),
+                title: match[6] || 'GIF',
+            };
+        }
+
+        function parseContentParts(content) {
+            const parts = [];
+            const gifRegex = /\[GIF:([^:]+):([^:]+):([^:]+):(\d+):(\d+):([^\]]*)\]/g;
+            
+            let lastIndex = 0;
+            let match;
+            
+            while ((match = gifRegex.exec(content)) !== null) {
+                // Add text before the GIF (if any)
+                if (match.index > lastIndex) {
+                    const textContent = content.slice(lastIndex, match.index).trim();
+                    if (textContent) {
+                        parts.push({
+                            type: 'text',
+                            content: textContent,
+                        });
+                    }
+                }
+                
+                // Add the GIF
+                parts.push({
+                    type: 'gif',
+                    content: match[0],
+                    gif: {
+                        id: match[1],
+                        url: match[2],
+                        previewUrl: match[3],
+                        width: parseInt(match[4], 10),
+                        height: parseInt(match[5], 10),
+                        title: match[6] || 'GIF',
+                    },
+                });
+                
+                lastIndex = match.index + match[0].length;
+            }
+            
+            // Add remaining text (if any)
+            if (lastIndex < content.length) {
+                const textContent = content.slice(lastIndex).trim();
+                if (textContent) {
+                    parts.push({
+                        type: 'text',
+                        content: textContent,
+                    });
+                }
+            }
+            
+            // If no GIFs found, return the original content as text
+            if (parts.length === 0) {
+                parts.push({
+                    type: 'text',
+                    content: content,
+                });
+            }
+            
+            return parts;
+        }
+
+        // Test with your exact GIF content from the logs
+        const testContent1 = "[GIF:11388847642883026842:https://media.tenor.com/ng1QlysWb5oAAAAC/do-tell-tell-me-more.gif:https://media.tenor.com/ng1QlysWb5oAAAAM/do-tell-tell-me-more.gif:498:280:a man is sitting on a couch holding a cup of tea and saying do tell]";
+        const testContent2 = "Hey  [GIF:18077061772373262751:https://media.tenor.com/-t6f59UaAZ8AAAAC/jim-carrey-dumb-and-dumber.gif:https://media.tenor.com/-t6f59UaAZ8AAAAM/jim-carrey-dumb-and-dumber.gif:498:406:a man is sitting in the back seat of a car with a laptop on his lap .]";
+
+        // Test the exact regex pattern
+        const gifRegex = /\[GIF:([^:]+):([^:]+):([^:]+):(\d+):(\d+):([^\]]*)\]/g;
+        
+        console.log("Testing GIF parsing...");
+
+        // Test both content strings
+        [testContent1, testContent2].forEach((testContent, i) => {
+            console.log(`\n--- Test ${i + 1} ---`);
+            console.log("Input:", testContent);
+            console.log("Input length:", testContent.length);
+            console.log("Last 10 characters:", JSON.stringify(testContent.slice(-10)));
+
+            const parts = parseContentParts(testContent);
+            console.log("Parsed parts:", parts);
+
+            // Test regex directly
+            const matches = [...testContent.matchAll(gifRegex)];
+            console.log("Direct regex matches:", matches.length);
+            if (matches.length > 0) {
+                console.log("First match:", matches[0]);
+            } else {
+                console.log("No matches found!");
+                // Try to find where the issue is
+                console.log("Looking for [GIF: pattern:", testContent.includes('[GIF:'));
+                console.log("Looking for closing ]: pattern:", testContent.includes(']'));
+            }
+        });
+
+        // Render the result for the problematic content
+        const container = document.getElementById('test-content');
+        const parts = parseContentParts(testContent2);
+
+        parts.forEach((part, index) => {
+            if (part.type === 'text') {
+                const textDiv = document.createElement('div');
+                textDiv.textContent = part.content;
+                container.appendChild(textDiv);
+            } else if (part.type === 'gif' && part.gif) {
+                const gifDiv = document.createElement('div');
+                gifDiv.innerHTML = `
+                    <div style="margin: 10px 0;">
+                        <img src="${part.gif.previewUrl}" 
+                             alt="${part.gif.title}" 
+                             style="max-width: 200px; border: 1px solid #ccc; border-radius: 4px;"
+                             onclick="window.open('${part.gif.url}', '_blank')">
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            GIF: ${part.gif.title} (${part.gif.width}x${part.gif.height})
+                        </div>
+                    </div>
+                `;
+                container.appendChild(gifDiv);
+            }
+        });
+    </script>
+</body>
+</html>

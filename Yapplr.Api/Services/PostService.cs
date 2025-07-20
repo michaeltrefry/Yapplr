@@ -415,6 +415,13 @@ public class PostService : BaseService, IPostService
                     media.OriginalVideoDuration = mediaFile.Duration;
                     media.OriginalVideoFileSizeBytes = mediaFile.FileSizeBytes;
                 }
+                else if (mediaFile.MediaType == MediaType.Gif)
+                {
+                    media.GifUrl = mediaFile.GifUrl;
+                    media.GifPreviewUrl = mediaFile.GifPreviewUrl;
+                    media.ImageWidth = mediaFile.Width;
+                    media.ImageHeight = mediaFile.Height;
+                }
 
                 _context.PostMedia.Add(media);
             }
@@ -1437,22 +1444,21 @@ public class PostService : BaseService, IPostService
     {
         var comments = await _context.Comments
             .Include(c => c.User)
+            .Include(c => c.CommentLikes) // Legacy likes
+            .Include(c => c.Reactions) // New reactions
             .Where(c => c.PostId == postId && !c.IsDeletedByUser && !c.IsHidden) // Filter out user-deleted and moderator-hidden comments
             .OrderBy(c => c.CreatedAt)
+            .AsSplitQuery()
             .ToListAsync();
 
         // Filter out comments from blocked users if user is authenticated
         var blockedUserIds = await GetBlockedUserIdsAsync(currentUserId);
         comments = comments.Where(c => !blockedUserIds.Contains(c.UserId)).ToList();
 
-        // Map comments with like information for authenticated users
-        var commentDtos = new List<CommentDto>();
-        foreach (var comment in comments)
-        {
-            var likeCount = await _countCache.GetCommentLikeCountAsync(comment.Id);
-            var isLikedByCurrentUser = await _countCache.HasUserLikedCommentAsync(comment.Id, currentUserId);
-            commentDtos.Add(comment.MapToCommentDto(currentUserId, likeCount, isLikedByCurrentUser, _httpContextAccessor.HttpContext));
-        }
+        // Map comments with reaction information
+        var commentDtos = comments.Select(comment =>
+            comment.MapToCommentDtoWithReactions(currentUserId, _httpContextAccessor.HttpContext)
+        ).ToList();
 
         return commentDtos;
     }

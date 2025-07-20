@@ -159,6 +159,46 @@ public static class MappingUtilities
     }
 
     /// <summary>
+    /// Map Comment to CommentDto with reaction information
+    /// </summary>
+    public static CommentDto MapToCommentDtoWithReactions(this Comment comment, int? currentUserId, HttpContext? httpContext = null)
+    {
+        var userDto = comment.User.MapToUserDto();
+        var isEdited = IsEdited(comment.CreatedAt, comment.UpdatedAt);
+
+        // Get reaction data
+        var reactionCounts = comment.Reactions
+            .GroupBy(r => r.ReactionType)
+            .Select(g => new ReactionCountDto(
+                g.Key,
+                g.Key.GetEmoji(),
+                g.Key.GetDisplayName(),
+                g.Count()
+            ))
+            .ToList();
+
+        var currentUserReaction = currentUserId.HasValue
+            ? comment.Reactions.FirstOrDefault(r => r.UserId == currentUserId.Value)?.ReactionType
+            : null;
+
+        var totalReactionCount = comment.Reactions.Count;
+
+        return new CommentDto(
+            comment.Id,
+            comment.Content,
+            comment.CreatedAt,
+            comment.UpdatedAt,
+            userDto,
+            isEdited,
+            comment.CommentLikes.Count, // Legacy like count
+            currentUserId.HasValue && comment.CommentLikes.Any(l => l.UserId == currentUserId.Value), // Legacy is liked
+            reactionCounts,
+            currentUserReaction,
+            totalReactionCount
+        );
+    }
+
+    /// <summary>
     /// Map LinkPreview to LinkPreviewDto
     /// </summary>
     public static LinkPreviewDto MapToLinkPreviewDto(this LinkPreview linkPreview)
@@ -604,6 +644,8 @@ public static class MappingUtilities
         string? videoUrl = null;
         string? videoThumbnailUrl = null;
         VideoProcessingStatus? videoProcessingStatus = null;
+        string? gifUrl = null;
+        string? gifPreviewUrl = null;
         int? width = null;
         int? height = null;
         TimeSpan? duration = null;
@@ -618,6 +660,13 @@ public static class MappingUtilities
             height = media.ImageHeight;
             fileSizeBytes = media.ImageFileSizeBytes;
             format = media.ImageFormat;
+        }
+        else if (media.MediaType == MediaType.Gif)
+        {
+            gifUrl = media.GifUrl;
+            gifPreviewUrl = media.GifPreviewUrl;
+            width = media.ImageWidth;
+            height = media.ImageHeight;
         }
         else if (media.MediaType == MediaType.Video)
         {
@@ -659,6 +708,8 @@ public static class MappingUtilities
             videoUrl,
             videoThumbnailUrl,
             videoProcessingStatus,
+            gifUrl,
+            gifPreviewUrl,
             width,
             height,
             duration,

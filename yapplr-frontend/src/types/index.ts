@@ -171,6 +171,7 @@ export interface PaginatedResult<T> {
 export enum MediaType {
   Image = 0,
   Video = 1,
+  Gif = 2,
 }
 
 export enum ReactionType {
@@ -196,6 +197,8 @@ export interface PostMedia {
   videoUrl?: string;
   videoThumbnailUrl?: string;
   videoProcessingStatus?: VideoProcessingStatus;
+  gifUrl?: string;
+  gifPreviewUrl?: string;
   width?: number;
   height?: number;
   duration?: string; // ISO 8601 duration string
@@ -228,6 +231,8 @@ export interface MediaFile {
   height?: number;
   fileSizeBytes?: number;
   duration?: string; // ISO 8601 duration string
+  gifUrl?: string;
+  gifPreviewUrl?: string;
 }
 
 export interface Post {
@@ -299,8 +304,11 @@ export interface Comment {
   updatedAt: string;
   user: User;
   isEdited: boolean;
-  likeCount: number;
-  isLikedByCurrentUser: boolean;
+  likeCount: number; // Legacy - will be replaced by reactionCounts
+  isLikedByCurrentUser: boolean; // Legacy - will be replaced by currentUserReaction
+  reactionCounts?: ReactionCount[];
+  currentUserReaction?: ReactionType | null;
+  totalReactionCount?: number;
 }
 
 export interface FollowResponse {

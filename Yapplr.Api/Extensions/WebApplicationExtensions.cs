@@ -78,6 +78,7 @@ public static class WebApplicationExtensions
         app.MapTagEndpoints();
         app.MapUserReportEndpoints();
         app.MapContentEndpoints();
+        app.MapGifEndpoints();
         app.MapAdminEndpoints();
         app.MapUploadSettingsEndpoints();
         app.MapCorsConfigurationEndpoints();

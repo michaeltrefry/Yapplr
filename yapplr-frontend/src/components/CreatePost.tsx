@@ -4,8 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { postApi, imageApi, videoApi, tagApi, multipleUploadApi } from '@/lib/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { Image as ImageIcon, Video, X, Hash, Globe, Users, Lock, ChevronDown, AlertCircle } from 'lucide-react';
+import { Image as ImageIcon, Video, X, Hash, Globe, Users, Lock, ChevronDown, AlertCircle, Smile } from 'lucide-react';
 import { PostPrivacy, UserStatus, MediaType, MediaFile, UploadedFile } from '@/types';
+import GifPicker from './GifPicker';
+import type { SelectedGif } from '@/lib/tenor';
 
 interface CreatePostProps {
   groupId?: number;
@@ -29,6 +31,11 @@ export default function CreatePost({ groupId, onPostCreated }: CreatePostProps =
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [uploadedVideoFileName, setUploadedVideoFileName] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+
+  // GIF state
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [selectedGif, setSelectedGif] = useState<SelectedGif | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const privacyDropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
@@ -226,6 +233,7 @@ export default function CreatePost({ groupId, onPostCreated }: CreatePostProps =
     setVideoPreview(null);
     setUploadedVideoFileName(null);
     setMediaType(null);
+    setSelectedGif(null);
     setPrivacy(PostPrivacy.Public);
     setShowHashtagSuggestions(false);
     if (fileInputRef.current) {
@@ -331,6 +339,7 @@ export default function CreatePost({ groupId, onPostCreated }: CreatePostProps =
     setSelectedFiles([]);
     setSelectedFileUrls([]);
     setUploadedFiles([]);
+    setSelectedGif(null);
     // Legacy cleanup
     setImagePreview(null);
     setVideoPreview(null);
@@ -342,17 +351,47 @@ export default function CreatePost({ groupId, onPostCreated }: CreatePostProps =
     }
   };
 
+  const handleGifSelect = (gif: SelectedGif) => {
+    // Clear other media when selecting a GIF
+    removeAllMedia();
+    setSelectedGif(gif);
+    setShowGifPicker(false);
+  };
+
+  const removeGif = () => {
+    setSelectedGif(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Allow submission if either content exists or media files are uploaded
+    // Allow submission if either content exists or media files are uploaded or GIF is selected
     const hasContent = content.trim().length > 0;
     const hasMedia = uploadedFiles.length > 0 || uploadedFileName || uploadedVideoFileName;
+    const hasGif = selectedGif !== null;
 
-    if (!hasContent && !hasMedia) return;
+    if (!hasContent && !hasMedia && !hasGif) return;
 
+    // Handle GIF submission
+    if (selectedGif) {
+      const mediaFiles: MediaFile[] = [{
+        fileName: selectedGif.id, // Use GIF ID as filename
+        mediaType: MediaType.Gif,
+        width: selectedGif.width,
+        height: selectedGif.height,
+        gifUrl: selectedGif.url,
+        gifPreviewUrl: selectedGif.previewUrl,
+      }];
+
+      createPostWithMediaMutation.mutate({
+        content: content.trim() || undefined,
+        privacy: privacy,
+        mediaFiles: mediaFiles,
+        groupId: groupId,
+      });
+    }
     // Use new multiple media API if we have uploaded files
-    if (uploadedFiles.length > 0) {
+    else if (uploadedFiles.length > 0) {
       const mediaFiles: MediaFile[] = uploadedFiles.map(file => ({
         fileName: file.fileName,
         mediaType: file.mediaType,
@@ -645,6 +684,28 @@ export default function CreatePost({ groupId, onPostCreated }: CreatePostProps =
               </div>
             )}
 
+            {/* GIF Preview */}
+            {selectedGif && (
+              <div className="mt-3 relative">
+                <img
+                  src={selectedGif.previewUrl}
+                  alt={selectedGif.title}
+                  className="max-w-full h-auto rounded-lg border border-gray-200"
+                  style={{ maxHeight: '400px' }}
+                />
+                <button
+                  type="button"
+                  onClick={removeGif}
+                  className="absolute top-2 right-2 bg-gray-800 bg-opacity-75 text-white rounded-full p-1 hover:bg-opacity-100 transition-opacity"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="absolute bottom-2 left-2 bg-gray-800 bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                  GIF
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex items-center justify-between mt-4">
               <div className="flex items-center space-x-4">
@@ -661,6 +722,17 @@ export default function CreatePost({ groupId, onPostCreated }: CreatePostProps =
                       ? `Add More (${uploadedFiles.length + selectedFiles.length}/10)`
                       : 'Photo/Video'}
                   </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowGifPicker(true)}
+                  className="text-gray-500 hover:bg-gray-100 p-2 rounded-full transition-colors flex items-center gap-1 sm:gap-2"
+                  title="Add GIF"
+                  disabled={isUploading || uploadImageMutation.isPending || uploadVideoMutation.isPending || selectedGif !== null || uploadedFiles.length > 0 || selectedFiles.length > 0}
+                >
+                  <Smile className="w-5 h-5" />
+                  <span className="hidden sm:inline text-sm">GIF</span>
                 </button>
 
                 {/* Privacy Selector */}
@@ -721,7 +793,7 @@ export default function CreatePost({ groupId, onPostCreated }: CreatePostProps =
                 </span>
                 <button
                   type="submit"
-                  disabled={(!content.trim() && uploadedFiles.length === 0 && !uploadedFileName && !uploadedVideoFileName) || remainingChars < 0 || createPostMutation.isPending || createPostWithMediaMutation.isPending || isUploading || uploadImageMutation.isPending || uploadVideoMutation.isPending}
+                  disabled={(!content.trim() && uploadedFiles.length === 0 && !uploadedFileName && !uploadedVideoFileName && !selectedGif) || remainingChars < 0 || createPostMutation.isPending || createPostWithMediaMutation.isPending || isUploading || uploadImageMutation.isPending || uploadVideoMutation.isPending}
                   className="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {createPostMutation.isPending || createPostWithMediaMutation.isPending ? 'Yapping...' :
@@ -734,6 +806,13 @@ export default function CreatePost({ groupId, onPostCreated }: CreatePostProps =
           </div>
         </div>
       </form>
+
+      {/* GIF Picker Modal */}
+      <GifPicker
+        isOpen={showGifPicker}
+        onClose={() => setShowGifPicker(false)}
+        onSelectGif={handleGifSelect}
+      />
     </div>
   );
 }

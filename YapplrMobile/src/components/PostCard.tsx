@@ -18,6 +18,7 @@ import { ContentHighlight } from '../utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
 import ReportModal from './ReportModal';
 import ReactionPicker from './ReactionPicker';
+import ContentWithGifs from './ContentWithGifs';
 
 interface PostCardProps {
   item: TimelineItem;
@@ -153,16 +154,72 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
         </View>
       </View>
 
-      <ContentHighlight
+      <ContentWithGifs
         content={item.post.content}
         style={styles.postContent}
+        textStyle={{ color: colors.text }}
         onMentionPress={onUserPress}
         onHashtagPress={onHashtagPress}
-        linkColor={colors.primary}
+        onLinkPress={(url) => {
+          // Handle link press - could open in browser or in-app
+          console.log('Link pressed:', url);
+        }}
+        maxGifWidth={300}
       />
 
-      {/* Image Display */}
-      {item.post.imageUrl && (
+      {/* Media Display */}
+      {item.post.mediaItems && item.post.mediaItems.length > 0 && (
+        <View style={styles.mediaContainer}>
+          {item.post.mediaItems.map((media, index) => (
+            <View key={media.id} style={styles.mediaItem}>
+              {media.mediaType === 0 && media.imageUrl && ( // MediaType.Image
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => setShowImageViewer(true)}
+                >
+                  <Image
+                    source={{ uri: media.imageUrl }}
+                    style={styles.postImage}
+                    resizeMode="cover"
+                    onLoad={() => setImageLoading(false)}
+                    onError={() => {
+                      setImageLoading(false);
+                      setImageError(true);
+                    }}
+                    onLoadStart={() => {
+                      setImageLoading(true);
+                      setImageError(false);
+                    }}
+                  />
+                </TouchableOpacity>
+              )}
+              {media.mediaType === 2 && media.gifUrl && ( // MediaType.Gif
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => {
+                    // Open full GIF in browser or viewer
+                    console.log('GIF pressed:', media.gifUrl);
+                  }}
+                >
+                  <View style={styles.gifContainer}>
+                    <Image
+                      source={{ uri: media.gifUrl }}
+                      style={styles.postImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.gifBadge}>
+                      <Text style={styles.gifBadgeText}>GIF</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Legacy Image Display (for backward compatibility) */}
+      {!item.post.mediaItems && item.post.imageUrl && (
         <View style={styles.imageContainer}>
           {!imageError ? (
             <>
@@ -567,5 +624,28 @@ const createStyles = (colors: any) => StyleSheet.create({
     height: 90,
     borderRadius: 6,
     marginTop: 8,
+  },
+  mediaContainer: {
+    marginTop: 12,
+  },
+  mediaItem: {
+    marginBottom: 8,
+  },
+  gifContainer: {
+    position: 'relative',
+  },
+  gifBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  gifBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

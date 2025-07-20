@@ -13,6 +13,8 @@ public record PostMediaDto(
     string? VideoUrl,
     string? VideoThumbnailUrl,
     VideoProcessingStatus? VideoProcessingStatus,
+    string? GifUrl,
+    string? GifPreviewUrl,
     int? Width,
     int? Height,
     TimeSpan? Duration,

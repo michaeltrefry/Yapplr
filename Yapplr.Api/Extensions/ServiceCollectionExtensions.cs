@@ -392,6 +392,9 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<ContentModerationService>();
         services.AddScoped<IContentModerationService, ContentModerationService>();
 
+        // Add HttpClient for GifController
+        services.AddHttpClient();
+
         return services;
     }
 

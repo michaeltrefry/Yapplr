@@ -3,14 +3,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { postApi } from '@/lib/api';
 import { formatDate, formatNumber } from '@/lib/utils';
-import { Comment } from '@/types';
+import { Comment, ReactionType } from '@/types';
 import Link from 'next/link';
 import UserAvatar from './UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trash2, Edit3, Reply, Flag, Heart } from 'lucide-react';
+import { Trash2, Edit3, Reply, Flag } from 'lucide-react';
 import { useState } from 'react';
 import { MentionHighlight } from '@/utils/mentionUtils';
 import ReportModal from './ReportModal';
+import ReactionPicker from './ReactionPicker';
+import ReactionCountsDisplay from './ReactionCountsDisplay';
+import ContentWithGifs from './ContentWithGifs';
 
 interface CommentListProps {
   postId: number;
@@ -88,11 +91,17 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
     },
   });
 
-  const likeMutation = useMutation({
-    mutationFn: () =>
-      comment.isLikedByCurrentUser
-        ? postApi.unlikeComment(postId, comment.id)
-        : postApi.likeComment(postId, comment.id),
+  const reactMutation = useMutation({
+    mutationFn: (reactionType: ReactionType) => postApi.reactToComment(postId, comment.id, reactionType),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['post', postId] });
+    },
+  });
+
+  const removeReactionMutation = useMutation({
+    mutationFn: () => postApi.removeCommentReaction(postId, comment.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', postId] });
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
@@ -115,8 +124,12 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
     deleteMutation.mutate();
   };
 
-  const handleLike = () => {
-    likeMutation.mutate();
+  const handleReact = (reactionType: ReactionType) => {
+    reactMutation.mutate(reactionType);
+  };
+
+  const handleRemoveReaction = () => {
+    removeReactionMutation.mutate();
   };
 
   const isOwner = user && user.id === comment.user.id;
@@ -172,33 +185,29 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
               </div>
             </form>
           ) : (
-            <p className="text-gray-900 text-sm whitespace-pre-wrap">
-              <MentionHighlight content={comment.content} />
-            </p>
+            <div className="text-gray-900 text-sm">
+              <ContentWithGifs content={comment.content} maxGifWidth={150} highlightType="mention" />
+            </div>
           )}
         </div>
 
         {/* Action Bar - only show when not editing */}
         {!isEditing && (
-          <div className="flex items-center justify-between mt-2 pt-2">
+          <>
+            {/* Reaction Counts Display */}
+            <ReactionCountsDisplay reactionCounts={comment.reactionCounts || []} />
+
+            <div className="flex items-center justify-between mt-2 pt-2">
             <div className="flex space-x-4">
-              {/* Like Button */}
-              <button
-                onClick={handleLike}
-                disabled={likeMutation.isPending}
-                className={`flex items-center space-x-1 transition-colors group ${
-                  comment.isLikedByCurrentUser
-                    ? 'text-red-500'
-                    : 'text-gray-500 hover:text-red-500'
-                }`}
-              >
-                <div className="p-1 rounded-full hover:bg-gray-100">
-                  <Heart
-                    className={`w-4 h-4 ${comment.isLikedByCurrentUser ? 'fill-current' : ''}`}
-                  />
-                </div>
-                <span className="text-xs">{formatNumber(comment.likeCount)}</span>
-              </button>
+              {/* Reaction Picker */}
+              <ReactionPicker
+                reactionCounts={comment.reactionCounts || []}
+                currentUserReaction={comment.currentUserReaction || null}
+                totalReactionCount={comment.totalReactionCount || comment.likeCount || 0}
+                onReact={handleReact}
+                onRemoveReaction={handleRemoveReaction}
+                disabled={reactMutation.isPending || removeReactionMutation.isPending}
+              />
 
               {/* Reply Button */}
               {onReply && (
@@ -251,6 +260,7 @@ function CommentItem({ comment, postId, onReply }: CommentItemProps) {
               </div>
             )}
           </div>
+          </>
         )}
       </div>
 

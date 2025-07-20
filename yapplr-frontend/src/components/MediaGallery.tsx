@@ -76,6 +76,17 @@ function MediaViewer({ mediaItems, currentIndex, isOpen, onClose, onNext, onPrev
           >
             Your browser does not support the video tag.
           </video>
+        ) : currentMedia.mediaType === MediaType.Gif && currentMedia.gifUrl ? (
+          <div className="relative">
+            <img
+              src={currentMedia.gifUrl}
+              alt={`GIF ${currentIndex + 1}`}
+              className="max-w-full max-h-full object-contain"
+            />
+            <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+              GIF
+            </div>
+          </div>
         ) : null}
       </div>
 
@@ -116,11 +127,14 @@ export default function MediaGallery({ mediaItems, post, className = '' }: Media
 
   // Convert media items to PhotoItem format for FullScreenPhotoViewer
   const allPhotos: PhotoItem[] = mediaItems
-    .filter(item => item.mediaType === MediaType.Image && item.imageUrl)
+    .filter(item =>
+      (item.mediaType === MediaType.Image && item.imageUrl) ||
+      (item.mediaType === MediaType.Gif && item.gifUrl)
+    )
     .map(item => ({
       post,
       mediaItem: item,
-      imageUrl: item.imageUrl!
+      imageUrl: item.mediaType === MediaType.Gif ? item.gifUrl! : item.imageUrl!
     }));
 
   // Single media item
@@ -135,6 +149,17 @@ export default function MediaGallery({ mediaItems, post, className = '' }: Media
               alt="Post media"
               className="max-w-full h-auto rounded-lg border border-gray-200 hover:opacity-95 transition-opacity"
             />
+          </div>
+        ) : media.mediaType === MediaType.Gif && media.gifUrl ? (
+          <div className="cursor-pointer relative" onClick={() => openViewer(0)}>
+            <img
+              src={media.gifUrl}
+              alt="GIF"
+              className="max-w-full h-auto rounded-lg border border-gray-200 hover:opacity-95 transition-opacity"
+            />
+            <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+              GIF
+            </div>
           </div>
         ) : media.mediaType === MediaType.Video ? (
           <div>
@@ -169,8 +194,8 @@ export default function MediaGallery({ mediaItems, post, className = '' }: Media
           </div>
         ) : null}
 
-        {/* Use FullScreenPhotoViewer for images with post actions */}
-        {viewerIndex !== null && mediaItems[viewerIndex]?.mediaType === MediaType.Image && (
+        {/* Use FullScreenPhotoViewer for images and GIFs with post actions */}
+        {viewerIndex !== null && (mediaItems[viewerIndex]?.mediaType === MediaType.Image || mediaItems[viewerIndex]?.mediaType === MediaType.Gif) && (
           <FullScreenPhotoViewer
             post={post}
             mediaItem={mediaItems[viewerIndex]}
@@ -237,6 +262,17 @@ export default function MediaGallery({ mediaItems, post, className = '' }: Media
                   className="w-full h-full object-cover group-hover:opacity-95 transition-opacity"
                 />
               </div>
+            ) : media.mediaType === MediaType.Gif && media.gifPreviewUrl ? (
+              <div className="w-full h-full min-h-[120px] relative">
+                <img
+                  src={media.gifPreviewUrl}
+                  alt={`GIF ${index + 1}`}
+                  className="w-full h-full object-cover group-hover:opacity-95 transition-opacity"
+                />
+                <div className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white text-xs px-1 py-0.5 rounded">
+                  GIF
+                </div>
+              </div>
             ) : media.mediaType === MediaType.Video && media.videoThumbnailUrl ? (
               <div className="w-full h-full min-h-[120px] relative">
                 <img
@@ -266,8 +302,8 @@ export default function MediaGallery({ mediaItems, post, className = '' }: Media
         ))}
       </div>
 
-      {/* Use FullScreenPhotoViewer for images with post actions */}
-      {viewerIndex !== null && mediaItems[viewerIndex]?.mediaType === MediaType.Image && (
+      {/* Use FullScreenPhotoViewer for images and GIFs with post actions */}
+      {viewerIndex !== null && (mediaItems[viewerIndex]?.mediaType === MediaType.Image || mediaItems[viewerIndex]?.mediaType === MediaType.Gif) && (
         <FullScreenPhotoViewer
           post={post}
           mediaItem={mediaItems[viewerIndex]}

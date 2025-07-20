@@ -78,6 +78,7 @@ export interface RegisterResponse {
 export enum MediaType {
   Image = 0,
   Video = 1,
+  Gif = 2,
 }
 
 export interface PostMedia {
@@ -87,6 +88,8 @@ export interface PostMedia {
   videoUrl?: string;
   videoThumbnailUrl?: string;
   videoProcessingStatus?: VideoProcessingStatus;
+  gifUrl?: string;
+  gifPreviewUrl?: string;
   width?: number;
   height?: number;
   duration?: string; // ISO 8601 duration string
@@ -317,8 +320,11 @@ export interface Comment {
   updatedAt: string;
   user: User;
   isEdited: boolean;
-  likeCount: number;
-  isLikedByCurrentUser: boolean;
+  likeCount: number; // Legacy - will be replaced by reactionCounts
+  isLikedByCurrentUser: boolean; // Legacy - will be replaced by currentUserReaction
+  reactionCounts?: ReactionCount[];
+  currentUserReaction?: ReactionType | null;
+  totalReactionCount?: number;
 }
 
 export interface CreateCommentData {

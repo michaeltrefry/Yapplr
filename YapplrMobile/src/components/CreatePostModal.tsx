@@ -21,6 +21,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { CreatePostData, CreatePostWithMediaData, PostPrivacy, MediaType, MediaFile, UploadedFile } from '../types';
+import GifPicker from './GifPicker';
+import type { SelectedGif } from '../lib/tenor';
 
 interface CreatePostModalProps {
   visible: boolean;
@@ -39,6 +41,10 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // GIF state
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [selectedGif, setSelectedGif] = useState<SelectedGif | null>(null);
 
   // Legacy state for backward compatibility
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
@@ -113,6 +119,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
     setContent('');
     setSelectedFiles([]);
     setUploadedFiles([]);
+    setSelectedGif(null);
     setPrivacy(PostPrivacy.Public);
     setIsUploadingMedia(false);
     // Legacy cleanup
@@ -329,11 +336,12 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
   };
 
   const handleSubmit = () => {
-    // Allow submission if either content exists or media files are uploaded
+    // Allow submission if either content exists or media files are uploaded or GIF is selected
     const hasContent = content.trim().length > 0;
     const hasMedia = uploadedFiles.length > 0 || selectedMedia || uploadedFileName;
+    const hasGif = selectedGif !== null;
 
-    if (!hasContent && !hasMedia) {
+    if (!hasContent && !hasMedia && !hasGif) {
       Alert.alert('Error', 'Please enter some content or add media for your post.');
       return;
     }
@@ -348,8 +356,27 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
       return;
     }
 
+    // Handle GIF submission
+    if (selectedGif) {
+      const mediaFiles: MediaFile[] = [{
+        fileName: selectedGif.id, // Use GIF ID as filename
+        mediaType: MediaType.Gif,
+        width: selectedGif.width,
+        height: selectedGif.height,
+        gifUrl: selectedGif.url,
+        gifPreviewUrl: selectedGif.previewUrl,
+      }];
+
+      const postData: CreatePostWithMediaData = {
+        content: content.trim() || undefined,
+        privacy,
+        mediaFiles,
+      };
+
+      createPostWithMediaMutation.mutate(postData);
+    }
     // Use new multiple media API if we have uploaded files
-    if (uploadedFiles.length > 0) {
+    else if (uploadedFiles.length > 0) {
       const mediaFiles: MediaFile[] = uploadedFiles.map(file => ({
         fileName: file.fileName,
         mediaType: file.mediaType,
@@ -386,8 +413,21 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
     }
   };
 
+  const handleGifSelect = (gif: SelectedGif) => {
+    // Clear other media when selecting a GIF
+    setSelectedFiles([]);
+    setUploadedFiles([]);
+    setSelectedMedia(null);
+    setSelectedGif(gif);
+    setShowGifPicker(false);
+  };
+
+  const removeGif = () => {
+    setSelectedGif(null);
+  };
+
   const handleClose = () => {
-    if ((content.trim() || selectedMedia) && !createPostMutation.isPending) {
+    if ((content.trim() || selectedMedia || selectedGif) && !createPostMutation.isPending) {
       Alert.alert(
         'Discard Post?',
         'You have unsaved changes. Are you sure you want to discard this post?',
@@ -532,6 +572,18 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
                   </Text>
                 )}
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.mediaButton}
+                onPress={() => setShowGifPicker(true)}
+                disabled={isUploadingMedia || selectedGif !== null || uploadedFiles.length > 0 || selectedFiles.length > 0}
+              >
+                <Ionicons
+                  name="happy-outline"
+                  size={20}
+                  color={isUploadingMedia || selectedGif !== null || uploadedFiles.length > 0 || selectedFiles.length > 0 ? "#9CA3AF" : "#6B7280"}
+                />
+              </TouchableOpacity>
             </View>
 
             <Text style={[styles.charCount, isOverLimit && styles.charCountOver]}>
@@ -644,10 +696,30 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
                 </TouchableOpacity>
               </View>
             )}
+
+            {/* GIF Preview */}
+            {selectedGif && (
+              <View style={styles.mediaContainer}>
+                <Image source={{ uri: selectedGif.previewUrl }} style={styles.gifPreview} />
+                <TouchableOpacity style={styles.removeMediaButton} onPress={removeGif}>
+                  <Ionicons name="close" size={20} color="#fff" />
+                </TouchableOpacity>
+                <View style={styles.gifBadge}>
+                  <Text style={styles.gifBadgeText}>GIF</Text>
+                </View>
+              </View>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
+
+    {/* GIF Picker Modal */}
+    <GifPicker
+      visible={showGifPicker}
+      onClose={() => setShowGifPicker(false)}
+      onSelectGif={handleGifSelect}
+    />
   );
 }
 
@@ -915,5 +987,25 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  gifPreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    resizeMode: 'contain',
+  },
+  gifBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  gifBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Post, PostPrivacy, VideoProcessingStatus, ReactionType } from '@/types';
 import { formatDate, formatNumber } from '@/lib/utils';
-import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag, Play } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag, Play, Smile, X } from 'lucide-react';
 import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -18,6 +18,9 @@ import ReactionPicker from './ReactionPicker';
 import ReactionCountsDisplay from './ReactionCountsDisplay';
 import LinkPreviewList from './LinkPreviewList';
 import HiddenPostBanner from './HiddenPostBanner';
+import GifPicker from './GifPicker';
+import ContentWithGifs from './ContentWithGifs';
+import type { SelectedGif } from '@/lib/tenor';
 
 interface PostCardProps {
   post: Post;
@@ -50,6 +53,11 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const [editPrivacy, setEditPrivacy] = useState(post.privacy);
   const [showEditPrivacyDropdown, setShowEditPrivacyDropdown] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+
+  // GIF state for comments
+  const [showCommentGifPicker, setShowCommentGifPicker] = useState(false);
+  const [selectedCommentGif, setSelectedCommentGif] = useState<SelectedGif | null>(null);
+
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -294,9 +302,12 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   });
 
   const commentMutation = useMutation({
-    mutationFn: () => postApi.addComment(post.id, { content: commentText }),
+    mutationFn: (finalCommentText: string) => {
+      return postApi.addComment(post.id, { content: finalCommentText });
+    },
     onSuccess: () => {
       setCommentText('');
+      setSelectedCommentGif(null);
       setReplyingTo(null);
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['post', post.id] });
@@ -336,20 +347,35 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
 
   const handleComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
+
+    // Check if we have either text or GIF
+    const hasText = commentText.trim();
+    const hasGif = selectedCommentGif;
+
+    if (!hasText && !hasGif) return;
+
+    // Prepare final comment content
+    let finalCommentText = commentText;
+
+    // If we have a GIF, embed it in the text
+    if (selectedCommentGif) {
+      console.log('Creating GIF embed with:', selectedCommentGif);
+      // Clean the title to remove problematic characters that could break parsing
+      const cleanTitle = selectedCommentGif.title.trim().replace(/[\|\]\.\s]+$/g, '');
+      console.log('Cleaned title:', cleanTitle);
+      const gifEmbed = `[GIF|${selectedCommentGif.id}|${selectedCommentGif.url}|${selectedCommentGif.previewUrl}|${selectedCommentGif.width}|${selectedCommentGif.height}|${cleanTitle}]`;
+      console.log('Generated GIF embed:', gifEmbed);
+      finalCommentText = hasText ? `${commentText} ${gifEmbed}` : gifEmbed;
+      console.log('Final comment text:', finalCommentText);
+    }
 
     // Ensure @username is still present if replying
-    let finalCommentText = commentText;
-    if (replyingTo && !commentText.startsWith(`@${replyingTo}`)) {
-      finalCommentText = `@${replyingTo} ${commentText}`;
+    if (replyingTo && !finalCommentText.startsWith(`@${replyingTo}`)) {
+      finalCommentText = `@${replyingTo} ${finalCommentText}`;
     }
 
-    // Update the comment text state to reflect the final text
-    if (finalCommentText !== commentText) {
-      setCommentText(finalCommentText);
-    }
-
-    commentMutation.mutate();
+    // Pass the final comment text directly to the mutation
+    commentMutation.mutate(finalCommentText);
   };
 
   const handleCommentTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -366,6 +392,15 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     }
 
     setCommentText(newText);
+  };
+
+  const handleCommentGifSelect = (gif: SelectedGif) => {
+    setSelectedCommentGif(gif);
+    setShowCommentGifPicker(false);
+  };
+
+  const removeCommentGif = () => {
+    setSelectedCommentGif(null);
   };
 
   const handleEdit = (e: React.FormEvent) => {
@@ -605,9 +640,9 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 </div>
               </form>
             ) : (
-              <p className="text-gray-900 whitespace-pre-wrap">
-                <ContentHighlight content={post.content} />
-              </p>
+              <div className="text-gray-900">
+                <ContentWithGifs content={post.content} />
+              </div>
             )}
             
             {/* Media Gallery - New multiple media support */}
@@ -769,10 +804,43 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                     rows={2}
                     maxLength={256}
                   />
+
+                  {/* GIF Preview */}
+                  {selectedCommentGif && (
+                    <div className="mt-2 relative inline-block">
+                      <img
+                        src={selectedCommentGif.previewUrl}
+                        alt={selectedCommentGif.title}
+                        className="max-w-32 h-auto rounded border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeCommentGif}
+                        className="absolute -top-1 -right-1 bg-gray-800 bg-opacity-75 text-white rounded-full p-1 hover:bg-opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <div className="absolute bottom-1 left-1 bg-gray-800 bg-opacity-75 text-white text-xs px-1 rounded">
+                        GIF
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs text-gray-500">
-                      {commentText.length}/256
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500">
+                        {commentText.length}/256
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowCommentGifPicker(true)}
+                        className="text-gray-500 hover:text-gray-700 p-1 rounded transition-colors"
+                        title="Add GIF"
+                        disabled={selectedCommentGif !== null}
+                      >
+                        <Smile className="w-4 h-4" />
+                      </button>
+                    </div>
                     <div className="flex space-x-2">
                       {replyingTo && (
                         <button
@@ -785,7 +853,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                       )}
                       <button
                         type="submit"
-                        disabled={!commentText.trim() || commentMutation.isPending}
+                        disabled={(!commentText.trim() && !selectedCommentGif) || commentMutation.isPending}
                         className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {commentMutation.isPending ? 'Replying...' : 'Reply'}
@@ -843,6 +911,13 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
           </div>
         </div>
       )}
+
+      {/* Comment GIF Picker Modal */}
+      <GifPicker
+        isOpen={showCommentGifPicker}
+        onClose={() => setShowCommentGifPicker(false)}
+        onSelectGif={handleCommentGifSelect}
+      />
     </>
   );
 }

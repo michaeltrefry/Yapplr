@@ -23,10 +23,16 @@ public class PostMedia : IEntity
     // Image fields
     [StringLength(256)]
     public string? ImageFileName { get; set; }
-    
+
     // Video fields
     [StringLength(256)]
     public string? VideoFileName { get; set; }
+
+    // GIF fields
+    [StringLength(512)]
+    public string? GifUrl { get; set; }
+    [StringLength(512)]
+    public string? GifPreviewUrl { get; set; }
     [StringLength(256)]
     public string? ProcessedVideoFileName { get; set; }
     [StringLength(256)]

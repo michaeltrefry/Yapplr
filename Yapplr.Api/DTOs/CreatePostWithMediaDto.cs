@@ -23,5 +23,7 @@ public record MediaFileDto(
     int? Width = null,
     int? Height = null,
     long? FileSizeBytes = null,
-    TimeSpan? Duration = null
+    TimeSpan? Duration = null,
+    string? GifUrl = null,
+    string? GifPreviewUrl = null
 );
