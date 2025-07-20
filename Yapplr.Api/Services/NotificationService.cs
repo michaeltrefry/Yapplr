@@ -320,10 +320,17 @@ public class NotificationService : INotificationService
         if (likingUser == null)
             return;
 
+        // Get the post to determine media type for notification message
+        var post = await _context.Posts
+            .Include(p => p.PostMedia)
+            .FirstOrDefaultAsync(p => p.Id == postId);
+
+        var mediaTypeText = post != null ? GetMediaTypeText(post) : "post";
+
         var notification = new Notification
         {
             Type = NotificationType.Like,
-            Message = $"@{likingUser.Username} liked your post",
+            Message = $"@{likingUser.Username} liked your {mediaTypeText}",
             UserId = likedUserId,
             ActorUserId = likingUserId,
             PostId = postId,
@@ -389,11 +396,20 @@ public class NotificationService : INotificationService
         if (reactingUser == null)
             return;
 
+        // Get the post to determine media type for notification message
+        var post = await _context.Posts
+            .Include(p => p.PostMedia)
+            .FirstOrDefaultAsync(p => p.Id == postId);
+
+        if (post == null)
+            return;
+
+        var mediaTypeText = GetMediaTypeText(post);
         var reactionEmoji = reactionType.GetEmoji();
         var notification = new Notification
         {
             Type = NotificationType.Like, // Reuse like type for now, could add new reaction type later
-            Message = $"@{reactingUser.Username} reacted {reactionEmoji} to your post",
+            Message = $"@{reactingUser.Username} reacted {reactionEmoji} to your {mediaTypeText}",
             UserId = reactedUserId,
             ActorUserId = reactingUserId,
             PostId = postId,
@@ -460,10 +476,17 @@ public class NotificationService : INotificationService
         if (repostingUser == null)
             return;
 
+        // Get the post to determine media type for notification message
+        var post = await _context.Posts
+            .Include(p => p.PostMedia)
+            .FirstOrDefaultAsync(p => p.Id == postId);
+
+        var mediaTypeText = post != null ? GetMediaTypeText(post) : "post";
+
         var notification = new Notification
         {
             Type = NotificationType.Repost,
-            Message = $"@{repostingUser.Username} reposted your post",
+            Message = $"@{repostingUser.Username} reposted your {mediaTypeText}",
             UserId = originalUserId,
             ActorUserId = repostingUserId,
             PostId = postId,
@@ -559,10 +582,17 @@ public class NotificationService : INotificationService
         if (commentingUser == null)
             return;
 
+        // Get the post to determine media type for notification message
+        var post = await _context.Posts
+            .Include(p => p.PostMedia)
+            .FirstOrDefaultAsync(p => p.Id == postId);
+
+        var mediaTypeText = post != null ? GetMediaTypeText(post) : "post";
+
         var notification = new Notification
         {
             Type = NotificationType.Comment,
-            Message = $"@{commentingUser.Username} commented on your post",
+            Message = $"@{commentingUser.Username} commented on your {mediaTypeText}",
             UserId = postOwnerId,
             ActorUserId = commentingUserId,
             PostId = postId,
@@ -1039,5 +1069,36 @@ public class NotificationService : INotificationService
         };
 
         await _notificationService.SendSystemMessageAsync(userId, "Video Ready", "Your video has finished processing and is ready for viewing.", notificationData);
+    }
+
+    /// <summary>
+    /// Determines the appropriate text to use in notifications based on the post's media content
+    /// </summary>
+    private string GetMediaTypeText(Post post)
+    {
+        if (post.PostMedia == null || !post.PostMedia.Any())
+        {
+            return "post";
+        }
+
+        // Check if post has only videos
+        var hasVideo = post.PostMedia.Any(m => m.MediaType == MediaType.Video);
+        var hasImage = post.PostMedia.Any(m => m.MediaType == MediaType.Image);
+        var hasGif = post.PostMedia.Any(m => m.MediaType == MediaType.Gif);
+
+        // If only videos, call it "video"
+        if (hasVideo && !hasImage && !hasGif)
+        {
+            return "video";
+        }
+
+        // If only images (including GIFs), call it "photo"
+        if ((hasImage || hasGif) && !hasVideo)
+        {
+            return "photo";
+        }
+
+        // If mixed media or unknown, default to "post"
+        return "post";
     }
 }

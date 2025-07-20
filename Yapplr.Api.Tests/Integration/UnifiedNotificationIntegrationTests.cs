@@ -365,6 +365,47 @@ public class UnifiedNotificationIntegrationTests : IDisposable
         connectivity.Should().NotBeNull();
     }
 
+    [Fact]
+    public async Task CreateNotifications_ShouldUseMediaSpecificMessages()
+    {
+        // Arrange - Create users
+        var user1 = new User { Username = "testuser1", Email = "test1@test.com" };
+        var user2 = new User { Username = "testuser2", Email = "test2@test.com" };
+
+        _dbContext.Users.AddRange(user1, user2);
+        await _dbContext.SaveChangesAsync();
+
+        // Create a post with a photo
+        var photoPost = new Post
+        {
+            Content = "Photo post",
+            UserId = user1.Id
+        };
+        _dbContext.Posts.Add(photoPost);
+        await _dbContext.SaveChangesAsync();
+
+        // Add photo media to the post
+        var photoMedia = new PostMedia
+        {
+            PostId = photoPost.Id,
+            MediaType = MediaType.Image,
+            ImageFileName = "photo.jpg"
+        };
+        _dbContext.PostMedia.Add(photoMedia);
+        await _dbContext.SaveChangesAsync();
+
+        // Act - Create a like notification for the photo post
+        await _unifiedService.CreateLikeNotificationAsync(user1.Id, user2.Id, photoPost.Id);
+
+        // Assert - Verify the notification message mentions "photo"
+        var notification = await _dbContext.Notifications
+            .FirstOrDefaultAsync(n => n.PostId == photoPost.Id && n.Type == NotificationType.Like);
+
+        notification.Should().NotBeNull();
+        notification!.Message.Should().Contain("photo", "Photo post notifications should mention 'photo'");
+        notification.Message.Should().Be("@testuser2 liked your photo");
+    }
+
     public void Dispose()
     {
         _dbContext?.Dispose();

@@ -9,7 +9,7 @@ public class Post : IUserOwnedEntity
     public int Id { get; set; }
     
     [Required]
-    [StringLength(256)]
+    [StringLength(1024)]
     public string Content { get; set; } = string.Empty;
     // Video processing visibility - when true, post is hidden from public feeds until video processing completes
     public bool IsHiddenDuringVideoProcessing { get; set; } = false;

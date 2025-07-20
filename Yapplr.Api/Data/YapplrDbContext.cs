@@ -89,7 +89,7 @@ public class YapplrDbContext : DbContext
         modelBuilder.Entity<Post>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Content).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(1024);
             entity.Property(e => e.Privacy)
                   .HasConversion<int>()
                   .HasDefaultValue(PostPrivacy.Public);
@@ -156,7 +156,7 @@ public class YapplrDbContext : DbContext
         modelBuilder.Entity<Comment>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Content).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(1024);
             entity.HasOne(e => e.User)
                   .WithMany(e => e.Comments)
                   .HasForeignKey(e => e.UserId)

@@ -83,7 +83,26 @@ public interface IUnifiedNotificationService
     /// Sends a repost notification
     /// </summary>
     Task SendRepostNotificationAsync(int userId, string reposterUsername, int postId);
-    
+
+    #endregion
+
+    #region Legacy Compatibility Methods (for gradual migration)
+
+    /// <summary>
+    /// Creates a like notification with blocking and validation logic
+    /// </summary>
+    Task CreateLikeNotificationAsync(int likedUserId, int likingUserId, int postId);
+
+    /// <summary>
+    /// Creates a comment notification with blocking and validation logic
+    /// </summary>
+    Task CreateCommentNotificationAsync(int postOwnerId, int commentingUserId, int postId, int commentId, string commentContent);
+
+    /// <summary>
+    /// Creates a repost notification with blocking and validation logic
+    /// </summary>
+    Task CreateRepostNotificationAsync(int originalUserId, int repostingUserId, int postId);
+
     #endregion
     
     #region System and Moderation Notifications

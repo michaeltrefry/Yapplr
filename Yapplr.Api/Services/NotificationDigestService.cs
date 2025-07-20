@@ -87,14 +87,19 @@ public class NotificationDigestService : INotificationDigestService
             .Include(n => n.Comment)
             .ToListAsync();
 
-        var digestNotifications = notifications.Select(n => new DigestNotification
+        var digestNotifications = new List<DigestNotification>();
+
+        foreach (var notification in notifications)
         {
-            Type = n.Type.ToString().ToLower(),
-            Title = GenerateNotificationTitle(n),
-            Body = n.Message,
-            CreatedAt = n.CreatedAt,
-            ActionUrl = GenerateActionUrl(n)
-        }).ToList();
+            digestNotifications.Add(new DigestNotification
+            {
+                Type = notification.Type.ToString().ToLower(),
+                Title = await GenerateNotificationTitleAsync(notification),
+                Body = notification.Message,
+                CreatedAt = notification.CreatedAt,
+                ActionUrl = GenerateActionUrl(notification)
+            });
+        }
 
         return digestNotifications;
     }
@@ -170,10 +175,28 @@ public class NotificationDigestService : INotificationDigestService
         return preferences?.UpdatedAt;
     }
 
-    private string GenerateNotificationTitle(Notification notification)
+    private async Task<string> GenerateNotificationTitleAsync(Notification notification)
     {
         var actorName = notification.ActorUser?.Username ?? "Someone";
 
+        // For post-related notifications, use media-specific messages
+        if (notification.PostId.HasValue &&
+            (notification.Type == NotificationType.Like ||
+             notification.Type == NotificationType.Comment ||
+             notification.Type == NotificationType.Repost))
+        {
+            var mediaTypeText = await GetMediaTypeTextAsync(notification.PostId.Value);
+
+            return notification.Type switch
+            {
+                NotificationType.Like => $"{actorName} liked your {mediaTypeText}",
+                NotificationType.Comment => $"{actorName} commented on your {mediaTypeText}",
+                NotificationType.Repost => $"{actorName} reposted your {mediaTypeText}",
+                _ => $"{actorName} interacted with your {mediaTypeText}"
+            };
+        }
+
+        // For non-post notifications, use standard messages
         return notification.Type switch
         {
             NotificationType.Like => $"{actorName} liked your post",
@@ -209,6 +232,49 @@ public class NotificationDigestService : INotificationDigestService
         {
             _logger.LogWarning(ex, "Failed to generate action URL for notification {NotificationId}", notification.Id);
             return "https://yapplr.com/notifications";
+        }
+    }
+
+    /// <summary>
+    /// Determines the appropriate text to use in notifications based on the post's media content
+    /// </summary>
+    private async Task<string> GetMediaTypeTextAsync(int postId)
+    {
+        try
+        {
+            var post = await _context.Posts
+                .Include(p => p.PostMedia)
+                .FirstOrDefaultAsync(p => p.Id == postId);
+
+            if (post?.PostMedia == null || !post.PostMedia.Any())
+            {
+                return "post";
+            }
+
+            // Check if post has only videos
+            var hasVideo = post.PostMedia.Any(m => m.MediaType == MediaType.Video);
+            var hasImage = post.PostMedia.Any(m => m.MediaType == MediaType.Image);
+            var hasGif = post.PostMedia.Any(m => m.MediaType == MediaType.Gif);
+
+            // If only videos, call it "video"
+            if (hasVideo && !hasImage && !hasGif)
+            {
+                return "video";
+            }
+
+            // If only images (including GIFs), call it "photo"
+            if ((hasImage || hasGif) && !hasVideo)
+            {
+                return "photo";
+            }
+
+            // If mixed media or unknown, default to "post"
+            return "post";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to determine media type for post {PostId}, defaulting to 'post'", postId);
+            return "post";
         }
     }
 }

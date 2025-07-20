@@ -436,11 +436,14 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         if (likingUser == null)
             return;
 
+        // Get media type for notification message
+        var mediaTypeText = await GetMediaTypeTextAsync(postId);
+
         // Create database notification with proper foreign keys
         var notification = new Notification
         {
             Type = NotificationType.Like,
-            Message = $"@{likingUser.Username} liked your post",
+            Message = $"@{likingUser.Username} liked your {mediaTypeText}",
             UserId = likedUserId,
             ActorUserId = likingUserId,
             PostId = postId,
@@ -477,11 +480,14 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         if (repostingUser == null)
             return;
 
+        // Get media type for notification message
+        var mediaTypeText = await GetMediaTypeTextAsync(postId);
+
         // Create database notification with proper foreign keys
         var notification = new Notification
         {
             Type = NotificationType.Repost,
-            Message = $"@{repostingUser.Username} reposted your post",
+            Message = $"@{repostingUser.Username} reposted your {mediaTypeText}",
             UserId = originalUserId,
             ActorUserId = repostingUserId,
             PostId = postId,
@@ -590,11 +596,14 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         if (commentingUser == null)
             return;
 
+        // Get media type for notification message
+        var mediaTypeText = await GetMediaTypeTextAsync(postId);
+
         // Create database notification with proper foreign keys
         var notification = new Notification
         {
             Type = NotificationType.Comment,
-            Message = $"@{commentingUser.Username} commented on your post",
+            Message = $"@{commentingUser.Username} commented on your {mediaTypeText}",
             UserId = postOwnerId,
             ActorUserId = commentingUserId,
             PostId = postId,
@@ -918,12 +927,13 @@ public class UnifiedNotificationService : IUnifiedNotificationService
 
     public async Task SendCommentNotificationAsync(int userId, string commenterUsername, int postId, int commentId)
     {
+        var mediaTypeText = await GetMediaTypeTextAsync(postId);
         var request = new NotificationRequest
         {
             UserId = userId,
             NotificationType = "comment",
             Title = "New Comment",
-            Body = $"@{commenterUsername} commented on your post",
+            Body = $"@{commenterUsername} commented on your {mediaTypeText}",
             Data = new Dictionary<string, string>
             {
                 ["type"] = "comment",
@@ -992,12 +1002,13 @@ public class UnifiedNotificationService : IUnifiedNotificationService
 
     public async Task SendLikeNotificationAsync(int userId, string likerUsername, int postId)
     {
+        var mediaTypeText = await GetMediaTypeTextAsync(postId);
         var request = new NotificationRequest
         {
             UserId = userId,
             NotificationType = "like",
             Title = "Post Liked",
-            Body = $"@{likerUsername} liked your post",
+            Body = $"@{likerUsername} liked your {mediaTypeText}",
             Data = new Dictionary<string, string>
             {
                 ["type"] = "like",
@@ -1031,12 +1042,13 @@ public class UnifiedNotificationService : IUnifiedNotificationService
 
     public async Task SendRepostNotificationAsync(int userId, string reposterUsername, int postId)
     {
+        var mediaTypeText = await GetMediaTypeTextAsync(postId);
         var request = new NotificationRequest
         {
             UserId = userId,
             NotificationType = "repost",
             Title = "Post Reposted",
-            Body = $"@{reposterUsername} reposted your post",
+            Body = $"@{reposterUsername} reposted your {mediaTypeText}",
             Data = new Dictionary<string, string>
             {
                 ["type"] = "repost",
@@ -1641,6 +1653,49 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         {
             _logger.LogWarning(ex, "Failed to generate action URL for notification type {NotificationType}", request.NotificationType);
             return "https://yapplr.com/notifications";
+        }
+    }
+
+    /// <summary>
+    /// Determines the appropriate text to use in notifications based on the post's media content
+    /// </summary>
+    private async Task<string> GetMediaTypeTextAsync(int postId)
+    {
+        try
+        {
+            var post = await _context.Posts
+                .Include(p => p.PostMedia)
+                .FirstOrDefaultAsync(p => p.Id == postId);
+
+            if (post?.PostMedia == null || !post.PostMedia.Any())
+            {
+                return "post";
+            }
+
+            // Check if post has only videos
+            var hasVideo = post.PostMedia.Any(m => m.MediaType == MediaType.Video);
+            var hasImage = post.PostMedia.Any(m => m.MediaType == MediaType.Image);
+            var hasGif = post.PostMedia.Any(m => m.MediaType == MediaType.Gif);
+
+            // If only videos, call it "video"
+            if (hasVideo && !hasImage && !hasGif)
+            {
+                return "video";
+            }
+
+            // If only images (including GIFs), call it "photo"
+            if ((hasImage || hasGif) && !hasVideo)
+            {
+                return "photo";
+            }
+
+            // If mixed media or unknown, default to "post"
+            return "post";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to determine media type for post {PostId}, defaulting to 'post'", postId);
+            return "post";
         }
     }
 
