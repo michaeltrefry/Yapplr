@@ -107,29 +107,22 @@ export default function ContentWithGifs({
 
           return (
             <View key={index} style={styles.gifContainer}>
-              <TouchableOpacity
-                onPress={() => {
-                  // Open full-size GIF in browser
-                  Linking.openURL(gif.url);
-                }}
-              >
-                <View style={styles.gifWrapper}>
-                  <Image
-                    source={{ uri: gif.previewUrl }}
-                    style={[
-                      styles.gifImage,
-                      {
-                        width: displayWidth,
-                        height: displayHeight,
-                      },
-                    ]}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.gifBadge}>
-                    <Text style={styles.gifBadgeText}>GIF</Text>
-                  </View>
+              <View style={styles.gifWrapper}>
+                <Image
+                  source={{ uri: gif.previewUrl }}
+                  style={[
+                    styles.gifImage,
+                    {
+                      width: displayWidth,
+                      height: displayHeight,
+                    },
+                  ]}
+                  resizeMode="cover"
+                />
+                <View style={styles.gifBadge}>
+                  <Text style={styles.gifBadgeText}>GIF</Text>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
           );
         }

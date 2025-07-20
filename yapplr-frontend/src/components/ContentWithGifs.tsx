@@ -46,15 +46,11 @@ export default function ContentWithGifs({ content, className = '', maxGifWidth =
                 <img
                   src={gif.previewUrl}
                   alt={gif.title}
-                  className="rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                  className="rounded border border-gray-200"
                   style={{
                     width: displayWidth,
                     height: displayHeight,
                     maxWidth: '100%',
-                  }}
-                  onClick={() => {
-                    // Open full-size GIF in new tab
-                    window.open(gif.url, '_blank');
                   }}
                   loading="lazy"
                 />

@@ -194,8 +194,8 @@ export default function MediaGallery({ mediaItems, post, className = '' }: Media
           </div>
         ) : null}
 
-        {/* Use FullScreenPhotoViewer for images and GIFs with post actions */}
-        {viewerIndex !== null && (mediaItems[viewerIndex]?.mediaType === MediaType.Image || mediaItems[viewerIndex]?.mediaType === MediaType.Gif) && (
+        {/* Use FullScreenPhotoViewer only for images, not GIFs */}
+        {viewerIndex !== null && mediaItems[viewerIndex]?.mediaType === MediaType.Image && (
           <FullScreenPhotoViewer
             post={post}
             mediaItem={mediaItems[viewerIndex]}
@@ -249,10 +249,15 @@ export default function MediaGallery({ mediaItems, post, className = '' }: Media
         {mediaItems.slice(0, 6).map((media, index) => (
           <div
             key={media.id}
-            className={`relative cursor-pointer group ${getItemClass(index)} ${
+            className={`relative group ${getItemClass(index)} ${
               index >= 5 ? 'hidden' : ''
-            }`}
-            onClick={() => openViewer(index)}
+            } ${media.mediaType === MediaType.Image ? 'cursor-pointer' : 'cursor-default'}`}
+            onClick={() => {
+              // Only open viewer for images, not GIFs
+              if (media.mediaType === MediaType.Image) {
+                openViewer(index);
+              }
+            }}
           >
             {media.mediaType === MediaType.Image && media.imageUrl ? (
               <div className="w-full h-full min-h-[120px]">
@@ -302,8 +307,8 @@ export default function MediaGallery({ mediaItems, post, className = '' }: Media
         ))}
       </div>
 
-      {/* Use FullScreenPhotoViewer for images and GIFs with post actions */}
-      {viewerIndex !== null && (mediaItems[viewerIndex]?.mediaType === MediaType.Image || mediaItems[viewerIndex]?.mediaType === MediaType.Gif) && (
+      {/* Use FullScreenPhotoViewer only for images, not GIFs */}
+      {viewerIndex !== null && mediaItems[viewerIndex]?.mediaType === MediaType.Image && (
         <FullScreenPhotoViewer
           post={post}
           mediaItem={mediaItems[viewerIndex]}

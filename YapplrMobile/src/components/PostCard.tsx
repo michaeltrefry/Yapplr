@@ -194,24 +194,16 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
                 </TouchableOpacity>
               )}
               {media.mediaType === 2 && media.gifUrl && ( // MediaType.Gif
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={() => {
-                    // Open full GIF in browser or viewer
-                    console.log('GIF pressed:', media.gifUrl);
-                  }}
-                >
-                  <View style={styles.gifContainer}>
-                    <Image
-                      source={{ uri: media.gifUrl }}
-                      style={styles.postImage}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.gifBadge}>
-                      <Text style={styles.gifBadgeText}>GIF</Text>
-                    </View>
+                <View style={styles.gifContainer}>
+                  <Image
+                    source={{ uri: media.gifUrl }}
+                    style={styles.postImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.gifBadge}>
+                    <Text style={styles.gifBadgeText}>GIF</Text>
                   </View>
-                </TouchableOpacity>
+                </View>
               )}
             </View>
           ))}
