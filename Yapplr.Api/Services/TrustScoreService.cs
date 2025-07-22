@@ -49,7 +49,6 @@ public class TrustScoreService : ITrustScoreService
 
             var user = await _context.Users
                 .Include(u => u.Posts)
-                .Include(u => u.Comments)
                 .Include(u => u.Likes)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
@@ -118,7 +117,6 @@ public class TrustScoreService : ITrustScoreService
         {
             var user = await _context.Users
                 .Include(u => u.Posts)
-                .Include(u => u.Comments)
                 .Include(u => u.Likes)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
@@ -210,14 +208,14 @@ public class TrustScoreService : ITrustScoreService
     {
         // Calculate based on engagement rates of user's content
         var posts = await _context.Posts
-            .Where(p => p.UserId == userId && !p.IsHidden)
+            .Where(p => p.UserId == userId && !p.IsHidden && p.PostType == PostType.Post)
             .Include(p => p.Likes)
-            .Include(p => p.Comments)
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment))
             .ToListAsync();
 
         if (!posts.Any()) return 0.5f; // Neutral for users with no content
 
-        var totalEngagement = posts.Sum(p => p.Likes.Count + p.Comments.Count);
+        var totalEngagement = posts.Sum(p => p.Likes.Count + p.Children.Count(c => c.PostType == PostType.Comment));
         var avgEngagementPerPost = (float)totalEngagement / posts.Count;
 
         // Normalize to 0-1 scale (assuming 5+ engagements per post is high quality)

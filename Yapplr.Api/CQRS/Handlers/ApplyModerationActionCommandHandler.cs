@@ -119,13 +119,14 @@ public class ApplyModerationActionCommandHandler : BaseCommandHandler<ApplyModer
 
     private async Task ApplyCommentModerationAsync(ApplyModerationActionCommand command)
     {
-        var comment = await _dbContext.Comments.FindAsync(command.ContentId);
+        var comment = await _dbContext.Posts.FirstOrDefaultAsync(p => p.Id == command.ContentId && p.PostType == PostType.Comment);
         if (comment == null) return;
 
         switch (command.Action)
         {
             case "hide":
                 comment.IsHidden = true;
+                comment.HiddenReasonType = PostHiddenReasonType.ModeratorHidden;
                 comment.HiddenReason = command.Reason;
                 comment.HiddenAt = DateTime.UtcNow;
                 break;
@@ -137,7 +138,7 @@ public class ApplyModerationActionCommandHandler : BaseCommandHandler<ApplyModer
             case "delete":
                 // Delete notifications related to the comment before removing it
                 await _notificationService.DeleteCommentNotificationsAsync(command.ContentId);
-                _dbContext.Comments.Remove(comment);
+                _dbContext.Posts.Remove(comment);
                 break;
         }
 
@@ -149,12 +150,12 @@ public class ApplyModerationActionCommandHandler : BaseCommandHandler<ApplyModer
         return contentType.ToLower() switch
         {
             "post" => await _dbContext.Posts
-                .Where(p => p.Id == contentId)
+                .Where(p => p.Id == contentId && p.PostType == PostType.Post)
                 .Select(p => p.UserId)
                 .FirstOrDefaultAsync(),
-            "comment" => await _dbContext.Comments
-                .Where(c => c.Id == contentId)
-                .Select(c => c.UserId)
+            "comment" => await _dbContext.Posts
+                .Where(p => p.Id == contentId && p.PostType == PostType.Comment)
+                .Select(p => p.UserId)
                 .FirstOrDefaultAsync(),
             _ => 0
         };

@@ -104,11 +104,13 @@ public class AdminService : IAdminService
         return true;
     }
 
-    // Content Moderation
+    // Content Moderation - includes ALL posts (both public and group posts) for admin moderation
     public async Task<IEnumerable<AdminPostDto>> GetPostsForModerationAsync(int page = 1, int pageSize = 25, bool? isHidden = null)
     {
         var query = _context.Posts
+            .Where(p => p.PostType == PostType.Post) // Only top-level posts, exclude comments
             .Include(p => p.User)
+            .Include(p => p.Group) // Include group information for group posts
             .Include(p => p.HiddenByUser)
             .Include(p => p.PostSystemTags)
                 .ThenInclude(pst => pst.SystemTag)
@@ -139,13 +141,16 @@ public class AdminService : IAdminService
         return posts.Select(p => MapToAdminPostDtoWithTags(p, aiSuggestedTagsByPostId.GetValueOrDefault(p.Id, new List<AiSuggestedTag>()))).ToList();
     }
 
+    // Comment Moderation - includes ALL comments (both public and group comments) for admin moderation
     public async Task<IEnumerable<AdminCommentDto>> GetCommentsForModerationAsync(int page = 1, int pageSize = 25, bool? isHidden = null)
     {
-        var query = _context.Comments
+        var query = _context.Posts
             .Include(c => c.User)
+            .Include(c => c.Group) // Include group information for group comments
             .Include(c => c.HiddenByUser)
-            .Include(c => c.CommentSystemTags)
-                .ThenInclude(cst => cst.SystemTag)
+            .Include(c => c.PostSystemTags)
+                .ThenInclude(pst => pst.SystemTag)
+            .Where(c => c.PostType == PostType.Comment)
             .AsQueryable();
 
         if (isHidden.HasValue)
@@ -157,18 +162,19 @@ public class AdminService : IAdminService
             .Take(pageSize)
             .ToListAsync();
 
-        return comments.Select(MapToAdminCommentDto);
+        return comments.Select(MapPostToAdminCommentDto);
     }
 
     public async Task<AdminPostDto?> GetPostForModerationAsync(int postId)
     {
         var post = await _context.Posts
             .Include(p => p.User)
+            .Include(p => p.Group) // Include group information for group posts
             .Include(p => p.HiddenByUser)
             .Include(p => p.PostSystemTags)
                 .ThenInclude(pst => pst.SystemTag)
             .Include(p => p.Likes)
-            .Include(p => p.Comments)
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment))
             .Include(p => p.Reposts)
             .FirstOrDefaultAsync(p => p.Id == postId);
 
@@ -186,14 +192,15 @@ public class AdminService : IAdminService
 
     public async Task<AdminCommentDto?> GetCommentForModerationAsync(int commentId)
     {
-        var comment = await _context.Comments
+        var comment = await _context.Posts
             .Include(c => c.User)
+            .Include(c => c.Group) // Include group information for group comments
             .Include(c => c.HiddenByUser)
-            .Include(c => c.CommentSystemTags)
-                .ThenInclude(cst => cst.SystemTag)
-            .FirstOrDefaultAsync(c => c.Id == commentId);
+            .Include(c => c.PostSystemTags)
+                .ThenInclude(pst => pst.SystemTag)
+            .FirstOrDefaultAsync(c => c.Id == commentId && c.PostType == PostType.Comment);
 
-        return comment == null ? null : MapToAdminCommentDto(comment);
+        return comment == null ? null : MapPostToAdminCommentDto(comment);
     }
 
     public async Task<bool> HidePostAsync(int postId, int hiddenByUserId, string reason)
@@ -286,13 +293,14 @@ public class AdminService : IAdminService
 
     public async Task<bool> HideCommentAsync(int commentId, int hiddenByUserId, string reason)
     {
-        var comment = await _context.Comments.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == commentId);
+        var comment = await _context.Posts.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == commentId && c.PostType == PostType.Comment);
         if (comment == null) return false;
 
         var moderator = await _context.Users.FindAsync(hiddenByUserId);
         if (moderator == null) return false;
 
         comment.IsHidden = true;
+        comment.HiddenReasonType = PostHiddenReasonType.ModeratorHidden;
         comment.HiddenByUserId = hiddenByUserId;
         comment.HiddenAt = DateTime.UtcNow;
         comment.HiddenReason = reason;
@@ -325,10 +333,11 @@ public class AdminService : IAdminService
 
     public async Task<bool> UnhideCommentAsync(int commentId)
     {
-        var comment = await _context.Comments.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == commentId);
+        var comment = await _context.Posts.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == commentId && c.PostType == PostType.Comment);
         if (comment == null) return false;
 
         comment.IsHidden = false;
+        comment.HiddenReasonType = PostHiddenReasonType.None;
         comment.HiddenByUserId = null;
         comment.HiddenAt = null;
         comment.HiddenReason = null;
@@ -382,21 +391,21 @@ public class AdminService : IAdminService
     public async Task<bool> ApplySystemTagToCommentAsync(int commentId, int systemTagId, int appliedByUserId, string? reason = null)
     {
         // Check if tag is already applied
-        var existing = await _context.CommentSystemTags
-            .FirstOrDefaultAsync(cst => cst.CommentId == commentId && cst.SystemTagId == systemTagId);
+        var existing = await _context.PostSystemTags
+            .FirstOrDefaultAsync(pst => pst.PostId == commentId && pst.SystemTagId == systemTagId);
 
         if (existing != null) return false;
 
-        var commentSystemTag = new CommentSystemTag
+        var postSystemTag = new PostSystemTag
         {
-            CommentId = commentId,
+            PostId = commentId,
             SystemTagId = systemTagId,
             AppliedByUserId = appliedByUserId,
             Reason = reason,
             AppliedAt = DateTime.UtcNow
         };
 
-        _context.CommentSystemTags.Add(commentSystemTag);
+        _context.PostSystemTags.Add(postSystemTag);
         await _context.SaveChangesAsync();
         await _auditService.LogCommentSystemTagAddedAsync(commentId, systemTagId, appliedByUserId, reason);
         return true;
@@ -404,12 +413,12 @@ public class AdminService : IAdminService
 
     public async Task<bool> RemoveSystemTagFromCommentAsync(int commentId, int systemTagId, int removedByUserId)
     {
-        var commentSystemTag = await _context.CommentSystemTags
-            .FirstOrDefaultAsync(cst => cst.CommentId == commentId && cst.SystemTagId == systemTagId);
+        var postSystemTag = await _context.PostSystemTags
+            .FirstOrDefaultAsync(pst => pst.PostId == commentId && pst.SystemTagId == systemTagId);
 
-        if (commentSystemTag == null) return false;
+        if (postSystemTag == null) return false;
 
-        _context.CommentSystemTags.Remove(commentSystemTag);
+        _context.PostSystemTags.Remove(postSystemTag);
         await _context.SaveChangesAsync();
         await _auditService.LogCommentSystemTagRemovedAsync(commentId, systemTagId, removedByUserId);
         return true;
@@ -469,10 +478,10 @@ public class AdminService : IAdminService
         var bannedUsers = await _context.Users.CountAsync(u => u.Status == UserStatus.Banned);
         var shadowBannedUsers = await _context.Users.CountAsync(u => u.Status == UserStatus.ShadowBanned);
 
-        var totalPosts = await _context.Posts.CountAsync();
-        var hiddenPosts = await _context.Posts.CountAsync(p => p.IsHidden);
-        var totalComments = await _context.Comments.CountAsync();
-        var hiddenComments = await _context.Comments.CountAsync(c => c.IsHidden);
+        var totalPosts = await _context.Posts.CountAsync(p => p.PostType == PostType.Post);
+        var hiddenPosts = await _context.Posts.CountAsync(p => p.PostType == PostType.Post && p.IsHidden);
+        var totalComments = await _context.Posts.CountAsync(p => p.PostType == PostType.Comment);
+        var hiddenComments = await _context.Posts.CountAsync(p => p.PostType == PostType.Comment && p.IsHidden);
 
         var pendingAppeals = await _context.UserAppeals.CountAsync(ua => ua.Status == AppealStatus.Pending);
 
@@ -504,14 +513,16 @@ public class AdminService : IAdminService
 
     public async Task<ContentQueueDto> GetContentQueueAsync()
     {
-        // Get flagged posts (posts with system tags indicating violations)
+        // Get flagged posts (posts with system tags indicating violations) - includes both public and group posts
         var flaggedPosts = await _context.Posts
+            .Where(p => p.PostType == PostType.Post) // Only top-level posts, exclude comments
             .Include(p => p.User)
+            .Include(p => p.Group) // Include group information for group posts
             .Include(p => p.HiddenByUser)
             .Include(p => p.PostSystemTags)
                 .ThenInclude(pst => pst.SystemTag)
             .Include(p => p.Likes)
-            .Include(p => p.Comments)
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment))
             .Include(p => p.Reposts)
             .Where(p => p.PostSystemTags.Any(pst =>
                 pst.SystemTag.Category == SystemTagCategory.Violation ||
@@ -520,15 +531,16 @@ public class AdminService : IAdminService
             .Take(50)
             .ToListAsync();
 
-        // Get flagged comments
-        var flaggedComments = await _context.Comments
+        // Get flagged comments - includes both public and group comments
+        var flaggedComments = await _context.Posts
             .Include(c => c.User)
+            .Include(c => c.Group) // Include group information for group comments
             .Include(c => c.HiddenByUser)
-            .Include(c => c.CommentSystemTags)
-                .ThenInclude(cst => cst.SystemTag)
-            .Where(c => c.CommentSystemTags.Any(cst =>
-                cst.SystemTag.Category == SystemTagCategory.Violation ||
-                cst.SystemTag.Category == SystemTagCategory.ModerationStatus))
+            .Include(c => c.PostSystemTags)
+                .ThenInclude(pst => pst.SystemTag)
+            .Where(c => c.PostType == PostType.Comment && c.PostSystemTags.Any(pst =>
+                pst.SystemTag.Category == SystemTagCategory.Violation ||
+                pst.SystemTag.Category == SystemTagCategory.ModerationStatus))
             .OrderByDescending(c => c.CreatedAt)
             .Take(50)
             .ToListAsync();
@@ -553,7 +565,7 @@ public class AdminService : IAdminService
             .Include(ur => ur.Post)
                 .ThenInclude(p => p!.Likes)
             .Include(ur => ur.Post)
-                .ThenInclude(p => p!.Comments)
+                .ThenInclude(p => p!.Children.Where(c => c.PostType == PostType.Comment))
             .Include(ur => ur.Post)
                 .ThenInclude(p => p!.Reposts)
             .Include(ur => ur.Comment)
@@ -581,7 +593,7 @@ public class AdminService : IAdminService
         return new ContentQueueDto
         {
             FlaggedPosts = flaggedPosts.Select(p => MapToAdminPostDtoWithTags(p, aiSuggestedTagsByPostId.GetValueOrDefault(p.Id, new List<AiSuggestedTag>()))).ToList(),
-            FlaggedComments = flaggedComments.Select(MapToAdminCommentDto).ToList(),
+            FlaggedComments = flaggedComments.Select(MapPostToAdminCommentDto).ToList(),
             PendingAppeals = pendingAppeals.Select(MapToUserAppealDto).ToList(),
             UserReports = userReports.Select(MapToUserReportDto).ToList(),
             TotalFlaggedContent = flaggedPosts.Count + flaggedComments.Count + userReports.Count
@@ -781,21 +793,22 @@ public class AdminService : IAdminService
                 // Handle comment appeals
                 else if (appeal.TargetCommentId.HasValue)
                 {
-                    var comment = await _context.Comments
-                        .Include(c => c.CommentSystemTags)
-                        .FirstOrDefaultAsync(c => c.Id == appeal.TargetCommentId.Value);
+                    var comment = await _context.Posts
+                        .Include(c => c.PostSystemTags)
+                        .FirstOrDefaultAsync(c => c.Id == appeal.TargetCommentId.Value && c.PostType == PostType.Comment);
 
                     if (comment != null && comment.IsHidden)
                     {
                         // Unhide the comment
                         comment.IsHidden = false;
+                        comment.HiddenReasonType = PostHiddenReasonType.None;
                         comment.HiddenByUserId = null;
                         comment.HiddenAt = null;
                         comment.HiddenReason = null;
 
                         // Remove all system tags applied to this comment
-                        var systemTags = comment.CommentSystemTags.ToList();
-                        _context.CommentSystemTags.RemoveRange(systemTags);
+                        var systemTags = comment.PostSystemTags.ToList();
+                        _context.PostSystemTags.RemoveRange(systemTags);
 
                         await _context.SaveChangesAsync();
 
@@ -878,7 +891,7 @@ public class AdminService : IAdminService
         var startDate = DateTime.UtcNow.AddDays(-days);
 
         var dailyPosts = await _context.Posts
-            .Where(p => p.CreatedAt >= startDate)
+            .Where(p => p.PostType == PostType.Post && p.CreatedAt >= startDate)
             .GroupBy(p => p.CreatedAt.Date)
             .Select(g => new DailyStatsDto
             {
@@ -889,8 +902,8 @@ public class AdminService : IAdminService
             .OrderBy(d => d.Date)
             .ToListAsync();
 
-        var dailyComments = await _context.Comments
-            .Where(c => c.CreatedAt >= startDate)
+        var dailyComments = await _context.Posts
+            .Where(c => c.PostType == PostType.Comment && c.CreatedAt >= startDate)
             .GroupBy(c => c.CreatedAt.Date)
             .Select(g => new DailyStatsDto
             {
@@ -1058,8 +1071,8 @@ public class AdminService : IAdminService
             .ToListAsync();
 
         // Get daily comments
-        var dailyCommentsCount = await _context.Comments
-            .Where(c => c.CreatedAt >= startDate)
+        var dailyCommentsCount = await _context.Posts
+            .Where(c => c.PostType == PostType.Comment && c.CreatedAt >= startDate)
             .GroupBy(c => c.CreatedAt.Date)
             .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync();
@@ -1110,7 +1123,7 @@ public class AdminService : IAdminService
 
         // Get daily posts
         var dailyPostsCount = await _context.Posts
-            .Where(p => p.CreatedAt >= startDate)
+            .Where(p => p.PostType == PostType.Post && p.CreatedAt >= startDate)
             .GroupBy(p => p.CreatedAt.Date)
             .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync();
@@ -1123,8 +1136,8 @@ public class AdminService : IAdminService
             .ToListAsync();
 
         // Get daily comments
-        var dailyCommentsEngagement = await _context.Comments
-            .Where(c => c.CreatedAt >= startDate)
+        var dailyCommentsEngagement = await _context.Posts
+            .Where(c => c.PostType == PostType.Comment && c.CreatedAt >= startDate)
             .GroupBy(c => c.CreatedAt.Date)
             .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync();
@@ -1160,8 +1173,8 @@ public class AdminService : IAdminService
         }
 
         // Engagement breakdown by type
-        var totalPosts = await _context.Posts.Where(p => p.CreatedAt >= startDate).CountAsync();
-        var totalComments = await _context.Comments.Where(c => c.CreatedAt >= startDate).CountAsync();
+        var totalPosts = await _context.Posts.Where(p => p.PostType == PostType.Post && p.CreatedAt >= startDate).CountAsync();
+        var totalComments = await _context.Posts.Where(c => c.PostType == PostType.Comment && c.CreatedAt >= startDate).CountAsync();
         var totalLikes = await _context.Likes.Where(l => l.CreatedAt >= startDate).CountAsync();
         var totalReposts = await _context.Reposts.Where(r => r.CreatedAt >= startDate).CountAsync();
 
@@ -1206,6 +1219,25 @@ public class AdminService : IAdminService
 
     private static AdminPostDto MapToAdminPostDto(Post post)
     {
+        // Map group information if post is in a group
+        GroupDto? groupDto = null;
+        if (post.Group != null)
+        {
+            groupDto = new GroupDto(
+                post.Group.Id,
+                post.Group.Name,
+                post.Group.Description,
+                post.Group.ImageFileName,
+                post.Group.CreatedAt,
+                post.Group.UpdatedAt,
+                post.Group.IsOpen,
+                post.Group.User.ToDto(),
+                post.Group.Members?.Count ?? 0,
+                post.Group.Posts?.Count ?? 0,
+                false // IsCurrentUserMember - we don't have this info in admin context
+            );
+        }
+
         return new AdminPostDto
         {
             Id = post.Id,
@@ -1219,8 +1251,9 @@ public class AdminService : IAdminService
             CreatedAt = post.CreatedAt,
             UpdatedAt = post.UpdatedAt,
             User = post.User.ToDto(),
+            Group = groupDto,
             LikeCount = post.Likes?.Count ?? 0,
-            CommentCount = post.Comments?.Count ?? 0,
+            CommentCount = post.Children?.Count(c => c.PostType == PostType.Comment) ?? 0,
             RepostCount = post.Reposts?.Count ?? 0,
             SystemTags = post.PostSystemTags?.Select(pst => MapToSystemTagDto(pst.SystemTag)).ToList() ?? new List<SystemTagDto>()
         };
@@ -1255,21 +1288,46 @@ public class AdminService : IAdminService
         };
     }
 
-    private static AdminCommentDto MapToAdminCommentDto(Comment comment)
+
+
+    private static AdminCommentDto MapPostToAdminCommentDto(Post post)
     {
+        if (post.PostType != PostType.Comment)
+            throw new ArgumentException("Post must be of type Comment", nameof(post));
+
+        // Map group information if comment is in a group
+        GroupDto? groupDto = null;
+        if (post.Group != null)
+        {
+            groupDto = new GroupDto(
+                post.Group.Id,
+                post.Group.Name,
+                post.Group.Description,
+                post.Group.ImageFileName,
+                post.Group.CreatedAt,
+                post.Group.UpdatedAt,
+                post.Group.IsOpen,
+                post.Group.User.ToDto(),
+                post.Group.Members?.Count ?? 0,
+                post.Group.Posts?.Count ?? 0,
+                false // IsCurrentUserMember - we don't have this info in admin context
+            );
+        }
+
         return new AdminCommentDto
         {
-            Id = comment.Id,
-            Content = comment.Content,
-            IsHidden = comment.IsHidden,
-            HiddenReason = comment.HiddenReason,
-            HiddenAt = comment.HiddenAt,
-            HiddenByUsername = comment.HiddenByUser?.Username,
-            CreatedAt = comment.CreatedAt,
-            UpdatedAt = comment.UpdatedAt,
-            User = comment.User.ToDto(),
-            PostId = comment.PostId,
-            SystemTags = comment.CommentSystemTags?.Select(cst => MapToSystemTagDto(cst.SystemTag)).ToList() ?? new List<SystemTagDto>()
+            Id = post.Id,
+            Content = post.Content,
+            IsHidden = post.IsHidden,
+            HiddenReason = post.HiddenReason,
+            HiddenAt = post.HiddenAt,
+            HiddenByUsername = post.HiddenByUser?.Username,
+            CreatedAt = post.CreatedAt,
+            UpdatedAt = post.UpdatedAt,
+            User = post.User.ToDto(),
+            Group = groupDto,
+            PostId = post.ParentId ?? 0, // ParentId is the original PostId for comments
+            SystemTags = post.PostSystemTags?.Select(pst => MapToSystemTagDto(pst.SystemTag)).ToList() ?? new List<SystemTagDto>()
         };
     }
 
@@ -1305,7 +1363,7 @@ public class AdminService : IAdminService
             ReviewedByUsername = report.ReviewedByUser?.Username,
             ReviewNotes = report.ReviewNotes,
             Post = report.Post != null ? MapToAdminPostDto(report.Post) : null,
-            Comment = report.Comment != null ? MapToAdminCommentDto(report.Comment) : null,
+            Comment = report.Comment != null ? MapPostToAdminCommentDto(report.Comment) : null,
             SystemTags = report.UserReportSystemTags?.Select(urst => MapToSystemTagDto(urst.SystemTag)).ToList() ?? new List<SystemTagDto>()
         };
     }
@@ -1506,7 +1564,7 @@ public class AdminService : IAdminService
                 Status = u.Status,
                 Role = u.Role,
                 PostCount = u.Posts.Count,
-                CommentCount = u.Comments.Count,
+                CommentCount = u.Posts.Count(p => p.PostType == PostType.Comment),
                 LikeCount = u.Likes.Count,
                 ReportCount = _context.UserReports.Count(ur => ur.ReportedByUserId == u.Id),
                 ModerationActionCount = _context.AuditLogs.Count(al => al.TargetUserId == u.Id &&
@@ -1532,7 +1590,7 @@ public class AdminService : IAdminService
                 Status = u.Status,
                 Role = u.Role,
                 PostCount = u.Posts.Count,
-                CommentCount = u.Comments.Count,
+                CommentCount = u.Posts.Count(p => p.PostType == PostType.Comment),
                 LikeCount = u.Likes.Count,
                 ReportCount = _context.UserReports.Count(ur => ur.ReportedByUserId == u.Id),
                 ModerationActionCount = _context.AuditLogs.Count(al => al.TargetUserId == u.Id &&
@@ -1643,7 +1701,6 @@ public class AdminService : IAdminService
             var user = await _context.Users
                 .Include(u => u.SuspendedByUser)
                 .Include(u => u.Posts)
-                .Include(u => u.Comments)
                 .Include(u => u.Likes)
                 .Include(u => u.Followers)
                 .Include(u => u.Following)
@@ -1734,7 +1791,7 @@ public class AdminService : IAdminService
 
                 // Activity Statistics
                 PostCount = user.Posts.Count,
-                CommentCount = user.Comments.Count,
+                CommentCount = user.Posts.Count(p => p.PostType == PostType.Comment),
                 LikeCount = user.Likes.Count,
                 FollowerCount = user.Followers.Count,
                 FollowingCount = user.Following.Count,

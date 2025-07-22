@@ -56,7 +56,7 @@ public class UserReportService : IUserReportService
 
             if (dto.CommentId.HasValue)
             {
-                var commentExists = await _context.Comments.AnyAsync(c => c.Id == dto.CommentId.Value);
+                var commentExists = await _context.Posts.AnyAsync(c => c.Id == dto.CommentId.Value && c.PostType == PostType.Comment);
                 if (!commentExists)
                 {
                     _logger.LogWarning("Attempted to report non-existent comment {CommentId}", dto.CommentId.Value);
@@ -302,6 +302,42 @@ public class UserReportService : IUserReportService
 
     private static AdminPostDto MapToAdminPostDto(Post post)
     {
+        // Map group information if post is in a group
+        GroupDto? groupDto = null;
+        if (post.Group != null)
+        {
+            groupDto = new GroupDto(
+                post.Group.Id,
+                post.Group.Name,
+                post.Group.Description,
+                post.Group.ImageFileName,
+                post.Group.CreatedAt,
+                post.Group.UpdatedAt,
+                post.Group.IsOpen,
+                new UserDto(
+                    post.Group.User.Id,
+                    post.Group.User.Email,
+                    post.Group.User.Username,
+                    post.Group.User.Bio,
+                    post.Group.User.Birthday,
+                    post.Group.User.Pronouns,
+                    post.Group.User.Tagline,
+                    post.Group.User.ProfileImageFileName,
+                    post.Group.User.CreatedAt,
+                    post.Group.User.FcmToken,
+                    post.Group.User.ExpoPushToken,
+                    post.Group.User.EmailVerified,
+                    post.Group.User.Role,
+                    post.Group.User.Status,
+                    post.Group.User.SuspendedUntil,
+                    post.Group.User.SuspensionReason
+                ),
+                post.Group.Members?.Count ?? 0,
+                post.Group.Posts?.Count ?? 0,
+                false // IsCurrentUserMember - we don't have this info in admin context
+            );
+        }
+
         return new AdminPostDto
         {
             Id = post.Id,
@@ -332,14 +368,54 @@ public class UserReportService : IUserReportService
                 post.User.SuspendedUntil,
                 post.User.SuspensionReason
             ),
+            Group = groupDto,
             LikeCount = post.Likes?.Count ?? 0,
-            CommentCount = post.Comments?.Count ?? 0,
+            CommentCount = post.Children?.Count(c => c.PostType == PostType.Comment) ?? 0,
             RepostCount = post.Reposts?.Count ?? 0
         };
     }
 
-    private static AdminCommentDto MapToAdminCommentDto(Comment comment)
+    private static AdminCommentDto MapToAdminCommentDto(Post comment)
     {
+        if (comment.PostType != PostType.Comment)
+            throw new ArgumentException("Post must be of type Comment", nameof(comment));
+
+        // Map group information if comment is in a group
+        GroupDto? groupDto = null;
+        if (comment.Group != null)
+        {
+            groupDto = new GroupDto(
+                comment.Group.Id,
+                comment.Group.Name,
+                comment.Group.Description,
+                comment.Group.ImageFileName,
+                comment.Group.CreatedAt,
+                comment.Group.UpdatedAt,
+                comment.Group.IsOpen,
+                new UserDto(
+                    comment.Group.User.Id,
+                    comment.Group.User.Email,
+                    comment.Group.User.Username,
+                    comment.Group.User.Bio,
+                    comment.Group.User.Birthday,
+                    comment.Group.User.Pronouns,
+                    comment.Group.User.Tagline,
+                    comment.Group.User.ProfileImageFileName,
+                    comment.Group.User.CreatedAt,
+                    comment.Group.User.FcmToken,
+                    comment.Group.User.ExpoPushToken,
+                    comment.Group.User.EmailVerified,
+                    comment.Group.User.Role,
+                    comment.Group.User.Status,
+                    comment.Group.User.SuspendedUntil,
+                    comment.Group.User.SuspensionReason
+                ),
+                comment.Group.Members?.Count ?? 0,
+                comment.Group.Posts?.Count ?? 0,
+                false // IsCurrentUserMember - we don't have this info in admin context
+            );
+        }
+
         return new AdminCommentDto
         {
             Id = comment.Id,
@@ -368,7 +444,8 @@ public class UserReportService : IUserReportService
                 comment.User.SuspendedUntil,
                 comment.User.SuspensionReason
             ),
-            PostId = comment.PostId
+            Group = groupDto,
+            PostId = comment.ParentId ?? 0 // Comments now use ParentId instead of PostId
         };
     }
 

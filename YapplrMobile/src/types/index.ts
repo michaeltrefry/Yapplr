@@ -279,6 +279,11 @@ export enum ReactionType {
   Angry = 6
 }
 
+export enum PostType {
+  Post = 0,
+  Comment = 1
+}
+
 export interface ReactionCount {
   reactionType: ReactionType;
   emoji: string;

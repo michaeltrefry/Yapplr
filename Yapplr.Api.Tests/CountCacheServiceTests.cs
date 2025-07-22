@@ -110,12 +110,16 @@ public class CountCacheServiceTests : IDisposable
     public async Task GetLikeCountAsync_CountsCorrectly()
     {
         // Arrange
-        var postId = 1;
         var userId1 = 1;
         var userId2 = 2;
 
-        // Add test data
-        _context.Posts.Add(new Post { Id = postId, UserId = userId1, Content = "Test post" });
+        // Add test data - let EF generate the ID
+        var post = new Post { UserId = userId1, Content = "Test post" };
+        _context.Posts.Add(post);
+        await _context.SaveChangesAsync(); // Save to get the generated ID
+
+        var postId = post.Id;
+
         _context.Likes.AddRange(
             new Like { PostId = postId, UserId = userId1 },
             new Like { PostId = postId, UserId = userId2 }
@@ -142,15 +146,19 @@ public class CountCacheServiceTests : IDisposable
     public async Task GetCommentCountAsync_ExcludesDeletedAndHiddenComments()
     {
         // Arrange
-        var postId = 1;
         var userId = 1;
 
-        // Add test data
-        _context.Posts.Add(new Post { Id = postId, UserId = userId, Content = "Test post" });
-        _context.Comments.AddRange(
-            new Comment { PostId = postId, UserId = userId, Content = "Visible comment", IsDeletedByUser = false, IsHidden = false },
-            new Comment { PostId = postId, UserId = userId, Content = "Deleted comment", IsDeletedByUser = true, IsHidden = false },
-            new Comment { PostId = postId, UserId = userId, Content = "Hidden comment", IsDeletedByUser = false, IsHidden = true }
+        // Add test data - let EF generate the ID
+        var post = new Post { UserId = userId, Content = "Test post", PostType = PostType.Post };
+        _context.Posts.Add(post);
+        await _context.SaveChangesAsync(); // Save to get the generated ID
+
+        var postId = post.Id;
+
+        _context.Posts.AddRange(
+            new Post { ParentId = postId, UserId = userId, Content = "Visible comment", IsDeletedByUser = false, IsHidden = false, PostType = PostType.Comment },
+            new Post { ParentId = postId, UserId = userId, Content = "Deleted comment", IsDeletedByUser = true, IsHidden = false, PostType = PostType.Comment },
+            new Post { ParentId = postId, UserId = userId, Content = "Hidden comment", IsDeletedByUser = false, IsHidden = true, PostType = PostType.Comment }
         );
         await _context.SaveChangesAsync();
 

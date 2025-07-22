@@ -11,6 +11,7 @@ public class AdminCommentDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public UserDto User { get; set; } = null!;
+    public GroupDto? Group { get; set; } // Optional - only set for group comments
     public int PostId { get; set; }
     public List<SystemTagDto> SystemTags { get; set; } = new();
     public List<AiSuggestedTagDto> AiSuggestedTags { get; set; } = new();

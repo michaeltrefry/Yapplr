@@ -15,6 +15,7 @@ public class AdminPostDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public UserDto User { get; set; } = null!;
+    public GroupDto? Group { get; set; } // Optional - only set for group posts
     public int LikeCount { get; set; } // Legacy - will be replaced by ReactionCounts
     public int CommentCount { get; set; }
     public int RepostCount { get; set; }

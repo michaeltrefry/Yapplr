@@ -12,9 +12,9 @@ public class UserReport
     // Content being reported (either post or comment)
     public int? PostId { get; set; }
     public Post? Post { get; set; }
-    
-    public int? CommentId { get; set; }
-    public Comment? Comment { get; set; }
+
+    public int? CommentId { get; set; } // Now references Posts table with PostType.Comment
+    public Post? Comment { get; set; } // Now references Posts table with PostType.Comment
     
     [Required]
     [StringLength(1000)]

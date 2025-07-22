@@ -171,6 +171,20 @@ public static class GroupEndpoints
         .WithDescription("Get a paginated list of group members.")
         .Produces<PaginatedResult<GroupMemberDto>>(200);
 
+        // Get specific group post
+        groups.MapGet("/{groupId:int}/posts/{postId:int}", async (int groupId, int postId, ClaimsPrincipal user, IGroupService groupService) =>
+        {
+            var currentUserId = user.GetUserIdOrNull();
+            var post = await groupService.GetGroupPostByIdAsync(groupId, postId, currentUserId);
+
+            return post == null ? Results.NotFound() : Results.Ok(post);
+        })
+        .WithName("GetGroupPost")
+        .WithSummary("Get a specific group post")
+        .WithDescription("Get a specific post from a group by its ID.")
+        .Produces<PostDto>(200)
+        .Produces(404);
+
         // Get group posts
         groups.MapGet("/{id:int}/posts", async (int id, ClaimsPrincipal user, IGroupService groupService, int page = 1, int pageSize = 20) =>
         {

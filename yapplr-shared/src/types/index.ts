@@ -4,6 +4,11 @@ export enum PostPrivacy {
   Private = 2,
 }
 
+export enum PostType {
+  Post = 0,
+  Comment = 1
+}
+
 export interface User {
   id: number;
   email: string;

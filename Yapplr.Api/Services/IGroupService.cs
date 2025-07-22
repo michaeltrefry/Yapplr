@@ -25,6 +25,7 @@ public interface IGroupService
     Task<PaginatedResult<GroupMemberDto>> GetGroupMembersAsync(int groupId, int page = 1, int pageSize = 20);
     
     // Group posts
+    Task<PostDto?> GetGroupPostByIdAsync(int groupId, int postId, int? currentUserId = null);
     Task<PaginatedResult<PostDto>> GetGroupPostsAsync(int groupId, int? currentUserId = null, int page = 1, int pageSize = 20);
     
     // Admin methods

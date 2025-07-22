@@ -675,6 +675,12 @@ export const groupApi = {
     return response.data;
   },
 
+  // Get specific group post
+  getGroupPost: async (groupId: number, postId: number): Promise<Post> => {
+    const response = await api.get(`/groups/${groupId}/posts/${postId}`);
+    return response.data;
+  },
+
   // Get group posts
   getGroupPosts: async (id: number, page = 1, pageSize = 20): Promise<PaginatedResult<Post>> => {
     const response = await api.get(`/groups/${id}/posts?page=${page}&pageSize=${pageSize}`);

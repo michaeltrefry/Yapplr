@@ -11,8 +11,8 @@ public class AiSuggestedTag
     public int? PostId { get; set; }
     public Post? Post { get; set; }
 
-    public int? CommentId { get; set; }
-    public Comment? Comment { get; set; }
+    public int? CommentId { get; set; } // Now references Posts table with PostType.Comment
+    public Post? Comment { get; set; } // Now references Posts table with PostType.Comment
 
     [Required]
     [MaxLength(100)]

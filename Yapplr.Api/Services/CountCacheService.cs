@@ -76,8 +76,8 @@ public class CountCacheService : ICountCacheService
         var key = $"count:comments:{postId}";
         return await _cache.GetOrSetValueAsync(key, async () =>
         {
-            var count = await _context.Comments
-                .CountAsync(c => c.PostId == postId && !c.IsDeletedByUser && !c.IsHidden);
+            var count = await _context.Posts
+                .CountAsync(c => c.ParentId == postId && c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden);
             _logger.LogDebug("Calculated comment count for post {PostId}: {Count}", postId, count);
             return count;
         }, PostCountExpiration);
@@ -100,7 +100,8 @@ public class CountCacheService : ICountCacheService
         var key = $"count:comment:likes:{commentId}";
         return await _cache.GetOrSetValueAsync(key, async () =>
         {
-            var count = await _context.CommentLikes.CountAsync(cl => cl.CommentId == commentId);
+            // Legacy - now using PostReactions with Heart reaction type
+            var count = await _context.PostReactions.CountAsync(pr => pr.PostId == commentId && pr.ReactionType == ReactionType.Heart);
             _logger.LogDebug("Calculated like count for comment {CommentId}: {Count}", commentId, count);
             return count;
         }, PostCountExpiration);
@@ -111,7 +112,8 @@ public class CountCacheService : ICountCacheService
         var key = $"user:liked:comment:{userId}:{commentId}";
         return await _cache.GetOrSetValueAsync(key, async () =>
         {
-            var hasLiked = await _context.CommentLikes.AnyAsync(cl => cl.CommentId == commentId && cl.UserId == userId);
+            // Legacy - now using PostReactions with Heart reaction type
+            var hasLiked = await _context.PostReactions.AnyAsync(pr => pr.PostId == commentId && pr.UserId == userId && pr.ReactionType == ReactionType.Heart);
             _logger.LogDebug("Checked if user {UserId} liked comment {CommentId}: {HasLiked}", userId, commentId, hasLiked);
             return hasLiked;
         }, PostCountExpiration);
@@ -171,7 +173,7 @@ public class CountCacheService : ICountCacheService
         var key = $"count:comment:reactions:{commentId}:{(int)reactionType}";
         return await _cache.GetOrSetValueAsync(key, async () =>
         {
-            var count = await _context.CommentReactions.CountAsync(r => r.CommentId == commentId && r.ReactionType == reactionType);
+            var count = await _context.PostReactions.CountAsync(r => r.PostId == commentId && r.ReactionType == reactionType);
             _logger.LogDebug("Calculated {ReactionType} count for comment {CommentId}: {Count}", reactionType, commentId, count);
             return count;
         }, PostCountExpiration);
@@ -180,8 +182,8 @@ public class CountCacheService : ICountCacheService
     public async Task<Dictionary<ReactionType, int>> GetCommentReactionCountsAsync(int commentId)
     {
         // Since caching service doesn't support Dictionary, we'll calculate this directly
-        var reactions = await _context.CommentReactions
-            .Where(r => r.CommentId == commentId)
+        var reactions = await _context.PostReactions
+            .Where(r => r.PostId == commentId)
             .GroupBy(r => r.ReactionType)
             .Select(g => new { ReactionType = g.Key, Count = g.Count() })
             .ToListAsync();
@@ -196,7 +198,7 @@ public class CountCacheService : ICountCacheService
         var key = $"count:comment:reactions:total:{commentId}";
         return await _cache.GetOrSetValueAsync(key, async () =>
         {
-            var count = await _context.CommentReactions.CountAsync(r => r.CommentId == commentId);
+            var count = await _context.PostReactions.CountAsync(r => r.PostId == commentId);
             _logger.LogDebug("Calculated total reaction count for comment {CommentId}: {Count}", commentId, count);
             return count;
         }, PostCountExpiration);
@@ -205,8 +207,8 @@ public class CountCacheService : ICountCacheService
     public async Task<ReactionType?> GetUserCommentReactionAsync(int commentId, int userId)
     {
         // Since caching service doesn't support nullable types, we'll calculate this directly
-        var reaction = await _context.CommentReactions
-            .Where(r => r.CommentId == commentId && r.UserId == userId)
+        var reaction = await _context.PostReactions
+            .Where(r => r.PostId == commentId && r.UserId == userId)
             .Select(r => (ReactionType?)r.ReactionType)
             .FirstOrDefaultAsync();
         _logger.LogDebug("Checked user {UserId} reaction to comment {CommentId}: {Reaction}", userId, commentId, reaction);

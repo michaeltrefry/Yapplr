@@ -183,6 +183,11 @@ export enum ReactionType {
   Angry = 6
 }
 
+export enum PostType {
+  Post = 0,
+  Comment = 1
+}
+
 export interface ReactionCount {
   reactionType: ReactionType;
   emoji: string;
@@ -756,6 +761,7 @@ export interface AdminPost {
   createdAt: string;
   updatedAt: string;
   user: User;
+  group?: Group; // Optional - only set for group posts
   likeCount: number; // Legacy - will be replaced by reactionCounts
   commentCount: number;
   repostCount: number;
@@ -775,6 +781,7 @@ export interface AdminComment {
   createdAt: string;
   updatedAt: string;
   user: User;
+  group?: Group; // Optional - only set for group comments
   postId: number;
   systemTags: SystemTag[];
   aiSuggestedTags: AiSuggestedTag[];

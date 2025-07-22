@@ -398,15 +398,54 @@ public class GroupService : BaseService, IGroupService
         return PaginatedResult<GroupMemberDto>.Create(memberDtos, page, pageSize, totalCount);
     }
 
-    public async Task<PaginatedResult<PostDto>> GetGroupPostsAsync(int groupId, int? currentUserId = null, int page = 1, int pageSize = 20)
+    public async Task<PostDto?> GetGroupPostByIdAsync(int groupId, int postId, int? currentUserId = null)
     {
-        var query = _context.Posts
-            .Where(p => p.GroupId == groupId && !p.IsHidden && !p.IsDeletedByUser)
+        // First check if user can access the group
+        var group = await _context.Groups.FirstOrDefaultAsync(g => g.Id == groupId);
+        if (group == null) return null;
+
+        // Check group access permissions
+        if (!group.IsOpen && currentUserId.HasValue)
+        {
+            var isMember = await _context.GroupMembers
+                .AnyAsync(gm => gm.GroupId == groupId && gm.UserId == currentUserId.Value);
+            if (!isMember) return null;
+        }
+        else if (!group.IsOpen && !currentUserId.HasValue)
+        {
+            return null; // Private group, no user logged in
+        }
+
+        // Get the post
+        var post = await _context.Posts
+            .Where(p => p.Id == postId && p.GroupId == groupId && p.PostType == PostType.Post && !p.IsHidden && !p.IsDeletedByUser)
             .Include(p => p.User)
             .Include(p => p.Group)
             .Include(p => p.Likes)
             .Include(p => p.Reactions)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden))
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden))
+            .Include(p => p.Reposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
+            .FirstOrDefaultAsync();
+
+        if (post == null) return null;
+
+        return post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext);
+    }
+
+    public async Task<PaginatedResult<PostDto>> GetGroupPostsAsync(int groupId, int? currentUserId = null, int page = 1, int pageSize = 20)
+    {
+        var query = _context.Posts
+            .Where(p => p.GroupId == groupId && p.PostType == PostType.Post && !p.IsHidden && !p.IsDeletedByUser)
+            .Include(p => p.User)
+            .Include(p => p.Group)
+            .Include(p => p.Likes)
+            .Include(p => p.Reactions)
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden))
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)

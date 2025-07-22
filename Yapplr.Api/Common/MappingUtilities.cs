@@ -121,9 +121,9 @@ public static class MappingUtilities
     }
 
     /// <summary>
-    /// Map Comment to CommentDto (without like information)
+    /// Map Post (with PostType.Comment) to CommentDto (without like information)
     /// </summary>
-    public static CommentDto MapToCommentDto(this Comment comment, HttpContext? httpContext = null)
+    public static CommentDto MapToCommentDto(this Post comment, HttpContext? httpContext = null)
     {
         var userDto = comment.User.MapToUserDto();
         var isEdited = IsEdited(comment.CreatedAt, comment.UpdatedAt);
@@ -139,9 +139,9 @@ public static class MappingUtilities
     }
 
     /// <summary>
-    /// Map Comment to CommentDto with like information
+    /// Map Post (with PostType.Comment) to CommentDto with like information
     /// </summary>
-    public static CommentDto MapToCommentDto(this Comment comment, int? currentUserId, int likeCount, bool isLikedByCurrentUser, HttpContext? httpContext = null)
+    public static CommentDto MapToCommentDto(this Post comment, int? currentUserId, int likeCount, bool isLikedByCurrentUser, HttpContext? httpContext = null)
     {
         var userDto = comment.User.MapToUserDto();
         var isEdited = IsEdited(comment.CreatedAt, comment.UpdatedAt);
@@ -159,9 +159,9 @@ public static class MappingUtilities
     }
 
     /// <summary>
-    /// Map Comment to CommentDto with reaction information
+    /// Map Post (with PostType.Comment) to CommentDto with reaction information
     /// </summary>
-    public static CommentDto MapToCommentDtoWithReactions(this Comment comment, int? currentUserId, HttpContext? httpContext = null)
+    public static CommentDto MapToCommentDtoWithReactions(this Post comment, int? currentUserId, HttpContext? httpContext = null)
     {
         var userDto = comment.User.MapToUserDto();
         var isEdited = IsEdited(comment.CreatedAt, comment.UpdatedAt);
@@ -190,8 +190,8 @@ public static class MappingUtilities
             comment.UpdatedAt,
             userDto,
             isEdited,
-            comment.CommentLikes.Count, // Legacy like count
-            currentUserId.HasValue && comment.CommentLikes.Any(l => l.UserId == currentUserId.Value), // Legacy is liked
+            comment.Likes.Count, // Legacy like count - now using unified Likes
+            currentUserId.HasValue && comment.Likes.Any(l => l.UserId == currentUserId.Value), // Legacy is liked
             reactionCounts,
             currentUserReaction,
             totalReactionCount
@@ -413,7 +413,7 @@ public static class MappingUtilities
             userDto,
             groupDto,
             post.Likes.Count,
-            post.Comments.Count,
+            post.Children.Count(c => c.PostType == PostType.Comment),
             post.Reposts.Count,
             tags,
             linkPreviews,

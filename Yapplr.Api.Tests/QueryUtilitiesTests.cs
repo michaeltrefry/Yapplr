@@ -103,7 +103,7 @@ public class QueryUtilitiesTests : IDisposable
         result!.User.Should().NotBeNull();
         result.User.Username.Should().Be(user.Username);
         result.Likes.Should().NotBeNull();
-        result.Comments.Should().NotBeNull();
+        result.Children.Should().NotBeNull();
         result.Reposts.Should().NotBeNull();
         result.PostTags.Should().NotBeNull();
         result.PostLinkPreviews.Should().NotBeNull();
