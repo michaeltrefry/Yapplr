@@ -415,9 +415,10 @@ public class UserService : BaseService, IUserService
         score += likesGiven * 3.0;
 
         // Comments on their posts (medium weight)
-        var commentsGiven = await _context.Comments
+        var commentsGiven = await _context.Posts
             .Where(c => c.UserId == currentUserId &&
-                       c.Post.UserId == targetUserId &&
+                       c.PostType == PostType.Comment &&
+                       c.Parent!.UserId == targetUserId &&
                        c.CreatedAt >= since)
             .CountAsync();
         score += commentsGiven * 4.0;

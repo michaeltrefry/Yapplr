@@ -288,7 +288,7 @@ public class PostService : BaseService, IPostService
             .Include(p => p.Group)
             .Include(p => p.Likes)
             .Include(p => p.Reactions)
-            .Include(p => p.Comments)
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment))
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -498,7 +498,7 @@ public class PostService : BaseService, IPostService
             .Include(p => p.Group)
             .Include(p => p.Likes)
             .Include(p => p.Reactions)
-            .Include(p => p.Comments)
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment))
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -832,7 +832,7 @@ public class PostService : BaseService, IPostService
             .Include(r => r.Post)
             .ThenInclude(p => p.Likes)
             .Include(r => r.Post)
-            .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
+            .ThenInclude(p => p.Children.Where(c => c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
             .Include(r => r.Post)
             .ThenInclude(p => p.Reposts)
             .AsSplitQuery()
@@ -984,111 +984,14 @@ public class PostService : BaseService, IPostService
 
     public async Task<bool> LikeCommentAsync(int commentId, int userId)
     {
-        // Check trust-based permissions
-        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.LikeContent))
-        {
-            throw new InvalidOperationException("Insufficient trust score to like content");
-        }
-
-        // Check if already liked
-        if (await _context.CommentLikes.AnyAsync(cl => cl.CommentId == commentId && cl.UserId == userId))
-            return false;
-
-        var commentLike = new CommentLike
-        {
-            CommentId = commentId,
-            UserId = userId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.CommentLikes.Add(commentLike);
-        await _context.SaveChangesAsync();
-
-        // Invalidate comment like count cache
-        await _countCache.InvalidateCommentCountsAsync(commentId);
-
-        // Get the comment owner to create notification
-        var comment = await _context.Comments.FindAsync(commentId);
-        if (comment != null)
-        {
-            await _notificationService.CreateCommentLikeNotificationAsync(comment.UserId, userId, comment.PostId, commentId);
-        }
-
-        // Update trust score for like given
-        try
-        {
-            await _trustScoreService.UpdateTrustScoreForActionAsync(
-                userId,
-                TrustScoreAction.LikeGiven,
-                "comment",
-                commentId,
-                "Liked a comment"
-            );
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update trust score for comment like by user {UserId}", userId);
-            // Don't fail the like action if trust score update fails
-        }
-
-        // Track analytics for comment like
-        try
-        {
-            await _analyticsService.TrackContentEngagementAsync(
-                userId,
-                ContentType.Comment,
-                commentId,
-                EngagementType.Like,
-                comment?.UserId,
-                "comment_like_button",
-                "User liked a comment"
-            );
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to track analytics for comment like by user {UserId}", userId);
-            // Don't fail the like action if analytics tracking fails
-        }
-
-        return true;
+        // Legacy method - redirect to ReactToCommentAsync with Heart reaction
+        return await ReactToCommentAsync(commentId, userId, ReactionType.Heart);
     }
 
     public async Task<bool> UnlikeCommentAsync(int commentId, int userId)
     {
-        var commentLike = await _context.CommentLikes.FirstOrDefaultAsync(cl => cl.CommentId == commentId && cl.UserId == userId);
-
-        if (commentLike == null)
-            return false;
-
-        // Get comment info before removing the like for analytics
-        var comment = await _context.Comments.FindAsync(commentId);
-
-        _context.CommentLikes.Remove(commentLike);
-        await _context.SaveChangesAsync();
-
-        // Invalidate comment like count cache
-        await _countCache.InvalidateCommentCountsAsync(commentId);
-
-        // Track analytics for comment unlike
-        try
-        {
-            await _analyticsService.TrackContentEngagementAsync(
-                userId,
-                ContentType.Comment,
-                commentId,
-                EngagementType.Unlike,
-                comment?.UserId,
-                "comment_like_button",
-                "User unliked a comment"
-            );
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to track analytics for comment unlike by user {UserId}", userId);
-            // Don't fail the unlike action if analytics tracking fails
-        }
-
-        return true;
+        // Legacy method - redirect to RemoveCommentReactionAsync
+        return await RemoveCommentReactionAsync(commentId, userId);
     }
 
     public async Task<bool> ReactToPostAsync(int postId, int userId, ReactionType reactionType)
@@ -1185,9 +1088,9 @@ public class PostService : BaseService, IPostService
             throw new InvalidOperationException("Insufficient trust score to react to content");
         }
 
-        // Check if user already has a reaction on this comment
-        var existingReaction = await _context.CommentReactions
-            .FirstOrDefaultAsync(r => r.CommentId == commentId && r.UserId == userId);
+        // Check if user already has a reaction on this comment (now a Post)
+        var existingReaction = await _context.PostReactions
+            .FirstOrDefaultAsync(r => r.PostId == commentId && r.UserId == userId);
 
         if (existingReaction != null)
         {
@@ -1202,16 +1105,16 @@ public class PostService : BaseService, IPostService
         else
         {
             // Create new reaction
-            var reaction = new CommentReaction
+            var reaction = new PostReaction
             {
-                CommentId = commentId,
+                PostId = commentId,
                 UserId = userId,
                 ReactionType = reactionType,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.CommentReactions.Add(reaction);
+            _context.PostReactions.Add(reaction);
         }
 
         await _context.SaveChangesAsync();
@@ -1220,10 +1123,10 @@ public class PostService : BaseService, IPostService
         await _countCache.InvalidateCommentCountsAsync(commentId);
 
         // Get the comment owner to create notification
-        var comment = await _context.Comments.FindAsync(commentId);
+        var comment = await _context.Posts.FindAsync(commentId);
         if (comment != null)
         {
-            await _notificationService.CreateCommentReactionNotificationAsync(comment.UserId, userId, comment.PostId, commentId, reactionType);
+            await _notificationService.CreateCommentReactionNotificationAsync(comment.UserId, userId, comment.ParentId ?? 0, commentId, reactionType);
         }
 
         // Update trust score for reaction given
@@ -1267,16 +1170,16 @@ public class PostService : BaseService, IPostService
 
     public async Task<bool> RemoveCommentReactionAsync(int commentId, int userId)
     {
-        var reaction = await _context.CommentReactions
-            .FirstOrDefaultAsync(r => r.CommentId == commentId && r.UserId == userId);
+        var reaction = await _context.PostReactions
+            .FirstOrDefaultAsync(r => r.PostId == commentId && r.UserId == userId);
 
         if (reaction == null)
             return false;
 
         // Get comment info before removing the reaction for analytics
-        var comment = await _context.Comments.FindAsync(commentId);
+        var comment = await _context.Posts.FindAsync(commentId);
 
-        _context.CommentReactions.Remove(reaction);
+        _context.PostReactions.Remove(reaction);
         await _context.SaveChangesAsync();
 
         // Invalidate comment reaction count cache
@@ -1357,16 +1260,19 @@ public class PostService : BaseService, IPostService
             throw new InvalidOperationException("Insufficient trust score to create comments");
         }
 
-        var comment = new Comment
+        // Create comment as a Post with PostType.Comment and ParentId
+        var comment = new Post
         {
             Content = createDto.Content,
-            PostId = postId,
+            ParentId = postId,
+            PostType = PostType.Comment,
             UserId = userId,
+            Privacy = PostPrivacy.Public, // Comments inherit parent privacy
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
-        _context.Comments.Add(comment);
+        _context.Posts.Add(comment);
         await _context.SaveChangesAsync();
 
         // Invalidate post comment count cache
@@ -1410,6 +1316,7 @@ public class PostService : BaseService, IPostService
                 comment.IsHidden = true;
                 comment.HiddenAt = DateTime.UtcNow;
                 comment.HiddenReason = "Auto-hidden due to low trust score";
+                comment.HiddenReasonType = PostHiddenReasonType.ModeratorHidden;
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Auto-hidden comment {CommentId} from low trust user {UserId}", comment.Id, userId);
@@ -1422,36 +1329,55 @@ public class PostService : BaseService, IPostService
         }
 
         // Load the comment with user data
-        var createdComment = await _context.Comments
+        var createdComment = await _context.Posts
             .Include(c => c.User)
             .FirstAsync(c => c.Id == comment.Id);
 
-        // Get like information for the new comment
-        var likeCount = await _countCache.GetCommentLikeCountAsync(comment.Id);
-        var isLikedByCurrentUser = await _countCache.HasUserLikedCommentAsync(comment.Id, userId);
+        // For now, return basic comment info - we'll update cache methods later
+        return MapPostToCommentDto(createdComment);
+    }
 
-        return createdComment.MapToCommentDto(userId, likeCount, isLikedByCurrentUser, _httpContextAccessor.HttpContext);
+    private CommentDto MapPostToCommentDto(Post post)
+    {
+        if (post.PostType != PostType.Comment)
+            throw new ArgumentException("Post must be of type Comment", nameof(post));
+
+        return new CommentDto(
+            Id: post.Id,
+            Content: post.Content,
+            CreatedAt: post.CreatedAt,
+            UpdatedAt: post.UpdatedAt,
+            User: post.User.MapToUserDto(),
+            IsEdited: post.UpdatedAt > post.CreatedAt.AddMinutes(1),
+            LikeCount: 0, // Legacy - will be replaced by ReactionCounts
+            IsLikedByCurrentUser: false, // Legacy - will be replaced by CurrentUserReaction
+            ReactionCounts: post.Reactions?.GroupBy(r => r.ReactionType)
+                .Select(g => new ReactionCountDto(g.Key, g.Key.GetEmoji(), g.Key.GetDisplayName(), g.Count())),
+            CurrentUserReaction: null, // Will be set by caller if needed
+            TotalReactionCount: post.Reactions?.Count ?? 0
+        );
     }
 
     public async Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId)
     {
-        var comments = await _context.Comments
+        var comments = await _context.Posts
             .Include(c => c.User)
-            .Where(c => c.PostId == postId && !c.IsDeletedByUser && !c.IsHidden) // Filter out user-deleted and moderator-hidden comments
+            .Where(c => c.ParentId == postId && c.PostType == PostType.Comment &&
+                       !c.IsDeletedByUser && !c.IsHidden) // Filter out user-deleted and moderator-hidden comments
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
         // Map comments without like information (for unauthenticated users)
-        return comments.Select(c => c.MapToCommentDto(_httpContextAccessor.HttpContext));
+        return comments.Select(c => MapPostToCommentDto(c));
     }
 
     public async Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId, int currentUserId)
     {
-        var comments = await _context.Comments
+        var comments = await _context.Posts
             .Include(c => c.User)
-            .Include(c => c.CommentLikes) // Legacy likes
-            .Include(c => c.Reactions) // New reactions
-            .Where(c => c.PostId == postId && !c.IsDeletedByUser && !c.IsHidden) // Filter out user-deleted and moderator-hidden comments
+            .Include(c => c.Reactions) // Post reactions (includes comment reactions)
+            .Where(c => c.ParentId == postId && c.PostType == PostType.Comment &&
+                       !c.IsDeletedByUser && !c.IsHidden) // Filter out user-deleted and moderator-hidden comments
             .OrderBy(c => c.CreatedAt)
             .AsSplitQuery()
             .ToListAsync();
@@ -1462,15 +1388,39 @@ public class PostService : BaseService, IPostService
 
         // Map comments with reaction information
         var commentDtos = comments.Select(comment =>
-            comment.MapToCommentDtoWithReactions(currentUserId, _httpContextAccessor.HttpContext)
+            MapPostToCommentDtoWithReactions(comment, currentUserId)
         ).ToList();
 
         return commentDtos;
     }
 
+    private CommentDto MapPostToCommentDtoWithReactions(Post post, int currentUserId)
+    {
+        if (post.PostType != PostType.Comment)
+            throw new ArgumentException("Post must be of type Comment", nameof(post));
+
+        var currentUserReaction = post.Reactions?.FirstOrDefault(r => r.UserId == currentUserId)?.ReactionType;
+        var reactionCounts = post.Reactions?.GroupBy(r => r.ReactionType)
+            .Select(g => new ReactionCountDto(g.Key, g.Key.GetEmoji(), g.Key.GetDisplayName(), g.Count()));
+
+        return new CommentDto(
+            Id: post.Id,
+            Content: post.Content,
+            CreatedAt: post.CreatedAt,
+            UpdatedAt: post.UpdatedAt,
+            User: post.User.MapToUserDto(),
+            IsEdited: post.UpdatedAt > post.CreatedAt.AddMinutes(1),
+            LikeCount: 0, // Legacy - will be replaced by ReactionCounts
+            IsLikedByCurrentUser: false, // Legacy - will be replaced by CurrentUserReaction
+            ReactionCounts: reactionCounts,
+            CurrentUserReaction: currentUserReaction,
+            TotalReactionCount: post.Reactions?.Count ?? 0
+        );
+    }
+
     public async Task<bool> DeleteCommentAsync(int commentId, int userId)
     {
-        var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == userId);
+        var comment = await _context.Posts.FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == userId && c.PostType == PostType.Comment);
 
         if (comment == null)
             return false;
@@ -1478,6 +1428,7 @@ public class PostService : BaseService, IPostService
         // Soft delete: mark as deleted by user instead of removing from database
         comment.IsDeletedByUser = true;
         comment.DeletedByUserAt = DateTime.UtcNow;
+        comment.HiddenReasonType = PostHiddenReasonType.DeletedByUser;
 
         await _context.SaveChangesAsync();
         return true;
@@ -1522,9 +1473,9 @@ public class PostService : BaseService, IPostService
 
     public async Task<CommentDto?> UpdateCommentAsync(int commentId, int userId, UpdateCommentDto updateDto)
     {
-        var comment = await _context.Comments
+        var comment = await _context.Posts
             .Include(c => c.User)
-            .FirstOrDefaultAsync(c => c.Id == commentId);
+            .FirstOrDefaultAsync(c => c.Id == commentId && c.PostType == PostType.Comment);
 
         if (comment == null || comment.UserId != userId)
             return null;
@@ -1535,16 +1486,12 @@ public class PostService : BaseService, IPostService
         await _context.SaveChangesAsync();
 
         // Create mention notifications for new mentions in the updated comment
-        await _notificationService.CreateMentionNotificationsAsync(updateDto.Content, userId, comment.PostId, comment.Id);
+        await _notificationService.CreateMentionNotificationsAsync(updateDto.Content, userId, comment.ParentId ?? 0, comment.Id);
 
         // Perform content moderation analysis on updated comment
         await ProcessCommentModerationAsync(comment.Id, updateDto.Content, userId);
 
-        // Get like information for the updated comment
-        var likeCount = await _countCache.GetCommentLikeCountAsync(comment.Id);
-        var isLikedByCurrentUser = await _countCache.HasUserLikedCommentAsync(comment.Id, userId);
-
-        return comment.MapToCommentDto(userId, likeCount, isLikedByCurrentUser, _httpContextAccessor.HttpContext);
+        return MapPostToCommentDto(comment);
     }
 
     private new async Task<List<int>> GetBlockedUserIdsAsync(int userId)
@@ -1860,10 +1807,11 @@ public class PostService : BaseService, IPostService
             var autoHideThreshold = _configuration.GetValue("ContentModeration:AutoHideThreshold", 0.8);
             if (moderationResult.RiskAssessment.Score >= autoHideThreshold)
             {
-                var comment = await _context.Comments.FindAsync(commentId);
-                if (comment != null)
+                var comment = await _context.Posts.FindAsync(commentId);
+                if (comment != null && comment.PostType == PostType.Comment)
                 {
                     comment.IsHidden = true;
+                    comment.HiddenReasonType = PostHiddenReasonType.ModeratorHidden;
                     comment.HiddenByUserId = userId; // System user ID would be better
                     comment.HiddenAt = DateTime.UtcNow;
                     comment.HiddenReason = $"Auto-hidden due to high risk content (Score: {moderationResult.RiskAssessment.Score:F2})";

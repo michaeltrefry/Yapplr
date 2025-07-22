@@ -10,12 +10,15 @@ public static class QueryFilters
 {
     /// <summary>
     /// Filter posts for a specific user's visibility
-    /// Excludes group posts from general feeds - group posts should only appear in group-specific queries
+    /// Excludes group posts and comments from general feeds - group posts should only appear in group-specific queries
     /// </summary>
     public static QueryBuilder<Post> ForUser(this QueryBuilder<Post> builder, int? currentUserId,
         List<int>? blockedUserIds = null, List<int>? followingUserIds = null)
     {
         return builder.Where(p =>
+            // POST TYPE FILTERING - only top-level posts in feeds, exclude comments
+            p.PostType == PostType.Post &&
+
             // GROUP POST FILTERING - exclude group posts from general feeds
             p.GroupId == null &&
 

@@ -14,13 +14,13 @@ import { MessageSquare, Users, FileText } from 'lucide-react';
 
 interface GroupPageProps {
   params: Promise<{
-    id: string;
+    groupId: string;
   }>;
 }
 
 export default function GroupPage({ params }: GroupPageProps) {
-  const { id } = use(params);
-  const groupId = parseInt(id);
+  const { groupId } = use(params);
+  const groupIdNum = parseInt(groupId);
   const { user } = useAuth();
   
   const [group, setGroup] = useState<Group | null>(null);
@@ -34,7 +34,7 @@ export default function GroupPage({ params }: GroupPageProps) {
     try {
       setLoading(true);
       setError(null);
-      const groupData = await groupApi.getGroup(groupId);
+      const groupData = await groupApi.getGroup(groupIdNum);
       setGroup(groupData);
     } catch (err: any) {
       console.error('Failed to load group:', err);
@@ -49,10 +49,10 @@ export default function GroupPage({ params }: GroupPageProps) {
   };
 
   useEffect(() => {
-    if (groupId) {
+    if (groupIdNum) {
       loadGroup();
     }
-  }, [groupId]);
+  }, [groupIdNum]);
 
   const handleGroupUpdate = (updatedGroup: Group) => {
     setGroup(updatedGroup);

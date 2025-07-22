@@ -21,7 +21,7 @@ public static class QueryUtilities
             .Include(p => p.Group)
             .Include(p => p.Likes)
             .Include(p => p.Reactions)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden))
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden))
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -38,14 +38,16 @@ public static class QueryUtilities
 
     /// <summary>
     /// Get posts query with optimized includes for feed scenarios
+    /// Only returns top-level posts (PostType.Post), excludes comments
     /// </summary>
     public static IQueryable<Post> GetPostsForFeed(this YapplrDbContext context)
     {
         return context.Posts
+            .Where(p => p.PostType == PostType.Post) // Only top-level posts, exclude comments
             .Include(p => p.User)
             .Include(p => p.Likes)
             .Include(p => p.Reactions)
-            .Include(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden).Take(3)) // Limit comments for performance
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden).Take(3)) // Limit comments for performance
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
@@ -57,7 +59,7 @@ public static class QueryUtilities
 
     /// <summary>
     /// Apply hybrid post visibility filters (post-level permanent hiding + real-time user checks)
-    /// Excludes group posts from general feeds - group posts should only appear in group-specific queries
+    /// Excludes group posts and comments from general feeds - group posts should only appear in group-specific queries
     /// </summary>
     public static IQueryable<Post> ApplyVisibilityFilters(this IQueryable<Post> query,
         int? currentUserId,
@@ -65,6 +67,9 @@ public static class QueryUtilities
         HashSet<int> followingIds)
     {
         return query.Where(p =>
+            // POST TYPE FILTERING - only top-level posts in feeds, exclude comments
+            p.PostType == PostType.Post &&
+
             // GROUP POST FILTERING - exclude group posts from general feeds
             p.GroupId == null &&
 
@@ -87,12 +92,15 @@ public static class QueryUtilities
 
     /// <summary>
     /// Apply hybrid post visibility filters for public-only content
-    /// Excludes group posts from public timeline - group posts should only appear in group-specific queries
+    /// Excludes group posts and comments from public timeline - group posts should only appear in group-specific queries
     /// </summary>
     public static IQueryable<Post> ApplyPublicVisibilityFilters(this IQueryable<Post> query,
         HashSet<int> blockedUserIds)
     {
         return query.Where(p =>
+            // POST TYPE FILTERING - only top-level posts in public timeline, exclude comments
+            p.PostType == PostType.Post &&
+
             // GROUP POST FILTERING - exclude group posts from public timeline
             p.GroupId == null &&
 
@@ -124,7 +132,7 @@ public static class QueryUtilities
             .Include(r => r.Post)
                 .ThenInclude(p => p.Reactions)
             .Include(r => r.Post)
-                .ThenInclude(p => p.Comments.Where(c => !c.IsDeletedByUser && !c.IsHidden))
+                .ThenInclude(p => p.Children.Where(c => c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden))
             .Include(r => r.Post)
                 .ThenInclude(p => p.Reposts)
             .Include(r => r.Post)
@@ -259,7 +267,7 @@ public static class QueryUtilities
 
     /// <summary>
     /// Filter posts for visibility based on user and privacy settings (hybrid approach)
-    /// Excludes group posts from general feeds - group posts should only appear in group-specific queries
+    /// Excludes group posts and comments from general feeds - group posts should only appear in group-specific queries
     /// </summary>
     public static IQueryable<Post> FilterForVisibility(
         this IQueryable<Post> query,
@@ -268,6 +276,9 @@ public static class QueryUtilities
         List<int>? followingUserIds = null,
         bool includeHidden = false)
     {
+        // POST TYPE FILTERING - only top-level posts in feeds, exclude comments
+        query = query.Where(p => p.PostType == PostType.Post);
+
         // GROUP POST FILTERING - exclude group posts from general feeds
         query = query.Where(p => p.GroupId == null);
 

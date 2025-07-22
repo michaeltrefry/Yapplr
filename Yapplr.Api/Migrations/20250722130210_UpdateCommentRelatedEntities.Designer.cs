@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Yapplr.Api.Data;
@@ -11,9 +12,11 @@ using Yapplr.Api.Data;
 namespace Yapplr.Api.Migrations
 {
     [DbContext(typeof(YapplrDbContext))]
-    partial class YapplrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250722130210_UpdateCommentRelatedEntities")]
+    partial class UpdateCommentRelatedEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -533,6 +536,167 @@ namespace Yapplr.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Blocks");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.Comment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedByUserAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FlaggedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FlaggedReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime?>("HiddenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("HiddenByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("HiddenReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("IsDeletedByUser")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsFlagged")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HiddenByUserId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PostId", "CreatedAt");
+
+                    b.ToTable("Comments");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.CommentLike", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CommentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommentId");
+
+                    b.HasIndex("UserId", "CommentId")
+                        .IsUnique();
+
+                    b.ToTable("CommentLikes");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.CommentReaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CommentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ReactionType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommentId", "ReactionType");
+
+                    b.HasIndex("UserId", "CommentId")
+                        .IsUnique();
+
+                    b.ToTable("CommentReactions");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.CommentSystemTag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("AppliedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CommentId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("SystemTagId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppliedByUserId");
+
+                    b.HasIndex("SystemTagId");
+
+                    b.HasIndex("CommentId", "SystemTagId")
+                        .IsUnique();
+
+                    b.ToTable("CommentSystemTags");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.ContentPage", b =>
@@ -1543,6 +1707,9 @@ namespace Yapplr.Api.Migrations
                     b.Property<int?>("ParentId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("PostId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("PostType")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -1564,6 +1731,8 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("HiddenByUserId");
+
+                    b.HasIndex("PostId");
 
                     b.HasIndex("GroupId", "CreatedAt");
 
@@ -2396,7 +2565,7 @@ namespace Yapplr.Api.Migrations
                         .HasForeignKey("ApprovedByUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Yapplr.Api.Models.Post", "Comment")
+                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -2497,8 +2666,8 @@ namespace Yapplr.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Yapplr.Api.Models.Post", "TargetComment")
-                        .WithMany()
+                    b.HasOne("Yapplr.Api.Models.Comment", "TargetComment")
+                        .WithMany("AuditLogs")
                         .HasForeignKey("TargetCommentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
@@ -2538,6 +2707,96 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Blocked");
 
                     b.Navigation("Blocker");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.Comment", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.User", "HiddenByUser")
+                        .WithMany()
+                        .HasForeignKey("HiddenByUserId");
+
+                    b.HasOne("Yapplr.Api.Models.Post", "Post")
+                        .WithMany("Comments")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Yapplr.Api.Models.User", "User")
+                        .WithMany("Comments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("HiddenByUser");
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.CommentLike", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
+                        .WithMany("CommentLikes")
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Yapplr.Api.Models.User", "User")
+                        .WithMany("CommentLikes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.CommentReaction", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
+                        .WithMany("Reactions")
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Yapplr.Api.Models.User", "User")
+                        .WithMany("CommentReactions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.CommentSystemTag", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.User", "AppliedByUser")
+                        .WithMany()
+                        .HasForeignKey("AppliedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
+                        .WithMany("CommentSystemTags")
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Yapplr.Api.Models.SystemTag", "SystemTag")
+                        .WithMany("CommentSystemTags")
+                        .HasForeignKey("SystemTagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AppliedByUser");
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("SystemTag");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.ContentPage", b =>
@@ -2695,7 +2954,7 @@ namespace Yapplr.Api.Migrations
 
             modelBuilder.Entity("Yapplr.Api.Models.Mention", b =>
                 {
-                    b.HasOne("Yapplr.Api.Models.Post", "Comment")
+                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -2779,7 +3038,7 @@ namespace Yapplr.Api.Migrations
                         .HasForeignKey("ActorUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Yapplr.Api.Models.Post", "Comment")
+                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -2872,6 +3131,10 @@ namespace Yapplr.Api.Migrations
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Yapplr.Api.Models.Post", null)
+                        .WithMany("ChildComments")
+                        .HasForeignKey("PostId");
 
                     b.HasOne("Yapplr.Api.Models.User", "User")
                         .WithMany("Posts")
@@ -3045,7 +3308,7 @@ namespace Yapplr.Api.Migrations
                         .HasForeignKey("ReviewedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Yapplr.Api.Models.Post", "TargetComment")
+                    b.HasOne("Yapplr.Api.Models.Comment", "TargetComment")
                         .WithMany()
                         .HasForeignKey("TargetCommentId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -3085,7 +3348,7 @@ namespace Yapplr.Api.Migrations
 
             modelBuilder.Entity("Yapplr.Api.Models.UserReport", b =>
                 {
-                    b.HasOne("Yapplr.Api.Models.Post", "Comment")
+                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -3134,6 +3397,17 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("UserReport");
                 });
 
+            modelBuilder.Entity("Yapplr.Api.Models.Comment", b =>
+                {
+                    b.Navigation("AuditLogs");
+
+                    b.Navigation("CommentLikes");
+
+                    b.Navigation("CommentSystemTags");
+
+                    b.Navigation("Reactions");
+                });
+
             modelBuilder.Entity("Yapplr.Api.Models.ContentPage", b =>
                 {
                     b.Navigation("Versions");
@@ -3167,7 +3441,11 @@ namespace Yapplr.Api.Migrations
                 {
                     b.Navigation("AuditLogs");
 
+                    b.Navigation("ChildComments");
+
                     b.Navigation("Children");
+
+                    b.Navigation("Comments");
 
                     b.Navigation("Likes");
 
@@ -3186,6 +3464,8 @@ namespace Yapplr.Api.Migrations
 
             modelBuilder.Entity("Yapplr.Api.Models.SystemTag", b =>
                 {
+                    b.Navigation("CommentSystemTags");
+
                     b.Navigation("PostSystemTags");
                 });
 
@@ -3201,6 +3481,12 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("BlockedByUsers");
 
                     b.Navigation("BlockedUsers");
+
+                    b.Navigation("CommentLikes");
+
+                    b.Navigation("CommentReactions");
+
+                    b.Navigation("Comments");
 
                     b.Navigation("ConversationParticipants");
 

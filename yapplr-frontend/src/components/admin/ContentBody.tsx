@@ -23,14 +23,40 @@ export function ContentBody({
   // Generate the appropriate link for the content
   const getContentLink = () => {
     if (isPost) {
+      // If post is in a group, link to group post view
+      if (post.group) {
+        return `/groups/${post.group.id}/posts/${content.id}`;
+      }
       return `/yap/${content.id}`;
     } else {
+      // If comment is in a group, link to group post view
+      if (comment.group) {
+        return `/groups/${comment.group.id}/posts/${comment.postId}#comment-${content.id}`;
+      }
       return `/yap/${comment.postId}#comment-${content.id}`;
     }
   };
 
   return (
     <div className="space-y-4">
+      {/* Group Context */}
+      {(isPost ? post.group : comment.group) && (
+        <div className="text-sm text-purple-700 bg-purple-50 p-3 rounded-lg border border-purple-200">
+          <span className="font-medium">
+            {isPost ? 'Group Post' : 'Group Comment'} in:
+          </span>
+          <a
+            href={`/groups/${(isPost ? post.group : comment.group)?.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-2 text-purple-800 hover:text-purple-900 inline-flex items-center gap-1 font-medium"
+          >
+            {(isPost ? post.group : comment.group)?.name}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      )}
+
       {/* Main Content */}
       <div>
         <a
@@ -64,12 +90,12 @@ export function ContentBody({
         <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
           <span className="font-medium">Comment on:</span>
           <a
-            href={`/yap/${comment.postId}`}
+            href={comment.group ? `/groups/${comment.group.id}/posts/${comment.postId}` : `/yap/${comment.postId}`}
             target="_blank"
             rel="noopener noreferrer"
             className="ml-2 text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
           >
-            Post #{comment.postId}
+            {comment.group ? `Group Post #${comment.postId}` : `Post #${comment.postId}`}
             <ExternalLink className="h-3 w-3" />
           </a>
         </div>

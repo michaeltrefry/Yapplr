@@ -222,11 +222,11 @@ public class ContentModerationService : IContentModerationService
     {
         try
         {
-            var comment = await _context.Comments.FindAsync(commentId);
+            var comment = await _context.Posts.FirstOrDefaultAsync(p => p.Id == commentId && p.PostType == PostType.Comment);
             if (comment == null)
                 return false;
 
-            var appliedTags = new List<CommentSystemTag>();
+            var appliedTags = new List<PostSystemTag>();
 
             foreach (var (category, tagNames) in moderationResult.SuggestedTags)
             {
@@ -238,22 +238,22 @@ public class ContentModerationService : IContentModerationService
                     if (systemTag != null)
                     {
                         // Check if tag is already applied
-                        var existingTag = await _context.CommentSystemTags
-                            .FirstOrDefaultAsync(cst => cst.CommentId == commentId && cst.SystemTagId == systemTag.Id);
+                        var existingTag = await _context.PostSystemTags
+                            .FirstOrDefaultAsync(pst => pst.PostId == commentId && pst.SystemTagId == systemTag.Id);
 
                         if (existingTag == null)
                         {
-                            var commentSystemTag = new CommentSystemTag
+                            var postSystemTag = new PostSystemTag
                             {
-                                CommentId = commentId,
+                                PostId = commentId,
                                 SystemTagId = systemTag.Id,
                                 AppliedByUserId = appliedByUserId,
                                 Reason = $"AI-suggested: {category} - Risk Level: {moderationResult.RiskAssessment.Level}",
                                 AppliedAt = DateTime.UtcNow
                             };
 
-                            _context.CommentSystemTags.Add(commentSystemTag);
-                            appliedTags.Add(commentSystemTag);
+                            _context.PostSystemTags.Add(postSystemTag);
+                            appliedTags.Add(postSystemTag);
                         }
                     }
                 }
@@ -271,7 +271,7 @@ public class ContentModerationService : IContentModerationService
                     try
                     {
                         // Verify the comment still exists before creating audit log
-                        var commentStillExists = await _context.Comments.AnyAsync(c => c.Id == commentId);
+                        var commentStillExists = await _context.Posts.AnyAsync(c => c.Id == commentId && c.PostType == PostType.Comment);
                         if (commentStillExists)
                         {
                             await _auditService.LogCommentSystemTagAddedAsync(

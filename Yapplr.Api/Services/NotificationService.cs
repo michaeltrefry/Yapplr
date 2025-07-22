@@ -154,7 +154,7 @@ public class NotificationService : INotificationService
             .Include(n => n.Comment)
                 .ThenInclude(c => c!.User)
             .Include(n => n.Comment)
-                .ThenInclude(c => c!.Post)
+                .ThenInclude(c => c!.Parent)
                     .ThenInclude(p => p!.User)
             .OrderByDescending(n => n.CreatedAt);
 
@@ -672,7 +672,7 @@ public class NotificationService : INotificationService
             .Include(n => n.Comment)
                 .ThenInclude(c => c!.User)
             .Include(n => n.Comment)
-                .ThenInclude(c => c!.Post)
+                .ThenInclude(c => c!.Parent)
                     .ThenInclude(p => p!.User)
             .FirstOrDefaultAsync(n => n.Id == id);
 
@@ -775,29 +775,29 @@ public class NotificationService : INotificationService
             );
 
             // If this is a comment mention and we don't have post info yet, get it from the comment
-            if (dto.Post == null && notification.Comment.Post != null)
+            if (dto.Post == null && notification.Comment.Parent != null)
             {
                 string? imageUrl = null;
-                if (!string.IsNullOrEmpty(notification.Comment.Post.ImageFileName))
+                if (!string.IsNullOrEmpty(notification.Comment.Parent?.ImageFileName))
                 {
-                    imageUrl = notification.Comment.Post.ImageFileName;
+                    imageUrl = notification.Comment.Parent.ImageFileName;
                 }
 
                 // Generate video URLs (without HttpContext, just use filenames)
-                var videoUrl = notification.Comment.Post.ProcessedVideoFileName;
-                var videoThumbnailUrl = notification.Comment.Post.VideoThumbnailFileName;
+                var videoUrl = notification.Comment.Parent?.ProcessedVideoFileName;
+                var videoThumbnailUrl = notification.Comment.Parent?.VideoThumbnailFileName;
 
                 dto.Post = new PostDto(
-                    notification.Comment.Post.Id,
-                    notification.Comment.Post.Content,
+                    notification.Comment.Parent?.Id ?? 0,
+                    notification.Comment.Parent?.Content ?? "",
                     imageUrl,
                     videoUrl,
                     videoThumbnailUrl,
-                    notification.Comment.Post.VideoFileName != null ? notification.Comment.Post.VideoProcessingStatus : null,
-                    notification.Comment.Post.Privacy,
-                    notification.Comment.Post.CreatedAt,
-                    notification.Comment.Post.UpdatedAt,
-                    notification.Comment.Post.User.ToDto(),
+                    notification.Comment.Parent?.VideoFileName != null ? notification.Comment.Parent.VideoProcessingStatus : null,
+                    notification.Comment.Parent?.Privacy ?? PostPrivacy.Public,
+                    notification.Comment.Parent?.CreatedAt ?? DateTime.UtcNow,
+                    notification.Comment.Parent?.UpdatedAt ?? DateTime.UtcNow,
+                    notification.Comment.Parent?.User.ToDto() ?? new UserDto(0, "", "", "", null, "", "", "", DateTime.UtcNow, null, null, false, UserRole.User, UserStatus.Active, null, null),
                     null, // Group - not loaded for notifications
                     0, // LikeCount - we don't need this for notifications
                     0, // CommentCount - we don't need this for notifications
@@ -806,7 +806,7 @@ public class NotificationService : INotificationService
                     new List<LinkPreviewDto>(), // LinkPreviews - empty for notifications
                     false, // IsLikedByCurrentUser - not relevant for notifications
                     false, // IsRepostedByCurrentUser - not relevant for notifications
-                    notification.Comment.Post.UpdatedAt > notification.Comment.Post.CreatedAt.AddMinutes(1) // IsEdited
+                    (notification.Comment.Parent?.UpdatedAt ?? DateTime.UtcNow) > (notification.Comment.Parent?.CreatedAt ?? DateTime.UtcNow).AddMinutes(1) // IsEdited
                 );
             }
         }

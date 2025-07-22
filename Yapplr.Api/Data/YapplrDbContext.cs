@@ -15,9 +15,7 @@ public class YapplrDbContext : DbContext
     public DbSet<PostMedia> PostMedia { get; set; }
     public DbSet<Like> Likes { get; set; } // Legacy - will be removed
     public DbSet<PostReaction> PostReactions { get; set; }
-    public DbSet<Comment> Comments { get; set; }
-    public DbSet<CommentLike> CommentLikes { get; set; } // Legacy - will be removed
-    public DbSet<CommentReaction> CommentReactions { get; set; }
+    // Comment-related DbSets removed - now using unified Post model
     public DbSet<Repost> Reposts { get; set; }
     public DbSet<Follow> Follows { get; set; }
     public DbSet<FollowRequest> FollowRequests { get; set; }
@@ -46,7 +44,7 @@ public class YapplrDbContext : DbContext
     // Admin/Moderation entities
     public DbSet<SystemTag> SystemTags { get; set; }
     public DbSet<PostSystemTag> PostSystemTags { get; set; }
-    public DbSet<CommentSystemTag> CommentSystemTags { get; set; }
+    // CommentSystemTag removed - now using PostSystemTag for unified model
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<UserAppeal> UserAppeals { get; set; }
     public DbSet<AiSuggestedTag> AiSuggestedTags { get; set; }
@@ -94,6 +92,11 @@ public class YapplrDbContext : DbContext
                   .HasConversion<int>()
                   .HasDefaultValue(PostPrivacy.Public);
 
+            // Configure PostType enum
+            entity.Property(e => e.PostType)
+                  .HasConversion<int>()
+                  .HasDefaultValue(PostType.Post);
+
             // Configure consolidated hiding system
             entity.Property(e => e.HiddenReasonType)
                   .HasConversion<int>()
@@ -109,6 +112,17 @@ public class YapplrDbContext : DbContext
                   .WithMany(e => e.Posts)
                   .HasForeignKey(e => e.GroupId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure self-referencing relationship for Parent/Children
+            entity.HasOne(e => e.Parent)
+                  .WithMany(e => e.Children)
+                  .HasForeignKey(e => e.ParentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Performance indexes for unified post model
+            entity.HasIndex(e => new { e.PostType, e.CreatedAt }); // For filtering posts vs comments by date
+            entity.HasIndex(e => new { e.ParentId, e.PostType, e.CreatedAt }); // For getting comments for a post
+            entity.HasIndex(e => new { e.UserId, e.PostType, e.CreatedAt }); // For user's posts vs comments
 
             // Performance indexes for common query patterns
             entity.HasIndex(e => new { e.UserId, e.CreatedAt }); // User profile posts ordered by date
@@ -152,38 +166,7 @@ public class YapplrDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
         
-        // Comment configuration
-        modelBuilder.Entity<Comment>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Content).IsRequired().HasMaxLength(1024);
-            entity.HasOne(e => e.User)
-                  .WithMany(e => e.Comments)
-                  .HasForeignKey(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Post)
-                  .WithMany(e => e.Comments)
-                  .HasForeignKey(e => e.PostId)
-                  .OnDelete(DeleteBehavior.Cascade);
 
-            // Performance indexes for comment queries
-            entity.HasIndex(e => new { e.PostId, e.CreatedAt }); // Comments for a post ordered by date
-        });
-
-        // CommentLike configuration
-        modelBuilder.Entity<CommentLike>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.UserId, e.CommentId }).IsUnique(); // Prevent duplicate likes
-            entity.HasOne(e => e.User)
-                  .WithMany(e => e.CommentLikes)
-                  .HasForeignKey(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Comment)
-                  .WithMany(e => e.CommentLikes)
-                  .HasForeignKey(e => e.CommentId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
 
         // PostReaction configuration
         modelBuilder.Entity<PostReaction>(entity =>
@@ -203,23 +186,7 @@ public class YapplrDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // CommentReaction configuration
-        modelBuilder.Entity<CommentReaction>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.UserId, e.CommentId }).IsUnique(); // Prevent duplicate reactions per user per comment
-            entity.HasIndex(e => new { e.CommentId, e.ReactionType }); // For efficient reaction count queries
-            entity.Property(e => e.ReactionType)
-                  .HasConversion<int>(); // Store as integer in database
-            entity.HasOne(e => e.User)
-                  .WithMany(e => e.CommentReactions)
-                  .HasForeignKey(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Comment)
-                  .WithMany(e => e.Reactions)
-                  .HasForeignKey(e => e.CommentId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
+
 
         // Repost configuration
         modelBuilder.Entity<Repost>(entity =>
@@ -587,24 +554,7 @@ public class YapplrDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // CommentSystemTag configuration
-        modelBuilder.Entity<CommentSystemTag>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.CommentId, e.SystemTagId }).IsUnique();
-            entity.HasOne(e => e.Comment)
-                  .WithMany(e => e.CommentSystemTags)
-                  .HasForeignKey(e => e.CommentId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.SystemTag)
-                  .WithMany(e => e.CommentSystemTags)
-                  .HasForeignKey(e => e.SystemTagId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.AppliedByUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.AppliedByUserId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
+
 
         // AuditLog configuration
         modelBuilder.Entity<AuditLog>(entity =>
@@ -626,8 +576,10 @@ public class YapplrDbContext : DbContext
                   .WithMany(e => e.AuditLogs)
                   .HasForeignKey(e => e.TargetPostId)
                   .OnDelete(DeleteBehavior.Restrict);
+            // TargetComment now points to Post entity (unified model)
+            // We need to configure this without conflicting with TargetPost
             entity.HasOne(e => e.TargetComment)
-                  .WithMany(e => e.AuditLogs)
+                  .WithMany() // Don't use navigation property to avoid conflict
                   .HasForeignKey(e => e.TargetCommentId)
                   .OnDelete(DeleteBehavior.Restrict);
         });

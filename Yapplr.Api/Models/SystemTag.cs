@@ -32,5 +32,4 @@ public class SystemTag
     
     // Navigation properties
     public ICollection<PostSystemTag> PostSystemTags { get; set; } = new List<PostSystemTag>();
-    public ICollection<CommentSystemTag> CommentSystemTags { get; set; } = new List<CommentSystemTag>();
 }

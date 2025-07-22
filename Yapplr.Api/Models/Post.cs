@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Yapplr.Api.Common;
 using Yapplr.Shared.Models;
 
@@ -60,13 +61,19 @@ public class Post : IUserOwnedEntity
     // Foreign keys
     public int UserId { get; set; }
     public int? GroupId { get; set; } // Optional - null for regular posts, set for group posts
+    public int? ParentId { get; set; } // Optional - null for top-level posts, set for comments/replies
+
+    // Post type to distinguish between posts and comments
+    public PostType PostType { get; set; } = PostType.Post;
 
     // Navigation properties
     public User User { get; set; } = null!;
     public Group? Group { get; set; } // Optional - only set for group posts
+    public Post? Parent { get; set; } // Optional - only set for comments/replies
+    public ICollection<Post> Children { get; set; } = new List<Post>(); // Comments/replies to this post
     public ICollection<Like> Likes { get; set; } = new List<Like>(); // Legacy - will be removed
     public ICollection<PostReaction> Reactions { get; set; } = new List<PostReaction>();
-    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+    // Comments are now handled through Children collection (Posts with PostType.Comment)
     public ICollection<Repost> Reposts { get; set; } = new List<Repost>();
     public ICollection<PostTag> PostTags { get; set; } = new List<PostTag>();
     public ICollection<PostLinkPreview> PostLinkPreviews { get; set; } = new List<PostLinkPreview>();
@@ -77,8 +84,18 @@ public class Post : IUserOwnedEntity
     // Computed properties
     public int LikeCount => Likes.Count; // Legacy - will be replaced with reaction counts
     public int ReactionCount => Reactions.Count;
-    public int CommentCount => Comments.Count;
+    public int CommentCount => PostType == PostType.Post ? Children.Count(c => c.PostType == PostType.Comment) : 0;
     public int RepostCount => Reposts.Count;
+
+    // Unified model helper properties
+    [NotMapped]
+    public bool IsComment => PostType == PostType.Comment;
+
+    [NotMapped]
+    public bool IsTopLevelPost => PostType == PostType.Post && ParentId == null;
+
+    [NotMapped]
+    public IEnumerable<Post> ChildComments => Children.Where(c => c.PostType == PostType.Comment);
 
     // Reaction count helpers
     public int GetReactionCount(ReactionType reactionType) => Reactions.Count(r => r.ReactionType == reactionType);
