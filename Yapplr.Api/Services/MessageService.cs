@@ -520,7 +520,8 @@ public class MessageService : IMessageService
                 UserRole.System,
                 message.Sender.Status,
                 message.Sender.SuspendedUntil,
-                message.Sender.SuspensionReason
+                message.Sender.SuspensionReason,
+                null // No subscription tier for system user
             );
         }
         else if (message.Sender == null)
@@ -542,7 +543,8 @@ public class MessageService : IMessageService
                 UserRole.System,
                 UserStatus.Active,
                 null, // suspendedUntil
-                null // suspensionReason
+                null, // suspensionReason
+                null // No subscription tier for system user
             );
         }
         else

@@ -18,6 +18,7 @@ import UserList from '@/components/UserList';
 import PhotoGrid from '@/components/PhotoGrid';
 import VideoGrid from '@/components/VideoGrid';
 import FullScreenPhotoViewer from '@/components/FullScreenPhotoViewer';
+import SubscriptionTierBadge from '@/components/SubscriptionTierBadge';
 import FullScreenVideoViewer from '@/components/FullScreenVideoViewer';
 
 interface ProfilePageProps {
@@ -314,12 +315,17 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
               {/* Username and pronouns */}
               <div className="mb-3">
-                <h2 className="text-xl font-bold text-gray-900">
-                  @{profile.username}
-                  {profile.pronouns && (
-                    <span className="text-lg text-gray-500 font-normal"> ({profile.pronouns})</span>
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    @{profile.username}
+                    {profile.pronouns && (
+                      <span className="text-lg text-gray-500 font-normal"> ({profile.pronouns})</span>
+                    )}
+                  </h2>
+                  {profile.subscriptionTier && (
+                    <SubscriptionTierBadge tier={profile.subscriptionTier} size="md" />
                   )}
-                </h2>
+                </div>
               </div>
 
               {/* Bio */}

@@ -19,4 +19,5 @@ public class AdminUserDto
     public int PostCount { get; set; }
     public int FollowerCount { get; set; }
     public int FollowingCount { get; set; }
+    public SubscriptionTierDto? SubscriptionTier { get; set; }
 }

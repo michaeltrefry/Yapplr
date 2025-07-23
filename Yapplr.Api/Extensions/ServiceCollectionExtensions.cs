@@ -335,6 +335,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUploadSettingsService, UploadSettingsService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<INotificationDigestService, NotificationDigestService>();
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
+        services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
 
         // Register background services
         services.AddHostedService<Services.Background.NotificationDigestBackgroundService>();
@@ -370,6 +372,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SystemTagSeedService>();
         services.AddScoped<EssentialUserSeedService>();
         services.AddScoped<ContentSeedService>();
+        services.AddScoped<SubscriptionSeedService>();
 
         // Add test data seed service (for all environments except production)
         Console.WriteLine($"🔍 Environment detected: {environment.EnvironmentName} (IsProduction: {environment.IsProduction()})");

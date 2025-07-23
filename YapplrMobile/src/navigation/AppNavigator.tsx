@@ -39,6 +39,7 @@ import GroupDetailScreen from '../screens/main/GroupDetailScreen';
 import CreateGroupScreen from '../screens/main/CreateGroupScreen';
 import PrivacyPolicyScreen from '../screens/legal/PrivacyPolicyScreen';
 import TermsOfServiceScreen from '../screens/legal/TermsOfServiceScreen';
+import SubscriptionScreen from '../screens/SubscriptionScreen';
 import { Post, Group } from '../types';
 import NotificationNavigationService from '../services/NotificationNavigationService';
 
@@ -80,6 +81,7 @@ export type AuthStackParamList = {
   EmailVerificationRequired: { email?: string };
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
+  Subscription: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -236,6 +238,11 @@ function MainStack() {
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Subscription"
+        component={SubscriptionScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

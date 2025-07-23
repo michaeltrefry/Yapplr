@@ -22,8 +22,14 @@ function LoginForm() {
     setError('');
 
     try {
-      await login({ email, password });
-      router.push(redirectUrl);
+      const result = await login({ email, password });
+
+      // Check if user needs to select a subscription tier
+      if (result.needsSubscriptionSelection) {
+        router.push('/onboarding/subscription');
+      } else {
+        router.push(redirectUrl);
+      }
     } catch (err: unknown) {
       console.log('Login error caught:', err);
 

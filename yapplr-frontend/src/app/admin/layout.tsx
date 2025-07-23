@@ -20,6 +20,7 @@ import {
   Scale,
   Home,
   Edit,
+  DollarSign,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -85,6 +86,12 @@ const adminNavItems = [
     name: 'Content Management',
     href: '/admin/content',
     icon: Edit,
+    roles: [UserRole.Admin],
+  },
+  {
+    name: 'Subscriptions',
+    href: '/admin/subscriptions',
+    icon: DollarSign,
     roles: [UserRole.Admin],
   },
   {

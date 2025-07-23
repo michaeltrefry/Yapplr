@@ -98,6 +98,26 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Subscription')}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconContainer, styles.greenIconContainer]}>
+                <Ionicons name="card-outline" size={20} color="#10B981" />
+              </View>
+              <View style={styles.menuItemText}>
+                <Text style={styles.menuItemTitle}>Subscription</Text>
+                <Text style={styles.menuItemSubtitle}>Manage your subscription tier</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Privacy & Safety</Text>
 
           <TouchableOpacity

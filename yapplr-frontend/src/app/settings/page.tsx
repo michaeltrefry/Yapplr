@@ -3,12 +3,12 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
-import { Shield, ArrowRight, Moon, Sun, UserCheck, Bell } from 'lucide-react';
-import { preferencesApi } from '@/lib/api';
+import { Shield, ArrowRight, Moon, Sun, UserCheck, Bell, CreditCard } from 'lucide-react';
+import { preferencesApi, subscriptionApi } from '@/lib/api';
 import { Toggle } from '@/components/ui/Toggle';
 
 
@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [subscriptionSystemEnabled, setSubscriptionSystemEnabled] = useState(true);
 
   // Fetch user preferences
   const { data: preferences } = useQuery({
@@ -44,6 +45,24 @@ export default function SettingsPage() {
       router.push('/login');
     }
   }, [user, isLoading, router]);
+
+  // Check subscription system status
+  useEffect(() => {
+    const checkSubscriptionSystem = async () => {
+      try {
+        await subscriptionApi.getActiveSubscriptionTiers();
+        setSubscriptionSystemEnabled(true);
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          setSubscriptionSystemEnabled(false);
+        }
+      }
+    };
+
+    if (user) {
+      checkSubscriptionSystem();
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -130,6 +149,27 @@ export default function SettingsPage() {
                     </div>
                     <ArrowRight className="w-5 h-5 text-gray-400" />
                   </Link>
+
+                  {/* Subscription Link - Only show if subscription system is enabled */}
+                  {subscriptionSystemEnabled && (
+                    <Link
+                      href="/settings/subscription"
+                      className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <CreditCard className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">Subscription</h3>
+                          <p className="text-sm text-gray-600">
+                            Manage your subscription tier and billing
+                          </p>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-gray-400" />
+                    </Link>
+                  )}
 
 
                 </div>

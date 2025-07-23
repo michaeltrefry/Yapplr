@@ -77,6 +77,11 @@ import type {
   CreateGroup,
   UpdateGroup,
   PaginatedResult,
+  SubscriptionTier,
+  CreateSubscriptionTierDto,
+  UpdateSubscriptionTierDto,
+  UserSubscription,
+  AssignSubscriptionTierDto,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
@@ -505,6 +510,27 @@ export const preferencesApi = {
   update: async (preferences: { darkMode?: boolean; requireFollowApproval?: boolean }): Promise<{ darkMode: boolean; requireFollowApproval: boolean }> => {
     const response = await api.put('/preferences', preferences);
     return response.data;
+  },
+};
+
+// Subscription API
+export const subscriptionApi = {
+  getActiveSubscriptionTiers: async (): Promise<SubscriptionTier[]> => {
+    const response = await api.get('/subscriptions/tiers');
+    return response.data;
+  },
+
+  getMySubscription: async (): Promise<UserSubscription> => {
+    const response = await api.get('/subscriptions/my-subscription');
+    return response.data;
+  },
+
+  assignSubscriptionTier: async (subscriptionTierId: number): Promise<void> => {
+    await api.post('/subscriptions/assign-tier', { subscriptionTierId });
+  },
+
+  removeSubscription: async (): Promise<void> => {
+    await api.delete('/subscriptions/remove-subscription');
   },
 };
 
@@ -1029,6 +1055,43 @@ export const adminApi = {
 
   publishContentPageVersion: async (contentPageId: number, versionId: number): Promise<void> => {
     await api.post(`/admin/content-pages/${contentPageId}/publish`, { versionId });
+  },
+
+  // Subscription Management
+  getSubscriptionTiers: async (includeInactive = false): Promise<SubscriptionTier[]> => {
+    const params = new URLSearchParams();
+    if (includeInactive) params.append('includeInactive', 'true');
+
+    const response = await api.get(`/admin/subscriptions/tiers?${params.toString()}`);
+    return response.data;
+  },
+
+  createSubscriptionTier: async (data: CreateSubscriptionTierDto): Promise<SubscriptionTier> => {
+    const response = await api.post('/admin/subscriptions/tiers', data);
+    return response.data;
+  },
+
+  updateSubscriptionTier: async (id: number, data: UpdateSubscriptionTierDto): Promise<SubscriptionTier> => {
+    const response = await api.put(`/admin/subscriptions/tiers/${id}`, data);
+    return response.data;
+  },
+
+  deleteSubscriptionTier: async (id: number): Promise<void> => {
+    await api.delete(`/admin/subscriptions/tiers/${id}`);
+  },
+
+  getUserSubscription: async (userId: number): Promise<UserSubscription> => {
+    const response = await api.get(`/admin/subscriptions/users/${userId}/subscription`);
+    return response.data;
+  },
+
+  assignSubscriptionTier: async (userId: number, data: AssignSubscriptionTierDto): Promise<void> => {
+    await api.post(`/admin/subscriptions/users/${userId}/assign-tier`, data);
+  },
+
+  getSubscriptionTierUserCount: async (tierId: number): Promise<{ tierId: number; userCount: number }> => {
+    const response = await api.get(`/admin/subscriptions/tiers/${tierId}/users/count`);
+    return response.data;
   },
 };
 

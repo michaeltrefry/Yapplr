@@ -16,6 +16,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import SubscriptionTierBadge from '../../components/SubscriptionTierBadge';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -126,10 +127,17 @@ export default function ProfileScreen() {
               onPress={() => navigation.navigate('UserProfile', { username: profile.username })}
               activeOpacity={0.7}
             >
-              <Text style={styles.username}>@{profile.username}</Text>
-              {profile.pronouns && (
-                <Text style={styles.pronouns}> ({profile.pronouns})</Text>
-              )}
+              <View style={styles.usernameRow}>
+                <Text style={styles.username}>@{profile.username}</Text>
+                {profile.pronouns && (
+                  <Text style={styles.pronouns}> ({profile.pronouns})</Text>
+                )}
+                {profile.subscriptionTier && (
+                  <View style={styles.subscriptionBadgeContainer}>
+                    <SubscriptionTierBadge tier={profile.subscriptionTier} size="sm" />
+                  </View>
+                )}
+              </View>
             </TouchableOpacity>
             {profile.tagline && (
               <Text style={styles.tagline}>"{profile.tagline}"</Text>
@@ -268,10 +276,18 @@ const createStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
   username: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
+  },
+  subscriptionBadgeContainer: {
+    marginLeft: 8,
   },
   email: {
     fontSize: 16,

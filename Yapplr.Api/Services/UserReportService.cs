@@ -4,6 +4,7 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 
 namespace Yapplr.Api.Services;
+using Yapplr.Api.Extensions;
 
 public class UserReportService : IUserReportService
 {
@@ -314,24 +315,7 @@ public class UserReportService : IUserReportService
                 post.Group.CreatedAt,
                 post.Group.UpdatedAt,
                 post.Group.IsOpen,
-                new UserDto(
-                    post.Group.User.Id,
-                    post.Group.User.Email,
-                    post.Group.User.Username,
-                    post.Group.User.Bio,
-                    post.Group.User.Birthday,
-                    post.Group.User.Pronouns,
-                    post.Group.User.Tagline,
-                    post.Group.User.ProfileImageFileName,
-                    post.Group.User.CreatedAt,
-                    post.Group.User.FcmToken,
-                    post.Group.User.ExpoPushToken,
-                    post.Group.User.EmailVerified,
-                    post.Group.User.Role,
-                    post.Group.User.Status,
-                    post.Group.User.SuspendedUntil,
-                    post.Group.User.SuspensionReason
-                ),
+                post.Group.User.ToDto(),
                 post.Group.Members?.Count ?? 0,
                 post.Group.Posts?.Count ?? 0,
                 false // IsCurrentUserMember - we don't have this info in admin context
@@ -350,24 +334,7 @@ public class UserReportService : IUserReportService
             HiddenByUsername = post.HiddenByUser?.Username,
             CreatedAt = post.CreatedAt,
             UpdatedAt = post.UpdatedAt,
-            User = new UserDto(
-                post.User.Id,
-                post.User.Email,
-                post.User.Username,
-                post.User.Bio,
-                post.User.Birthday,
-                post.User.Pronouns,
-                post.User.Tagline,
-                post.User.ProfileImageFileName,
-                post.User.CreatedAt,
-                post.User.FcmToken,
-                post.User.ExpoPushToken,
-                post.User.EmailVerified,
-                post.User.Role,
-                post.User.Status,
-                post.User.SuspendedUntil,
-                post.User.SuspensionReason
-            ),
+            User = post.User.ToDto(),
             Group = groupDto,
             LikeCount = post.Likes?.Count ?? 0,
             CommentCount = post.Children?.Count(c => c.PostType == PostType.Comment) ?? 0,
@@ -392,24 +359,7 @@ public class UserReportService : IUserReportService
                 comment.Group.CreatedAt,
                 comment.Group.UpdatedAt,
                 comment.Group.IsOpen,
-                new UserDto(
-                    comment.Group.User.Id,
-                    comment.Group.User.Email,
-                    comment.Group.User.Username,
-                    comment.Group.User.Bio,
-                    comment.Group.User.Birthday,
-                    comment.Group.User.Pronouns,
-                    comment.Group.User.Tagline,
-                    comment.Group.User.ProfileImageFileName,
-                    comment.Group.User.CreatedAt,
-                    comment.Group.User.FcmToken,
-                    comment.Group.User.ExpoPushToken,
-                    comment.Group.User.EmailVerified,
-                    comment.Group.User.Role,
-                    comment.Group.User.Status,
-                    comment.Group.User.SuspendedUntil,
-                    comment.Group.User.SuspensionReason
-                ),
+                comment.Group.User.ToDto(),
                 comment.Group.Members?.Count ?? 0,
                 comment.Group.Posts?.Count ?? 0,
                 false // IsCurrentUserMember - we don't have this info in admin context
@@ -426,24 +376,7 @@ public class UserReportService : IUserReportService
             HiddenByUsername = comment.HiddenByUser?.Username,
             CreatedAt = comment.CreatedAt,
             UpdatedAt = comment.UpdatedAt,
-            User = new UserDto(
-                comment.User.Id,
-                comment.User.Email,
-                comment.User.Username,
-                comment.User.Bio,
-                comment.User.Birthday,
-                comment.User.Pronouns,
-                comment.User.Tagline,
-                comment.User.ProfileImageFileName,
-                comment.User.CreatedAt,
-                comment.User.FcmToken,
-                comment.User.ExpoPushToken,
-                comment.User.EmailVerified,
-                comment.User.Role,
-                comment.User.Status,
-                comment.User.SuspendedUntil,
-                comment.User.SuspensionReason
-            ),
+            User = comment.User.ToDto(),
             Group = groupDto,
             PostId = comment.ParentId ?? 0 // Comments now use ParentId instead of PostId
         };

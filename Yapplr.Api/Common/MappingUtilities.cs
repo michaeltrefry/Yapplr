@@ -1,5 +1,6 @@
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
+using Yapplr.Api.Extensions;
 using Yapplr.Shared.Models;
 
 namespace Yapplr.Api.Common;
@@ -74,7 +75,8 @@ public static class MappingUtilities
             user.Role,
             user.Status,
             user.SuspendedUntil,
-            user.SuspensionReason
+            user.SuspensionReason,
+            user.SubscriptionTier?.ToDto()
         );
     }
 
@@ -82,9 +84,9 @@ public static class MappingUtilities
     /// Map User to UserProfileDto with additional data
     /// </summary>
     public static UserProfileDto MapToUserProfileDto(
-        this User user, 
-        int postCount, 
-        int followerCount, 
+        this User user,
+        int postCount,
+        int followerCount,
         int followingCount,
         bool isFollowedByCurrentUser = false,
         bool hasPendingFollowRequest = false,
@@ -104,7 +106,8 @@ public static class MappingUtilities
             followingCount,
             isFollowedByCurrentUser,
             hasPendingFollowRequest,
-            requiresFollowApproval
+            requiresFollowApproval,
+            user.SubscriptionTier?.ToDto()
         );
     }
 
@@ -238,7 +241,8 @@ public static class MappingUtilities
             UserRole.System,
             UserStatus.Active,
             null,
-            null
+            null,
+            null // No subscription tier for system user
         );
     }
 

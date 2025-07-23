@@ -30,6 +30,7 @@ export interface User {
   status?: UserStatus;
   suspendedUntil?: string;
   suspensionReason?: string;
+  subscriptionTier?: SubscriptionTier;
 }
 
 export interface UserProfile {
@@ -47,6 +48,7 @@ export interface UserProfile {
   isFollowedByCurrentUser: boolean;
   hasPendingFollowRequest: boolean;
   requiresFollowApproval: boolean;
+  subscriptionTier?: SubscriptionTier;
 }
 
 export interface LoginData {
@@ -73,6 +75,30 @@ export interface AuthResponse {
 export interface RegisterResponse {
   message: string;
   user: User;
+}
+
+// Subscription types
+export interface SubscriptionTier {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  billingCycleMonths: number;
+  isActive: boolean;
+  isDefault: boolean;
+  sortOrder: number;
+  showAdvertisements: boolean;
+  hasVerifiedBadge: boolean;
+  features?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserSubscription {
+  userId: number;
+  username: string;
+  subscriptionTier?: SubscriptionTier;
 }
 
 export enum MediaType {

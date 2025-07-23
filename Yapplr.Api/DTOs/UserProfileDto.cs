@@ -14,5 +14,6 @@ public record UserProfileDto(
     int FollowingCount,
     bool IsFollowedByCurrentUser,
     bool HasPendingFollowRequest = false,
-    bool RequiresFollowApproval = false
+    bool RequiresFollowApproval = false,
+    SubscriptionTierDto? SubscriptionTier = null
 );

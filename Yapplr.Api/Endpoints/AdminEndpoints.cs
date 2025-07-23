@@ -943,6 +943,101 @@ public static class AdminEndpoints
         .Produces(400)
         .Produces(401);
 
+        // System Configuration Management
+        admin.MapGet("/system-configurations", async (ISystemConfigurationService configService, string? category = null) =>
+        {
+            var configurations = await configService.GetAllConfigurationsAsync(category);
+            return Results.Ok(configurations);
+        })
+        .WithName("GetSystemConfigurations")
+        .WithSummary("Get system configurations")
+        .RequireAuthorization("Admin")
+        .Produces<IEnumerable<SystemConfigurationDto>>(200);
+
+        admin.MapGet("/system-configurations/{key}", async (string key, ISystemConfigurationService configService) =>
+        {
+            var configuration = await configService.GetConfigurationAsync(key);
+            return configuration == null ? Results.NotFound() : Results.Ok(configuration);
+        })
+        .WithName("GetSystemConfiguration")
+        .WithSummary("Get system configuration by key")
+        .RequireAuthorization("Admin")
+        .Produces<SystemConfigurationDto>(200)
+        .Produces(404);
+
+        admin.MapPost("/system-configurations", async ([FromBody] CreateSystemConfigurationDto createDto, ISystemConfigurationService configService) =>
+        {
+            try
+            {
+                var configuration = await configService.CreateConfigurationAsync(createDto);
+                return Results.Created($"/api/admin/system-configurations/{configuration.Key}", configuration);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        })
+        .WithName("CreateSystemConfiguration")
+        .WithSummary("Create a new system configuration")
+        .RequireAuthorization("Admin")
+        .Produces<SystemConfigurationDto>(201)
+        .Produces(400);
+
+        admin.MapPut("/system-configurations/{key}", async (string key, [FromBody] UpdateSystemConfigurationDto updateDto, ISystemConfigurationService configService) =>
+        {
+            var configuration = await configService.UpdateConfigurationAsync(key, updateDto);
+            return configuration == null ? Results.NotFound() : Results.Ok(configuration);
+        })
+        .WithName("UpdateSystemConfiguration")
+        .WithSummary("Update system configuration")
+        .RequireAuthorization("Admin")
+        .Produces<SystemConfigurationDto>(200)
+        .Produces(404);
+
+        admin.MapPut("/system-configurations/bulk", async ([FromBody] SystemConfigurationBulkUpdateDto bulkUpdateDto, ISystemConfigurationService configService) =>
+        {
+            var success = await configService.BulkUpdateConfigurationsAsync(bulkUpdateDto);
+            return success ? Results.Ok(new { message = "Configurations updated successfully" }) : Results.BadRequest(new { message = "Failed to update configurations" });
+        })
+        .WithName("BulkUpdateSystemConfigurations")
+        .WithSummary("Bulk update system configurations")
+        .RequireAuthorization("Admin")
+        .Produces(200)
+        .Produces(400);
+
+        admin.MapDelete("/system-configurations/{key}", async (string key, ISystemConfigurationService configService) =>
+        {
+            var success = await configService.DeleteConfigurationAsync(key);
+            return success ? Results.Ok(new { message = "Configuration deleted successfully" }) : Results.NotFound();
+        })
+        .WithName("DeleteSystemConfiguration")
+        .WithSummary("Delete system configuration")
+        .RequireAuthorization("Admin")
+        .Produces(200)
+        .Produces(404);
+
+        // Subscription System Toggle
+        admin.MapGet("/subscription-system/status", async (ISystemConfigurationService configService) =>
+        {
+            var enabled = await configService.IsSubscriptionSystemEnabledAsync();
+            return Results.Ok(new { enabled });
+        })
+        .WithName("GetSubscriptionSystemStatus")
+        .WithSummary("Get subscription system enabled status")
+        .RequireAuthorization("Admin")
+        .Produces<object>(200);
+
+        admin.MapPut("/subscription-system/toggle", async ([FromBody] ToggleSubscriptionSystemDto request, ISystemConfigurationService configService) =>
+        {
+            var success = await configService.SetSubscriptionSystemEnabledAsync(request.Enabled);
+            return success ? Results.Ok(new { message = $"Subscription system {(request.Enabled ? "enabled" : "disabled")} successfully", enabled = request.Enabled }) : Results.BadRequest(new { message = "Failed to update subscription system status" });
+        })
+        .WithName("ToggleSubscriptionSystem")
+        .WithSummary("Enable or disable the subscription system")
+        .RequireAuthorization("Admin")
+        .Produces(200)
+        .Produces(400);
+
         // Map trust score endpoints
         MapTrustScoreEndpoints(app);
     }

@@ -52,6 +52,7 @@ public static class WebApplicationExtensions
         app.UseAuthentication();
         app.UseMiddleware<UserActivityMiddleware>();
         app.UseMiddleware<ApiRateLimitMiddleware>();
+        app.UseMiddleware<SubscriptionSystemMiddleware>();
         app.UseAuthorization();
 
         return app;
@@ -82,6 +83,7 @@ public static class WebApplicationExtensions
         app.MapAdminEndpoints();
         app.MapUploadSettingsEndpoints();
         app.MapCorsConfigurationEndpoints();
+        app.MapSubscriptionEndpoints();
 
         // Only register test endpoints in development environment
         if (app.Environment.IsDevelopment())
@@ -149,6 +151,16 @@ public static class WebApplicationExtensions
                 logger.LogInformation("📄 Seeding content pages...");
                 var contentSeedService = scope.ServiceProvider.GetRequiredService<ContentSeedService>();
                 await contentSeedService.SeedContentPagesAsync();
+
+                // Seed subscription tiers
+                logger.LogInformation("💳 Seeding subscription tiers...");
+                var subscriptionSeedService = scope.ServiceProvider.GetRequiredService<SubscriptionSeedService>();
+                await subscriptionSeedService.SeedSubscriptionDataAsync();
+
+                // Initialize system configurations
+                logger.LogInformation("⚙️ Initializing system configurations...");
+                var systemConfigService = scope.ServiceProvider.GetRequiredService<ISystemConfigurationService>();
+                await systemConfigService.InitializeDefaultConfigurationsAsync();
 
                 // Seed test data for non-production environments
                 var stagingSeedService = scope.ServiceProvider.GetService<StagingSeedService>();

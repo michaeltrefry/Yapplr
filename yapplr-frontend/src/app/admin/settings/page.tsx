@@ -19,7 +19,11 @@ import {
   Upload,
   Image,
   Video,
-  FileText
+  FileText,
+  CreditCard,
+  CheckCircle,
+  XCircle,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { NotificationStatus } from '@/components/NotificationStatus';
@@ -51,6 +55,22 @@ interface UploadSettings {
   updatedAt: string;
   updatedByUsername?: string;
   updateReason?: string;
+}
+
+interface SystemConfiguration {
+  id: number;
+  key: string;
+  value: string;
+  description: string;
+  category: string;
+  isVisible: boolean;
+  isEditable: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface SubscriptionSystemStatus {
+  enabled: boolean;
 }
 
 export default function AdminSettingsPage() {
@@ -88,6 +108,12 @@ export default function AdminSettingsPage() {
   const [uploadLoading, setUploadLoading] = useState(true);
   const [uploadSaving, setUploadSaving] = useState(false);
 
+  // System configuration state
+  const [configurations, setConfigurations] = useState<SystemConfiguration[]>([]);
+  const [subscriptionEnabled, setSubscriptionEnabled] = useState(true);
+  const [configLoading, setConfigLoading] = useState(true);
+  const [configSaving, setConfigSaving] = useState(false);
+
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
@@ -102,6 +128,7 @@ export default function AdminSettingsPage() {
 
       fetchConfig();
       fetchUploadSettings();
+      fetchSystemConfigurations();
     }
   }, [user, isLoading, router]);
 
@@ -198,6 +225,78 @@ export default function AdminSettingsPage() {
     }
   };
 
+  // System configuration functions
+  const fetchSystemConfigurations = async () => {
+    try {
+      setConfigLoading(true);
+      const [configResponse, statusResponse] = await Promise.all([
+        api.get('/admin/system-configurations'),
+        api.get('/admin/subscription-system/status')
+      ]);
+      setConfigurations(configResponse.data);
+      setSubscriptionEnabled(statusResponse.data.enabled);
+    } catch (error) {
+      console.error('Failed to fetch system configuration:', error);
+      setMessage({ type: 'error', text: 'Failed to load system configuration. Please try again.' });
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
+  const toggleSubscriptionSystem = async () => {
+    try {
+      setConfigSaving(true);
+      const newEnabled = !subscriptionEnabled;
+      await api.put('/admin/subscription-system/toggle', { enabled: newEnabled });
+      setSubscriptionEnabled(newEnabled);
+
+      // Update the configurations list to keep it in sync
+      setConfigurations(prev => prev.map(c =>
+        c.key === 'subscription_system_enabled'
+          ? { ...c, value: newEnabled.toString().toLowerCase(), updatedAt: new Date().toISOString() }
+          : c
+      ));
+
+      setMessage({
+        type: 'success',
+        text: `Subscription system ${newEnabled ? 'enabled' : 'disabled'} successfully!`
+      });
+      setTimeout(() => setMessage(null), 5000);
+    } catch (error) {
+      console.error('Error toggling subscription system:', error);
+      setMessage({ type: 'error', text: 'Failed to toggle subscription system. Please try again.' });
+      setTimeout(() => setMessage(null), 5000);
+    } finally {
+      setConfigSaving(false);
+    }
+  };
+
+  const updateConfiguration = async (key: string, value: string) => {
+    try {
+      const config = configurations.find(c => c.key === key);
+      if (!config) return;
+
+      await api.put(`/admin/system-configurations/${key}`, {
+        value,
+        description: config.description,
+        category: config.category,
+        isVisible: config.isVisible,
+        isEditable: config.isEditable
+      });
+
+      setConfigurations(prev => prev.map(c =>
+        c.key === key ? { ...c, value, updatedAt: new Date().toISOString() } : c
+      ));
+
+      setMessage({ type: 'success', text: 'Configuration updated successfully!' });
+      setTimeout(() => setMessage(null), 5000);
+    } catch (error) {
+      console.error('Error updating configuration:', error);
+      setMessage({ type: 'error', text: 'Failed to update configuration. Please try again.' });
+      setTimeout(() => setMessage(null), 5000);
+    }
+  };
+
   // Helper functions for unit conversion
   const bytesToMB = (bytes: number) => Math.round(bytes / (1024 * 1024));
   const bytesToGB = (bytes: number) => Math.round(bytes / (1024 * 1024 * 1024) * 10) / 10;
@@ -206,7 +305,7 @@ export default function AdminSettingsPage() {
   const secondsToMinutes = (seconds: number) => Math.round(seconds / 60);
   const minutesToSeconds = (minutes: number) => minutes * 60;
 
-  if (isLoading || loading || uploadLoading) {
+  if (isLoading || loading || uploadLoading || configLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -747,6 +846,119 @@ export default function AdminSettingsPage() {
               )}
               {uploadSaving ? 'Saving...' : 'Save Upload Settings'}
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* System Configuration */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center mb-6">
+          <Settings className="w-6 h-6 text-purple-600 mr-3" />
+          <h2 className="text-xl font-semibold text-gray-900">System Configuration</h2>
+        </div>
+
+        <div className="space-y-6">
+          {/* Subscription System Toggle */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <CreditCard className="w-5 h-5 mr-2" />
+              Subscription System
+            </h3>
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <div className="font-medium text-gray-900">Enable Subscription System</div>
+                <div className="text-sm text-gray-600">Allow users to subscribe to premium tiers</div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={subscriptionEnabled}
+                  onChange={toggleSubscriptionSystem}
+                  disabled={configSaving}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              </label>
+            </div>
+
+            {!subscriptionEnabled && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                  <span className="text-sm text-yellow-800">
+                    <strong>Warning:</strong> Subscription system is currently disabled. Users cannot access subscription pages or manage their subscriptions.
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* System Configurations List */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">All System Configurations</h3>
+
+            {configurations.filter(config => config.isVisible).length === 0 ? (
+              <div className="text-center py-8">
+                <Settings className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No configurations found</h4>
+                <p className="text-gray-600">System configurations will appear here once they are created.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {configurations.filter(config => config.isVisible).map((config) => (
+                  <div key={config.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className="font-medium text-gray-900">{config.key}</h4>
+                          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded">
+                            {config.category}
+                          </span>
+                          {!config.isVisible && (
+                            <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-600 rounded">
+                              Hidden
+                            </span>
+                          )}
+                          {!config.isEditable && (
+                            <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-600 rounded">
+                              Read-only
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{config.description}</p>
+                        {config.isEditable ? (
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="text"
+                              value={config.value}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                setConfigurations(prev => prev.map(c =>
+                                  c.id === config.id ? { ...c, value: newValue } : c
+                                ));
+                              }}
+                              onBlur={(e) => {
+                                if (e.target.value !== config.value) {
+                                  updateConfiguration(config.key, e.target.value);
+                                }
+                              }}
+                              className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                          </div>
+                        ) : (
+                          <div className="px-3 py-1 text-sm bg-gray-100 rounded font-mono">
+                            {config.value}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Last updated: {new Date(config.updatedAt).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

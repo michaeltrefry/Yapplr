@@ -18,5 +18,6 @@ public record UserDto(
     UserRole Role,
     UserStatus Status,
     DateTime? SuspendedUntil,
-    string? SuspensionReason
+    string? SuspensionReason,
+    SubscriptionTierDto? SubscriptionTier
 );

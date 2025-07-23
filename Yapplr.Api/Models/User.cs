@@ -68,6 +68,10 @@ public class User : IEntity
     public bool? RateLimitingEnabled { get; set; } // null = use system default, true/false = override
     public bool? TrustBasedRateLimitingEnabled { get; set; } // null = use system default, true/false = override
 
+    // Subscription settings
+    public int? SubscriptionTierId { get; set; }
+    public SubscriptionTier? SubscriptionTier { get; set; }
+
     // Analytics relationships
     public ICollection<UserActivity> UserActivities { get; set; } = new List<UserActivity>();
     public ICollection<UserTrustScoreHistory> TrustScoreHistory { get; set; } = new List<UserTrustScoreHistory>();

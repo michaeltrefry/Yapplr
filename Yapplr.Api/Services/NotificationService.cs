@@ -797,7 +797,7 @@ public class NotificationService : INotificationService
                     notification.Comment.Parent?.Privacy ?? PostPrivacy.Public,
                     notification.Comment.Parent?.CreatedAt ?? DateTime.UtcNow,
                     notification.Comment.Parent?.UpdatedAt ?? DateTime.UtcNow,
-                    notification.Comment.Parent?.User.ToDto() ?? new UserDto(0, "", "", "", null, "", "", "", DateTime.UtcNow, null, null, false, UserRole.User, UserStatus.Active, null, null),
+                    notification.Comment.Parent?.User.ToDto() ?? new UserDto(0, "", "", "", null, "", "", "", DateTime.UtcNow, null, null, false, UserRole.User, UserStatus.Active, null, null, null),
                     null, // Group - not loaded for notifications
                     0, // LikeCount - we don't need this for notifications
                     0, // CommentCount - we don't need this for notifications

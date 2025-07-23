@@ -38,6 +38,7 @@ public class UserService : BaseService, IUserService
     public async Task<UserProfileDto?> GetUserProfileAsync(string username, int? currentUserId = null)
     {
         var user = await _context.Users
+            .Include(u => u.SubscriptionTier)
             .FirstOrDefaultAsync(u => u.Username == username);
 
         if (user == null)
@@ -70,10 +71,8 @@ public class UserService : BaseService, IUserService
         var followerCount = await _countCache.GetFollowerCountAsync(user.Id);
         var followingCount = await _countCache.GetFollowingCountAsync(user.Id);
 
-        return new UserProfileDto(user.Id, user.Username, user.Bio, user.Birthday,
-                                 user.Pronouns, user.Tagline, user.ProfileImageFileName, user.CreatedAt,
-                                 postCount, followerCount, followingCount,
-                                 isFollowedByCurrentUser, hasPendingFollowRequest, requiresFollowApproval);
+        return user.MapToUserProfileDto(postCount, followerCount, followingCount,
+                                       isFollowedByCurrentUser, hasPendingFollowRequest, requiresFollowApproval);
     }
 
     public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateDto)
@@ -117,6 +116,7 @@ public class UserService : BaseService, IUserService
     public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query, int? currentUserId)
     {
         var users = await _context.Users
+            .Include(u => u.SubscriptionTier)
             .Where(u => EF.Functions.ILike(u.Username, $"%{query}%") || EF.Functions.ILike(u.Bio, $"%{query}%"))
             .OrderBy(u => u.Username) // Add ordering for deterministic results
             .Take(20) // Limit results
@@ -783,6 +783,7 @@ public class UserService : BaseService, IUserService
             .Include(u => u.Posts)
             .Include(u => u.Followers)
             .Include(u => u.Following)
+            .Include(u => u.SubscriptionTier)
             .AsQueryable();
 
         if (status.HasValue)
@@ -813,7 +814,8 @@ public class UserService : BaseService, IUserService
             EmailVerified = u.EmailVerified,
             PostCount = u.Posts.Count,
             FollowerCount = u.Followers.Count,
-            FollowingCount = u.Following.Count
+            FollowingCount = u.Following.Count,
+            SubscriptionTier = u.SubscriptionTier?.ToDto()
         });
     }
 
@@ -824,6 +826,7 @@ public class UserService : BaseService, IUserService
             .Include(u => u.Posts)
             .Include(u => u.Followers)
             .Include(u => u.Following)
+            .Include(u => u.SubscriptionTier)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null) return null;
@@ -844,7 +847,8 @@ public class UserService : BaseService, IUserService
             EmailVerified = user.EmailVerified,
             PostCount = user.Posts.Count,
             FollowerCount = user.Followers.Count,
-            FollowingCount = user.Following.Count
+            FollowingCount = user.Following.Count,
+            SubscriptionTier = user.SubscriptionTier?.ToDto()
         };
     }
 }

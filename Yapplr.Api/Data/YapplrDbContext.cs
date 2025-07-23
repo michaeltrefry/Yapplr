@@ -57,6 +57,7 @@ public class YapplrDbContext : DbContext
 
     // System Configuration entities
     public DbSet<UploadSettings> UploadSettings { get; set; }
+    public DbSet<SystemConfiguration> SystemConfigurations { get; set; }
 
     // Analytics entities
     public DbSet<UserActivity> UserActivities { get; set; }
@@ -64,6 +65,9 @@ public class YapplrDbContext : DbContext
     public DbSet<UserTrustScoreHistory> UserTrustScoreHistories { get; set; }
     public DbSet<TagAnalytics> TagAnalytics { get; set; }
     public DbSet<PerformanceMetric> PerformanceMetrics { get; set; }
+
+    // Subscription entities
+    public DbSet<SubscriptionTier> SubscriptionTiers { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,6 +85,12 @@ public class YapplrDbContext : DbContext
 
             // Performance indexes for user queries
             entity.HasIndex(e => e.LastSeenAt); // For online status queries
+
+            // Subscription relationship
+            entity.HasOne(e => e.SubscriptionTier)
+                  .WithMany(e => e.Users)
+                  .HasForeignKey(e => e.SubscriptionTierId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
         
         // Post configuration
@@ -836,6 +846,20 @@ public class YapplrDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.UpdatedByUserId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // SubscriptionTier configuration
+        modelBuilder.Entity<SubscriptionTier>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.SortOrder);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Currency).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Features).HasMaxLength(2000);
+            entity.Property(e => e.Price).HasPrecision(10, 2); // Allows for prices up to 99,999,999.99
         });
     }
 }

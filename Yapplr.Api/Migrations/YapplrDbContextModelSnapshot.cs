@@ -1933,6 +1933,118 @@ namespace Yapplr.Api.Migrations
                     b.ToTable("Reposts");
                 });
 
+            modelBuilder.Entity("Yapplr.Api.Models.SubscriptionTier", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BillingCycleMonths")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Features")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("HasVerifiedBadge")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<bool>("ShowAdvertisements")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("SortOrder");
+
+                    b.ToTable("SubscriptionTiers");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.SystemConfiguration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsEditable")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemConfigurations");
+                });
+
             modelBuilder.Entity("Yapplr.Api.Models.SystemTag", b =>
                 {
                     b.Property<int>("Id")
@@ -2154,6 +2266,9 @@ namespace Yapplr.Api.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("SubscriptionTierId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("SuspendedByUserId")
                         .HasColumnType("integer");
 
@@ -2192,6 +2307,8 @@ namespace Yapplr.Api.Migrations
                         .IsUnique();
 
                     b.HasIndex("LastSeenAt");
+
+                    b.HasIndex("SubscriptionTierId");
 
                     b.HasIndex("SuspendedByUserId");
 
@@ -3025,10 +3142,17 @@ namespace Yapplr.Api.Migrations
 
             modelBuilder.Entity("Yapplr.Api.Models.User", b =>
                 {
+                    b.HasOne("Yapplr.Api.Models.SubscriptionTier", "SubscriptionTier")
+                        .WithMany("Users")
+                        .HasForeignKey("SubscriptionTierId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Yapplr.Api.Models.User", "SuspendedByUser")
                         .WithMany("SuspendedUsers")
                         .HasForeignKey("SuspendedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("SubscriptionTier");
 
                     b.Navigation("SuspendedByUser");
                 });
@@ -3182,6 +3306,11 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Reactions");
 
                     b.Navigation("Reposts");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.SubscriptionTier", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.SystemTag", b =>

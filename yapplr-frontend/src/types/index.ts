@@ -74,6 +74,7 @@ export interface User {
   status?: UserStatus;
   suspendedUntil?: string;
   suspensionReason?: string;
+  subscriptionTier?: SubscriptionTier;
 }
 
 export interface UserWithOnlineStatus {
@@ -105,6 +106,7 @@ export interface UserProfile {
   isFollowedByCurrentUser: boolean;
   hasPendingFollowRequest: boolean;
   requiresFollowApproval: boolean;
+  subscriptionTier?: SubscriptionTier;
 }
 
 export enum GroupMemberRole {
@@ -717,6 +719,7 @@ export interface AdminUserDetails {
   suspendedByUsername?: string;
   lastLoginAt?: string;
   lastLoginIp?: string;
+  subscriptionTier?: SubscriptionTier;
 
   // Trust Score Information
   trustScore: number;
@@ -1084,4 +1087,60 @@ export interface CreateContentPageVersionDto {
 
 export interface PublishContentVersionDto {
   versionId: number;
+}
+
+// Subscription types
+export interface SubscriptionTier {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  billingCycleMonths: number;
+  isActive: boolean;
+  isDefault: boolean;
+  sortOrder: number;
+  showAdvertisements: boolean;
+  hasVerifiedBadge: boolean;
+  features?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSubscriptionTierDto {
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  billingCycleMonths: number;
+  isActive: boolean;
+  isDefault: boolean;
+  sortOrder: number;
+  showAdvertisements: boolean;
+  hasVerifiedBadge: boolean;
+  features?: string;
+}
+
+export interface UpdateSubscriptionTierDto {
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  billingCycleMonths: number;
+  isActive: boolean;
+  isDefault: boolean;
+  sortOrder: number;
+  showAdvertisements: boolean;
+  hasVerifiedBadge: boolean;
+  features?: string;
+}
+
+export interface UserSubscription {
+  userId: number;
+  username: string;
+  subscriptionTier?: SubscriptionTier;
+}
+
+export interface AssignSubscriptionTierDto {
+  subscriptionTierId: number;
 }

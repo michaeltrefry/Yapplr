@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { AdminUserDetails, UserRole, UserStatus } from '@/types';
 import { SuspendUserModal } from '@/components/admin';
+import SubscriptionTierBadge from '@/components/SubscriptionTierBadge';
 import {
   ArrowLeft,
   User,
@@ -257,6 +258,9 @@ export default function UserDetailsPage() {
               <div className="flex items-center space-x-4 mt-2">
                 {getStatusBadge(userDetails.status)}
                 {getRoleBadge(userDetails.role)}
+                {userDetails.subscriptionTier && (
+                  <SubscriptionTierBadge tier={userDetails.subscriptionTier} size="md" showName />
+                )}
                 {userDetails.emailVerified && (
                   <span className="inline-flex items-center text-sm text-green-600">
                     <UserCheck className="h-4 w-4 mr-1" />

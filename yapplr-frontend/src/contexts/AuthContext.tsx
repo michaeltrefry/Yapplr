@@ -2,12 +2,12 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, AuthResponse, RegisterResponse, LoginData, RegisterData } from '@/types';
-import { authApi, userApi } from '@/lib/api';
+import { authApi, userApi, subscriptionApi } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (data: LoginData) => Promise<void>;
+  login: (data: LoginData) => Promise<{ needsSubscriptionSelection: boolean }>;
   register: (data: RegisterData) => Promise<RegisterResponse>;
   logout: () => void;
   updateUser: (user: User) => void;
@@ -53,6 +53,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response: AuthResponse = await authApi.login(data);
     localStorage.setItem('token', response.token);
     setUser(response.user);
+
+    // Check if user needs to select a subscription tier
+    try {
+      const subscription = await subscriptionApi.getMySubscription();
+      return { needsSubscriptionSelection: !subscription.subscriptionTier };
+    } catch (error) {
+      // If we can't fetch subscription info, assume they need to select one
+      console.warn('Could not fetch subscription info, assuming selection needed:', error);
+      return { needsSubscriptionSelection: true };
+    }
   };
 
   const register = async (data: RegisterData) => {
