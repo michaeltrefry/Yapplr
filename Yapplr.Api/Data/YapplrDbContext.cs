@@ -68,6 +68,11 @@ public class YapplrDbContext : DbContext
 
     // Subscription entities
     public DbSet<SubscriptionTier> SubscriptionTiers { get; set; }
+
+    // Payment entities
+    public DbSet<UserSubscription> UserSubscriptions { get; set; }
+    public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
+    public DbSet<PaymentMethod> PaymentMethods { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -860,6 +865,101 @@ public class YapplrDbContext : DbContext
             entity.Property(e => e.Currency).IsRequired().HasMaxLength(10);
             entity.Property(e => e.Features).HasMaxLength(2000);
             entity.Property(e => e.Price).HasPrecision(10, 2); // Allows for prices up to 99,999,999.99
+        });
+
+        // UserSubscription configuration
+        modelBuilder.Entity<UserSubscription>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.UserId, e.Status });
+            entity.HasIndex(e => e.ExternalSubscriptionId);
+            entity.HasIndex(e => e.NextBillingDate);
+            entity.HasIndex(e => new { e.PaymentProvider, e.ExternalSubscriptionId });
+
+            entity.Property(e => e.PaymentProvider).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ExternalSubscriptionId).HasMaxLength(255);
+            entity.Property(e => e.PaymentMethodId).HasMaxLength(255);
+            entity.Property(e => e.PaymentMethodType).HasMaxLength(100);
+            entity.Property(e => e.PaymentMethodLast4).HasMaxLength(50);
+            entity.Property(e => e.CancellationReason).HasMaxLength(500);
+            entity.Property(e => e.Notes).HasMaxLength(1000);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.SubscriptionTier)
+                  .WithMany()
+                  .HasForeignKey(e => e.SubscriptionTierId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // PaymentTransaction configuration
+        modelBuilder.Entity<PaymentTransaction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.UserId, e.Status });
+            entity.HasIndex(e => e.ExternalTransactionId);
+            entity.HasIndex(e => e.ExternalSubscriptionId);
+            entity.HasIndex(e => new { e.PaymentProvider, e.ExternalTransactionId });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => new { e.BillingPeriodStart, e.BillingPeriodEnd });
+
+            entity.Property(e => e.PaymentProvider).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ExternalTransactionId).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.ExternalSubscriptionId).HasMaxLength(255);
+            entity.Property(e => e.Currency).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.FailureReason).HasMaxLength(1000);
+            entity.Property(e => e.ProviderResponse).HasMaxLength(2000);
+            entity.Property(e => e.WebhookEventId).HasMaxLength(255);
+            entity.Property(e => e.Amount).HasPrecision(10, 2);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.SubscriptionTier)
+                  .WithMany()
+                  .HasForeignKey(e => e.SubscriptionTierId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // PaymentMethod configuration
+        modelBuilder.Entity<PaymentMethod>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.UserId, e.IsDefault });
+            entity.HasIndex(e => e.ExternalPaymentMethodId);
+            entity.HasIndex(e => new { e.PaymentProvider, e.ExternalPaymentMethodId });
+            entity.HasIndex(e => e.IsActive);
+
+            entity.Property(e => e.PaymentProvider).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ExternalPaymentMethodId).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Type).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Brand).HasMaxLength(100);
+            entity.Property(e => e.Last4).HasMaxLength(10);
+            entity.Property(e => e.ExpiryMonth).HasMaxLength(4);
+            entity.Property(e => e.ExpiryYear).HasMaxLength(4);
+            entity.Property(e => e.HolderName).HasMaxLength(100);
+            entity.Property(e => e.BillingEmail).HasMaxLength(100);
+            entity.Property(e => e.BillingAddress).HasMaxLength(200);
+            entity.Property(e => e.BillingCity).HasMaxLength(100);
+            entity.Property(e => e.BillingState).HasMaxLength(50);
+            entity.Property(e => e.BillingPostalCode).HasMaxLength(20);
+            entity.Property(e => e.BillingCountry).HasMaxLength(10);
+            entity.Property(e => e.ProviderData).HasMaxLength(1000);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

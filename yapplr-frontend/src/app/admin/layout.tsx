@@ -21,6 +21,7 @@ import {
   Home,
   Edit,
   DollarSign,
+  CreditCard,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -92,6 +93,12 @@ const adminNavItems = [
     name: 'Subscriptions',
     href: '/admin/subscriptions',
     icon: DollarSign,
+    roles: [UserRole.Admin],
+  },
+  {
+    name: 'Payment Admin',
+    href: '/admin/payments',
+    icon: CreditCard,
     roles: [UserRole.Admin],
   },
   {

@@ -84,6 +84,8 @@ public static class WebApplicationExtensions
         app.MapUploadSettingsEndpoints();
         app.MapCorsConfigurationEndpoints();
         app.MapSubscriptionEndpoints();
+        app.MapPaymentEndpoints();
+        app.MapPaymentAdminEndpoints();
 
         // Only register test endpoints in development environment
         if (app.Environment.IsDevelopment())

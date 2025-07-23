@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Server.IIS;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Options;
 using System.Text;
 using Amazon.SimpleEmail;
 using Yapplr.Api.Data;
@@ -17,6 +18,7 @@ using MassTransit;
 using Yapplr.Api.CQRS;
 using Yapplr.Api.Common;
 using Yapplr.Api.Services.Unified;
+using Yapplr.Api.Services.Payment;
 
 namespace Yapplr.Api.Extensions;
 
@@ -340,6 +342,7 @@ public static class ServiceCollectionExtensions
 
         // Register background services
         services.AddHostedService<Services.Background.NotificationDigestBackgroundService>();
+        services.AddHostedService<Services.Background.PaymentBackgroundService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<ITagAnalyticsService, TagAnalyticsService>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
@@ -352,6 +355,9 @@ public static class ServiceCollectionExtensions
 
         // Add caching services
         services.AddScoped<ICountCacheService, CountCacheService>();
+
+        // Add payment services
+        services.AddPaymentServices();
 
         return services;
     }
@@ -587,6 +593,49 @@ public static class ServiceCollectionExtensions
             // Fallback to memory caching if Redis is not configured
             services.AddSingleton<ICachingService, MemoryCachingService>();
         }
+
+        return services;
+    }
+
+    private static IServiceCollection AddPaymentServices(this IServiceCollection services)
+    {
+        // Register payment configuration
+        services.AddOptions<PaymentProvidersConfiguration>()
+            .BindConfiguration(PaymentProvidersConfiguration.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Register payment providers
+        services.AddScoped<PayPalPaymentProvider>();
+        services.AddScoped<StripePaymentProvider>();
+
+        // Register provider collection for dependency injection
+        services.AddScoped<IEnumerable<IPaymentProvider>>(provider =>
+        {
+            var providers = new List<IPaymentProvider>();
+            var config = provider.GetRequiredService<IOptionsMonitor<PaymentProvidersConfiguration>>().CurrentValue;
+
+            if (config.PayPal.Enabled)
+            {
+                providers.Add(provider.GetRequiredService<PayPalPaymentProvider>());
+            }
+
+            if (config.Stripe.Enabled)
+            {
+                providers.Add(provider.GetRequiredService<StripePaymentProvider>());
+            }
+
+            return providers;
+        });
+
+        // Register payment services
+        services.AddScoped<IPaymentGatewayManager, PaymentGatewayManager>();
+        services.AddScoped<IPaymentGatewayService, PaymentGatewayService>();
+        services.AddScoped<IPaymentAdminService, PaymentAdminService>();
+
+        // Register HttpClient for payment providers
+        services.AddHttpClient<PayPalPaymentProvider>();
+        services.AddHttpClient<StripePaymentProvider>();
 
         return services;
     }

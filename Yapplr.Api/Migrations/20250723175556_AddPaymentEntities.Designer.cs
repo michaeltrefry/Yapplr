@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Yapplr.Api.Data;
@@ -11,9 +12,11 @@ using Yapplr.Api.Data;
 namespace Yapplr.Api.Migrations
 {
     [DbContext(typeof(YapplrDbContext))]
-    partial class YapplrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250723175556_AddPaymentEntities")]
+    partial class AddPaymentEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2755,12 +2758,6 @@ namespace Yapplr.Api.Migrations
                     b.Property<bool>("IsTrialPeriod")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("LastRetryDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("LastSyncDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime>("NextBillingDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -2788,9 +2785,6 @@ namespace Yapplr.Api.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<int>("RetryCount")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -2802,9 +2796,6 @@ namespace Yapplr.Api.Migrations
 
                     b.Property<DateTime?>("TrialEndDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("TrialProcessed")
-                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
