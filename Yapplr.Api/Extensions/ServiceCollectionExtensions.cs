@@ -30,6 +30,9 @@ public static class ServiceCollectionExtensions
         services.AddOpenApi();
         services.AddSwaggerGen();
 
+        // Add Controllers (for traditional MVC controllers)
+        services.AddControllers();
+
         // Add Entity Framework
         services.AddEntityFramework(configuration);
 
@@ -599,11 +602,11 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddPaymentServices(this IServiceCollection services)
     {
-        // Register payment configuration
-        services.AddOptions<PaymentProvidersConfiguration>()
-            .BindConfiguration(PaymentProvidersConfiguration.SectionName)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        // Register dynamic payment configuration service
+        services.AddScoped<IDynamicPaymentConfigurationService, DynamicPaymentConfigurationService>();
+
+        // Register payment configuration seeding service
+        services.AddScoped<PaymentConfigurationSeedingService>();
 
         // Register payment providers
         services.AddScoped<PayPalPaymentProvider>();
@@ -613,17 +616,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEnumerable<IPaymentProvider>>(provider =>
         {
             var providers = new List<IPaymentProvider>();
-            var config = provider.GetRequiredService<IOptionsMonitor<PaymentProvidersConfiguration>>().CurrentValue;
 
-            if (config.PayPal.Enabled)
-            {
-                providers.Add(provider.GetRequiredService<PayPalPaymentProvider>());
-            }
-
-            if (config.Stripe.Enabled)
-            {
-                providers.Add(provider.GetRequiredService<StripePaymentProvider>());
-            }
+            // Always register all providers - they will check their own availability dynamically
+            providers.Add(provider.GetRequiredService<PayPalPaymentProvider>());
+            providers.Add(provider.GetRequiredService<StripePaymentProvider>());
 
             return providers;
         });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { CreditCard, AlertTriangle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { subscriptionApi } from '@/lib/api';
@@ -11,13 +12,14 @@ interface SubscriptionSystemGuardProps {
   fallbackText?: string;
 }
 
-export default function SubscriptionSystemGuard({ 
-  children, 
+export default function SubscriptionSystemGuard({
+  children,
   fallbackPath = '/settings',
   fallbackText = 'Back to Settings'
 }: SubscriptionSystemGuardProps) {
   const [isEnabled, setIsEnabled] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     checkSubscriptionSystemStatus();
@@ -26,7 +28,7 @@ export default function SubscriptionSystemGuard({
   const checkSubscriptionSystemStatus = async () => {
     try {
       setLoading(true);
-      
+
       // Try to fetch subscription tiers - if this fails with 404, system is disabled
       await subscriptionApi.getActiveSubscriptionTiers();
       setIsEnabled(true);
@@ -34,6 +36,9 @@ export default function SubscriptionSystemGuard({
       // If we get a 404, the subscription system is disabled
       if (error.response?.status === 404) {
         setIsEnabled(false);
+        // Redirect to home page when subscription system is disabled
+        router.push('/');
+        return;
       } else {
         // For other errors (network, auth, etc.), assume enabled and let the page handle it
         setIsEnabled(true);

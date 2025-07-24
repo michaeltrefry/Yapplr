@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
+using FluentAssertions;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs.Payment;
@@ -27,23 +29,56 @@ public class PaymentIntegrationTests : IDisposable
 
         _context = new YapplrDbContext(options);
 
-        // Setup payment configuration
-        var paymentConfig = new PaymentProvidersConfiguration
-        {
-            Global = new PaymentGlobalSettings
-            {
-                EnableTrialPeriods = true,
-                DefaultTrialDays = 14
-            }
-        };
-
-        var configOptions = Options.Create(paymentConfig);
-
         // Create service collection and register dependencies
         var services = new ServiceCollection();
-        services.AddSingleton(configOptions);
         services.AddSingleton(_context);
         services.AddLogging();
+        services.AddMemoryCache();
+
+        // Setup mock dynamic payment configuration service
+        var mockConfigService = new Mock<IDynamicPaymentConfigurationService>();
+        var globalSettings = new PaymentGlobalSettings
+        {
+            EnableTrialPeriods = true,
+            DefaultTrialDays = 14,
+            DefaultCurrency = "USD",
+            GracePeriodDays = 7,
+            MaxPaymentRetries = 3,
+            RetryIntervalDays = 3,
+            EnableProration = true,
+            WebhookTimeoutSeconds = 10,
+            VerifyWebhookSignatures = true
+        };
+        mockConfigService.Setup(x => x.GetGlobalSettingsAsync()).ReturnsAsync(globalSettings);
+        mockConfigService.Setup(x => x.GetProviderPriorityAsync()).ReturnsAsync(new List<string> { "PayPal", "Stripe" });
+        mockConfigService.Setup(x => x.GetDefaultProviderAsync()).ReturnsAsync("PayPal");
+
+        // Setup PayPal configuration
+        var paypalConfig = new PayPalConfiguration
+        {
+            Enabled = true,
+            Environment = "sandbox",
+            TimeoutSeconds = 30,
+            MaxRetries = 3,
+            ClientId = "test-client-id",
+            ClientSecret = "test-client-secret",
+            SupportedCurrencies = new List<string> { "USD", "EUR" }
+        };
+        mockConfigService.Setup(x => x.GetPayPalConfigurationAsync()).ReturnsAsync(paypalConfig);
+
+        // Setup Stripe configuration
+        var stripeConfig = new StripeConfiguration
+        {
+            Enabled = true,
+            Environment = "test",
+            TimeoutSeconds = 30,
+            MaxRetries = 3,
+            SecretKey = "sk_test_123",
+            SupportedCurrencies = new List<string> { "USD", "EUR" }
+        };
+        mockConfigService.Setup(x => x.GetStripeConfigurationAsync()).ReturnsAsync(stripeConfig);
+
+        services.AddSingleton(mockConfigService.Object);
 
         // Register HTTP clients
         services.AddHttpClient<PayPalPaymentProvider>();

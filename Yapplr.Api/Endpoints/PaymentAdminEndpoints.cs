@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Services.Payment;
 using Yapplr.Api.Services;
 using Yapplr.Api.DTOs.Payment;
+using Yapplr.Api.Data;
+using Yapplr.Api.Models;
+using System.Text.Json;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -234,5 +238,101 @@ public static class PaymentAdminEndpoints
         .RequireAuthorization("Admin")
         .Produces<PaymentServiceResult<bool>>(200)
         .Produces(400);
+
+        // Payment Configuration Management
+        var config = app.MapGroup("/api/admin/payment-configuration").WithTags("Payment Configuration");
+
+        config.MapGet("/global", async (YapplrDbContext context) =>
+        {
+            try
+            {
+                var globalConfig = await context.PaymentGlobalConfigurations.FirstOrDefaultAsync();
+
+                if (globalConfig == null)
+                {
+                    // Return default configuration
+                    return Results.Ok(new PaymentGlobalConfigurationDto
+                    {
+                        DefaultProvider = "PayPal",
+                        DefaultCurrency = "USD",
+                        GracePeriodDays = 7,
+                        MaxPaymentRetries = 3,
+                        RetryIntervalDays = 3,
+                        EnableTrialPeriods = true,
+                        DefaultTrialDays = 14,
+                        EnableProration = true,
+                        WebhookTimeoutSeconds = 10,
+                        VerifyWebhookSignatures = true
+                    });
+                }
+
+                return Results.Ok(PaymentConfigurationMapper.MapToGlobalDto(globalConfig));
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem("Internal server error");
+            }
+        })
+        .WithName("GetGlobalPaymentConfiguration")
+        .WithSummary("Get global payment configuration")
+        .RequireAuthorization("Admin")
+        .Produces<PaymentGlobalConfigurationDto>(200)
+        .Produces(500);
+    }
+
+}
+
+/// <summary>
+/// Helper class for mapping payment configuration entities to DTOs
+/// </summary>
+public static class PaymentConfigurationMapper
+{
+    public static PaymentGlobalConfigurationDto MapToGlobalDto(PaymentGlobalConfiguration config)
+    {
+        return new PaymentGlobalConfigurationDto
+        {
+            Id = config.Id,
+            DefaultProvider = config.DefaultProvider,
+            DefaultCurrency = config.DefaultCurrency,
+            GracePeriodDays = config.GracePeriodDays,
+            MaxPaymentRetries = config.MaxPaymentRetries,
+            RetryIntervalDays = config.RetryIntervalDays,
+            EnableTrialPeriods = config.EnableTrialPeriods,
+            DefaultTrialDays = config.DefaultTrialDays,
+            EnableProration = config.EnableProration,
+            WebhookTimeoutSeconds = config.WebhookTimeoutSeconds,
+            VerifyWebhookSignatures = config.VerifyWebhookSignatures,
+            CreatedAt = config.CreatedAt,
+            UpdatedAt = config.UpdatedAt
+        };
+    }
+
+    public static PaymentProviderConfigurationDto MapToProviderDto(PaymentProviderConfiguration config)
+    {
+        return new PaymentProviderConfigurationDto
+        {
+            Id = config.Id,
+            ProviderName = config.ProviderName,
+            IsEnabled = config.IsEnabled,
+            Environment = config.Environment,
+            Priority = config.Priority,
+            TimeoutSeconds = config.TimeoutSeconds,
+            MaxRetries = config.MaxRetries,
+            SupportedCurrencies = string.IsNullOrEmpty(config.SupportedCurrencies)
+                ? new List<string>()
+                : JsonSerializer.Deserialize<List<string>>(config.SupportedCurrencies) ?? new List<string>(),
+            Settings = config.Settings.Select(s => new PaymentProviderSettingDto
+            {
+                Id = s.Id,
+                Key = s.Key,
+                Value = s.IsSensitive ? "***" : s.Value,
+                IsSensitive = s.IsSensitive,
+                Description = s.Description,
+                Category = s.Category,
+                IsRequired = s.IsRequired
+            }).ToList(),
+            CreatedAt = config.CreatedAt,
+            UpdatedAt = config.UpdatedAt
+        };
     }
 }

@@ -73,6 +73,11 @@ public class YapplrDbContext : DbContext
     public DbSet<UserSubscription> UserSubscriptions { get; set; }
     public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
     public DbSet<PaymentMethod> PaymentMethods { get; set; }
+
+    // Payment Configuration entities
+    public DbSet<PaymentProviderConfiguration> PaymentProviderConfigurations { get; set; }
+    public DbSet<PaymentProviderSetting> PaymentProviderSettings { get; set; }
+    public DbSet<PaymentGlobalConfiguration> PaymentGlobalConfigurations { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -960,6 +965,40 @@ public class YapplrDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // PaymentProviderConfiguration configuration
+        modelBuilder.Entity<PaymentProviderConfiguration>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ProviderName).IsUnique();
+            entity.Property(e => e.ProviderName).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Environment).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.SupportedCurrencies).HasMaxLength(500);
+        });
+
+        // PaymentProviderSetting configuration
+        modelBuilder.Entity<PaymentProviderSetting>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.PaymentProviderConfigurationId, e.Key }).IsUnique();
+            entity.Property(e => e.Key).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Value).IsRequired().HasMaxLength(2000);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Category).HasMaxLength(50);
+
+            entity.HasOne(e => e.PaymentProviderConfiguration)
+                  .WithMany(e => e.Settings)
+                  .HasForeignKey(e => e.PaymentProviderConfigurationId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // PaymentGlobalConfiguration configuration
+        modelBuilder.Entity<PaymentGlobalConfiguration>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DefaultProvider).HasMaxLength(50);
+            entity.Property(e => e.DefaultCurrency).HasMaxLength(3);
         });
     }
 }

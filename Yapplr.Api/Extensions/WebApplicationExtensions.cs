@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Prometheus;
 using Yapplr.Api.Data;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Payment;
 using Yapplr.Api.Endpoints;
 using Yapplr.Api.Middleware;
 using Yapplr.Api.Hubs;
@@ -87,6 +88,9 @@ public static class WebApplicationExtensions
         app.MapPaymentEndpoints();
         app.MapPaymentAdminEndpoints();
 
+        // Map traditional controllers
+        app.MapControllers();
+
         // Only register test endpoints in development environment
         if (app.Environment.IsDevelopment())
         {
@@ -163,6 +167,11 @@ public static class WebApplicationExtensions
                 logger.LogInformation("⚙️ Initializing system configurations...");
                 var systemConfigService = scope.ServiceProvider.GetRequiredService<ISystemConfigurationService>();
                 await systemConfigService.InitializeDefaultConfigurationsAsync();
+
+                // Initialize payment configurations
+                logger.LogInformation("💳 Initializing payment configurations...");
+                var paymentSeedService = scope.ServiceProvider.GetRequiredService<PaymentConfigurationSeedingService>();
+                await paymentSeedService.SeedDefaultConfigurationAsync();
 
                 // Seed test data for non-production environments
                 var stagingSeedService = scope.ServiceProvider.GetService<StagingSeedService>();

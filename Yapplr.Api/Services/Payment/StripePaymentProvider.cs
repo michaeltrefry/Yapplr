@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using System.Text.Json;
 using System.Text;
 using Yapplr.Api.Configuration;
@@ -11,50 +10,80 @@ namespace Yapplr.Api.Services.Payment;
 
 public class StripePaymentProvider : IPaymentProvider
 {
-    private readonly StripeConfiguration _config;
+    private readonly IDynamicPaymentConfigurationService _configService;
     private readonly ILogger<StripePaymentProvider> _logger;
     private readonly HttpClient _httpClient;
     private readonly YapplrDbContext _context;
-    private readonly bool _isEnabled;
 
     public string ProviderName => "Stripe";
 
     public StripePaymentProvider(
-        IOptionsMonitor<PaymentProvidersConfiguration> config,
+        IDynamicPaymentConfigurationService configService,
         ILogger<StripePaymentProvider> logger,
         HttpClient httpClient,
         YapplrDbContext context)
     {
-        _config = config.CurrentValue.Stripe;
+        _configService = configService;
         _logger = logger;
         _httpClient = httpClient;
         _context = context;
-        _isEnabled = _config.Enabled && !string.IsNullOrEmpty(_config.SecretKey);
 
-        // Configure HttpClient
-        _httpClient.Timeout = TimeSpan.FromSeconds(_config.TimeoutSeconds);
-        _httpClient.BaseAddress = new Uri("https://api.stripe.com");
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_config.SecretKey}");
-        _httpClient.DefaultRequestHeaders.Add("Stripe-Version", "2023-10-16");
+        // Subscribe to configuration changes
+        _configService.ConfigurationChanged += OnConfigurationChanged;
     }
 
-    public Task<bool> IsAvailableAsync()
+    public async Task<bool> IsAvailableAsync()
     {
-        return Task.FromResult(_isEnabled);
+        var config = await _configService.GetStripeConfigurationAsync();
+        return config != null && config.Enabled && !string.IsNullOrEmpty(config.SecretKey);
+    }
+
+    private async Task<StripeConfiguration?> GetConfigurationAsync()
+    {
+        return await _configService.GetStripeConfigurationAsync();
+    }
+
+    private async Task ConfigureHttpClientAsync()
+    {
+        var config = await GetConfigurationAsync();
+        if (config != null)
+        {
+            _httpClient.Timeout = TimeSpan.FromSeconds(config.TimeoutSeconds);
+            _httpClient.BaseAddress = new Uri("https://api.stripe.com");
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {config.SecretKey}");
+            _httpClient.DefaultRequestHeaders.Add("Stripe-Version", "2023-10-16");
+        }
+    }
+
+    private async Task<bool> IsEnabledAsync()
+    {
+        return await IsAvailableAsync();
+    }
+
+    private void OnConfigurationChanged(object? sender, PaymentConfigurationChangedEventArgs e)
+    {
+        if (e.ProviderName == "Stripe")
+        {
+            _logger.LogInformation("Stripe configuration changed, will reconfigure on next request");
+        }
     }
 
     public async Task<CreateSubscriptionResult> CreateSubscriptionAsync(CreateSubscriptionRequest request)
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
-                return new CreateSubscriptionResult 
-                { 
-                    Success = false, 
-                    ErrorMessage = "Stripe provider is not enabled or configured" 
+                return new CreateSubscriptionResult
+                {
+                    Success = false,
+                    ErrorMessage = "Stripe provider is not enabled or configured"
                 };
             }
+
+            // Configure HttpClient with current settings
+            await ConfigureHttpClientAsync();
 
             // Get subscription tier details
             var subscriptionTier = await _context.SubscriptionTiers
@@ -105,7 +134,7 @@ public class StripePaymentProvider : IPaymentProvider
                     save_default_payment_method = "on_subscription"
                 },
                 expand = new[] { "latest_invoice.payment_intent" },
-                trial_period_days = request.StartTrial ? _config.Environment == "test" ? 7 : 14 : (int?)null
+                trial_period_days = request.StartTrial ? (await GetConfigurationAsync())?.Environment == "test" ? 7 : 14 : (int?)null
             };
 
             var json = JsonSerializer.Serialize(subscriptionPayload);
@@ -183,7 +212,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new CancelSubscriptionResult
                 {
@@ -191,6 +220,8 @@ public class StripePaymentProvider : IPaymentProvider
                     ErrorMessage = "Stripe provider is not enabled or configured"
                 };
             }
+
+            await ConfigureHttpClientAsync();
 
             // Stripe cancel subscription payload
             var cancelPayload = new
@@ -379,7 +410,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new UpdateSubscriptionResult
                 {
@@ -387,6 +418,8 @@ public class StripePaymentProvider : IPaymentProvider
                     ErrorMessage = "Stripe provider is not enabled or configured"
                 };
             }
+
+            await ConfigureHttpClientAsync();
 
             var subscriptionId = request.Metadata?["subscription_id"];
             if (string.IsNullOrEmpty(subscriptionId))
@@ -506,7 +539,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new GetSubscriptionResult
                 {
@@ -514,6 +547,8 @@ public class StripePaymentProvider : IPaymentProvider
                     ErrorMessage = "Stripe provider is not enabled or configured"
                 };
             }
+
+            await ConfigureHttpClientAsync();
 
             var response = await _httpClient.GetAsync($"/v1/subscriptions/{externalSubscriptionId}");
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -575,7 +610,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new ProcessPaymentResult
                 {
@@ -583,6 +618,8 @@ public class StripePaymentProvider : IPaymentProvider
                     ErrorMessage = "Stripe provider is not enabled or configured"
                 };
             }
+
+            await ConfigureHttpClientAsync();
 
             // Create payment intent for one-time payment
             var paymentIntentPayload = new
@@ -658,7 +695,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new RefundPaymentResult
                 {
@@ -666,6 +703,8 @@ public class StripePaymentProvider : IPaymentProvider
                     ErrorMessage = "Stripe provider is not enabled or configured"
                 };
             }
+
+            await ConfigureHttpClientAsync();
 
             var paymentIntentId = request.Metadata?["payment_intent_id"];
             if (string.IsNullOrEmpty(paymentIntentId))
@@ -747,7 +786,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new CreatePaymentMethodResult
                 {
@@ -755,6 +794,8 @@ public class StripePaymentProvider : IPaymentProvider
                     ErrorMessage = "Stripe provider is not enabled or configured"
                 };
             }
+
+            await ConfigureHttpClientAsync();
 
             var paymentMethodPayload = new Dictionary<string, object>
             {
@@ -844,7 +885,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new DeletePaymentMethodResult
                 {
@@ -852,6 +893,8 @@ public class StripePaymentProvider : IPaymentProvider
                     ErrorMessage = "Stripe provider is not enabled or configured"
                 };
             }
+
+            await ConfigureHttpClientAsync();
 
             var response = await _httpClient.PostAsync($"/v1/payment_methods/{externalPaymentMethodId}/detach",
                 new StringContent("{}", Encoding.UTF8, "application/json"));
@@ -895,7 +938,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new GetPaymentMethodResult
                 {
@@ -903,6 +946,8 @@ public class StripePaymentProvider : IPaymentProvider
                     ErrorMessage = "Stripe provider is not enabled or configured"
                 };
             }
+
+            await ConfigureHttpClientAsync();
 
             var response = await _httpClient.GetAsync($"/v1/payment_methods/{externalPaymentMethodId}");
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -967,7 +1012,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new WebhookHandleResult
                 {
@@ -1041,7 +1086,8 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled || string.IsNullOrEmpty(_config.WebhookSecret))
+            var config = await GetConfigurationAsync();
+            if (!await IsEnabledAsync() || config == null || string.IsNullOrEmpty(config.WebhookSecret))
             {
                 return true; // Skip verification if disabled or not configured
             }
@@ -1049,7 +1095,7 @@ public class StripePaymentProvider : IPaymentProvider
             // Stripe webhook signature verification
             var signature = request.Signature;
             var payload = request.RawBody;
-            var secret = _config.WebhookSecret;
+            var secret = config.WebhookSecret;
 
             if (string.IsNullOrEmpty(signature) || string.IsNullOrEmpty(payload))
             {
@@ -1115,7 +1161,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return null;
             }
@@ -1144,7 +1190,7 @@ public class StripePaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new PaymentAuthorizationResult
                 {

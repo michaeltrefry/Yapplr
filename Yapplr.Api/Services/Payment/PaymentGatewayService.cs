@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs.Payment;
@@ -12,18 +11,18 @@ public class PaymentGatewayService : IPaymentGatewayService
     private readonly YapplrDbContext _context;
     private readonly IPaymentGatewayManager _gatewayManager;
     private readonly ILogger<PaymentGatewayService> _logger;
-    private readonly PaymentProvidersConfiguration _config;
+    private readonly IDynamicPaymentConfigurationService _configService;
 
     public PaymentGatewayService(
         YapplrDbContext context,
         IPaymentGatewayManager gatewayManager,
         ILogger<PaymentGatewayService> logger,
-        IOptionsMonitor<PaymentProvidersConfiguration> config)
+        IDynamicPaymentConfigurationService configService)
     {
         _context = context;
         _gatewayManager = gatewayManager;
         _logger = logger;
-        _config = config.CurrentValue;
+        _configService = configService;
     }
 
     public async Task<PaymentServiceResult<SubscriptionDto>> CreateSubscriptionAsync(
@@ -73,6 +72,9 @@ public class PaymentGatewayService : IPaymentGatewayService
                     providerResult.ErrorCode ?? "PROVIDER_ERROR");
             }
 
+            // Get global settings for trial configuration
+            var globalSettings = await _configService.GetGlobalSettingsAsync();
+
             // Create user subscription record
             var userSubscription = new UserSubscription
             {
@@ -83,9 +85,9 @@ public class PaymentGatewayService : IPaymentGatewayService
                 Status = providerResult.RequiresAction ? SubscriptionStatus.Active : SubscriptionStatus.Active, // Will be updated by webhook
                 StartDate = DateTime.UtcNow,
                 NextBillingDate = providerResult.NextBillingDate ?? DateTime.UtcNow.AddMonths(subscriptionTier.BillingCycleMonths),
-                IsTrialPeriod = request.StartTrial && _config.Global.EnableTrialPeriods,
-                TrialEndDate = request.StartTrial && _config.Global.EnableTrialPeriods 
-                    ? DateTime.UtcNow.AddDays(_config.Global.DefaultTrialDays) 
+                IsTrialPeriod = request.StartTrial && globalSettings.EnableTrialPeriods,
+                TrialEndDate = request.StartTrial && globalSettings.EnableTrialPeriods
+                    ? DateTime.UtcNow.AddDays(globalSettings.DefaultTrialDays)
                     : null,
                 PaymentMethodId = providerResult.PaymentMethodId,
                 CreatedAt = DateTime.UtcNow,

@@ -58,8 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const subscription = await subscriptionApi.getMySubscription();
       return { needsSubscriptionSelection: !subscription.subscriptionTier };
-    } catch (error) {
-      // If we can't fetch subscription info, assume they need to select one
+    } catch (error: any) {
+      // If subscription system is disabled (404), don't require subscription selection
+      if (error.response?.status === 404) {
+        console.log('Subscription system is disabled, skipping subscription selection');
+        return { needsSubscriptionSelection: false };
+      }
+
+      // For other errors, assume they need to select one
       console.warn('Could not fetch subscription info, assuming selection needed:', error);
       return { needsSubscriptionSelection: true };
     }

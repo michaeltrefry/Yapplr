@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using System.Text.Json;
 using System.Text;
 using Yapplr.Api.Configuration;
@@ -10,11 +9,10 @@ namespace Yapplr.Api.Services.Payment;
 
 public class PayPalPaymentProvider : IPaymentProvider
 {
-    private readonly PayPalConfiguration _config;
+    private readonly IDynamicPaymentConfigurationService _configService;
     private readonly ILogger<PayPalPaymentProvider> _logger;
     private readonly HttpClient _httpClient;
     private readonly YapplrDbContext _context;
-    private readonly bool _isEnabled;
     private string? _accessToken;
     private DateTime _tokenExpiry = DateTime.MinValue;
     private readonly SemaphoreSlim _tokenSemaphore = new(1, 1);
@@ -22,39 +20,72 @@ public class PayPalPaymentProvider : IPaymentProvider
     public string ProviderName => "PayPal";
 
     public PayPalPaymentProvider(
-        IOptionsMonitor<PaymentProvidersConfiguration> config,
+        IDynamicPaymentConfigurationService configService,
         ILogger<PayPalPaymentProvider> logger,
         HttpClient httpClient,
         YapplrDbContext context)
     {
-        _config = config.CurrentValue.PayPal;
+        _configService = configService;
         _logger = logger;
         _httpClient = httpClient;
         _context = context;
-        _isEnabled = _config.Enabled && !string.IsNullOrEmpty(_config.ClientId) && !string.IsNullOrEmpty(_config.ClientSecret);
 
-        // Configure HttpClient
-        _httpClient.Timeout = TimeSpan.FromSeconds(_config.TimeoutSeconds);
-        _httpClient.BaseAddress = new Uri(_config.Environment == "live" 
-            ? "https://api-m.paypal.com" 
-            : "https://api-m.sandbox.paypal.com");
+        // Subscribe to configuration changes
+        _configService.ConfigurationChanged += OnConfigurationChanged;
     }
 
-    public Task<bool> IsAvailableAsync()
+    public async Task<bool> IsAvailableAsync()
     {
-        return Task.FromResult(_isEnabled);
+        var config = await _configService.GetPayPalConfigurationAsync();
+        return config != null && config.Enabled &&
+               !string.IsNullOrEmpty(config.ClientId) &&
+               !string.IsNullOrEmpty(config.ClientSecret);
+    }
+
+    private async Task<PayPalConfiguration?> GetConfigurationAsync()
+    {
+        return await _configService.GetPayPalConfigurationAsync();
+    }
+
+    private async Task ConfigureHttpClientAsync()
+    {
+        var config = await GetConfigurationAsync();
+        if (config != null)
+        {
+            _httpClient.Timeout = TimeSpan.FromSeconds(config.TimeoutSeconds);
+            _httpClient.BaseAddress = new Uri(config.Environment == "live"
+                ? "https://api-m.paypal.com"
+                : "https://api-m.sandbox.paypal.com");
+        }
+    }
+
+    private void OnConfigurationChanged(object? sender, PaymentConfigurationChangedEventArgs e)
+    {
+        if (e.ProviderName == "PayPal")
+        {
+            // Clear access token to force re-authentication with new credentials
+            _accessToken = null;
+            _tokenExpiry = DateTime.MinValue;
+
+            _logger.LogInformation("PayPal configuration changed, clearing cached authentication");
+        }
+    }
+
+    private async Task<bool> IsEnabledAsync()
+    {
+        return await IsAvailableAsync();
     }
 
     public async Task<CreateSubscriptionResult> CreateSubscriptionAsync(CreateSubscriptionRequest request)
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
-                return new CreateSubscriptionResult 
-                { 
-                    Success = false, 
-                    ErrorMessage = "PayPal provider is not enabled or configured" 
+                return new CreateSubscriptionResult
+                {
+                    Success = false,
+                    ErrorMessage = "PayPal provider is not enabled or configured"
                 };
             }
 
@@ -199,8 +230,19 @@ public class PayPalPaymentProvider : IPaymentProvider
                 return _accessToken;
             }
 
+            // Get current configuration
+            var config = await GetConfigurationAsync();
+            if (config == null || string.IsNullOrEmpty(config.ClientId) || string.IsNullOrEmpty(config.ClientSecret))
+            {
+                _logger.LogError("PayPal configuration is missing or incomplete");
+                return null;
+            }
+
+            // Configure HttpClient with current settings
+            await ConfigureHttpClientAsync();
+
             // Request new token
-            var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_config.ClientId}:{_config.ClientSecret}"));
+            var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{config.ClientId}:{config.ClientSecret}"));
             var content = new StringContent("grant_type=client_credentials", Encoding.UTF8, "application/x-www-form-urlencoded");
 
             _httpClient.DefaultRequestHeaders.Clear();
@@ -221,7 +263,7 @@ public class PayPalPaymentProvider : IPaymentProvider
             }
             else
             {
-                _logger.LogError("Failed to obtain PayPal access token: {StatusCode} - {Response}", 
+                _logger.LogError("Failed to obtain PayPal access token: {StatusCode} - {Response}",
                     response.StatusCode, responseContent);
                 return null;
             }
@@ -335,7 +377,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new CancelSubscriptionResult
                 {
@@ -410,7 +452,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new GetSubscriptionResult
                 {
@@ -491,7 +533,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new UpdateSubscriptionResult
                 {
@@ -559,7 +601,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new ProcessPaymentResult
                 {
@@ -685,7 +727,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new RefundPaymentResult
                 {
@@ -730,7 +772,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new CreatePaymentMethodResult
                 {
@@ -765,7 +807,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new DeletePaymentMethodResult
                 {
@@ -799,7 +841,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new GetPaymentMethodResult
                 {
@@ -832,7 +874,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new WebhookHandleResult
                 {
@@ -917,12 +959,13 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled || !_config.Webhooks.VerifySignature)
+            var config = await GetConfigurationAsync();
+            if (!await IsEnabledAsync() || config == null || !config.Webhooks.VerifySignature)
             {
                 return true; // Skip verification if disabled
             }
 
-            if (string.IsNullOrEmpty(_config.WebhookSecret))
+            if (string.IsNullOrEmpty(config.WebhookSecret))
             {
                 _logger.LogWarning("PayPal webhook secret not configured, skipping verification");
                 return true;
@@ -954,7 +997,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return null;
             }
@@ -983,7 +1026,7 @@ public class PayPalPaymentProvider : IPaymentProvider
     {
         try
         {
-            if (!_isEnabled)
+            if (!await IsEnabledAsync())
             {
                 return new PaymentAuthorizationResult
                 {

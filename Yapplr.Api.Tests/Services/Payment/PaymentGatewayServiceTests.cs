@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 using FluentAssertions;
@@ -17,7 +16,7 @@ public class PaymentGatewayServiceTests : IDisposable
     private readonly YapplrDbContext _context;
     private readonly Mock<IPaymentGatewayManager> _mockGatewayManager;
     private readonly Mock<ILogger<PaymentGatewayService>> _mockLogger;
-    private readonly Mock<IOptionsMonitor<PaymentProvidersConfiguration>> _mockConfig;
+    private readonly Mock<IDynamicPaymentConfigurationService> _mockConfigService;
     private readonly PaymentGatewayService _service;
     private readonly Mock<IPaymentProvider> _mockPaymentProvider;
 
@@ -30,21 +29,25 @@ public class PaymentGatewayServiceTests : IDisposable
         _context = new YapplrDbContext(options);
         _mockGatewayManager = new Mock<IPaymentGatewayManager>();
         _mockLogger = new Mock<ILogger<PaymentGatewayService>>();
-        _mockConfig = new Mock<IOptionsMonitor<PaymentProvidersConfiguration>>();
+        _mockConfigService = new Mock<IDynamicPaymentConfigurationService>();
         _mockPaymentProvider = new Mock<IPaymentProvider>();
 
-        var config = new PaymentProvidersConfiguration
+        var globalSettings = new PaymentGlobalSettings
         {
-            Global = new PaymentGlobalSettings
-            {
-                EnableTrialPeriods = true,
-                DefaultTrialDays = 14
-            }
+            EnableTrialPeriods = true,
+            DefaultTrialDays = 14,
+            DefaultCurrency = "USD",
+            GracePeriodDays = 7,
+            MaxPaymentRetries = 3,
+            RetryIntervalDays = 3,
+            EnableProration = true,
+            WebhookTimeoutSeconds = 10,
+            VerifyWebhookSignatures = true
         };
 
-        _mockConfig.Setup(x => x.CurrentValue).Returns(config);
+        _mockConfigService.Setup(x => x.GetGlobalSettingsAsync()).ReturnsAsync(globalSettings);
 
-        _service = new PaymentGatewayService(_context, _mockGatewayManager.Object, _mockLogger.Object, _mockConfig.Object);
+        _service = new PaymentGatewayService(_context, _mockGatewayManager.Object, _mockLogger.Object, _mockConfigService.Object);
     }
 
     [Fact]

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.DTOs.Payment;
 
@@ -8,27 +7,24 @@ public class PaymentGatewayManager : IPaymentGatewayManager
 {
     private readonly ILogger<PaymentGatewayManager> _logger;
     private readonly IEnumerable<IPaymentProvider> _providers;
-    private readonly PaymentProvidersConfiguration _config;
-    private readonly List<IPaymentProvider> _orderedProviders;
+    private readonly IDynamicPaymentConfigurationService _configService;
 
     public PaymentGatewayManager(
         ILogger<PaymentGatewayManager> logger,
         IEnumerable<IPaymentProvider> providers,
-        IOptionsMonitor<PaymentProvidersConfiguration> config)
+        IDynamicPaymentConfigurationService configService)
     {
         _logger = logger;
         _providers = providers;
-        _config = config.CurrentValue;
-        
-        // Order providers by priority
-        _orderedProviders = OrderProvidersByPriority();
+        _configService = configService;
     }
 
     public async Task<List<IPaymentProvider>> GetAvailableProvidersAsync()
     {
         var availableProviders = new List<IPaymentProvider>();
-        
-        foreach (var provider in _orderedProviders)
+        var orderedProviders = await GetOrderedProvidersAsync();
+
+        foreach (var provider in orderedProviders)
         {
             try
             {
@@ -42,18 +38,20 @@ public class PaymentGatewayManager : IPaymentGatewayManager
                 _logger.LogWarning(ex, "Failed to check availability for payment provider {ProviderName}", provider.ProviderName);
             }
         }
-        
+
         return availableProviders;
     }
 
     public async Task<IPaymentProvider?> GetBestProviderAsync(string? preferredProvider = null)
     {
+        var orderedProviders = await GetOrderedProvidersAsync();
+
         // If a preferred provider is specified and available, use it
         if (!string.IsNullOrEmpty(preferredProvider))
         {
-            var preferred = _orderedProviders.FirstOrDefault(p => 
+            var preferred = orderedProviders.FirstOrDefault(p =>
                 p.ProviderName.Equals(preferredProvider, StringComparison.OrdinalIgnoreCase));
-            
+
             if (preferred != null)
             {
                 try
@@ -71,7 +69,7 @@ public class PaymentGatewayManager : IPaymentGatewayManager
         }
 
         // Fall back to the first available provider in priority order
-        foreach (var provider in _orderedProviders)
+        foreach (var provider in orderedProviders)
         {
             try
             {
@@ -92,7 +90,8 @@ public class PaymentGatewayManager : IPaymentGatewayManager
 
     public async Task<IPaymentProvider?> GetProviderByNameAsync(string providerName)
     {
-        var provider = _orderedProviders.FirstOrDefault(p => 
+        var orderedProviders = await GetOrderedProvidersAsync();
+        var provider = orderedProviders.FirstOrDefault(p =>
             p.ProviderName.Equals(providerName, StringComparison.OrdinalIgnoreCase));
 
         if (provider == null)
@@ -117,7 +116,9 @@ public class PaymentGatewayManager : IPaymentGatewayManager
 
     public async Task<bool> HasAvailableProvidersAsync()
     {
-        foreach (var provider in _orderedProviders)
+        var orderedProviders = await GetOrderedProvidersAsync();
+
+        foreach (var provider in orderedProviders)
         {
             try
             {
@@ -138,8 +139,9 @@ public class PaymentGatewayManager : IPaymentGatewayManager
     public async Task<List<PaymentProviderInfo>> GetProviderInfoAsync()
     {
         var providerInfos = new List<PaymentProviderInfo>();
+        var orderedProviders = await GetOrderedProvidersAsync();
 
-        foreach (var provider in _orderedProviders)
+        foreach (var provider in orderedProviders)
         {
             try
             {
@@ -148,16 +150,16 @@ public class PaymentGatewayManager : IPaymentGatewayManager
                 {
                     Name = provider.ProviderName,
                     IsAvailable = isAvailable,
-                    SupportedPaymentMethods = GetSupportedPaymentMethods(provider.ProviderName),
-                    SupportedCurrencies = GetSupportedCurrencies(provider.ProviderName)
+                    SupportedPaymentMethods = await GetSupportedPaymentMethodsAsync(provider.ProviderName),
+                    SupportedCurrencies = await GetSupportedCurrenciesAsync(provider.ProviderName)
                 };
-                
+
                 providerInfos.Add(info);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to get info for payment provider {ProviderName}", provider.ProviderName);
-                
+
                 // Add provider info with availability = false
                 var info = new PaymentProviderInfo
                 {
@@ -166,7 +168,7 @@ public class PaymentGatewayManager : IPaymentGatewayManager
                     SupportedPaymentMethods = new List<string>(),
                     SupportedCurrencies = new List<string>()
                 };
-                
+
                 providerInfos.Add(info);
             }
         }
@@ -174,16 +176,17 @@ public class PaymentGatewayManager : IPaymentGatewayManager
         return providerInfos;
     }
 
-    private List<IPaymentProvider> OrderProvidersByPriority()
+    private async Task<List<IPaymentProvider>> GetOrderedProvidersAsync()
     {
         var orderedProviders = new List<IPaymentProvider>();
+        var providerPriority = await _configService.GetProviderPriorityAsync();
 
         // First, add providers in the configured priority order
-        foreach (var providerName in _config.ProviderPriority)
+        foreach (var providerName in providerPriority)
         {
-            var provider = _providers.FirstOrDefault(p => 
+            var provider = _providers.FirstOrDefault(p =>
                 p.ProviderName.Equals(providerName, StringComparison.OrdinalIgnoreCase));
-            
+
             if (provider != null)
             {
                 orderedProviders.Add(provider);
@@ -202,7 +205,7 @@ public class PaymentGatewayManager : IPaymentGatewayManager
         return orderedProviders;
     }
 
-    private List<string> GetSupportedPaymentMethods(string providerName)
+    private async Task<List<string>> GetSupportedPaymentMethodsAsync(string providerName)
     {
         return providerName.ToLower() switch
         {
@@ -212,12 +215,12 @@ public class PaymentGatewayManager : IPaymentGatewayManager
         };
     }
 
-    private List<string> GetSupportedCurrencies(string providerName)
+    private async Task<List<string>> GetSupportedCurrenciesAsync(string providerName)
     {
         return providerName.ToLower() switch
         {
-            "paypal" => _config.PayPal.SupportedCurrencies,
-            "stripe" => _config.Stripe.SupportedCurrencies,
+            "paypal" => (await _configService.GetPayPalConfigurationAsync())?.SupportedCurrencies ?? new List<string> { "USD" },
+            "stripe" => (await _configService.GetStripeConfigurationAsync())?.SupportedCurrencies ?? new List<string> { "USD" },
             _ => new List<string> { "USD" }
         };
     }
