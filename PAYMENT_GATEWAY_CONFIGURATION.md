@@ -1,21 +1,78 @@
 # Payment Gateway Configuration Guide
 
-This guide covers the complete setup and configuration of PayPal and Stripe payment providers for the Yapplr payment system.
+This guide covers the complete setup and configuration of PayPal and Stripe payment providers for the Yapplr payment system, including the tiered subscription model and dynamic payment gateway configuration.
 
 ## Table of Contents
 - [Overview](#overview)
+- [Tiered Subscription Model](#tiered-subscription-model)
+- [Dynamic Payment Gateway Configuration](#dynamic-payment-gateway-configuration)
 - [PayPal Configuration](#paypal-configuration)
 - [Stripe Configuration](#stripe-configuration)
 - [Webhook Configuration](#webhook-configuration)
 - [Environment Setup](#environment-setup)
+- [Admin Interface Setup](#admin-interface-setup)
 - [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 
 ## Overview
 
-The Yapplr payment system supports multiple payment providers with a flexible architecture. Currently implemented providers:
+The Yapplr payment system supports multiple payment providers with a flexible architecture and dynamic configuration. The system features:
+- **Tiered Subscription Model**: Flexible subscription tiers with custom pricing and features
+- **Dynamic Payment Gateway Configuration**: Admin-configurable payment providers without code changes
+- **Multi-Provider Support**: PayPal, Stripe, and extensible architecture for additional providers
+- **Real-time Configuration Updates**: Change payment settings instantly without application restarts
+
+Currently implemented providers:
 - **PayPal**: Subscription billing and one-time payments
 - **Stripe**: Advanced payment processing with extensive features
+
+## Tiered Subscription Model
+
+Yapplr features a comprehensive subscription system that allows you to create multiple subscription tiers with different pricing and features.
+
+### Subscription Tier Features
+- **Flexible Pricing**: Set custom prices for each tier with support for multiple currencies
+- **Billing Cycles**: Configure monthly, yearly, or custom billing periods
+- **Feature Flags**: Control access to premium features like:
+  - Verified badges
+  - Ad-free experience
+  - Premium content access
+  - Enhanced upload limits
+- **Trial Periods**: Configurable trial periods for new subscribers
+- **Tier Management**: Create, edit, and manage subscription tiers through the admin interface
+
+### Subscription Management
+- **User Subscriptions**: Users can subscribe, upgrade, downgrade, and cancel subscriptions
+- **Grace Periods**: Configurable grace periods for failed payments before suspension
+- **Automatic Renewals**: Seamless subscription renewals with payment provider integration
+- **Proration Support**: Automatic proration for subscription changes
+- **Analytics**: Comprehensive subscription analytics and revenue tracking
+
+## Dynamic Payment Gateway Configuration
+
+The payment system features dynamic configuration that allows administrators to manage payment providers without code changes or application restarts.
+
+### Key Features
+- **Database-Driven Configuration**: All payment settings stored securely in the database
+- **Admin Interface**: Complete web-based configuration interface
+- **Real-time Updates**: Configuration changes take effect immediately
+- **Secure Credential Storage**: Sensitive data encrypted in the database
+- **Provider Priority**: Configure fallback order for payment provider selection
+- **Health Monitoring**: Real-time provider status monitoring with automatic failover
+
+### Configuration Management
+- **Provider Settings**: Configure API keys, secrets, and environment settings
+- **Environment Support**: Separate sandbox/test and production configurations
+- **Validation**: Built-in validation and connectivity testing
+- **Audit Trail**: Complete audit logging for all configuration changes
+- **Backup/Restore**: Export and import configuration settings
+
+### Admin Interface Access
+1. Log in as an admin user
+2. Navigate to `/admin/payment-configuration`
+3. Configure payment providers and global settings
+4. Test connectivity and save changes
+5. Monitor provider health and performance
 
 ## PayPal Configuration
 
@@ -348,6 +405,174 @@ Access admin endpoints to verify functionality:
 - `GET /api/admin/payments/providers` - Provider status
 - `POST /api/admin/payments/providers/{name}/test` - Test provider connectivity
 
+### 4. Subscription System Testing
+
+#### Testing Subscription Tiers
+```bash
+# Get available subscription tiers
+curl -X GET https://localhost:5001/api/subscriptions/tiers
+
+# Get specific tier details
+curl -X GET https://localhost:5001/api/subscriptions/tiers/1
+```
+
+#### Testing User Subscriptions
+```bash
+# Get current user's subscription
+curl -X GET https://localhost:5001/api/subscriptions/my-subscription \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Assign subscription tier to user
+curl -X POST https://localhost:5001/api/subscriptions/assign-tier \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"subscriptionTierId": 1}'
+```
+
+#### Testing Payment Integration
+```bash
+# Create subscription with payment
+curl -X POST https://localhost:5001/api/payments/subscriptions?subscriptionTierId=1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "paymentProvider": "PayPal",
+    "startTrial": true,
+    "returnUrl": "https://yourapp.com/success",
+    "cancelUrl": "https://yourapp.com/cancel"
+  }'
+
+# Get current subscription details
+curl -X GET https://localhost:5001/api/payments/subscriptions/current \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### Testing Admin Configuration
+```bash
+# Get payment configuration summary
+curl -X GET https://localhost:5001/api/admin/payment-configuration/summary \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+
+# Test payment provider connectivity
+curl -X POST https://localhost:5001/api/admin/payment-configuration/providers/1/test \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+
+# Get subscription analytics
+curl -X GET https://localhost:5001/api/admin/subscriptions/analytics \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+### 5. Frontend Testing
+
+#### Admin Interface Testing
+1. **Payment Configuration Page**
+   - Navigate to `/admin/payment-configuration`
+   - Test provider configuration forms
+   - Verify connectivity testing functionality
+   - Check real-time status updates
+
+2. **Subscription Management Page**
+   - Navigate to `/admin/subscriptions`
+   - Test tier creation and editing
+   - Verify tier activation/deactivation
+   - Check subscription analytics display
+
+#### User Interface Testing
+1. **Subscription Tier Display**
+   - Check tier badges on user profiles
+   - Verify feature access based on subscription
+   - Test subscription upgrade/downgrade flows
+
+2. **Payment Flow Testing**
+   - Test subscription signup process
+   - Verify payment provider integration
+   - Check trial period functionality
+   - Test subscription cancellation
+
+## Admin Interface Setup
+
+The payment system includes a comprehensive admin interface for managing payment providers and subscription tiers.
+
+### Accessing the Admin Interface
+
+1. **Admin User Setup**
+   - Ensure you have an admin user account
+   - Log in to the Yapplr frontend
+   - Navigate to `/admin` to access the admin dashboard
+
+2. **Payment Configuration**
+   - Go to `/admin/payment-configuration`
+   - Configure payment providers (PayPal, Stripe)
+   - Set up global payment settings
+   - Test provider connectivity
+
+3. **Subscription Management**
+   - Go to `/admin/subscriptions`
+   - Create and manage subscription tiers
+   - Set pricing and features for each tier
+   - Monitor subscription analytics
+
+### Payment Provider Configuration
+
+#### Adding a New Payment Provider
+1. **Navigate to Payment Configuration**
+   - Go to `/admin/payment-configuration`
+   - Click "Add Provider" or select an existing provider
+
+2. **Configure Provider Settings**
+   - **Provider Name**: Select PayPal or Stripe
+   - **Environment**: Choose sandbox/test or live/production
+   - **Priority**: Set provider priority order (lower number = higher priority)
+   - **Timeout**: Configure API timeout in seconds
+   - **Max Retries**: Set maximum retry attempts for failed requests
+
+3. **Add Provider Credentials**
+   - **PayPal**: Client ID, Client Secret, Webhook Secret
+   - **Stripe**: Publishable Key, Secret Key, Webhook Secret
+   - **Security**: Sensitive credentials are automatically encrypted
+
+4. **Test Configuration**
+   - Use the "Test Connectivity" button to verify settings
+   - Check provider health status
+   - Review any configuration errors
+
+#### Global Payment Settings
+- **Default Provider**: Set the primary payment provider
+- **Default Currency**: Configure the default currency (USD, EUR, etc.)
+- **Grace Period**: Set days before suspending failed payments
+- **Trial Periods**: Enable/disable trial periods and set default duration
+- **Retry Settings**: Configure payment retry attempts and intervals
+
+### Subscription Tier Management
+
+#### Creating Subscription Tiers
+1. **Navigate to Subscription Management**
+   - Go to `/admin/subscriptions`
+   - Click "Create New Tier"
+
+2. **Configure Tier Details**
+   - **Name**: Tier name (e.g., "Premium", "Pro", "Enterprise")
+   - **Description**: Detailed description of tier benefits
+   - **Price**: Set price in the configured currency
+   - **Billing Cycle**: Choose monthly, yearly, or custom period
+   - **Sort Order**: Set display order for tier comparison
+
+3. **Configure Features**
+   - **Verified Badge**: Enable verified badge for this tier
+   - **Show Advertisements**: Control ad display (true = show ads, false = ad-free)
+   - **Custom Features**: Add additional features as JSON configuration
+
+4. **Tier Management**
+   - **Activate/Deactivate**: Control tier availability
+   - **Set Default**: Mark a tier as the default option
+   - **Edit/Delete**: Modify or remove existing tiers
+
+#### Subscription Analytics
+- **Revenue Tracking**: Monitor subscription revenue and trends
+- **User Metrics**: Track active subscriptions and churn rates
+- **Tier Performance**: Analyze popularity of different subscription tiers
+- **Payment Analytics**: Review payment success rates and failures
+
 ## Database Migration
 
 Run the payment system migrations:
@@ -438,6 +663,45 @@ dotnet ef database update --project Yapplr.Api
 - **Solution**: Verify webhook secret from Stripe Dashboard
 - Ensure raw request body is used for signature verification
 
+### Subscription System Issues
+
+**Issue**: "Subscription tier not found"
+- **Solution**: Ensure subscription tier exists and is active
+- Check tier ID in admin interface
+- Verify tier is not deleted or deactivated
+
+**Issue**: "Payment provider not configured"
+- **Solution**: Configure payment provider in admin interface
+- Verify provider credentials are correct
+- Check provider is enabled and has proper priority
+
+**Issue**: "Subscription creation failed"
+- **Solution**: Check payment provider connectivity
+- Verify user doesn't already have an active subscription
+- Check subscription tier pricing and configuration
+
+**Issue**: "Trial period not working"
+- **Solution**: Verify trial periods are enabled in global configuration
+- Check subscription tier has trial period configured
+- Ensure user hasn't already used trial period
+
+### Admin Interface Issues
+
+**Issue**: "Cannot access payment configuration"
+- **Solution**: Ensure user has admin role
+- Check authentication token is valid
+- Verify admin authorization policy is configured
+
+**Issue**: "Provider settings not saving"
+- **Solution**: Check database connection
+- Verify encryption key is configured for sensitive settings
+- Check for validation errors in provider configuration
+
+**Issue**: "Subscription analytics not loading"
+- **Solution**: Ensure subscription data exists in database
+- Check database indexes for performance
+- Verify analytics service is running
+
 ### General Debugging
 
 1. **Enable Debug Logging**
@@ -445,7 +709,9 @@ dotnet ef database update --project Yapplr.Api
    {
      "Logging": {
        "LogLevel": {
-         "Yapplr.Api.Services.Payment": "Debug"
+         "Yapplr.Api.Services.Payment": "Debug",
+         "Yapplr.Api.Services.Subscription": "Debug",
+         "Yapplr.Api.Controllers.Admin.PaymentConfigurationController": "Debug"
        }
      }
    }
@@ -453,27 +719,74 @@ dotnet ef database update --project Yapplr.Api
 
 2. **Check Provider Status**
    ```bash
-   curl -X POST https://yourapi.com/api/admin/payments/providers/PayPal/test \
+   curl -X POST https://yourapi.com/api/admin/payment-configuration/providers/1/test \
      -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
    ```
 
-3. **Webhook Testing Tools**
+3. **Check Subscription System Status**
+   ```bash
+   curl -X GET https://yourapi.com/api/admin/subscription-system/status \
+     -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+   ```
+
+4. **Webhook Testing Tools**
    - Use ngrok for local webhook testing
    - PayPal Webhook Simulator
    - Stripe CLI for webhook forwarding
 
+5. **Database Verification**
+   ```sql
+   -- Check payment provider configurations
+   SELECT * FROM PaymentProviderConfigurations;
+
+   -- Check subscription tiers
+   SELECT * FROM SubscriptionTiers WHERE IsActive = true;
+
+   -- Check user subscriptions
+   SELECT * FROM UserSubscriptions WHERE Status = 0; -- Active subscriptions
+   ```
+
 ## Production Deployment Checklist
 
-- [ ] Update to live API credentials
-- [ ] Configure production webhook URLs
-- [ ] Set up SSL certificates
-- [ ] Configure environment variables
-- [ ] Run database migrations
-- [ ] Test webhook endpoints
-- [ ] Set up monitoring and alerting
-- [ ] Configure backup and disaster recovery
-- [ ] Perform security audit
-- [ ] Document incident response procedures
+### Payment System Setup
+- [ ] Update to live API credentials for all payment providers
+- [ ] Configure production webhook URLs for PayPal and Stripe
+- [ ] Set up SSL certificates for webhook endpoints
+- [ ] Configure environment variables for sensitive credentials
+- [ ] Run database migrations for payment and subscription tables
+- [ ] Test webhook endpoints with production providers
+- [ ] Verify payment provider connectivity in production
+
+### Subscription System Configuration
+- [ ] Create production subscription tiers with proper pricing
+- [ ] Configure trial periods and billing cycles
+- [ ] Set up grace periods for failed payments
+- [ ] Test subscription creation and cancellation flows
+- [ ] Verify subscription analytics and reporting
+- [ ] Configure subscription email notifications
+
+### Security and Monitoring
+- [ ] Set up monitoring and alerting for payment failures
+- [ ] Configure backup and disaster recovery for payment data
+- [ ] Perform security audit of payment configuration
+- [ ] Document incident response procedures for payment issues
+- [ ] Set up fraud detection and monitoring
+- [ ] Configure PCI compliance measures
+
+### Admin Interface
+- [ ] Verify admin access to payment configuration
+- [ ] Test payment provider management interface
+- [ ] Confirm subscription tier management functionality
+- [ ] Set up admin notifications for payment issues
+- [ ] Document admin procedures for payment management
+
+### Testing and Validation
+- [ ] Test end-to-end subscription flows
+- [ ] Verify webhook processing and retry logic
+- [ ] Test payment failure scenarios and recovery
+- [ ] Validate subscription analytics and reporting
+- [ ] Confirm trial period and grace period functionality
+- [ ] Test subscription upgrade and downgrade flows
 
 ## Support and Resources
 

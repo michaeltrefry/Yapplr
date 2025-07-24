@@ -280,6 +280,8 @@ A complete Twitter-like social media platform built with modern web technologies
 - **SignalR Client** - Real-time WebSocket notifications
 - **date-fns** - Date formatting and manipulation
 - **Multi-Media Components** - PhotoGrid, MediaGallery, and FullScreenPhotoViewer for comprehensive media handling
+- **Subscription System UI** - SubscriptionTierBadge, payment configuration interface, and subscription management components
+- **Admin Payment Interface** - Complete payment provider configuration and subscription tier management UI
 
 ### Mobile App (React Native + Expo)
 - **React Native** - Cross-platform mobile development
@@ -769,6 +771,81 @@ Administrators can manage rate limiting through the admin interface:
 - `POST /api/security/admin/rate-limits/users/{userId}/block` - Block user from API access
 - `DELETE /api/security/admin/rate-limits/users/{userId}/block` - Unblock user from API access
 
+## 💳 Payment Gateway Configuration & Subscription System
+
+Yapplr features a comprehensive payment system with dynamic gateway configuration and flexible subscription management.
+
+### Core Features
+- **Dynamic Payment Provider Configuration**: Configure payment providers through admin interface without code changes
+- **Multi-Provider Support**: PayPal, Stripe, and extensible architecture for additional providers
+- **Real-time Configuration Updates**: Change payment settings instantly without application restarts
+- **Secure Credential Storage**: Encrypted storage of sensitive payment provider credentials
+- **Subscription Lifecycle Management**: Complete subscription creation, management, and cancellation workflows
+- **Trial Period Support**: Configurable trial periods with automatic conversion to paid subscriptions
+- **Payment Analytics**: Comprehensive analytics and reporting for subscription metrics and revenue tracking
+
+### Subscription Tiers
+- **Flexible Tier Management**: Create unlimited subscription tiers with custom pricing and features
+- **Feature Flags**: Control access to premium features like verified badges and ad-free experience
+- **Billing Cycles**: Support for monthly, yearly, and custom billing periods
+- **Tier Comparison**: Visual tier comparison interface for users to choose the best plan
+- **Automatic Tier Assignment**: Seamless tier assignment upon successful payment
+
+### Payment Provider Configuration
+#### Admin Interface Features
+- **Provider Management**: Enable/disable payment providers with priority ordering
+- **Environment Configuration**: Separate sandbox/test and production environment settings
+- **Credential Management**: Secure storage and management of API keys, secrets, and webhooks
+- **Health Monitoring**: Real-time provider status monitoring with automatic failover
+- **Test Connectivity**: Built-in provider connectivity testing and validation
+
+#### Supported Providers
+- **PayPal**: Complete PayPal subscriptions API integration with webhook processing
+- **Stripe**: Full Stripe payment processing with advanced subscription features
+- **Extensible Architecture**: Easy integration of additional payment providers
+
+### API Endpoints
+
+#### Subscription Management
+- `GET /api/subscriptions/tiers` - Get all active subscription tiers
+- `GET /api/subscriptions/tiers/{id}` - Get specific subscription tier details
+- `GET /api/subscriptions/my-subscription` - Get current user's subscription
+- `POST /api/subscriptions/assign-tier` - Assign subscription tier to user
+- `DELETE /api/subscriptions/remove-subscription` - Remove user's subscription
+
+#### Payment Processing
+- `GET /api/payments/providers` - Get available payment providers
+- `POST /api/payments/subscriptions` - Create new subscription with payment
+- `GET /api/payments/subscriptions/current` - Get current user's subscription details
+- `POST /api/payments/subscriptions/cancel` - Cancel current subscription
+- `POST /api/payments/webhooks/{provider}` - Process payment provider webhooks
+
+#### Admin Configuration
+- `GET /api/admin/payment-configuration/summary` - Get payment configuration overview
+- `GET /api/admin/payment-configuration/providers` - Get all payment provider configurations
+- `POST /api/admin/payment-configuration/providers` - Create new payment provider configuration
+- `PUT /api/admin/payment-configuration/providers/{id}` - Update payment provider configuration
+- `DELETE /api/admin/payment-configuration/providers/{id}` - Delete payment provider configuration
+- `POST /api/admin/payment-configuration/providers/{id}/test` - Test payment provider connectivity
+- `GET /api/admin/payment-configuration/global` - Get global payment configuration
+- `PUT /api/admin/payment-configuration/global` - Update global payment configuration
+
+#### Admin Subscription Management
+- `GET /api/admin/subscriptions/tiers` - Get all subscription tiers (including inactive)
+- `POST /api/admin/subscriptions/tiers` - Create new subscription tier
+- `PUT /api/admin/subscriptions/tiers/{id}` - Update subscription tier
+- `DELETE /api/admin/subscriptions/tiers/{id}` - Delete subscription tier
+- `GET /api/admin/subscriptions/users` - Get user subscriptions with filtering
+- `GET /api/admin/subscriptions/analytics` - Get subscription analytics and metrics
+
+### Technical Implementation
+- **Database-Driven Configuration**: All payment settings stored in database with encryption for sensitive data
+- **Provider Abstraction**: Clean abstraction layer allowing easy addition of new payment providers
+- **Webhook Security**: Automatic signature verification and replay attack prevention
+- **Retry Logic**: Intelligent retry mechanisms for failed payments with exponential backoff
+- **Audit Trail**: Complete audit logging for all payment configuration changes and transactions
+- **Performance Optimized**: Efficient database queries with proper indexing for payment operations
+
 ## 👤 Admin User Management API
 
 Comprehensive user management endpoints for admin interface:
@@ -970,7 +1047,51 @@ NEXT_PUBLIC_API_URL=http://localhost:5161
 NEXT_PUBLIC_ENABLE_SIGNALR=true
 ```
 
-### 7. SendGrid Setup (Required for Email Verification & Password Reset)
+### 7. Payment System Setup (Optional - For Subscription Features)
+
+The payment system enables subscription tiers and monetization features. This is optional for basic social media functionality.
+
+#### Payment Provider Setup
+1. **PayPal Setup** (Optional):
+   - Create a [PayPal Developer Account](https://developer.paypal.com/)
+   - Create an application and get Client ID and Secret
+   - Set up products and billing plans for subscriptions
+   - Configure webhook endpoints for real-time updates
+
+2. **Stripe Setup** (Optional):
+   - Create a [Stripe Account](https://dashboard.stripe.com/)
+   - Get API keys (Publishable and Secret keys)
+   - Set up products and prices for subscription tiers
+   - Configure webhook endpoints for payment events
+
+#### Admin Configuration
+1. **Access Payment Configuration**:
+   - Log in as an admin user
+   - Navigate to `/admin/payment-configuration`
+   - Configure payment providers with your credentials
+
+2. **Create Subscription Tiers**:
+   - Navigate to `/admin/subscriptions`
+   - Create subscription tiers with pricing and features
+   - Set up trial periods and billing cycles
+
+#### Configuration Example
+Add to `Yapplr.Api/appsettings.Development.json`:
+```json
+{
+  "PaymentSystem": {
+    "EnableSubscriptions": true,
+    "DefaultTrialDays": 14,
+    "GracePeriodDays": 7
+  }
+}
+```
+
+**Note**: Payment providers can be configured entirely through the admin interface. No code changes required for adding or modifying payment settings.
+
+For detailed payment gateway setup instructions, see [PAYMENT_GATEWAY_CONFIGURATION.md](./PAYMENT_GATEWAY_CONFIGURATION.md).
+
+### 8. SendGrid Setup (Required for Email Verification & Password Reset)
 
 SendGrid provides reliable email delivery for email verification and password reset functionality.
 

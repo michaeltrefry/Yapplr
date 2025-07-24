@@ -84,6 +84,7 @@ export default function PaymentConfigurationPage() {
   const [showSensitive, setShowSensitive] = useState<Record<string, boolean>>({});
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
   const [editingGlobal, setEditingGlobal] = useState(false);
+  const [providerSettings, setProviderSettings] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
     fetchConfiguration();
@@ -211,6 +212,141 @@ export default function PaymentConfigurationPage() {
       ...prev,
       [settingKey]: !prev[settingKey]
     }));
+  };
+
+  const updateProviderSetting = (providerName: string, settingKey: string, value: string) => {
+    setProviderSettings(prev => ({
+      ...prev,
+      [providerName]: {
+        ...prev[providerName],
+        [settingKey]: value
+      }
+    }));
+  };
+
+  const getRequiredSettings = (provider: PaymentProviderConfiguration) => {
+    return provider.settings.filter(s => s.isRequired);
+  };
+
+  const areRequiredSettingsFilled = (provider: PaymentProviderConfiguration) => {
+    const requiredSettings = getRequiredSettings(provider);
+    const currentSettings = providerSettings[provider.providerName] || {};
+
+    return requiredSettings.every(setting => {
+      const currentValue = currentSettings[setting.key];
+
+      // For sensitive fields, if no new value is entered, check if there's an existing value (indicated by ***)
+      if (setting.isSensitive) {
+        return currentValue !== undefined && currentValue.trim() !== '' ||
+               (setting.value && setting.value !== '' && setting.value !== '***');
+      }
+
+      // For non-sensitive fields, use the current value or fallback to existing value
+      const valueToCheck = currentValue || setting.value;
+      return valueToCheck && valueToCheck.trim() !== '';
+    });
+  };
+
+  const enablePaymentProvider = async (providerName: string) => {
+    try {
+      setSaving(true);
+      const provider = config?.providers.find(p => p.providerName === providerName);
+      if (!provider) return;
+
+      const currentSettings = providerSettings[providerName] || {};
+      const updatedSettings = provider.settings.map(s => {
+        const newValue = currentSettings[s.key];
+
+        // For sensitive fields: only update if user entered a new value, otherwise keep existing
+        if (s.isSensitive) {
+          return {
+            key: s.key,
+            value: newValue && newValue.trim() !== '' ? newValue : s.value,
+            isSensitive: s.isSensitive,
+            description: s.description,
+            category: s.category,
+            isRequired: s.isRequired
+          };
+        }
+
+        // For non-sensitive fields: use new value or fallback to existing
+        return {
+          key: s.key,
+          value: newValue || s.value,
+          isSensitive: s.isSensitive,
+          description: s.description,
+          category: s.category,
+          isRequired: s.isRequired
+        };
+      });
+
+      const updateData = {
+        providerName: provider.providerName,
+        isEnabled: true,
+        environment: provider.environment,
+        priority: provider.priority,
+        timeoutSeconds: provider.timeoutSeconds,
+        maxRetries: provider.maxRetries,
+        supportedCurrencies: provider.supportedCurrencies,
+        settings: updatedSettings
+      };
+
+      await api.put(`/admin/payment-configuration/providers/${providerName}`, updateData);
+      await fetchConfiguration();
+
+      setMessage({
+        type: 'success',
+        text: `${providerName} enabled successfully!`
+      });
+      setTimeout(() => setMessage(null), 5000);
+    } catch (error) {
+      console.error('Error enabling payment provider:', error);
+      setMessage({ type: 'error', text: 'Failed to enable payment provider. Please try again.' });
+      setTimeout(() => setMessage(null), 5000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const disablePaymentProvider = async (providerName: string) => {
+    try {
+      setSaving(true);
+      const provider = config?.providers.find(p => p.providerName === providerName);
+      if (!provider) return;
+
+      const updateData = {
+        providerName: provider.providerName,
+        isEnabled: false,
+        environment: provider.environment,
+        priority: provider.priority,
+        timeoutSeconds: provider.timeoutSeconds,
+        maxRetries: provider.maxRetries,
+        supportedCurrencies: provider.supportedCurrencies,
+        settings: provider.settings.map(s => ({
+          key: s.key,
+          value: s.value,
+          isSensitive: s.isSensitive,
+          description: s.description,
+          category: s.category,
+          isRequired: s.isRequired
+        }))
+      };
+
+      await api.put(`/admin/payment-configuration/providers/${providerName}`, updateData);
+      await fetchConfiguration();
+
+      setMessage({
+        type: 'success',
+        text: `${providerName} disabled successfully!`
+      });
+      setTimeout(() => setMessage(null), 5000);
+    } catch (error) {
+      console.error('Error disabling payment provider:', error);
+      setMessage({ type: 'error', text: 'Failed to disable payment provider. Please try again.' });
+      setTimeout(() => setMessage(null), 5000);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -382,23 +518,15 @@ export default function PaymentConfigurationPage() {
 
                   <div className="p-6">
                     {/* Provider Basic Settings */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Status
                         </label>
                         <div className="flex items-center">
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={provider.isEnabled}
-                              onChange={(e) => updateProviderConfiguration(provider.providerName, { isEnabled: e.target.checked })}
-                              disabled={saving}
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                          </label>
-                          <span className="ml-3 text-sm text-gray-700">
+                          <span className={`text-sm font-medium ${
+                            provider.isEnabled ? 'text-green-600' : 'text-red-600'
+                          }`}>
                             {provider.isEnabled ? 'Enabled' : 'Disabled'}
                           </span>
                         </div>
@@ -456,62 +584,136 @@ export default function PaymentConfigurationPage() {
                       </div>
                     </div>
 
-                    {/* Provider Settings */}
-                    {provider.settings.length > 0 && (
-                      <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-4">Provider Settings</h4>
-                        <div className="space-y-4">
-                          {provider.settings.map(setting => (
-                            <div key={setting.key} className="border border-gray-200 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <span className="font-medium text-gray-900">{setting.key}</span>
-                                  {setting.isRequired && (
-                                    <span className="text-red-500 text-sm">*</span>
-                                  )}
-                                  {setting.isSensitive && (
-                                    <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                                      Sensitive
-                                    </span>
-                                  )}
-                                </div>
-                                {setting.isSensitive && (
-                                  <button
-                                    onClick={() => toggleSensitiveVisibility(setting.key)}
-                                    className="text-gray-500 hover:text-gray-700"
-                                  >
-                                    {showSensitive[setting.key] ? (
-                                      <EyeOff className="w-4 h-4" />
+                    {/* Configuration Form for Disabled Providers */}
+                    {!provider.isEnabled && provider.settings.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <h4 className="text-md font-medium text-gray-900 mb-4">Provider Configuration</h4>
+
+                        {/* Group settings by category */}
+                        {['Authentication', 'Webhooks', 'General'].map(category => {
+                          const categorySettings = provider.settings.filter(s => s.category === category || (!s.category && category === 'General'));
+                          if (categorySettings.length === 0) return null;
+
+                          return (
+                            <div key={category} className="mb-6">
+                              <h5 className="text-sm font-medium text-gray-800 mb-3 flex items-center">
+                                {category === 'Authentication' && <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>}
+                                {category === 'Webhooks' && <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>}
+                                {category === 'General' && <span className="w-2 h-2 bg-gray-500 rounded-full mr-2"></span>}
+                                {category}
+                                {category === 'Authentication' && <span className="text-xs text-red-600 ml-2">(Required)</span>}
+                              </h5>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {categorySettings.map((setting) => (
+                                  <div key={setting.key} className={setting.isRequired ? 'md:col-span-2' : ''}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <label className="block text-sm font-medium text-gray-700">
+                                        {setting.key}
+                                        {setting.isRequired && <span className="text-red-500 ml-1">*</span>}
+                                      </label>
+                                      {setting.isSensitive && (
+                                        <button
+                                          onClick={() => toggleSensitiveVisibility(setting.key)}
+                                          className="text-gray-500 hover:text-gray-700"
+                                        >
+                                          {showSensitive[setting.key] ? (
+                                            <EyeOff className="w-4 h-4" />
+                                          ) : (
+                                            <Eye className="w-4 h-4" />
+                                          )}
+                                        </button>
+                                      )}
+                                    </div>
+                                    {setting.key === 'WebhookEnabledEvents' ? (
+                                      <textarea
+                                        value={providerSettings[provider.providerName]?.[setting.key] ?? (setting.isSensitive ? '' : setting.value)}
+                                        onChange={(e) => updateProviderSetting(provider.providerName, setting.key, e.target.value)}
+                                        placeholder={setting.description}
+                                        rows={3}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-xs"
+                                      />
                                     ) : (
-                                      <Eye className="w-4 h-4" />
+                                      <input
+                                        type={setting.isSensitive && !showSensitive[setting.key] ? 'password' : 'text'}
+                                        value={providerSettings[provider.providerName]?.[setting.key] ?? (setting.isSensitive ? '' : setting.value)}
+                                        onChange={(e) => updateProviderSetting(provider.providerName, setting.key, e.target.value)}
+                                        placeholder={setting.isSensitive ? 'Enter new value or leave blank to keep current' : setting.description}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                      />
                                     )}
-                                  </button>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-600 mb-2">{setting.description}</p>
-                              <div className="flex items-center space-x-2">
-                                <input
-                                  type={setting.isSensitive && !showSensitive[setting.key] ? 'password' : 'text'}
-                                  value={setting.value}
-                                  placeholder={setting.isRequired ? 'Required' : 'Optional'}
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                  readOnly={editingProvider !== provider.providerName}
-                                />
-                                {editingProvider === provider.providerName && (
-                                  <button
-                                    onClick={() => {
-                                      // Update setting value logic would go here
-                                      console.log('Update setting:', setting.key);
-                                    }}
-                                    className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                                  >
-                                    <Save className="w-4 h-4" />
-                                  </button>
-                                )}
+                                    <p className="text-xs text-gray-500 mt-1">{setting.description}</p>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          ))}
+                          );
+                        })}
+
+                        <div className="mt-6 flex justify-between items-center pt-4 border-t border-gray-200">
+                          <div className="text-sm text-gray-600">
+                            <span className="text-red-500">*</span> Required fields must be filled to enable the provider
+                          </div>
+                          <button
+                            onClick={() => enablePaymentProvider(provider.providerName)}
+                            disabled={!areRequiredSettingsFilled(provider) || saving}
+                            className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                              areRequiredSettingsFilled(provider) && !saving
+                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                          >
+                            {saving ? 'Enabling...' : 'Enable Provider'}
+                          </button>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Configuration View for Enabled Providers */}
+                    {provider.isEnabled && provider.settings.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <div className="flex justify-between items-center mb-4">
+                          <h4 className="text-md font-medium text-gray-900">Current Configuration</h4>
+                          <button
+                            onClick={() => disablePaymentProvider(provider.providerName)}
+                            disabled={saving}
+                            className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+                          >
+                            {saving ? 'Disabling...' : 'Disable Provider'}
+                          </button>
+                        </div>
+
+                        {/* Show current settings grouped by category */}
+                        {['Authentication', 'Webhooks', 'General'].map(category => {
+                          const categorySettings = provider.settings.filter(s => s.category === category || (!s.category && category === 'General'));
+                          if (categorySettings.length === 0) return null;
+
+                          return (
+                            <div key={category} className="mb-4">
+                              <h5 className="text-sm font-medium text-gray-800 mb-2 flex items-center">
+                                {category === 'Authentication' && <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>}
+                                {category === 'Webhooks' && <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>}
+                                {category === 'General' && <span className="w-2 h-2 bg-gray-500 rounded-full mr-2"></span>}
+                                {category}
+                              </h5>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {categorySettings.map((setting) => (
+                                  <div key={setting.key} className="bg-gray-50 p-3 rounded-md">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex-1">
+                                        <span className="text-sm font-medium text-gray-700">{setting.key}</span>
+                                        {setting.isRequired && <span className="text-red-500 ml-1 text-xs">*</span>}
+                                        <div className="text-sm text-gray-900 mt-1 font-mono">
+                                          {setting.isSensitive ? '••••••••' : (setting.value || 'Not set')}
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">{setting.description}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

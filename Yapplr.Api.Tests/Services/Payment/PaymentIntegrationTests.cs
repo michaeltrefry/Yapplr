@@ -92,6 +92,32 @@ public class PaymentIntegrationTests : IDisposable
                 NextBillingDate = DateTime.UtcNow.AddMonths(1),
                 RequiresAction = false
             });
+        mockPayPalProvider.Setup(p => p.CancelSubscriptionAsync(It.IsAny<CancelSubscriptionRequest>()))
+            .ReturnsAsync(new CancelSubscriptionResult
+            {
+                Success = true,
+                ExternalSubscriptionId = "test-subscription-id",
+                CancelledAt = DateTime.UtcNow,
+                Status = "cancelled"
+            });
+        mockPayPalProvider.Setup(p => p.ProcessPaymentAsync(It.IsAny<ProcessPaymentRequest>()))
+            .ReturnsAsync(new ProcessPaymentResult
+            {
+                Success = true,
+                ExternalTransactionId = "test-transaction-id",
+                Status = "completed",
+                Amount = 29.99m,
+                Currency = "USD",
+                ProcessedAt = DateTime.UtcNow
+            });
+        mockPayPalProvider.Setup(p => p.GetSubscriptionAsync(It.IsAny<string>()))
+            .ReturnsAsync(new GetSubscriptionResult
+            {
+                Success = true,
+                ExternalSubscriptionId = "test-subscription-id",
+                Status = "active",
+                NextBillingDate = DateTime.UtcNow.AddMonths(1)
+            });
 
         var mockStripeProvider = new Mock<IPaymentProvider>();
         mockStripeProvider.Setup(p => p.ProviderName).Returns("Stripe");
@@ -103,6 +129,32 @@ public class PaymentIntegrationTests : IDisposable
                 ExternalSubscriptionId = "test-subscription-id",
                 NextBillingDate = DateTime.UtcNow.AddMonths(1),
                 RequiresAction = false
+            });
+        mockStripeProvider.Setup(p => p.CancelSubscriptionAsync(It.IsAny<CancelSubscriptionRequest>()))
+            .ReturnsAsync(new CancelSubscriptionResult
+            {
+                Success = true,
+                ExternalSubscriptionId = "test-subscription-id",
+                CancelledAt = DateTime.UtcNow,
+                Status = "cancelled"
+            });
+        mockStripeProvider.Setup(p => p.ProcessPaymentAsync(It.IsAny<ProcessPaymentRequest>()))
+            .ReturnsAsync(new ProcessPaymentResult
+            {
+                Success = true,
+                ExternalTransactionId = "test-transaction-id",
+                Status = "completed",
+                Amount = 29.99m,
+                Currency = "USD",
+                ProcessedAt = DateTime.UtcNow
+            });
+        mockStripeProvider.Setup(p => p.GetSubscriptionAsync(It.IsAny<string>()))
+            .ReturnsAsync(new GetSubscriptionResult
+            {
+                Success = true,
+                ExternalSubscriptionId = "test-subscription-id",
+                Status = "active",
+                NextBillingDate = DateTime.UtcNow.AddMonths(1)
             });
 
         // Register provider collection
@@ -232,7 +284,7 @@ public class PaymentIntegrationTests : IDisposable
         Assert.True(result.Data.IsTrialPeriod);
     }
 
-    [Fact(Skip = "CancelSubscriptionAsync not yet implemented")]
+    [Fact]
     public async Task CancelSubscription_WithActiveSubscription_ShouldSucceed()
     {
         // Arrange
@@ -272,7 +324,7 @@ public class PaymentIntegrationTests : IDisposable
         Assert.Equal(tier.Id, result.Data.SubscriptionTierId);
     }
 
-    [Fact(Skip = "ProcessPaymentAsync not yet implemented")]
+    [Fact]
     public async Task ProcessPayment_WithValidRequest_ShouldSucceed()
     {
         // Arrange
@@ -280,6 +332,7 @@ public class PaymentIntegrationTests : IDisposable
 
         var request = new ProcessPaymentRequest
         {
+            PaymentProvider = "PayPal",
             Amount = 29.99m,
             Currency = "USD",
             Description = "Test payment",
@@ -296,7 +349,7 @@ public class PaymentIntegrationTests : IDisposable
         Assert.Equal(request.Currency, result.Data.Currency);
     }
 
-    [Fact(Skip = "GetPaymentHistoryAsync not yet implemented")]
+    [Fact]
     public async Task GetPaymentHistory_WithExistingTransactions_ShouldReturnHistory()
     {
         // Arrange
@@ -369,7 +422,7 @@ public class PaymentIntegrationTests : IDisposable
         Assert.True(result.TotalCount > 0);
     }
 
-    [Fact(Skip = "SyncSubscriptionStatusAsync not yet implemented")]
+    [Fact]
     public async Task AdminService_SyncSubscription_ShouldUpdateStatus()
     {
         // Arrange
@@ -378,7 +431,7 @@ public class PaymentIntegrationTests : IDisposable
         var subscription = await CreateTestSubscriptionAsync(user.Id, tier.Id);
 
         // Act
-        var result = await _adminService.SyncSubscriptionAsync(subscription.Id);
+        var result = await _paymentService.SyncSubscriptionStatusAsync(user.Id);
 
         // Assert
         Assert.True(result.Success);
