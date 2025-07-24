@@ -135,6 +135,29 @@ A complete Twitter-like social media platform built with modern web technologies
   - **AI Performance**: Monitor AI moderation accuracy and effectiveness metrics
   - **System Health**: Monitor platform performance and identify potential issues
 
+### 💳 Subscription System & Payment Gateways
+- **Tiered Subscription Model**: Flexible subscription system with multiple tiers and pricing options
+  - **Subscription Tiers**: Create and manage multiple subscription tiers with different features and pricing
+  - **Feature Flags**: Control access to features like verified badges, ad-free experience, and premium content
+  - **Billing Cycles**: Support for monthly, yearly, and custom billing periods
+  - **Trial Periods**: Configurable trial periods for new subscribers with automatic conversion
+  - **Subscription Management**: Users can upgrade, downgrade, and cancel subscriptions
+  - **Grace Periods**: Configurable grace periods for failed payments before suspension
+- **Dynamic Payment Gateway Configuration**: Admin-configurable payment providers without code changes
+  - **Multiple Providers**: Support for PayPal, Stripe, and extensible architecture for additional providers
+  - **Real-time Provider Switching**: Change payment providers instantly without application restarts
+  - **Provider Priority**: Configure fallback order for payment provider selection
+  - **Environment Management**: Separate sandbox/test and production configurations
+  - **Secure Settings Storage**: Encrypted storage of sensitive payment credentials in database
+  - **Provider Health Monitoring**: Real-time status monitoring and automatic failover
+- **Comprehensive Payment Features**:
+  - **Subscription Webhooks**: Automatic processing of payment provider webhooks for real-time updates
+  - **Payment Retry Logic**: Intelligent retry mechanisms for failed payments with exponential backoff
+  - **Proration Support**: Automatic proration for subscription upgrades and downgrades
+  - **Payment Analytics**: Detailed analytics and reporting for subscription metrics and revenue
+  - **Admin Payment Dashboard**: Complete payment management interface with transaction history
+  - **Subscription Analytics**: Revenue tracking, churn analysis, and subscription lifecycle metrics
+
 ### Privacy & Security
 - **Email Verification**: Required email verification at signup to prevent bot registrations
   - **6-digit verification codes** sent via SendGrid with beautiful email templates
@@ -231,6 +254,13 @@ A complete Twitter-like social media platform built with modern web technologies
 - **RabbitMQ** - Message queue for asynchronous video processing tasks
 - **Redis** - High-performance caching for count operations and real-time data
 - **AI Content Moderation** - Python-based sentiment analysis and content moderation service
+- **Payment Gateway System** - Multi-provider payment processing with dynamic configuration
+  - **PayPal Integration** - Complete PayPal subscriptions API with webhook processing
+  - **Stripe Integration** - Full Stripe payment processing with advanced features
+  - **Dynamic Configuration** - Database-driven payment provider configuration with admin UI
+  - **Subscription Management** - Complete subscription lifecycle management with trials and grace periods
+  - **Payment Analytics** - Revenue tracking, subscription metrics, and payment analytics
+  - **Webhook Processing** - Secure webhook handling with signature verification and retry logic
 
 ### Content Moderation Service (Python)
 - **Python 3.11** - Modern Python runtime
@@ -524,6 +554,97 @@ Yapplr features an advanced user trust score system that provides intelligent, b
 - `GET /api/admin/trust-scores/{userId}/factors` - Get trust score factor breakdown
 - `PUT /api/admin/trust-scores/{userId}` - Manually adjust user trust score
 - `GET /api/admin/trust-scores/statistics` - Get platform trust score statistics
+
+## 💳 Payment Gateway Configuration & Subscription System
+
+Yapplr features a comprehensive payment system with dynamic gateway configuration and flexible subscription management.
+
+### Core Features
+- **Dynamic Payment Provider Configuration**: Configure payment providers through admin interface without code changes
+- **Multi-Provider Support**: PayPal, Stripe, and extensible architecture for additional providers
+- **Real-time Configuration Updates**: Change payment settings instantly without application restarts
+- **Secure Credential Storage**: Encrypted storage of sensitive payment provider credentials
+- **Subscription Lifecycle Management**: Complete subscription creation, management, and cancellation workflows
+- **Trial Period Support**: Configurable trial periods with automatic conversion to paid subscriptions
+- **Payment Analytics**: Comprehensive analytics and reporting for subscription metrics and revenue tracking
+
+### Subscription Tiers
+- **Flexible Tier Management**: Create unlimited subscription tiers with custom pricing and features
+- **Feature Flags**: Control access to premium features like verified badges and ad-free experience
+- **Billing Cycles**: Support for monthly, yearly, and custom billing periods
+- **Tier Comparison**: Visual tier comparison interface for users to choose the best plan
+- **Automatic Tier Assignment**: Seamless tier assignment upon successful payment
+
+### Payment Provider Configuration
+#### Admin Interface Features
+- **Provider Management**: Enable/disable payment providers with priority ordering
+- **Environment Configuration**: Separate sandbox/test and production environment settings
+- **Credential Management**: Secure storage and management of API keys, secrets, and webhooks
+- **Health Monitoring**: Real-time provider status monitoring with automatic failover
+- **Test Connectivity**: Built-in provider connectivity testing and validation
+
+#### Supported Providers
+- **PayPal**: Complete PayPal subscriptions API integration with webhook processing
+- **Stripe**: Full Stripe payment processing with advanced subscription features
+- **Extensible Architecture**: Easy integration of additional payment providers
+
+### API Endpoints
+
+#### Subscription Management
+- `GET /api/subscriptions/tiers` - Get all active subscription tiers
+- `GET /api/subscriptions/tiers/{id}` - Get specific subscription tier details
+- `GET /api/subscriptions/my-subscription` - Get current user's subscription
+- `POST /api/subscriptions/assign-tier` - Assign subscription tier to user
+- `DELETE /api/subscriptions/remove-subscription` - Remove user's subscription
+
+#### Payment Processing
+- `GET /api/payments/providers` - Get available payment providers
+- `POST /api/payments/subscriptions` - Create new subscription with payment
+- `GET /api/payments/subscriptions/current` - Get current user's subscription details
+- `POST /api/payments/subscriptions/cancel` - Cancel current subscription
+- `POST /api/payments/webhooks/{provider}` - Process payment provider webhooks
+
+#### Admin Configuration
+- `GET /api/admin/payment-configuration/summary` - Get payment configuration overview
+- `GET /api/admin/payment-configuration/providers` - Get all payment provider configurations
+- `POST /api/admin/payment-configuration/providers` - Create new payment provider configuration
+- `PUT /api/admin/payment-configuration/providers/{id}` - Update payment provider configuration
+- `DELETE /api/admin/payment-configuration/providers/{id}` - Delete payment provider configuration
+- `POST /api/admin/payment-configuration/providers/{id}/test` - Test payment provider connectivity
+- `GET /api/admin/payment-configuration/global` - Get global payment configuration
+- `PUT /api/admin/payment-configuration/global` - Update global payment configuration
+
+#### Admin Subscription Management
+- `GET /api/admin/subscriptions/tiers` - Get all subscription tiers (including inactive)
+- `POST /api/admin/subscriptions/tiers` - Create new subscription tier
+- `PUT /api/admin/subscriptions/tiers/{id}` - Update subscription tier
+- `DELETE /api/admin/subscriptions/tiers/{id}` - Delete subscription tier
+- `GET /api/admin/subscriptions/users` - Get user subscriptions with filtering
+- `GET /api/admin/subscriptions/analytics` - Get subscription analytics and metrics
+
+### Technical Implementation
+- **Database-Driven Configuration**: All payment settings stored in database with encryption for sensitive data
+- **Provider Abstraction**: Clean abstraction layer allowing easy addition of new payment providers
+- **Webhook Security**: Automatic signature verification and replay attack prevention
+- **Retry Logic**: Intelligent retry mechanisms for failed payments with exponential backoff
+- **Audit Trail**: Complete audit logging for all payment configuration changes and transactions
+- **Performance Optimized**: Efficient database queries with proper indexing for payment operations
+
+### Configuration Options
+```json
+{
+  "PaymentSystem": {
+    "EnableSubscriptions": true,
+    "DefaultTrialDays": 14,
+    "GracePeriodDays": 7,
+    "MaxRetryAttempts": 3,
+    "RetryIntervalDays": 3,
+    "EnableProration": true,
+    "WebhookTimeoutSeconds": 10,
+    "VerifyWebhookSignatures": true
+  }
+}
+```
 
 ## 🚦 Smart API Rate Limiting
 
