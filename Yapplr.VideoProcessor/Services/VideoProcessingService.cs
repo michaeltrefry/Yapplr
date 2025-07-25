@@ -288,13 +288,13 @@ public class VideoProcessingService : IVideoProcessingService
         var audioCodec = await GetBestAvailableAudioCodecAsync(config.AudioCodec);
 
         // Calculate scaling dimensions while maintaining aspect ratio
-        // Use display dimensions (considering rotation) for proper scaling calculation
-        var (displayWidth, displayHeight) = GetDisplayDimensions(videoStream);
-        var aspectRatio = (double)displayWidth / displayHeight;
+        var originalWidth = videoStream.Width;
+        var originalHeight = videoStream.Height;
+        var aspectRatio = (double)originalWidth / originalHeight;
 
         int targetWidth, targetHeight;
 
-        if (displayWidth > config.MaxWidth || displayHeight > config.MaxHeight)
+        if (originalWidth > config.MaxWidth || originalHeight > config.MaxHeight)
         {
             // Scale down while maintaining aspect ratio
             if (aspectRatio > (double)config.MaxWidth / config.MaxHeight)
@@ -313,8 +313,8 @@ public class VideoProcessingService : IVideoProcessingService
         else
         {
             // Keep original dimensions if smaller than max
-            targetWidth = displayWidth;
-            targetHeight = displayHeight;
+            targetWidth = originalWidth;
+            targetHeight = originalHeight;
         }
 
         // Ensure dimensions are even numbers (required by libx264 encoder)
@@ -322,8 +322,8 @@ public class VideoProcessingService : IVideoProcessingService
         targetWidth = (targetWidth / 2) * 2;
         targetHeight = (targetHeight / 2) * 2;
 
-        _logger.LogInformation("Video scaling: Display={DisplayWidth}x{DisplayHeight} -> Target={TargetWidth}x{TargetHeight}",
-            displayWidth, displayHeight, targetWidth, targetHeight);
+        _logger.LogInformation("Video scaling: {OriginalWidth}x{OriginalHeight} -> {TargetWidth}x{TargetHeight}",
+            originalWidth, originalHeight, targetWidth, targetHeight);
 
         await FFMpegArguments
             .FromFileInput(inputPath)
@@ -349,9 +349,9 @@ public class VideoProcessingService : IVideoProcessingService
         }
 
         // Calculate thumbnail dimensions while maintaining aspect ratio
-        // Use display dimensions (considering rotation) for proper thumbnail scaling
-        var (displayWidth, displayHeight) = GetDisplayDimensions(videoStream);
-        var aspectRatio = (double)displayWidth / displayHeight;
+        var originalWidth = videoStream.Width;
+        var originalHeight = videoStream.Height;
+        var aspectRatio = (double)originalWidth / originalHeight;
 
         int thumbnailWidth, thumbnailHeight;
 
@@ -372,8 +372,8 @@ public class VideoProcessingService : IVideoProcessingService
         thumbnailWidth = (thumbnailWidth / 2) * 2;
         thumbnailHeight = (thumbnailHeight / 2) * 2;
 
-        _logger.LogInformation("Thumbnail scaling: Display={DisplayWidth}x{DisplayHeight} -> Thumbnail={ThumbnailWidth}x{ThumbnailHeight}",
-            displayWidth, displayHeight, thumbnailWidth, thumbnailHeight);
+        _logger.LogInformation("Thumbnail scaling: {OriginalWidth}x{OriginalHeight} -> {ThumbnailWidth}x{ThumbnailHeight}",
+            originalWidth, originalHeight, thumbnailWidth, thumbnailHeight);
 
         await FFMpegArguments
             .FromFileInput(inputPath)
@@ -383,41 +383,5 @@ public class VideoProcessingService : IVideoProcessingService
                 .WithFrameOutputCount(1)
                 .Seek(TimeSpan.FromSeconds(config.ThumbnailTimeSeconds)))
             .ProcessAsynchronously();
-    }
-
-    /// <summary>
-    /// Get normalized rotation value (0-360 range)
-    /// </summary>
-    private int GetNormalizedRotation(dynamic videoStream)
-    {
-        var rotationValue = videoStream.Rotation;
-        var rotation = rotationValue != null ? (int)rotationValue : 0;
-        return ((rotation % 360) + 360) % 360;
-    }
-
-    /// <summary>
-    /// Get the display dimensions of a video considering rotation metadata
-    /// This should only be used for scaling calculations
-    /// </summary>
-    private (int width, int height) GetDisplayDimensions(dynamic videoStream)
-    {
-        var width = (int)videoStream.Width;
-        var height = (int)videoStream.Height;
-        var rotation = GetNormalizedRotation(videoStream);
-
-        _logger.LogInformation("Video stream dimensions: {Width}x{Height}, Rotation: {Rotation}",
-            (int)width, (int)height, (int)rotation);
-
-        // For 90° and 270° rotations, we need to swap width and height to get the correct display dimensions
-        // This is especially important for videos from mobile devices that store portrait videos
-        // as landscape with rotation metadata
-        if (rotation == 90 || rotation == 270)
-        {
-            _logger.LogInformation("Swapping dimensions due to {Rotation}° rotation: {Width}x{Height} -> {Height}x{Width}",
-                (int)rotation, (int)width, (int)height, (int)height, (int)width);
-            return (height, width);
-        }
-
-        return (width, height);
     }
 }
