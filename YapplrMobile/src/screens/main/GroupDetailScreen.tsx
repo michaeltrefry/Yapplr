@@ -14,7 +14,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useAuth } from '../../contexts/AuthContext';
 import { Group } from '../../types';
-import { useApi } from '../../contexts/ApiContext';
 
 interface GroupDetailScreenProps {
   navigation: any;
@@ -27,8 +26,7 @@ interface GroupDetailScreenProps {
 
 export default function GroupDetailScreen({ navigation, route }: GroupDetailScreenProps) {
   const colors = useThemeColors();
-  const { user } = useAuth();
-  const api = useApi();
+  const { user, api } = useAuth();
   const { groupId } = route.params;
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);

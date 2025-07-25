@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { NotificationProvider } from './src/contexts/NotificationContext';
+
 import NotificationBannerManager from './src/components/NotificationBannerManager';
 import AppNavigator from './src/navigation/AppNavigator';
 
@@ -18,7 +19,7 @@ if (__DEV__) {
 }
 
 // Use your computer's IP address instead of localhost for mobile devices
-const API_BASE_URL = 'http://192.168.254.181:5161'; // Replace with your computer's IP
+const API_BASE_URL = 'http://192.168.254.181:8080'; // Replace with your computer's IP
 
 const queryClient = new QueryClient({
   defaultOptions: {

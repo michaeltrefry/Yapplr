@@ -19,13 +19,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_KEY = 'yapplr_token';
 // Use your computer's IP address instead of localhost for mobile devices
-const API_BASE_URL = 'http://192.168.254.181:5161'; // Replace with your computer's IP
+const API_BASE_URL = 'http://192.168.254.181:8080'; // Replace with your computer's IP
 
 // Alternative URLs to try if the main one fails
 const FALLBACK_URLS = [
-  'http://192.168.254.181:5161',
-  'http://localhost:5161',
-  'http://127.0.0.1:5161'
+  'http://192.168.254.181:8080',
+  'http://localhost:8080',
+  'http://127.0.0.1:8080'
 ];
 
 interface AuthProviderProps {

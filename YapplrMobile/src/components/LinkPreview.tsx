@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, Linking, StyleSheet, Dimensions } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { WebView } from 'expo-web-view';
 import { LinkPreview as LinkPreviewType, LinkPreviewStatus } from '../types';
 import { useThemeColors } from '../hooks/useThemeColors';
 
