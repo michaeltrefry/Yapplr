@@ -40,18 +40,121 @@ interface FullScreenVideoViewerProps {
   mediaItem?: PostMedia;
 }
 
-// Component that uses expo-video hooks
-function VideoPlayerComponent({
-  videoUrl,
+
+
+// Main component that decides whether to use expo-video or fallback
+export default function FullScreenVideoViewer({
   visible,
-  onStatusChange,
-  onError,
-}: {
-  videoUrl: string;
-  visible: boolean;
-  onStatusChange: (loading: boolean) => void;
-  onError: () => void;
-}) {
+  videoUrl,
+  thumbnailUrl,
+  onClose,
+  mediaItem,
+}: FullScreenVideoViewerProps) {
+  // If expo-video is not available, show fallback immediately
+  if (!VideoView || !useVideoPlayer) {
+    return <FullScreenVideoFallback visible={visible} thumbnailUrl={thumbnailUrl} onClose={onClose} />;
+  }
+
+  // If expo-video is available, use the video player component
+  return (
+    <FullScreenVideoPlayer
+      visible={visible}
+      videoUrl={videoUrl}
+      thumbnailUrl={thumbnailUrl}
+      onClose={onClose}
+      mediaItem={mediaItem}
+    />
+  );
+}
+
+// Component that uses expo-video (always calls hooks consistently)
+function FullScreenVideoPlayer({
+  visible,
+  videoUrl,
+  thumbnailUrl,
+  onClose,
+  mediaItem,
+}: FullScreenVideoViewerProps) {
+  const colors = useThemeColors();
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const progressUpdateRef = useRef<NodeJS.Timeout | null>(null);
+
+  const styles = createStyles(colors);
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+  // Format time in MM:SS format
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Update progress periodically
+  const updateProgress = () => {
+    try {
+      if (player && player.playing) {
+        setCurrentTime(player.currentTime || 0);
+        setDuration(player.duration || 0);
+      }
+    } catch (error) {
+      // Player might be disposed, stop updates
+      console.log('🎥 FullScreenVideoViewer: Player disposed, stopping progress updates');
+      stopProgressUpdates();
+    }
+  };
+
+  // Start/stop progress updates
+  const startProgressUpdates = () => {
+    if (progressUpdateRef.current) {
+      clearInterval(progressUpdateRef.current);
+    }
+    progressUpdateRef.current = setInterval(updateProgress, 500);
+  };
+
+  const stopProgressUpdates = () => {
+    if (progressUpdateRef.current) {
+      clearInterval(progressUpdateRef.current);
+      progressUpdateRef.current = null;
+    }
+  };
+
+  // Handle progress bar tap for seeking
+  const handleProgressPress = (event: any) => {
+    if (!player || duration === 0) return;
+
+    // Get the layout of the progress bar
+    event.currentTarget.measure((x: number, y: number, width: number, height: number) => {
+      const { locationX } = event.nativeEvent;
+      const percentage = locationX / width;
+      const seekTime = percentage * duration;
+
+      // Use currentTime property for precise seeking
+      player.currentTime = Math.max(0, Math.min(seekTime, duration));
+      setCurrentTime(seekTime);
+
+      console.log(`🎥 FullScreenVideoViewer: Seeked to ${formatTime(seekTime)} via progress bar`);
+    });
+  };
+
+  // Handle seeking by seconds
+  const handleSeek = async (seconds: number) => {
+    if (!player) return;
+
+    try {
+      // Use seekBy method for relative seeking (more efficient)
+      player.seekBy(seconds);
+      console.log(`🎥 FullScreenVideoViewer: Seeked ${seconds}s using seekBy()`);
+    } catch (error) {
+      console.error('🎥 FullScreenVideoViewer: Error seeking:', error);
+    }
+  };
+
+  // Always call the hook (Rules of Hooks) - this component only renders when expo-video is available
   const player = useVideoPlayer(videoUrl, (player: any) => {
     console.log('🎥 FullScreenVideoViewer: Creating player for URL:', videoUrl);
     player.loop = false;
@@ -63,16 +166,28 @@ function VideoPlayerComponent({
 
       // Update loading state based on video status
       if (status.status === 'readyToPlay' || status.status === 'idle') {
-        onStatusChange(false);
+        setIsLoading(false);
+        // Update duration when ready
+        setDuration(player.duration || 0);
       } else if (status.status === 'loading') {
-        onStatusChange(true);
+        setIsLoading(true);
+      }
+    });
+
+    // Listen for playing state changes
+    player.addListener('playingChange', (playingState: any) => {
+      console.log('🎥 FullScreenVideoViewer playing change:', playingState);
+      if (playingState.isPlaying) {
+        startProgressUpdates();
+      } else {
+        stopProgressUpdates();
       }
     });
 
     player.addListener('playbackError', (error: any) => {
       console.error('🎥 FullScreenVideoViewer playback error:', error);
-      onStatusChange(false);
-      onError();
+      setIsLoading(false);
+      setHasError(true);
     });
   });
 
@@ -82,79 +197,12 @@ function VideoPlayerComponent({
       if (!visible) {
         // Pause when modal is hidden
         player.pause();
+        stopProgressUpdates();
       }
     }
   }, [visible, player]);
 
-  return player;
-}
 
-export default function FullScreenVideoViewer({
-  visible,
-  videoUrl,
-  thumbnailUrl,
-  onClose,
-  mediaItem,
-}: FullScreenVideoViewerProps) {
-  const colors = useThemeColors();
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [showControls, setShowControls] = useState(true);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const styles = createStyles(colors);
-  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
-  // Only create player component if expo-video is available
-  const player = useVideoPlayer ? VideoPlayerComponent({
-    videoUrl,
-    visible,
-    onStatusChange: setIsLoading,
-    onError: () => setHasError(true),
-  }) : null;
-
-  // If expo-video is not available, show a fallback modal
-  if (!VideoView || !useVideoPlayer) {
-    return (
-      <Modal visible={visible} animationType="fade" onRequestClose={handleClose}>
-        <StatusBar hidden />
-        <SafeAreaView style={styles.container}>
-          <View style={styles.fallbackContainer}>
-            <TouchableOpacity
-              style={styles.closeButtonContainer}
-              onPress={handleClose}
-              activeOpacity={0.7}
-            >
-              <View style={styles.controlButton}>
-                <Ionicons name="close" size={24} color="#fff" />
-              </View>
-            </TouchableOpacity>
-
-            {thumbnailUrl ? (
-              <Image
-                source={{ uri: thumbnailUrl }}
-                style={styles.fallbackImage}
-                resizeMode="contain"
-              />
-            ) : (
-              <View style={styles.fallbackPlaceholder}>
-                <Ionicons name="videocam-outline" size={80} color="#666" />
-              </View>
-            )}
-
-            <View style={styles.fallbackMessage}>
-              <Text style={styles.fallbackText}>
-                Video playback requires a development build with expo-av configured.
-              </Text>
-              <Text style={styles.fallbackSubtext}>
-                Please rebuild your development build to enable video playback.
-              </Text>
-            </View>
-          </View>
-        </SafeAreaView>
-      </Modal>
-    );
-  }
 
   const handlePlayPress = async () => {
     console.log('🎥 FullScreenVideoViewer: handlePlayPress called');
@@ -208,33 +256,16 @@ export default function FullScreenVideoViewer({
     onClose();
   };
 
-  // Handle video loading and errors
-  React.useEffect(() => {
-    if (player && visible) {
-      const subscription = player.addListener('statusChange', (status: any) => {
-        if (status.isLoaded) {
-          setIsLoading(false);
-        }
-      });
 
-      const errorSubscription = player.addListener('playbackError', (error: any) => {
-        setIsLoading(false);
-        setHasError(true);
-        console.error('Full-screen video playback error:', error);
-      });
 
-      return () => {
-        subscription?.remove();
-        errorSubscription?.remove();
-      };
-    }
-  }, [player, visible]);
-
-  // Cleanup timeout on unmount
+  // Cleanup timeouts and intervals on unmount
   React.useEffect(() => {
     return () => {
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
+      }
+      if (progressUpdateRef.current) {
+        clearInterval(progressUpdateRef.current);
       }
     };
   }, []);
@@ -304,23 +335,137 @@ export default function FullScreenVideoViewer({
                 </View>
               </TouchableOpacity>
 
-              {/* Play/Pause button */}
-              <TouchableOpacity
-                style={styles.playButtonContainer}
-                onPress={handlePlayPress}
-                activeOpacity={0.7}
-              >
-                <View style={styles.playButton}>
-                  <Ionicons
-                    name={player?.playing ? "pause" : "play"}
-                    size={40}
-                    color="#fff"
-                  />
+              {/* Center Play/Pause button - only show when paused */}
+              {!player?.playing && (
+                <TouchableOpacity
+                  style={styles.playButtonContainer}
+                  onPress={handlePlayPress}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.playButton}>
+                    <Ionicons
+                      name="play"
+                      size={40}
+                      color="#fff"
+                    />
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {/* Bottom controls with progress bar */}
+              <View style={styles.bottomControlsOverlay}>
+                {/* Progress bar */}
+                <View style={styles.progressContainer}>
+                  <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+                  <TouchableOpacity
+                    style={styles.progressBar}
+                    onPress={handleProgressPress}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }
+                        ]}
+                      >
+                        {duration > 0 && currentTime > 0 && (
+                          <View style={styles.progressThumb} />
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                  <Text style={styles.timeText}>{formatTime(duration)}</Text>
                 </View>
-              </TouchableOpacity>
+
+                {/* Control buttons */}
+                <View style={styles.controlsRow}>
+                  <TouchableOpacity
+                    style={styles.seekButton}
+                    onPress={() => handleSeek(-10)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="play-back" size={24} color="#fff" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.seekButton}
+                    onPress={handlePlayPress}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={player?.playing ? "pause" : "play"}
+                      size={24}
+                      color="#fff"
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.seekButton}
+                    onPress={() => handleSeek(10)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="play-forward" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              </View>
             </>
           )}
         </TouchableOpacity>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+// Fallback component when expo-video is not available
+function FullScreenVideoFallback({
+  visible,
+  thumbnailUrl,
+  onClose,
+}: {
+  visible: boolean;
+  thumbnailUrl?: string;
+  onClose: () => void;
+}) {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
+
+  return (
+    <Modal visible={visible} animationType="fade" onRequestClose={onClose}>
+      <StatusBar hidden />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.fallbackContainer}>
+          <TouchableOpacity
+            style={styles.closeButtonContainer}
+            onPress={onClose}
+            activeOpacity={0.7}
+          >
+            <View style={styles.controlButton}>
+              <Ionicons name="close" size={24} color="#fff" />
+            </View>
+          </TouchableOpacity>
+
+          {thumbnailUrl ? (
+            <Image
+              source={{ uri: thumbnailUrl }}
+              style={styles.fallbackImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <View style={styles.fallbackPlaceholder}>
+              <Ionicons name="videocam-outline" size={80} color="#666" />
+            </View>
+          )}
+
+          <View style={styles.fallbackMessage}>
+            <Text style={styles.fallbackText}>
+              Video playback requires a development build with expo-video configured.
+            </Text>
+            <Text style={styles.fallbackSubtext}>
+              Please rebuild your development build to enable video playback.
+            </Text>
+          </View>
+        </View>
       </SafeAreaView>
     </Modal>
   );
@@ -435,5 +580,75 @@ const createStyles = (colors: any) => StyleSheet.create({
     color: '#ccc',
     fontSize: 14,
     textAlign: 'center',
+  },
+  bottomControlsOverlay: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    flexDirection: 'column',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressBar: {
+    flex: 1,
+    height: 20,
+    justifyContent: 'center',
+    marginHorizontal: 8,
+  },
+  progressTrack: {
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 2,
+    position: 'relative',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 2,
+    position: 'relative',
+  },
+  progressThumb: {
+    position: 'absolute',
+    right: -6,
+    top: -4,
+    width: 12,
+    height: 12,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  timeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seekButton: {
+    padding: 12,
+    marginHorizontal: 8,
+    borderRadius: 20,
+    minWidth: 48,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
 });
