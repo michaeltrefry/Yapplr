@@ -8,10 +8,12 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useAuth } from '../contexts/AuthContext';
+import { videoCoordinationService } from '../services/VideoCoordinationService';
 import { TimelineItem, Post, VideoProcessingStatus, ReactionType, MediaType } from '../types';
 import ImageViewer from './ImageViewer';
 import VideoPlayer, { VideoPlayerRef } from './VideoPlayer';
@@ -39,6 +41,8 @@ interface PostCardProps {
 export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRepost, onUserPress, onCommentPress, onCommentCountUpdate, onDelete, onUnrepost, onHashtagPress }: PostCardProps) {
   const colors = useThemeColors();
   const { user, api } = useAuth();
+
+
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
@@ -48,6 +52,7 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState<{ [key: string]: { width: number; height: number } }>({});
 
   // Refs for video players to control them externally
   const videoPlayerRefs = useRef<{ [key: string]: VideoPlayerRef | null }>({});
@@ -58,6 +63,33 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
   const getImageUrl = (fileName: string) => {
     if (!fileName) return '';
     return `http://192.168.254.181:5161/api/images/${fileName}`;
+  };
+
+  // Helper function to calculate image height based on aspect ratio
+  const getImageHeight = (imageKey: string) => {
+    const screenWidth = Dimensions.get('window').width;
+    const containerWidth = screenWidth - 32; // Account for padding
+    const dimensions = imageDimensions[imageKey];
+
+    if (dimensions) {
+      const aspectRatio = dimensions.width / dimensions.height;
+      const calculatedHeight = containerWidth / aspectRatio;
+
+      // Constrain height between min and max values
+      return Math.max(200, Math.min(400, calculatedHeight));
+    }
+
+    // Default height if dimensions not loaded yet
+    return 200;
+  };
+
+  // Helper function to handle image load and store dimensions
+  const handleImageLoad = (imageKey: string, event: any) => {
+    const { width, height } = event.nativeEvent.source;
+    setImageDimensions(prev => ({
+      ...prev,
+      [imageKey]: { width, height }
+    }));
   };
 
   const openVideoViewer = (videoUrl: string, thumbnailUrl?: string) => {
@@ -210,9 +242,15 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
                 >
                   <Image
                     source={{ uri: media.imageUrl }}
-                    style={styles.postImage}
-                    resizeMode="cover"
-                    onLoad={() => setImageLoading(false)}
+                    style={[
+                      styles.postImage,
+                      { height: getImageHeight(`media-${media.id}`) }
+                    ]}
+                    resizeMode="contain"
+                    onLoad={(event) => {
+                      handleImageLoad(`media-${media.id}`, event);
+                      setImageLoading(false);
+                    }}
                     onError={() => {
                       setImageLoading(false);
                       setImageError(true);
@@ -233,6 +271,7 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
                           videoPlayerRefs.current[`media-${media.id}`] = ref;
                         }
                       }}
+                      playerId={`media-${media.id}`}
                       videoUrl={media.videoUrl}
                       thumbnailUrl={media.videoThumbnailUrl}
                       style={styles.postImage}
@@ -273,8 +312,12 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
                 <View style={styles.gifContainer}>
                   <Image
                     source={{ uri: media.gifUrl }}
-                    style={styles.postImage}
-                    resizeMode="cover"
+                    style={[
+                      styles.postImage,
+                      { height: getImageHeight(`gif-${media.id}`) }
+                    ]}
+                    resizeMode="contain"
+                    onLoad={(event) => handleImageLoad(`gif-${media.id}`, event)}
                   />
                   <View style={styles.gifBadge}>
                     <Text style={styles.gifBadgeText}>GIF</Text>
@@ -297,10 +340,14 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
               >
                 <Image
                   source={{ uri: item.post.imageUrl }}
-                  style={styles.postImage}
-                  resizeMode="cover"
-                  onLoad={() => {
+                  style={[
+                    styles.postImage,
+                    { height: getImageHeight(`legacy-${item.post.id}`) }
+                  ]}
+                  resizeMode="contain"
+                  onLoad={(event) => {
                     console.log('Image loaded successfully:', item.post.imageUrl);
+                    handleImageLoad(`legacy-${item.post.id}`, event);
                     setImageLoading(false);
                   }}
                   onError={(error) => {
@@ -339,6 +386,7 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
                 videoPlayerRefs.current[`legacy-${item.post.id}`] = ref;
               }
             }}
+            playerId={`legacy-${item.post.id}`}
             videoUrl={item.post.videoUrl}
             thumbnailUrl={item.post.videoThumbnailUrl}
             style={styles.postImage}
@@ -575,8 +623,8 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   postImage: {
     width: '100%',
-    height: 200,
     backgroundColor: colors.surface,
+    // Height will be set dynamically based on image aspect ratio
   },
   postActions: {
     flexDirection: 'row',
@@ -608,7 +656,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   imageErrorContainer: {
-    height: 200,
+    height: 200, // Fixed height for error state
     backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
@@ -722,6 +770,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   mediaContainer: {
     marginTop: 12,
+    marginBottom: 12, // Add bottom margin for spacing before post actions
   },
   mediaItem: {
     marginBottom: 8,

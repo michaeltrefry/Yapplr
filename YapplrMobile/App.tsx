@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { NotificationProvider } from './src/contexts/NotificationContext';
+
 import NotificationBannerManager from './src/components/NotificationBannerManager';
 import AppNavigator from './src/navigation/AppNavigator';
 
