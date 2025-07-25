@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { videoCoordinationService } from '../services/VideoCoordinationService';
 
 // Try to import expo-video, but provide fallback if not available
 let VideoView: any = null;
@@ -39,6 +40,7 @@ interface VideoPlayerProps {
   onError?: (error: string) => void;
   onLoad?: () => void;
   onFullscreenPress?: () => void;
+  playerId?: string; // Unique identifier for this video player
 }
 
 export interface VideoPlayerRef {
@@ -57,6 +59,7 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
   onError,
   onLoad,
   onFullscreenPress,
+  playerId,
 }, ref) => {
   const colors = useThemeColors();
   const [isLoading, setIsLoading] = useState(true);
@@ -68,6 +71,21 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
   const progressUpdateRef = useRef<NodeJS.Timeout | null>(null);
 
   const styles = createStyles(colors);
+
+  // Subscribe to video coordination events
+  useEffect(() => {
+    if (!playerId) return;
+
+    const unsubscribe = videoCoordinationService.subscribe((playingVideoId) => {
+      // If another video started playing, pause this one
+      if (playingVideoId !== playerId && player && player.playing) {
+        console.log('🎥 VideoPlayer: Pausing video due to coordination:', playerId);
+        player.pause();
+      }
+    });
+
+    return unsubscribe;
+  }, [playerId, player]);
 
   // Expose control methods via ref
   React.useImperativeHandle(ref, () => ({
@@ -85,6 +103,8 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
       return player?.playing || false;
     },
   }), [player]);
+
+
 
   // Format time in MM:SS format
   const formatTime = (seconds: number) => {
@@ -167,8 +187,16 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
       console.log('🎥 VideoPlayer playing change:', playingState);
       if (playingState.isPlaying) {
         startProgressUpdates();
+        // Notify coordination service when video starts playing
+        if (playerId) {
+          videoCoordinationService.notifyVideoPlaying(playerId);
+        }
       } else {
         stopProgressUpdates();
+        // Notify coordination service when video stops playing
+        if (playerId) {
+          videoCoordinationService.notifyVideoStopped(playerId);
+        }
       }
     });
 
@@ -278,10 +306,15 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
         setShowControlsOverlay(true); // Show controls when paused
         console.log('🎥 VideoPlayer: Video paused');
       } else {
+        // Notify coordination service and play video
+        if (playerId) {
+          console.log('🎥 VideoPlayer: Using coordination service to play video:', playerId);
+          videoCoordinationService.notifyVideoPlaying(playerId);
+        }
+
         // Play the video
-        console.log('🎥 VideoPlayer: Attempting to play video');
+        console.log('🎥 VideoPlayer: Playing video');
         player.play();
-        console.log('🎥 VideoPlayer: Video play() called');
 
         // Auto-hide controls after delay when playing
         hideControlsAfterDelay();
