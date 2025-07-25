@@ -12,8 +12,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useAuth } from '../contexts/AuthContext';
-import { TimelineItem, Post, VideoProcessingStatus, ReactionType } from '../types';
+import { TimelineItem, Post, VideoProcessingStatus, ReactionType, MediaType } from '../types';
 import ImageViewer from './ImageViewer';
+import VideoPlayer from './VideoPlayer';
+import FullScreenVideoViewer from './FullScreenVideoViewer';
 import { ContentHighlight } from '../utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
 import ReportModal from './ReportModal';
@@ -40,6 +42,9 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
+  const [showVideoViewer, setShowVideoViewer] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string>('');
+  const [selectedVideoThumbnail, setSelectedVideoThumbnail] = useState<string>('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -50,6 +55,20 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
   const getImageUrl = (fileName: string) => {
     if (!fileName) return '';
     return `http://192.168.254.181:5161/api/images/${fileName}`;
+  };
+
+  const openVideoViewer = (videoUrl: string, thumbnailUrl?: string) => {
+    console.log('🎥 PostCard: openVideoViewer called with URL:', videoUrl);
+    setSelectedVideoUrl(videoUrl);
+    setSelectedVideoThumbnail(thumbnailUrl || '');
+    setShowVideoViewer(true);
+    console.log('🎥 PostCard: Video viewer should now be visible');
+  };
+
+  const closeVideoViewer = () => {
+    setShowVideoViewer(false);
+    setSelectedVideoUrl('');
+    setSelectedVideoThumbnail('');
   };
 
   // Check ownership
@@ -172,7 +191,7 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
         <View style={styles.mediaContainer}>
           {item.post.mediaItems.map((media, index) => (
             <View key={media.id} style={styles.mediaItem}>
-              {media.mediaType === 0 && media.imageUrl && ( // MediaType.Image
+              {media.mediaType === MediaType.Image && media.imageUrl && (
                 <TouchableOpacity
                   activeOpacity={0.9}
                   onPress={() => setShowImageViewer(true)}
@@ -193,7 +212,47 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
                   />
                 </TouchableOpacity>
               )}
-              {media.mediaType === 2 && media.gifUrl && ( // MediaType.Gif
+              {media.mediaType === MediaType.Video && (
+                <>
+                  {media.videoProcessingStatus === VideoProcessingStatus.Completed && media.videoUrl ? (
+                    <VideoPlayer
+                      videoUrl={media.videoUrl}
+                      thumbnailUrl={media.videoThumbnailUrl}
+                      style={styles.postImage}
+                      autoPlay={false}
+                      showControls={true}
+                      onFullscreenPress={() => openVideoViewer(media.videoUrl!, media.videoThumbnailUrl)}
+                    />
+                  ) : (
+                    <View style={styles.videoProcessingContainer}>
+                      <View style={styles.videoProcessingContent}>
+                        <Ionicons name="play-outline" size={20} color="#6B7280" />
+                        <View style={styles.videoProcessingText}>
+                          {(media.videoProcessingStatus === VideoProcessingStatus.Pending ||
+                            media.videoProcessingStatus === VideoProcessingStatus.Processing) && (
+                            <Text style={styles.videoProcessingMessage}>
+                              Your video is processing. It will be available when completed.
+                            </Text>
+                          )}
+                          {media.videoProcessingStatus === VideoProcessingStatus.Failed && (
+                            <Text style={[styles.videoProcessingMessage, styles.videoProcessingError]}>
+                              Video processing failed. Please try uploading again.
+                            </Text>
+                          )}
+                          {media.videoThumbnailUrl && (
+                            <Image
+                              source={{ uri: media.videoThumbnailUrl }}
+                              style={styles.videoThumbnail}
+                              resizeMode="cover"
+                            />
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  )}
+                </>
+              )}
+              {media.mediaType === MediaType.Gif && media.gifUrl && (
                 <View style={styles.gifContainer}>
                   <Image
                     source={{ uri: media.gifUrl }}
@@ -251,6 +310,20 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
               <Text style={styles.imageErrorText}>Failed to load image</Text>
             </View>
           )}
+        </View>
+      )}
+
+      {/* Legacy Video Display (for backward compatibility) */}
+      {!item.post.mediaItems && item.post.videoUrl && item.post.videoProcessingStatus === VideoProcessingStatus.Completed && (
+        <View style={styles.mediaContainer}>
+          <VideoPlayer
+            videoUrl={item.post.videoUrl}
+            thumbnailUrl={item.post.videoThumbnailUrl}
+            style={styles.postImage}
+            autoPlay={false}
+            showControls={true}
+            onFullscreenPress={() => openVideoViewer(item.post.videoUrl!, item.post.videoThumbnailUrl)}
+          />
         </View>
       )}
 
@@ -340,6 +413,14 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
           onClose={() => setShowImageViewer(false)}
         />
       )}
+
+      {/* Full-Screen Video Viewer */}
+      <FullScreenVideoViewer
+        visible={showVideoViewer}
+        videoUrl={selectedVideoUrl}
+        thumbnailUrl={selectedVideoThumbnail}
+        onClose={closeVideoViewer}
+      />
 
       {/* Delete Confirmation Modal */}
       <Modal

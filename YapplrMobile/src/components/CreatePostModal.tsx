@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Keyboard,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -129,39 +130,79 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
   };
 
   const pickMedia = async () => {
+    console.log('=== pickMedia function started ===');
+    console.log('=== ImagePicker available?', typeof ImagePicker);
+    console.log('=== ImagePicker.MediaTypeOptions available?', typeof ImagePicker.MediaTypeOptions);
+    console.log('=== ImagePicker.requestMediaLibraryPermissionsAsync available?', typeof ImagePicker.requestMediaLibraryPermissionsAsync);
+
     try {
-      // Check if we're at the limit
-      const totalFiles = selectedFiles.length + uploadedFiles.length;
-      if (totalFiles >= 10) {
-        Alert.alert('Limit Reached', 'You can only select up to 10 files per post.');
+      console.log('=== Step 1: Inside try block ===');
+
+      console.log('=== Step 2: About to check permissions ===');
+      let permissionResult;
+
+      try {
+        // Try to get current permissions first
+        console.log('=== Step 2a: Getting current permissions ===');
+        const currentPermissions = await ImagePicker.getMediaLibraryPermissionsAsync();
+        console.log('=== Step 2b: Current permissions:', currentPermissions);
+
+        if (currentPermissions.status !== 'granted') {
+          console.log('=== Step 2c: Requesting new permissions ===');
+          permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          console.log('=== Step 3: Permission request completed ===');
+          console.log('Permission result:', permissionResult);
+        } else {
+          console.log('=== Step 3: Permissions already granted ===');
+          permissionResult = currentPermissions;
+        }
+      } catch (permError) {
+        console.error('=== CRASH: Permission request failed ===');
+        console.error('Permission error:', permError);
+        console.error('Permission error type:', typeof permError);
+        console.error('Permission error message:', permError instanceof Error ? permError.message : 'No message');
+        Alert.alert('Permission Error', `Permission request failed: ${permError instanceof Error ? permError.message : 'Unknown error'}`);
         return;
       }
 
-      // Request permission
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (permissionResult.granted === false) {
+      if (permissionResult.status !== 'granted') {
+        console.log('=== Permission denied ===');
         Alert.alert('Permission Required', 'Permission to access camera roll is required!');
         return;
       }
 
-      // Calculate remaining slots
-      const remainingSlots = 10 - totalFiles;
+      console.log('=== Step 4: About to launch image picker ===');
 
-      // Launch media picker supporting both images and videos
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images', 'videos'], // Support both images and videos
-        allowsEditing: false, // Disable editing for multiple selection
-        quality: 0.8, // Good quality for images
-        allowsMultipleSelection: true,
-        selectionLimit: Math.min(remainingSlots, 10),
-        exif: false,
-        videoMaxDuration: 60, // Limit videos to 60 seconds
-      });
+      console.log('=== Step 5: Creating picker options ===');
+      const pickerOptions = {
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+      };
+      console.log('=== Step 6: Picker options created ===', pickerOptions);
+
+      let result;
+      try {
+        console.log('=== Step 7: About to call launchImageLibraryAsync ===');
+        result = await ImagePicker.launchImageLibraryAsync(pickerOptions);
+        console.log('=== Step 8: Image picker completed successfully ===');
+      } catch (pickerError) {
+        console.error('=== CRASH: Image picker failed ===');
+        console.error('Picker error:', pickerError);
+        console.error('Picker error details:', JSON.stringify(pickerError, null, 2));
+        Alert.alert('Image Picker Error', `The image picker crashed: ${pickerError instanceof Error ? pickerError.message : 'Unknown error'}`);
+        return;
+      }
+
+      console.log('Result:', JSON.stringify(result, null, 2));
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         console.log('Selected assets:', result.assets.length);
+        Alert.alert('Success!', `Selected ${result.assets.length} file(s). Check console for details.`);
+        // TODO: Add back file processing logic once we confirm picker works
 
+        // Temporarily comment out complex processing to test if picker works
+        /*
         const validFiles: Array<{ uri: string; fileName: string; type: string; mediaType: MediaType }> = [];
         const errors: string[] = [];
 
@@ -273,10 +314,127 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
 
           multipleUploadMutation.mutate(uploadFiles);
         }
+        */
       }
     } catch (error) {
+      console.error('=== CRASH: Unexpected error in pickMedia ===');
       console.error('Error picking media:', error);
-      Alert.alert('Error', 'Failed to pick media. Please try again.');
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      Alert.alert('Unexpected Error', `Failed to pick media: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+    }
+
+    console.log('=== pickMedia function completed ===');
+  };
+
+  const pickMediaWorking = async () => {
+    try {
+      console.log('=== Starting proper image picker with permissions ===');
+      console.log('=== Device info - Platform:', Platform.OS);
+      console.log('=== Device info - Is simulator:', __DEV__);
+
+      // Check if we're at the limit
+      const totalFiles = selectedFiles.length + uploadedFiles.length;
+      if (totalFiles >= 10) {
+        Alert.alert('Limit Reached', 'You can only select up to 10 files per post.');
+        return;
+      }
+
+      // Check current permissions first
+      console.log('=== Checking current permissions ===');
+      const currentPermissions = await ImagePicker.getMediaLibraryPermissionsAsync();
+      console.log('=== Current permissions:', currentPermissions);
+
+      // Now that we have proper native permissions, request them properly
+      console.log('=== Requesting media library permissions ===');
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('=== Permission status:', status);
+
+      if (status !== 'granted') {
+        console.log('=== Permission denied, showing alert ===');
+        Alert.alert(
+          'Permission Required',
+          'Permission to access camera roll is required! Please go to Settings > Privacy & Security > Photos and enable access for this app.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => {
+              // On iOS, this will open the app's settings page
+              if (Platform.OS === 'ios') {
+                Linking.openURL('app-settings:');
+              }
+            }}
+          ]
+        );
+        return;
+      }
+
+      console.log('=== Launching image picker with proper permissions ===');
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All, // Support both images and videos
+        allowsEditing: false,
+        quality: 0.8,
+        allowsMultipleSelection: false, // Start with single selection for stability
+      });
+
+      console.log('=== Image picker completed ===');
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        console.log('Processing selected asset:', asset);
+
+        // Determine media type and create file info
+        let mediaType: MediaType;
+        let mimeType: string;
+        let fileName: string;
+
+        if (asset.type === 'image') {
+          mediaType = MediaType.Image;
+          const extension = asset.uri.split('.').pop()?.toLowerCase() || 'jpg';
+          mimeType = asset.mimeType || `image/${extension === 'jpg' ? 'jpeg' : extension}`;
+          fileName = asset.fileName || `image_${Date.now()}.${extension}`;
+        } else if (asset.type === 'video') {
+          mediaType = MediaType.Video;
+          const extension = asset.uri.split('.').pop()?.toLowerCase() || 'mp4';
+          mimeType = asset.mimeType || `video/${extension}`;
+          fileName = asset.fileName || `video_${Date.now()}.${extension}`;
+        } else {
+          Alert.alert('Error', 'Unsupported file type');
+          return;
+        }
+
+        // Basic file size validation
+        const maxSize = mediaType === MediaType.Video ? 1024 * 1024 * 1024 : 5 * 1024 * 1024; // 1GB for video, 5MB for image
+        if (asset.fileSize && asset.fileSize > maxSize) {
+          Alert.alert('Error', `File too large. Maximum size is ${mediaType === MediaType.Video ? '1GB' : '5MB'}.`);
+          return;
+        }
+
+        console.log('Valid file:', { uri: asset.uri, fileName, type: mimeType, mediaType });
+
+        // Add to selected files
+        const fileInfo = {
+          uri: asset.uri,
+          fileName,
+          type: mimeType,
+          mediaType,
+        };
+
+        setSelectedFiles(prev => [...prev, fileInfo]);
+
+        // Upload the file
+        multipleUploadMutation.mutate([{
+          uri: asset.uri,
+          fileName: fileName,
+          type: mimeType,
+        }]);
+
+        console.log('=== File added and upload started ===');
+      }
+    } catch (error) {
+      console.error('=== Error in pickMediaWorking ===');
+      console.error('Error:', error);
+      Alert.alert('Error', `Failed to pick media: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -498,6 +656,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
   const canSubmit = (hasContent || hasMedia) && !isOverLimit && !createPostMutation.isPending && !createPostWithMediaMutation.isPending && !isUploadingMedia;
 
   return (
+    <>
     <Modal
       visible={visible}
       animationType="slide"
@@ -558,7 +717,11 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
 
               <TouchableOpacity
                 style={styles.mediaButton}
-                onPress={pickMedia}
+                onPress={() => {
+                  console.log('=== PAPERCLIP BUTTON PRESSED ===');
+                  // Use the working direct picker approach
+                  pickMediaWorking();
+                }}
                 disabled={isUploadingMedia || (uploadedFiles.length + selectedFiles.length) >= 10}
               >
                 <Ionicons
@@ -720,6 +883,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
       onClose={() => setShowGifPicker(false)}
       onSelectGif={handleGifSelect}
     />
+    </>
   );
 }
 

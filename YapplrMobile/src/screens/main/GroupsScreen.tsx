@@ -15,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useAuth } from '../../contexts/AuthContext';
 import { GroupList, PaginatedResult } from '../../types';
-import { useApi } from '../../contexts/ApiContext';
 
 interface GroupsScreenProps {
   navigation: any;
@@ -23,8 +22,7 @@ interface GroupsScreenProps {
 
 export default function GroupsScreen({ navigation }: GroupsScreenProps) {
   const colors = useThemeColors();
-  const { user } = useAuth();
-  const api = useApi();
+  const { user, api } = useAuth();
   const [groups, setGroups] = useState<GroupList[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

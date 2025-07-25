@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { CreateGroup } from '../../types';
-import { useApi } from '../../contexts/ApiContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface CreateGroupScreenProps {
   navigation: any;
@@ -22,7 +22,7 @@ interface CreateGroupScreenProps {
 
 export default function CreateGroupScreen({ navigation }: CreateGroupScreenProps) {
   const colors = useThemeColors();
-  const api = useApi();
+  const { api } = useAuth();
   const [formData, setFormData] = useState<CreateGroup>({
     name: '',
     description: '',
