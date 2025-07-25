@@ -41,6 +41,8 @@ interface VideoPlayerProps {
   onLoad?: () => void;
   onFullscreenPress?: () => void;
   playerId?: string; // Unique identifier for this video player
+  width?: number; // Video width for aspect ratio calculation
+  height?: number; // Video height for aspect ratio calculation
 }
 
 export interface VideoPlayerRef {
@@ -60,6 +62,8 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
   onLoad,
   onFullscreenPress,
   playerId,
+  width,
+  height,
 }, ref) => {
   const colors = useThemeColors();
   const [isLoading, setIsLoading] = useState(true);
@@ -73,7 +77,20 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const progressUpdateRef = useRef<NodeJS.Timeout | null>(null);
 
-  const styles = createStyles(colors);
+  // Calculate aspect ratio from video dimensions
+  const aspectRatio = (width && height) ? width / height : 16 / 9; // Default to 16:9 if no dimensions provided
+
+  // Debug logging for aspect ratio calculation
+  console.log('🎥 VideoPlayer aspect ratio calculation:', {
+    videoUrl: videoUrl.substring(videoUrl.lastIndexOf('/') + 1), // Just filename for brevity
+    width,
+    height,
+    aspectRatio,
+    isLandscape: aspectRatio > 1,
+    isPortrait: aspectRatio < 1
+  });
+
+  const styles = createStyles(colors, aspectRatio);
 
   // Subscribe to video coordination events
   useEffect(() => {
@@ -516,7 +533,7 @@ VideoPlayer.displayName = 'VideoPlayer';
 
 export default VideoPlayer;
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: any, aspectRatio: number = 16 / 9) => StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     borderRadius: 8,
@@ -525,9 +542,10 @@ const createStyles = (colors: any) => StyleSheet.create({
   videoContainer: {
     position: 'relative',
     width: '100%',
-    aspectRatio: 16 / 9, // Default aspect ratio
+    aspectRatio: aspectRatio, // Use calculated aspect ratio
     borderRadius: 8,
     overflow: 'hidden',
+    maxHeight: 400, // Prevent videos from being too tall
   },
   video: {
     width: '100%',
