@@ -108,6 +108,16 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
         queryClient.invalidateQueries({ queryKey: ['conversations'] });
         queryClient.invalidateQueries({ queryKey: ['unreadMessageCount'] });
         break;
+      case 'VideoProcessingCompleted':
+        console.log('📱🔔 Video processing completed notification, refreshing posts');
+        queryClient.invalidateQueries({ queryKey: ['posts'] });
+        queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+        queryClient.invalidateQueries({ queryKey: ['feedPosts'] });
+        // If we have a specific post ID, we could invalidate just that post
+        if (payload.data?.postId) {
+          queryClient.invalidateQueries({ queryKey: ['post', payload.data.postId] });
+        }
+        break;
 
       case 'mention':
       case 'reply':

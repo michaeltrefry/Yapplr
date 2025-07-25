@@ -16,6 +16,8 @@ interface VideoThumbnailProps {
   showPlayButton?: boolean;
   duration?: string;
   size?: 'small' | 'medium' | 'large';
+  width?: number; // Video width for aspect ratio calculation
+  height?: number; // Video height for aspect ratio calculation
 }
 
 export default function VideoThumbnail({
@@ -25,11 +27,29 @@ export default function VideoThumbnail({
   showPlayButton = true,
   duration,
   size = 'medium',
+  width,
+  height,
 }: VideoThumbnailProps) {
   const colors = useThemeColors();
-  const styles = createStyles(colors);
+
+  // Calculate aspect ratio from video dimensions
+  const aspectRatio = (width && height) ? width / height : undefined;
+
+  const styles = createStyles(colors, aspectRatio);
 
   const getSizeStyles = () => {
+    // If we have aspect ratio, use dynamic sizing, otherwise use fixed sizes
+    if (aspectRatio) {
+      const baseWidth = size === 'small' ? 80 : size === 'large' ? 160 : 120;
+      const calculatedHeight = baseWidth / aspectRatio;
+
+      return {
+        container: { width: baseWidth, height: calculatedHeight },
+        playIcon: size === 'small' ? 24 : size === 'large' ? 48 : 32,
+      };
+    }
+
+    // Fallback to fixed sizes
     switch (size) {
       case 'small':
         return {
@@ -92,7 +112,7 @@ export default function VideoThumbnail({
   return content;
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: any, aspectRatio?: number) => StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     borderRadius: 8,

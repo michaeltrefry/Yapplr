@@ -264,7 +264,7 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
               )}
               {media.mediaType === MediaType.Video && (
                 <>
-                  {media.videoProcessingStatus === VideoProcessingStatus.Completed && media.videoUrl ? (
+                  {media.videoProcessingStatus === VideoProcessingStatus.Completed && media.videoUrl && media.width && media.height ? (
                     <VideoPlayer
                       ref={(ref) => {
                         if (ref) {
@@ -277,6 +277,8 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
                       style={styles.postImage}
                       autoPlay={false}
                       showControls={true}
+                      width={media.width}
+                      height={media.height}
                       onFullscreenPress={() => openVideoViewer(media.videoUrl!, media.videoThumbnailUrl)}
                     />
                   ) : (
@@ -392,6 +394,8 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
             style={styles.postImage}
             autoPlay={false}
             showControls={true}
+            width={item.post.videoWidth}
+            height={item.post.videoHeight}
             onFullscreenPress={() => openVideoViewer(item.post.videoUrl!, item.post.videoThumbnailUrl)}
           />
         </View>

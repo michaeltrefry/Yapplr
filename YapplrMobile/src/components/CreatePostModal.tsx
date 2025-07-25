@@ -103,6 +103,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
     },
     onSuccess: (data) => {
       setUploadedFiles(data.uploadedFiles);
+      setSelectedFiles([]); // Clear selected files after successful upload
       setIsUploadingMedia(false);
       if (data.errors.length > 0) {
         const errorMessages = data.errors.map(e => `${e.originalFileName}: ${e.errorMessage}`).join('\n');
