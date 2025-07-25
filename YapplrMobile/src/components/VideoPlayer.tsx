@@ -64,9 +64,12 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
   const colors = useThemeColors();
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [showControlsOverlay, setShowControlsOverlay] = useState(true);
+  const [showControlsOverlay, setShowControlsOverlay] = useState(false); // Start hidden
+  const [showCenterPlayButton, setShowCenterPlayButton] = useState(true); // Show initially
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStartedPlaying, setHasStartedPlaying] = useState(false); // Track if video has ever played
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const progressUpdateRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -100,9 +103,9 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
       }
     },
     isPlaying: () => {
-      return player?.playing || false;
+      return isPlaying;
     },
-  }), [player]);
+  }), [player, isPlaying]);
 
 
 
@@ -185,14 +188,20 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
     // Listen for playing state changes to start/stop progress updates
     player.addListener('playingChange', (playingState: any) => {
       console.log('🎥 VideoPlayer playing change:', playingState);
+      setIsPlaying(playingState.isPlaying); // Sync local state with player state
+
       if (playingState.isPlaying) {
         startProgressUpdates();
+        setShowCenterPlayButton(false); // Hide center button when playing
         // Notify coordination service when video starts playing
         if (playerId) {
           videoCoordinationService.notifyVideoPlaying(playerId);
         }
       } else {
         stopProgressUpdates();
+        // Show center button and controls when stopped/paused
+        setShowCenterPlayButton(true);
+        setShowControlsOverlay(true);
         // Notify coordination service when video stops playing
         if (playerId) {
           videoCoordinationService.notifyVideoStopped(playerId);
@@ -206,6 +215,22 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
       setHasError(true);
       if (onError) {
         onError(`Video playback error: ${error.message || 'Unknown error'}`);
+      }
+    });
+
+    // Listen for when video reaches the end
+    player.addListener('playToEnd', () => {
+      console.log('🎥 VideoPlayer: Video reached end, resetting to beginning');
+      // Reset to beginning but don't auto-play
+      player.currentTime = 0; // Use currentTime property for seeking
+      setCurrentTime(0);
+      setIsPlaying(false);
+      setShowCenterPlayButton(true); // Show center play button
+      setShowControlsOverlay(true); // Show controls
+
+      // Notify coordination service that video stopped
+      if (playerId) {
+        videoCoordinationService.notifyVideoStopped(playerId);
       }
     });
 
@@ -271,27 +296,37 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
     }
   };
 
-  const hideControlsAfterDelay = () => {
+  const hideControlsAfterDelay = (forceHide = false) => {
+    console.log('🎥 VideoPlayer: hideControlsAfterDelay called, isPlaying:', isPlaying, 'player?.playing:', player?.playing, 'forceHide:', forceHide);
+
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
     }
 
-    if (player?.playing) {
+    // Use local isPlaying state or forceHide parameter
+    if (isPlaying || forceHide) {
+      console.log('🎥 VideoPlayer: Setting timeout to hide controls in 4 seconds');
       controlsTimeoutRef.current = setTimeout(() => {
+        console.log('🎥 VideoPlayer: Auto-hiding controls after 3 seconds');
         setShowControlsOverlay(false);
+        setShowCenterPlayButton(false); // Also hide center button
       }, 3000);
+    } else {
+      console.log('🎥 VideoPlayer: Not setting timeout because video is not playing');
     }
   };
 
   const handleVideoPress = async () => {
     console.log('🎥 VideoPlayer: handleVideoPress called');
 
-    // Toggle controls visibility
-    setShowControlsOverlay(!showControlsOverlay);
-
-    // If showing controls and video is playing, auto-hide after delay
-    if (!showControlsOverlay && player?.playing) {
-      hideControlsAfterDelay();
+    if (isPlaying) {
+      // If video is playing, just show controls (don't pause)
+      setShowControlsOverlay(true);
+      // Auto-hide controls after delay
+      hideControlsAfterDelay(true); // Force hide since we know video is playing
+    } else {
+      // If video is paused, toggle controls visibility
+      setShowControlsOverlay(!showControlsOverlay);
     }
   };
 
@@ -302,8 +337,10 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
       if (player.playing) {
         // Pause the video
         console.log('🎥 VideoPlayer: Attempting to pause video');
+        setIsPlaying(false); // Immediately update UI state
         player.pause();
         setShowControlsOverlay(true); // Show controls when paused
+        setShowCenterPlayButton(true); // Show center play button when paused
         console.log('🎥 VideoPlayer: Video paused');
       } else {
         // Notify coordination service and play video
@@ -314,10 +351,14 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
 
         // Play the video
         console.log('🎥 VideoPlayer: Playing video');
+        setIsPlaying(true); // Immediately update UI state
+        setHasStartedPlaying(true); // Mark that video has started playing
+        setShowCenterPlayButton(false); // Hide center play button when playing
+        setShowControlsOverlay(true); // Show controls initially when starting
         player.play();
 
         // Auto-hide controls after delay when playing
-        hideControlsAfterDelay();
+        hideControlsAfterDelay(true); // Force hide since we know video is playing
       }
     } catch (error) {
       console.error('🎥 VideoPlayer: Error toggling playback:', error);
@@ -381,97 +422,89 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
           </View>
         )}
 
-        {/* Video Controls */}
-        {showControls && !isLoading && (
-          <View style={styles.controlsOverlay}>
-            {/* Center play/pause button - only show when paused */}
-            {!player?.playing && (
-              <TouchableOpacity
-                style={styles.centerPlayButton}
-                onPress={handlePlayPress}
-                activeOpacity={0.7}
-              >
-                <View style={styles.playButton}>
+        {/* Center play button - show when not playing or when paused */}
+        {showControls && !isLoading && showCenterPlayButton && (
+          <TouchableOpacity
+            style={styles.centerPlayButton}
+            onPress={handlePlayPress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.playButton}>
+              <Ionicons
+                name="play"
+                size={32}
+                color="#fff"
+              />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* Compact horizontal controls overlay */}
+        {showControls && !isLoading && showControlsOverlay && (
+              <View style={styles.compactControlsOverlay}>
+                {/* Rewind button */}
+                <TouchableOpacity
+                  style={styles.compactControlButton}
+                  onPress={() => handleSeek(-10)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="play-back" size={20} color="#fff" />
+                </TouchableOpacity>
+
+                {/* Play/Pause button */}
+                <TouchableOpacity
+                  style={styles.compactControlButton}
+                  onPress={handlePlayPress}
+                  activeOpacity={0.7}
+                >
                   <Ionicons
-                    name={player?.playing ? "pause" : "play"}
-                    size={32}
+                    name={isPlaying ? "pause" : "play"}
+                    size={20}
                     color="#fff"
                   />
-                </View>
-              </TouchableOpacity>
-            )}
+                </TouchableOpacity>
 
-            {/* Bottom controls overlay */}
-            {showControlsOverlay && (
-              <View style={styles.bottomControlsOverlay}>
+                {/* Current time */}
+                <Text style={styles.compactTimeText}>{formatTime(currentTime)}</Text>
+
                 {/* Progress bar */}
-                <View style={styles.progressContainer}>
-                  <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-                  <TouchableOpacity
-                    style={styles.progressBar}
-                    onPress={handleProgressPress}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.progressTrack}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          { width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }
-                        ]}
-                      >
-                        {duration > 0 && currentTime > 0 && (
-                          <View style={styles.progressThumb} />
-                        )}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                  <Text style={styles.timeText}>{formatTime(duration)}</Text>
-                </View>
-
-                {/* Control buttons */}
-                <View style={styles.controlsRow}>
-                  <TouchableOpacity
-                    style={styles.controlButton}
-                    onPress={() => handleSeek(-10)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="play-back" size={20} color="#fff" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.controlButton}
-                    onPress={handlePlayPress}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name={player?.playing ? "pause" : "play"}
-                      size={20}
-                      color="#fff"
+                <TouchableOpacity
+                  style={styles.compactProgressBar}
+                  onPress={handleProgressPress}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.compactProgressTrack}>
+                    <View
+                      style={[
+                        styles.compactProgressFill,
+                        { width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }
+                      ]}
                     />
-                  </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
 
+                {/* Duration */}
+                <Text style={styles.compactTimeText}>{formatTime(duration)}</Text>
+
+                {/* Fast forward button */}
+                <TouchableOpacity
+                  style={styles.compactControlButton}
+                  onPress={() => handleSeek(10)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="play-forward" size={20} color="#fff" />
+                </TouchableOpacity>
+
+                {/* Fullscreen button */}
+                {onFullscreenPress && (
                   <TouchableOpacity
-                    style={styles.controlButton}
-                    onPress={() => handleSeek(10)}
+                    style={styles.compactControlButton}
+                    onPress={onFullscreenPress}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="play-forward" size={20} color="#fff" />
+                    <Ionicons name="expand" size={20} color="#fff" />
                   </TouchableOpacity>
-
-                  <View style={styles.spacer} />
-
-                  {onFullscreenPress && (
-                    <TouchableOpacity
-                      style={styles.controlButton}
-                      onPress={onFullscreenPress}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="expand" size={20} color="#fff" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            )}
+                )}
           </View>
         )}
       </TouchableOpacity>
@@ -555,79 +588,51 @@ const createStyles = (colors: any) => StyleSheet.create({
     left: '50%',
     transform: [{ translateX: -40 }, { translateY: -40 }],
   },
-  bottomControlsOverlay: {
+  compactControlsOverlay: {
     position: 'absolute',
     bottom: 8,
     left: 8,
     right: 8,
-    flexDirection: 'column',
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
+    height: 40, // Increased height for better touch targets
   },
-  controlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  compactControlButton: {
+    width: 32,
+    height: 32,
     justifyContent: 'center',
-  },
-  progressContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginHorizontal: 3,
   },
-  progressBar: {
+  compactTimeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+    marginHorizontal: 5,
+    minWidth: 36, // Ensure consistent width
+    textAlign: 'center',
+  },
+  compactProgressBar: {
     flex: 1,
-    height: 16, // Compact touch target
+    height: 24, // Larger touch target
     justifyContent: 'center',
     marginHorizontal: 6,
   },
-  progressTrack: {
+  compactProgressTrack: {
     height: 3,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 1.5,
-    position: 'relative',
   },
-  progressFill: {
+  compactProgressFill: {
     height: '100%',
     backgroundColor: '#fff',
     borderRadius: 1.5,
-    position: 'relative',
   },
-  progressThumb: {
-    position: 'absolute',
-    right: -4,
-    top: -3,
-    width: 8,
-    height: 8,
-    backgroundColor: '#fff',
-    borderRadius: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 1,
-    elevation: 2,
-  },
-  timeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '500',
-    minWidth: 32,
-    textAlign: 'center',
-  },
-  controlButton: {
-    padding: 8,
-    marginHorizontal: 4,
-    borderRadius: 16,
-    minWidth: 36,
-    minHeight: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  spacer: {
-    flex: 1,
-  },
+
   errorContainer: {
     justifyContent: 'center',
     alignItems: 'center',
