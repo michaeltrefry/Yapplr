@@ -41,7 +41,13 @@ interface VideoPlayerProps {
   onFullscreenPress?: () => void;
 }
 
-export default function VideoPlayer({
+export interface VideoPlayerRef {
+  pause: () => void;
+  play: () => void;
+  isPlaying: () => boolean;
+}
+
+const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
   videoUrl,
   thumbnailUrl,
   style,
@@ -51,15 +57,82 @@ export default function VideoPlayer({
   onError,
   onLoad,
   onFullscreenPress,
-}: VideoPlayerProps) {
+}, ref) => {
   const colors = useThemeColors();
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [showPlayButton, setShowPlayButton] = useState(!autoPlay);
   const [showControlsOverlay, setShowControlsOverlay] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const progressUpdateRef = useRef<NodeJS.Timeout | null>(null);
 
   const styles = createStyles(colors);
+
+  // Expose control methods via ref
+  React.useImperativeHandle(ref, () => ({
+    pause: () => {
+      if (player) {
+        player.pause();
+      }
+    },
+    play: () => {
+      if (player) {
+        player.play();
+      }
+    },
+    isPlaying: () => {
+      return player?.playing || false;
+    },
+  }), [player]);
+
+  // Format time in MM:SS format
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Update progress periodically
+  const updateProgress = () => {
+    if (player && player.playing) {
+      setCurrentTime(player.currentTime || 0);
+      setDuration(player.duration || 0);
+    }
+  };
+
+  // Start/stop progress updates
+  const startProgressUpdates = () => {
+    if (progressUpdateRef.current) {
+      clearInterval(progressUpdateRef.current);
+    }
+    progressUpdateRef.current = setInterval(updateProgress, 500);
+  };
+
+  const stopProgressUpdates = () => {
+    if (progressUpdateRef.current) {
+      clearInterval(progressUpdateRef.current);
+      progressUpdateRef.current = null;
+    }
+  };
+
+  // Handle progress bar tap for seeking
+  const handleProgressPress = (event: any) => {
+    if (!player || duration === 0) return;
+
+    // Get the layout of the progress bar
+    event.currentTarget.measure((x: number, y: number, width: number, height: number) => {
+      const { locationX } = event.nativeEvent;
+      const percentage = locationX / width;
+      const seekTime = percentage * duration;
+
+      // Use currentTime property for precise seeking
+      player.currentTime = Math.max(0, Math.min(seekTime, duration));
+      setCurrentTime(seekTime);
+
+      console.log(`🎥 VideoPlayer: Seeked to ${formatTime(seekTime)} via progress bar`);
+    });
+  };
 
   // Create video player using the new expo-video hook
   const player = useVideoPlayer ? useVideoPlayer(videoUrl, (player: any) => {
@@ -79,11 +152,23 @@ export default function VideoPlayer({
       // Update loading state based on video status
       if (status.status === 'readyToPlay' || status.status === 'idle') {
         setIsLoading(false);
+        // Update duration when ready
+        setDuration(player.duration || 0);
         if (onLoad && isLoading) {
           onLoad();
         }
       } else if (status.status === 'loading') {
         setIsLoading(true);
+      }
+    });
+
+    // Listen for playing state changes to start/stop progress updates
+    player.addListener('playingChange', (playingState: any) => {
+      console.log('🎥 VideoPlayer playing change:', playingState);
+      if (playingState.isPlaying) {
+        startProgressUpdates();
+      } else {
+        stopProgressUpdates();
       }
     });
 
@@ -166,7 +251,6 @@ export default function VideoPlayer({
     if (player?.playing) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControlsOverlay(false);
-        setShowPlayButton(false);
       }, 3000);
     }
   };
@@ -191,14 +275,12 @@ export default function VideoPlayer({
         // Pause the video
         console.log('🎥 VideoPlayer: Attempting to pause video');
         player.pause();
-        setShowPlayButton(true);
         setShowControlsOverlay(true); // Show controls when paused
         console.log('🎥 VideoPlayer: Video paused');
       } else {
         // Play the video
         console.log('🎥 VideoPlayer: Attempting to play video');
         player.play();
-        setShowPlayButton(false);
         console.log('🎥 VideoPlayer: Video play() called');
 
         // Auto-hide controls after delay when playing
@@ -213,11 +295,14 @@ export default function VideoPlayer({
     }
   };
 
-  // Clean up timeouts when component unmounts
+  // Clean up timeouts and intervals when component unmounts
   React.useEffect(() => {
     return () => {
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
+      }
+      if (progressUpdateRef.current) {
+        clearInterval(progressUpdateRef.current);
       }
     };
   }, []);
@@ -266,8 +351,8 @@ export default function VideoPlayer({
         {/* Video Controls */}
         {showControls && !isLoading && (
           <View style={styles.controlsOverlay}>
-            {/* Center play/pause button */}
-            {(showPlayButton || !player?.playing) && (
+            {/* Center play/pause button - only show when paused */}
+            {!player?.playing && (
               <TouchableOpacity
                 style={styles.centerPlayButton}
                 onPress={handlePlayPress}
@@ -283,48 +368,75 @@ export default function VideoPlayer({
               </TouchableOpacity>
             )}
 
-            {/* Bottom controls bar */}
+            {/* Bottom controls overlay */}
             {showControlsOverlay && (
-              <View style={styles.bottomControls}>
-              <TouchableOpacity
-                style={styles.controlButton}
-                onPress={() => handleSeek(-10)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="play-back" size={20} color="#fff" />
-              </TouchableOpacity>
+              <View style={styles.bottomControlsOverlay}>
+                {/* Progress bar */}
+                <View style={styles.progressContainer}>
+                  <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+                  <TouchableOpacity
+                    style={styles.progressBar}
+                    onPress={handleProgressPress}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }
+                        ]}
+                      >
+                        {duration > 0 && currentTime > 0 && (
+                          <View style={styles.progressThumb} />
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                  <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                </View>
 
-              <TouchableOpacity
-                style={styles.controlButton}
-                onPress={handlePlayPress}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name={player?.playing ? "pause" : "play"}
-                  size={20}
-                  color="#fff"
-                />
-              </TouchableOpacity>
+                {/* Control buttons */}
+                <View style={styles.controlsRow}>
+                  <TouchableOpacity
+                    style={styles.controlButton}
+                    onPress={() => handleSeek(-10)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="play-back" size={20} color="#fff" />
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.controlButton}
-                onPress={() => handleSeek(10)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="play-forward" size={20} color="#fff" />
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.controlButton}
+                    onPress={handlePlayPress}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={player?.playing ? "pause" : "play"}
+                      size={20}
+                      color="#fff"
+                    />
+                  </TouchableOpacity>
 
-              <View style={styles.spacer} />
+                  <TouchableOpacity
+                    style={styles.controlButton}
+                    onPress={() => handleSeek(10)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="play-forward" size={20} color="#fff" />
+                  </TouchableOpacity>
 
-              {onFullscreenPress && (
-                <TouchableOpacity
-                  style={styles.controlButton}
-                  onPress={onFullscreenPress}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="expand" size={20} color="#fff" />
-                </TouchableOpacity>
-              )}
+                  <View style={styles.spacer} />
+
+                  {onFullscreenPress && (
+                    <TouchableOpacity
+                      style={styles.controlButton}
+                      onPress={onFullscreenPress}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="expand" size={20} color="#fff" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             )}
           </View>
@@ -332,18 +444,24 @@ export default function VideoPlayer({
       </TouchableOpacity>
     </View>
   );
-}
+});
+
+VideoPlayer.displayName = 'VideoPlayer';
+
+export default VideoPlayer;
 
 const createStyles = (colors: any) => StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     borderRadius: 8,
-    overflow: 'hidden',
+    // Remove overflow hidden to prevent control cutoff
   },
   videoContainer: {
     position: 'relative',
     width: '100%',
     aspectRatio: 16 / 9, // Default aspect ratio
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   video: {
     width: '100%',
@@ -404,27 +522,75 @@ const createStyles = (colors: any) => StyleSheet.create({
     left: '50%',
     transform: [{ translateX: -40 }, { translateY: -40 }],
   },
-  bottomControls: {
+  bottomControlsOverlay: {
     position: 'absolute',
-    bottom: 12,
-    left: 12,
-    right: 12,
+    bottom: 8,
+    left: 8,
+    right: 8,
+    flexDirection: 'column',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 25,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  progressBar: {
+    flex: 1,
+    height: 16, // Compact touch target
+    justifyContent: 'center',
+    marginHorizontal: 6,
+  },
+  progressTrack: {
+    height: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 1.5,
+    position: 'relative',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 1.5,
+    position: 'relative',
+  },
+  progressThumb: {
+    position: 'absolute',
+    right: -4,
+    top: -3,
+    width: 8,
+    height: 8,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  timeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '500',
+    minWidth: 32,
+    textAlign: 'center',
   },
   controlButton: {
-    padding: 12,
-    marginHorizontal: 6,
-    borderRadius: 20,
-    minWidth: 44,
-    minHeight: 44,
+    padding: 8,
+    marginHorizontal: 4,
+    borderRadius: 16,
+    minWidth: 36,
+    minHeight: 36,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   spacer: {
     flex: 1,

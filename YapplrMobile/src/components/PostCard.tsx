@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import { useAuth } from '../contexts/AuthContext';
 import { TimelineItem, Post, VideoProcessingStatus, ReactionType, MediaType } from '../types';
 import ImageViewer from './ImageViewer';
-import VideoPlayer from './VideoPlayer';
+import VideoPlayer, { VideoPlayerRef } from './VideoPlayer';
 import FullScreenVideoViewer from './FullScreenVideoViewer';
 import { ContentHighlight } from '../utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
@@ -49,6 +49,9 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
   const [showReportModal, setShowReportModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Refs for video players to control them externally
+  const videoPlayerRefs = useRef<{ [key: string]: VideoPlayerRef | null }>({});
+
   const styles = createStyles(colors);
 
   // Helper function to generate image URL
@@ -59,6 +62,15 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
 
   const openVideoViewer = (videoUrl: string, thumbnailUrl?: string) => {
     console.log('🎥 PostCard: openVideoViewer called with URL:', videoUrl);
+
+    // Pause all inline video players before opening fullscreen
+    Object.values(videoPlayerRefs.current).forEach(playerRef => {
+      if (playerRef && playerRef.isPlaying()) {
+        console.log('🎥 PostCard: Pausing inline video player before fullscreen');
+        playerRef.pause();
+      }
+    });
+
     setSelectedVideoUrl(videoUrl);
     setSelectedVideoThumbnail(thumbnailUrl || '');
     setShowVideoViewer(true);
@@ -216,6 +228,11 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
                 <>
                   {media.videoProcessingStatus === VideoProcessingStatus.Completed && media.videoUrl ? (
                     <VideoPlayer
+                      ref={(ref) => {
+                        if (ref) {
+                          videoPlayerRefs.current[`media-${media.id}`] = ref;
+                        }
+                      }}
                       videoUrl={media.videoUrl}
                       thumbnailUrl={media.videoThumbnailUrl}
                       style={styles.postImage}
@@ -317,6 +334,11 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
       {!item.post.mediaItems && item.post.videoUrl && item.post.videoProcessingStatus === VideoProcessingStatus.Completed && (
         <View style={styles.mediaContainer}>
           <VideoPlayer
+            ref={(ref) => {
+              if (ref) {
+                videoPlayerRefs.current[`legacy-${item.post.id}`] = ref;
+              }
+            }}
             videoUrl={item.post.videoUrl}
             thumbnailUrl={item.post.videoThumbnailUrl}
             style={styles.postImage}
