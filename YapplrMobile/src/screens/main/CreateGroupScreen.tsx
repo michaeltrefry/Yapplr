@@ -191,7 +191,7 @@ export default function CreateGroupScreen({ navigation }: CreateGroupScreenProps
                 Help people understand what your group is about
               </Text>
               <Text style={[styles.characterCount, { color: colors.onSurfaceVariant }]}>
-                {formData.description.length}/500
+                {formData.description?.length || 0}/500
               </Text>
             </View>
           </View>

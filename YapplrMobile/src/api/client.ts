@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, RegisterResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, CreatePostWithMediaData, Post, ImageUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag, ContentPageVersion, MultipleFileUploadResponse, UploadLimits, Group, GroupList, GroupMember, CreateGroup, UpdateGroup, PaginatedResult } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, RegisterResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, CreatePostWithMediaData, Post, ImageUploadResponse, VideoUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag, ContentPageVersion, MultipleFileUploadResponse, UploadLimits, Group, GroupList, GroupMember, CreateGroup, UpdateGroup, PaginatedResult } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -620,9 +620,13 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
       },
 
       // Upload group image
-      uploadGroupImage: async (file: any): Promise<{ fileName: string }> => {
+      uploadGroupImage: async (uri: string, fileName: string, type: string): Promise<{ fileName: string; imageUrl: string }> => {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', {
+          uri,
+          name: fileName,
+          type,
+        } as any);
         const response = await client.post('/api/groups/upload-image', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',

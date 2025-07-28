@@ -47,7 +47,7 @@ public static class QueryUtilities
             .Include(p => p.User)
             .Include(p => p.Likes)
             .Include(p => p.Reactions)
-            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden).Take(3)) // Limit comments for performance
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden).OrderByDescending(c => c.CreatedAt).Take(3)) // Limit comments for performance
             .Include(p => p.Reposts)
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)

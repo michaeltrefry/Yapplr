@@ -73,12 +73,6 @@ function MediaViewer({ mediaItems, currentIndex, isOpen, onClose, onNext, onPrev
               poster={currentMedia.videoThumbnailUrl}
               controls
               className="max-w-full max-h-full object-contain"
-              style={{
-                width: 'auto',
-                height: 'auto',
-                maxWidth: '100%',
-                maxHeight: '100%'
-              }}
               autoPlay
             >
               Your browser does not support the video tag.
@@ -172,17 +166,19 @@ export default function MediaGallery({ mediaItems, post, className = '' }: Media
         ) : media.mediaType === MediaType.Video ? (
           <div>
             {media.videoProcessingStatus === VideoProcessingStatus.Completed && media.videoUrl ? (
-              <div className="flex items-center justify-center bg-black rounded-lg border border-gray-200" style={{ maxHeight: '400px' }}>
+              <div
+                className="flex items-center justify-center bg-black rounded-lg border border-gray-200"
+                style={{
+                  maxHeight: '400px',
+                  height: '400px',
+                  width: '100%'
+                }}
+              >
                 <video
                   src={media.videoUrl}
                   poster={media.videoThumbnailUrl}
                   controls
-                  className="max-w-full h-auto rounded-lg object-contain"
-                  style={{
-                    maxHeight: '400px',
-                    width: 'auto',
-                    height: 'auto'
-                  }}
+                  className="max-w-full max-h-full object-contain"
                 >
                   Your browser does not support the video tag.
                 </video>

@@ -31,7 +31,7 @@ const subscriptionApi = {
         sortOrder: 0,
         showAdvertisements: true,
         hasVerifiedBadge: false,
-        features: null,
+        features: undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
