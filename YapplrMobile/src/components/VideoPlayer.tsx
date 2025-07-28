@@ -92,88 +92,6 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
 
   const styles = createStyles(colors, aspectRatio);
 
-  // Subscribe to video coordination events
-  useEffect(() => {
-    if (!playerId) return;
-
-    const unsubscribe = videoCoordinationService.subscribe((playingVideoId) => {
-      // If another video started playing, pause this one
-      if (playingVideoId !== playerId && player && player.playing) {
-        console.log('🎥 VideoPlayer: Pausing video due to coordination:', playerId);
-        player.pause();
-      }
-    });
-
-    return unsubscribe;
-  }, [playerId, player]);
-
-  // Expose control methods via ref
-  React.useImperativeHandle(ref, () => ({
-    pause: () => {
-      if (player) {
-        player.pause();
-      }
-    },
-    play: () => {
-      if (player) {
-        player.play();
-      }
-    },
-    isPlaying: () => {
-      return isPlaying;
-    },
-  }), [player, isPlaying]);
-
-
-
-  // Format time in MM:SS format
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Update progress periodically
-  const updateProgress = () => {
-    if (player && player.playing) {
-      setCurrentTime(player.currentTime || 0);
-      setDuration(player.duration || 0);
-    }
-  };
-
-  // Start/stop progress updates
-  const startProgressUpdates = () => {
-    if (progressUpdateRef.current) {
-      clearInterval(progressUpdateRef.current);
-    }
-    progressUpdateRef.current = setInterval(updateProgress, 500);
-  };
-
-  const stopProgressUpdates = () => {
-    if (progressUpdateRef.current) {
-      clearInterval(progressUpdateRef.current);
-      progressUpdateRef.current = null;
-    }
-  };
-
-  // Handle progress bar tap for seeking
-  const handleProgressPress = (event: any) => {
-    if (!player || duration === 0) return;
-
-    // Get the layout of the progress bar
-    event.currentTarget.measure((x: number, y: number, width: number, height: number) => {
-      const { locationX } = event.nativeEvent;
-      const percentage = locationX / width;
-      const seekTime = percentage * duration;
-
-      // Use currentTime property for precise seeking
-      player.currentTime = Math.max(0, Math.min(seekTime, duration));
-      setCurrentTime(seekTime);
-
-      console.log(`🎥 VideoPlayer: Seeked to ${formatTime(seekTime)} via progress bar`);
-    });
-  };
-
   // Create video player using the new expo-video hook
   const player = useVideoPlayer ? useVideoPlayer(videoUrl, (player: any) => {
     console.log('🎥 VideoPlayer: Creating player for URL:', videoUrl);
@@ -255,6 +173,88 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
       player.play();
     }
   }) : null;
+
+  // Subscribe to video coordination events
+  useEffect(() => {
+    if (!playerId) return;
+
+    const unsubscribe = videoCoordinationService.subscribe((playingVideoId) => {
+      // If another video started playing, pause this one
+      if (playingVideoId !== playerId && player && player.playing) {
+        console.log('🎥 VideoPlayer: Pausing video due to coordination:', playerId);
+        player.pause();
+      }
+    });
+
+    return unsubscribe;
+  }, [playerId, player]);
+
+  // Expose control methods via ref
+  React.useImperativeHandle(ref, () => ({
+    pause: () => {
+      if (player) {
+        player.pause();
+      }
+    },
+    play: () => {
+      if (player) {
+        player.play();
+      }
+    },
+    isPlaying: () => {
+      return isPlaying;
+    },
+  }), [player, isPlaying]);
+
+
+
+  // Format time in MM:SS format
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Update progress periodically
+  const updateProgress = () => {
+    if (player && player.playing) {
+      setCurrentTime(player.currentTime || 0);
+      setDuration(player.duration || 0);
+    }
+  };
+
+  // Start/stop progress updates
+  const startProgressUpdates = () => {
+    if (progressUpdateRef.current) {
+      clearInterval(progressUpdateRef.current);
+    }
+    progressUpdateRef.current = setInterval(updateProgress, 500);
+  };
+
+  const stopProgressUpdates = () => {
+    if (progressUpdateRef.current) {
+      clearInterval(progressUpdateRef.current);
+      progressUpdateRef.current = null;
+    }
+  };
+
+  // Handle progress bar tap for seeking
+  const handleProgressPress = (event: any) => {
+    if (!player || duration === 0) return;
+
+    // Get the layout of the progress bar
+    event.currentTarget.measure((x: number, y: number, width: number, height: number) => {
+      const { locationX } = event.nativeEvent;
+      const percentage = locationX / width;
+      const seekTime = percentage * duration;
+
+      // Use currentTime property for precise seeking
+      player.currentTime = Math.max(0, Math.min(seekTime, duration));
+      setCurrentTime(seekTime);
+
+      console.log(`🎥 VideoPlayer: Seeked to ${formatTime(seekTime)} via progress bar`);
+    });
+  };
 
   console.log('VideoPlayer: useVideoPlayer available:', !!useVideoPlayer);
   console.log('VideoPlayer: VideoView available:', !!VideoView);

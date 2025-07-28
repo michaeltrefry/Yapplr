@@ -92,6 +92,14 @@ export const lightTheme = {
   input: '#FFFFFF',
   inputBorder: '#D1D5DB',
   shadow: 'rgba(0, 0, 0, 0.1)',
+  // Material Design 3 colors
+  onSurface: '#1F2937',
+  onPrimary: '#FFFFFF',
+  surfaceVariant: '#F3F4F6',
+  onSurfaceVariant: '#6B7280',
+  outline: '#D1D5DB',
+  primaryContainer: '#DBEAFE',
+  onPrimaryContainer: '#1E40AF',
 };
 
 export const darkTheme = {
@@ -110,6 +118,14 @@ export const darkTheme = {
   input: '#374151',
   inputBorder: '#4B5563',
   shadow: 'rgba(0, 0, 0, 0.3)',
+  // Material Design 3 colors
+  onSurface: '#F9FAFB',
+  onPrimary: '#FFFFFF',
+  surfaceVariant: '#374151',
+  onSurfaceVariant: '#D1D5DB',
+  outline: '#4B5563',
+  primaryContainer: '#1E3A8A',
+  onPrimaryContainer: '#DBEAFE',
 };
 
 export type Theme = typeof lightTheme;

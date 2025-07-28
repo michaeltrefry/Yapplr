@@ -1,8 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, Linking, StyleSheet, Dimensions } from 'react-native';
-import { WebView } from 'expo-web-view';
 import { LinkPreview as LinkPreviewType, LinkPreviewStatus } from '../types';
 import { useThemeColors } from '../hooks/useThemeColors';
+
+// Try to import WebView, fallback to null if not available
+let WebView: any = null;
+try {
+  WebView = require('expo-web-view').WebView;
+} catch (error) {
+  console.warn('WebView not available, YouTube embeds will be disabled');
+}
 
 interface LinkPreviewProps {
   linkPreview: LinkPreviewType;
@@ -50,7 +57,7 @@ export default function LinkPreview({ linkPreview, style }: LinkPreviewProps) {
 
   // Success state - render full preview
   // If this is a YouTube video, render the embedded player instead of a regular preview
-  if (youTubeVideoId) {
+  if (youTubeVideoId && WebView) {
     const screenWidth = Dimensions.get('window').width;
     const videoHeight = (screenWidth - 32) * 0.5625; // 16:9 aspect ratio, accounting for margins
 

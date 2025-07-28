@@ -100,13 +100,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Check if this is an error response (has status field instead of token)
       if (response && 'status' in response && response.status === 403) {
         // This is an error response, create a proper error object
-        const error = new Error(response.detail || 'Email verification required');
+        const errorResponse = response as any;
+        const error = new Error(errorResponse.detail || 'Email verification required');
         (error as any).response = {
-          status: response.status,
+          status: errorResponse.status,
           data: {
-            message: response.detail,
-            title: response.title,
-            type: response.type
+            message: errorResponse.detail,
+            title: errorResponse.title,
+            type: errorResponse.type
           }
         };
         throw error;
@@ -149,12 +150,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const registerWithoutLogin = async (data: RegisterData) => {
+  const registerWithoutLogin = async (data: RegisterData): Promise<void> => {
     try {
       // Register but don't store token or set user (same as register now)
       const response = await api.auth.register(data);
       console.log('Registration successful:', response.message);
-      return response;
+      // Don't return the response, just complete successfully
     } catch (error) {
       console.error('Register error:', error);
       throw error;

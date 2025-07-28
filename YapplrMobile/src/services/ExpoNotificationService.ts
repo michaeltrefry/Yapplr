@@ -29,7 +29,7 @@ export interface NotificationContent {
 }
 
 export interface NotificationResponse {
-  notification: Notifications.Notification;
+  notification: any; // Notifications.Notification
   actionIdentifier: string;
   userText?: string;
 }
@@ -298,14 +298,14 @@ class ExpoNotificationService {
   /**
    * Get current notification permissions status
    */
-  async getPermissionsStatus(): Promise<Notifications.NotificationPermissionsStatus> {
+  async getPermissionsStatus(): Promise<any> { // Notifications.NotificationPermissionsStatus
     return await Notifications.getPermissionsAsync();
   }
 
   /**
    * Request notification permissions
    */
-  async requestPermissions(): Promise<Notifications.NotificationPermissionsStatus> {
+  async requestPermissions(): Promise<any> { // Notifications.NotificationPermissionsStatus
     return await Notifications.requestPermissionsAsync();
   }
 

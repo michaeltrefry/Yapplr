@@ -50,6 +50,8 @@ export type RootStackParamList = {
   FollowingList: { userId: number; username: string };
   FollowersList: { userId: number; username: string };
   Settings: undefined;
+  Subscription: undefined;
+  Messages: undefined;
   BlockedUsers: undefined;
   HelpSupport: undefined;
   NotificationDebug: undefined;
@@ -243,6 +245,11 @@ function MainStack() {
       <Stack.Screen
         name="Subscription"
         component={SubscriptionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Messages"
+        component={MessagesScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

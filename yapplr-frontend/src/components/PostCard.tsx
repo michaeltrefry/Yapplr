@@ -674,17 +674,19 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 {/* Legacy single video support */}
                 {post.videoUrl && post.videoProcessingStatus === VideoProcessingStatus.Completed && (
                   <div className="mt-3">
-                    <div className="flex items-center justify-center bg-black rounded-lg border border-gray-200" style={{ maxHeight: '400px' }}>
+                    <div
+                      className="flex items-center justify-center bg-black rounded-lg border border-gray-200"
+                      style={{
+                        maxHeight: '400px',
+                        height: '400px',
+                        width: '100%'
+                      }}
+                    >
                       <video
                         src={post.videoUrl}
                         poster={post.videoThumbnailUrl}
                         controls
-                        className="max-w-full h-auto rounded-lg object-contain"
-                        style={{
-                          maxHeight: '400px',
-                          width: 'auto',
-                          height: 'auto'
-                        }}
+                        className="max-w-full max-h-full object-contain"
                       >
                         Your browser does not support the video tag.
                       </video>

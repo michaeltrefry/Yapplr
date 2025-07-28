@@ -197,6 +197,7 @@ public class PaymentBackgroundService : BackgroundService
             var subscriptionsToSync = await context.UserSubscriptions
                 .Where(s => (s.Status == Models.SubscriptionStatus.Active || s.Status == Models.SubscriptionStatus.PastDue) &&
                            (!s.LastSyncDate.HasValue || s.LastSyncDate.Value.AddHours(24) <= currentTime))
+                .OrderBy(s => s.LastSyncDate ?? s.CreatedAt) // Order by last sync date (oldest first) to ensure fair processing
                 .Take(50) // Limit to avoid overwhelming the payment providers
                 .ToListAsync();
 

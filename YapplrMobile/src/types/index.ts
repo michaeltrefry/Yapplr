@@ -148,6 +148,8 @@ export interface MediaFile {
   height?: number;
   fileSizeBytes?: number;
   duration?: string; // ISO 8601 duration string
+  gifUrl?: string; // For GIF media type
+  gifPreviewUrl?: string; // For GIF media type
 }
 
 export interface CreatePostData {
@@ -296,6 +298,16 @@ export interface UpdateGroup {
   imageFileName?: string;
 }
 
+export interface PaginatedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export enum ReactionType {
   Heart = 1,
   ThumbsUp = 2,
@@ -327,6 +339,8 @@ export interface Post {
   videoUrl?: string;
   videoThumbnailUrl?: string;
   videoProcessingStatus?: VideoProcessingStatus;
+  videoWidth?: number;
+  videoHeight?: number;
   privacy: PostPrivacy;
   user: User;
   group?: Group;
@@ -636,6 +650,8 @@ export interface YapplrApi {
     createPost: (data: CreatePostData) => Promise<Post>;
     createPostWithMedia: (data: CreatePostWithMediaData) => Promise<Post>;
     likePost: (postId: number) => Promise<void>;
+    reactToPost: (postId: number, reactionType: number) => Promise<void>;
+    removePostReaction: (postId: number) => Promise<void>;
     repostPost: (postId: number) => Promise<void>;
     deletePost: (postId: number) => Promise<void>;
     unrepost: (postId: number) => Promise<void>;
@@ -713,5 +729,21 @@ export interface YapplrApi {
     getTermsOfService: () => Promise<ContentPageVersion>;
     getPrivacyPolicy: () => Promise<ContentPageVersion>;
     getPublishedContentBySlug: (slug: string) => Promise<ContentPageVersion>;
+  };
+  groups: {
+    getGroups: (page?: number, pageSize?: number) => Promise<PaginatedResult<GroupList>>;
+    searchGroups: (query: string, page?: number, pageSize?: number) => Promise<PaginatedResult<GroupList>>;
+    getGroup: (id: number) => Promise<Group>;
+    getGroupByName: (name: string) => Promise<Group>;
+    createGroup: (data: CreateGroup) => Promise<Group>;
+    updateGroup: (id: number, data: UpdateGroup) => Promise<Group>;
+    deleteGroup: (id: number) => Promise<void>;
+    joinGroup: (id: number) => Promise<{ message: string }>;
+    leaveGroup: (id: number) => Promise<{ message: string }>;
+    getGroupMembers: (id: number, page?: number, pageSize?: number) => Promise<PaginatedResult<GroupMember>>;
+    getGroupPosts: (id: number, page?: number, pageSize?: number) => Promise<PaginatedResult<Post>>;
+    getUserGroups: (userId: number, page?: number, pageSize?: number) => Promise<PaginatedResult<GroupList>>;
+    getMyGroups: (page?: number, pageSize?: number) => Promise<PaginatedResult<GroupList>>;
+    uploadGroupImage: (uri: string, fileName: string, type: string) => Promise<{ fileName: string; imageUrl: string }>;
   };
 }

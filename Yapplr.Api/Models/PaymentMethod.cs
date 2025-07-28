@@ -74,5 +74,6 @@ public class PaymentMethod : IEntity
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     
     // Navigation properties
-    public ICollection<UserSubscription> Subscriptions { get; set; } = new List<UserSubscription>();
+    // Note: UserSubscription stores external payment method IDs as strings,
+    // not foreign key references to this entity
 }

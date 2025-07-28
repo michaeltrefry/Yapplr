@@ -118,8 +118,7 @@ public abstract class SoftDeletableCrudService<TEntity, TDto, TCreateDto, TUpdat
 
             var totalCount = await query.CountAsync();
             var entities = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
+                .ApplyPaginationWithOrdering(page, pageSize)
                 .ToListAsync();
 
             var currentUserId = user.GetUserIdOrNull();
