@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -193,6 +193,15 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     await Promise.all([refetchProfile(), refetchTimeline()]);
   };
 
+  // Listen for focus events to refresh timeline when returning from other screens
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      refetchTimeline();
+    });
+
+    return unsubscribe;
+  }, [navigation, refetchTimeline]);
+
   const handleFollowToggle = async () => {
     if (!profile) return;
 
@@ -257,10 +266,7 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
   };
 
   const handleCommentPress = (post: Post) => {
-    navigation.navigate('Comments', {
-      post,
-      onCommentCountUpdate: handleCommentCountUpdate
-    });
+    navigation.navigate('Comments', { post });
   };
 
   // Merge timeline data with local comment count updates

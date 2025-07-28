@@ -24,7 +24,6 @@ import ReportModal from '../../components/ReportModal';
 type RootStackParamList = {
   Comments: {
     post: Post;
-    onCommentCountUpdate?: (postId: number, newCount: number) => void;
   };
 };
 
@@ -221,7 +220,7 @@ function CommentItem({ comment, postId, getImageUrl, onDelete }: CommentItemProp
 export default function CommentsScreen() {
   const route = useRoute<CommentsScreenRouteProp>();
   const navigation = useNavigation<CommentsScreenNavigationProp>();
-  const { post, onCommentCountUpdate } = route.params;
+  const { post } = route.params;
   const { user, api } = useAuth() || {};
 
   const [comments, setComments] = useState<Comment[]>([]);
@@ -280,8 +279,6 @@ export default function CommentsScreen() {
       console.log('Comment created successfully:', comment);
       setComments(prev => {
         const newComments = [...prev, comment];
-        // Update the comment count in the parent screen
-        onCommentCountUpdate?.(post.id, newComments.length);
         // Update the local comment count display
         setCurrentCommentCount(newComments.length);
 

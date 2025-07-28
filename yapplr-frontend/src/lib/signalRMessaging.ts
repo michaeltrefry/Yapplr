@@ -158,9 +158,25 @@ class SignalRMessagingService {
       console.log('📡 Left conversation:', conversationId);
     });
 
-    this.connection.on('NewMessage', (messageData: unknown) => {
+    this.connection.on('NewMessage', (messageData: any) => {
       console.log('📡 New message in conversation:', messageData);
-      // This could trigger a refresh of the conversation
+
+      // Convert NewMessage event to a notification payload for consistency
+      if (messageData && messageData.conversationId) {
+        const notificationPayload: SignalRNotificationPayload = {
+          type: 'message',
+          title: 'New Message',
+          body: 'You have a new message',
+          data: {
+            conversationId: messageData.conversationId.toString(),
+            userId: messageData.senderId?.toString(),
+          },
+          timestamp: new Date().toISOString()
+        };
+
+        console.log('📡 Converting NewMessage to notification payload:', notificationPayload);
+        this.notifyMessageListeners(notificationPayload);
+      }
     });
 
     // Handle errors

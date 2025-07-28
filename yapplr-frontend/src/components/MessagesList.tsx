@@ -33,7 +33,7 @@ export default function MessagesList({ conversationId }: MessagesListProps) {
     },
     initialPageParam: 1,
     enabled: !!conversationId,
-    refetchInterval: 5000, // Refresh every 5 seconds for active conversations
+    refetchInterval: 30000, // Reduced polling since SignalR handles real-time updates
     refetchIntervalInBackground: false,
   });
 

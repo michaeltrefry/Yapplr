@@ -16,17 +16,21 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
+import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Message } from '../../types';
+import { navigationService } from '../../services/NavigationService';
 
 type ConversationScreenProps = StackScreenProps<RootStackParamList, 'Conversation'>;
 
 export default function ConversationScreen({ route, navigation }: ConversationScreenProps) {
   const { conversationId, otherUser } = route.params;
   const { api, user: currentUser } = useAuth();
+  const { joinConversation, leaveConversation } = useNotifications();
   const colors = useThemeColors();
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -285,6 +289,22 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
       }, 100);
     }
   }, [messages]);
+
+  // Join/leave SignalR conversation when screen is focused/unfocused
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📱💬 ConversationScreen focused, joining SignalR conversation:', conversationId);
+      navigationService.setCurrentScreen('Conversation');
+      navigationService.setCurrentConversation(conversationId);
+      joinConversation(conversationId);
+
+      return () => {
+        console.log('📱💬 ConversationScreen unfocused, leaving SignalR conversation:', conversationId);
+        navigationService.clearConversation();
+        leaveConversation(conversationId);
+      };
+    }, [conversationId, joinConversation, leaveConversation])
+  );
 
   if (isLoading) {
     return (

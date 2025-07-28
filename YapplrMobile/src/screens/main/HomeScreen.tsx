@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -78,6 +78,15 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     setRefreshing(false);
   };
 
+  // Listen for focus events to refresh timeline when returning from other screens
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      refetch();
+    });
+
+    return unsubscribe;
+  }, [navigation, refetch]);
+
   const handleLikePost = async (postId: number) => {
     try {
       await api.posts.likePost(postId);
@@ -110,10 +119,7 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
   };
 
   const handleCommentPress = (post: Post) => {
-    navigation.navigate('Comments', {
-      post,
-      onCommentCountUpdate: handleCommentCountUpdate
-    });
+    navigation.navigate('Comments', { post });
   };
 
   // Merge timeline data with local comment count updates

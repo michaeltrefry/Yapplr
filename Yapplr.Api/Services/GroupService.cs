@@ -351,8 +351,12 @@ public class GroupService : BaseService, IGroupService
 
     private GroupDto MapToGroupDto(Group group, int? currentUserId)
     {
-        var isCurrentUserMember = currentUserId.HasValue && 
+        var isCurrentUserMember = currentUserId.HasValue &&
             group.Members.Any(m => m.UserId == currentUserId.Value);
+
+        // Calculate visible post count (same filtering as GetGroupPostsAsync)
+        var visiblePostCount = group.Posts.Count(p =>
+            p.PostType == PostType.Post && !p.IsHidden && !p.IsDeletedByUser);
 
         return new GroupDto(
             group.Id,
@@ -364,7 +368,7 @@ public class GroupService : BaseService, IGroupService
             group.IsOpen,
             group.User.ToDto(),
             group.Members.Count,
-            group.Posts.Count,
+            visiblePostCount,
             isCurrentUserMember
         );
     }
@@ -481,6 +485,10 @@ public class GroupService : BaseService, IGroupService
         var isCurrentUserMember = currentUserId.HasValue &&
             group.Members.Any(m => m.UserId == currentUserId.Value);
 
+        // Calculate visible post count (same filtering as GetGroupPostsAsync)
+        var visiblePostCount = group.Posts.Count(p =>
+            p.PostType == PostType.Post && !p.IsHidden && !p.IsDeletedByUser);
+
         return new GroupListDto(
             group.Id,
             group.Name,
@@ -489,7 +497,7 @@ public class GroupService : BaseService, IGroupService
             group.CreatedAt,
             group.User.Username,
             group.Members.Count,
-            group.Posts.Count,
+            visiblePostCount,
             isCurrentUserMember
         );
     }

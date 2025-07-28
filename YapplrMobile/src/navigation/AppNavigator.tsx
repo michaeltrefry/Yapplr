@@ -69,7 +69,6 @@ export type RootStackParamList = {
   };
   Comments: {
     post: Post;
-    onCommentCountUpdate?: (postId: number, newCount: number) => void;
   };
 };
 

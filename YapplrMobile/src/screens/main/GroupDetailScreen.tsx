@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,14 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useAuth } from '../../contexts/AuthContext';
-import { Group } from '../../types';
+import { Group, Post, TimelineItem, ReactionType, PaginatedResult } from '../../types';
+import PostCard from '../../components/PostCard';
 
 interface GroupDetailScreenProps {
   navigation: any;
@@ -33,6 +35,13 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'members'>('posts');
 
+  // Posts state
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [postsPage, setPostsPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [commentCountUpdates, setCommentCountUpdates] = useState<{ [postId: number]: number }>({});
+
   const loadGroup = async () => {
     try {
       setLoading(true);
@@ -47,13 +56,58 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
     }
   };
 
+  const loadGroupPosts = async (page: number = 1, reset: boolean = false) => {
+    if (postsLoading || (!hasMorePosts && page > 1)) return;
+
+    try {
+      setPostsLoading(true);
+      const result: PaginatedResult<Post> = await api.groups.getGroupPosts(groupId, page, 20);
+
+      if (reset || page === 1) {
+        setPosts(result.items || []);
+        setPostsPage(1);
+      } else {
+        setPosts(prev => [...prev, ...(result.items || [])]);
+      }
+
+      setHasMorePosts(result.hasNextPage);
+      setPostsPage(page);
+    } catch (error) {
+      console.error('Failed to load group posts:', error);
+      Alert.alert('Error', 'Failed to load posts. Please try again.');
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadGroup();
   }, [groupId]);
 
+  useEffect(() => {
+    if (group && activeTab === 'posts') {
+      loadGroupPosts(1, true);
+    }
+  }, [group, activeTab]);
+
+  // Listen for comment count updates from CommentsScreen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Refresh posts when returning from CommentsScreen to get updated comment counts
+      if (group && activeTab === 'posts') {
+        loadGroupPosts(1, true);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, group, activeTab]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     loadGroup();
+    if (activeTab === 'posts') {
+      loadGroupPosts(1, true);
+    }
   };
 
   const handleJoinGroup = async () => {
@@ -72,6 +126,115 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
       Alert.alert('Error', 'Failed to join group. Please try again.');
     }
   };
+
+  // Post interaction handlers
+  const handleLikePost = async (postId: number) => {
+    try {
+      await api.posts.likePost(postId);
+      loadGroupPosts(1, true); // Refresh posts to show updated like count
+    } catch (error) {
+      Alert.alert('Error', 'Failed to like post');
+    }
+  };
+
+  const handleReact = async (postId: number, reactionType: ReactionType) => {
+    try {
+      await api.posts.reactToPost(postId, reactionType);
+      loadGroupPosts(1, true); // Refresh posts to show updated reaction
+    } catch (error) {
+      Alert.alert('Error', 'Failed to react to post');
+    }
+  };
+
+  const handleRemoveReaction = async (postId: number) => {
+    try {
+      await api.posts.removePostReaction(postId);
+      loadGroupPosts(1, true); // Refresh posts to show updated reaction
+    } catch (error) {
+      Alert.alert('Error', 'Failed to remove reaction');
+    }
+  };
+
+  const handleRepost = async (postId: number) => {
+    try {
+      await api.posts.repostPost(postId);
+      loadGroupPosts(1, true); // Refresh posts to show updated repost count
+    } catch (error) {
+      Alert.alert('Error', 'Failed to repost');
+    }
+  };
+
+  const handleUserPress = (username: string) => {
+    navigation.navigate('UserProfile', { username });
+  };
+
+  const handleCommentPress = (post: Post) => {
+    navigation.navigate('Comments', { post });
+  };
+
+  const handleCommentCountUpdate = (postId: number, newCount: number) => {
+    setCommentCountUpdates(prev => ({
+      ...prev,
+      [postId]: newCount
+    }));
+  };
+
+  const handleDelete = () => {
+    loadGroupPosts(1, true); // Refresh posts after deletion
+  };
+
+  const handleUnrepost = () => {
+    loadGroupPosts(1, true); // Refresh posts after unrepost
+  };
+
+  const handleLoadMorePosts = () => {
+    if (hasMorePosts && !postsLoading) {
+      loadGroupPosts(postsPage + 1);
+    }
+  };
+
+  // Transform posts to timeline items and merge with comment count updates
+  const timelineItems = useMemo(() => {
+    return posts.map(post => {
+      const updatedCount = commentCountUpdates[post.id];
+      const updatedPost = updatedCount !== undefined
+        ? { ...post, commentCount: updatedCount }
+        : post;
+
+      return {
+        type: 'post' as const,
+        createdAt: post.createdAt,
+        post: updatedPost,
+      } as TimelineItem;
+    });
+  }, [posts, commentCountUpdates]);
+
+  const renderTimelineItem = ({ item }: { item: TimelineItem }) => (
+    <PostCard
+      item={item}
+      onLike={handleLikePost}
+      onReact={handleReact}
+      onRemoveReaction={handleRemoveReaction}
+      onRepost={handleRepost}
+      onUserPress={handleUserPress}
+      onCommentPress={handleCommentPress}
+      onCommentCountUpdate={handleCommentCountUpdate}
+      onDelete={handleDelete}
+      onUnrepost={handleUnrepost}
+    />
+  );
+
+  const renderEmptyPosts = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="chatbubbles-outline" size={64} color={colors.onSurfaceVariant} />
+      <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>
+        No posts yet
+      </Text>
+      <Text style={[styles.emptySubtext, { color: colors.onSurfaceVariant }]}>
+        {group?.isCurrentUserMember ? "Be the first to post!" : "Join the group to see posts"}
+      </Text>
+    </View>
+  );
 
   const handleLeaveGroup = async () => {
     if (!group) return;
@@ -146,15 +309,7 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-          />
-        }
-      >
+      <View style={styles.screenContainer}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
@@ -276,22 +431,59 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
         </View>
 
         {/* Content */}
-        <View style={styles.content}>
-          {activeTab === 'posts' ? (
-            <View style={styles.postsContainer}>
-              <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>
-                Posts will be displayed here
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.membersContainer}>
-              <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>
-                Members will be displayed here
-              </Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
+        {activeTab === 'posts' ? (
+          <View style={styles.postsContainer}>
+            {postsLoading && posts.length === 0 ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>
+                  Loading posts...
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={timelineItems}
+                renderItem={renderTimelineItem}
+                keyExtractor={(item) => `${item.type}-${item.post.id}-${item.createdAt}`}
+                contentContainerStyle={styles.postsListContainer}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={renderEmptyPosts}
+                onEndReached={handleLoadMorePosts}
+                onEndReachedThreshold={0.1}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={handleRefresh}
+                    colors={[colors.primary]}
+                  />
+                }
+                ListFooterComponent={
+                  postsLoading && posts.length > 0 ? (
+                    <View style={styles.loadingMore}>
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    </View>
+                  ) : null
+                }
+              />
+            )}
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.membersContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={[colors.primary]}
+              />
+            }
+          >
+            <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>
+              Members will be displayed here
+            </Text>
+          </ScrollView>
+        )}
+      </View>
 
       {/* Floating Action Button for Posts */}
       {user && group.isCurrentUserMember && activeTab === 'posts' && (
@@ -442,6 +634,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: 32,
+  },
+  screenContainer: {
+    flex: 1,
+  },
+  postsListContainer: {
+    flexGrow: 1,
+  },
+  loadingText: {
+    fontSize: 16,
+    marginTop: 12,
+  },
+  loadingMore: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
   },
   fab: {
     position: 'absolute',

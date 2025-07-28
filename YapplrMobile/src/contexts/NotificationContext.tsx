@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import SignalRService, { SignalRNotificationPayload, SignalRConnectionStatus } from '../services/SignalRService';
 import ExpoNotificationService from '../services/ExpoNotificationService';
+import { navigationService } from '../services/NavigationService';
 
 // Safely import Notifications with fallback
 let Notifications: any = null;
@@ -33,6 +34,9 @@ interface NotificationContextType {
   refreshExpoNotifications: () => Promise<void>;
   // New context-aware notification methods
   showNotificationBanner: (payload: SignalRNotificationPayload) => void;
+  // SignalR conversation methods
+  joinConversation: (conversationId: number) => Promise<void>;
+  leaveConversation: (conversationId: number) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -91,15 +95,36 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
     }
   };
 
-  // Simplified notification handler (without navigation context for now)
+  // Context-aware notification handler
   const handleContextAwareNotification = useCallback((payload: SignalRNotificationPayload) => {
     console.log('📱🔔 Received SignalR notification:', payload);
 
     const appState = AppState.currentState;
 
-    // For now, always show banner when app is active and invalidate relevant queries
+    // Smart notification logic based on context
     let shouldShowBanner = appState === 'active';
     let shouldShowLocalNotification = appState !== 'active';
+
+    // Special handling for message notifications
+    if (payload.type === 'message' && payload.data?.conversationId) {
+      const notificationConversationId = parseInt(payload.data.conversationId);
+      const currentScreen = navigationService.getCurrentScreen();
+      const currentConversationId = navigationService.getCurrentConversationId();
+
+      console.log('📱🔔 Message notification context check:', {
+        notificationConversationId,
+        currentConversationId,
+        currentScreen,
+        isInSameConversation: currentConversationId === notificationConversationId
+      });
+
+      // If user is currently viewing the conversation that received the message,
+      // don't show the notification banner but still update the UI
+      if (navigationService.isInConversation(notificationConversationId)) {
+        shouldShowBanner = false;
+        console.log('📱🔔 Suppressing notification banner - user is in the conversation');
+      }
+    }
 
     // Invalidate relevant queries based on notification type
     switch (payload.type) {
@@ -107,6 +132,13 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
         console.log('📱🔔 Message notification, updating conversations and counts');
         queryClient.invalidateQueries({ queryKey: ['conversations'] });
         queryClient.invalidateQueries({ queryKey: ['unreadMessageCount'] });
+
+        // Also invalidate the specific conversation's messages if we have the conversationId
+        if (payload.data?.conversationId) {
+          const conversationId = parseInt(payload.data.conversationId);
+          queryClient.invalidateQueries({ queryKey: ['conversationMessages', conversationId] });
+          console.log('📱🔔 Invalidated conversation messages for conversation:', conversationId);
+        }
         break;
       case 'VideoProcessingCompleted':
         console.log('📱🔔 Video processing completed notification, refreshing posts');
@@ -433,6 +465,19 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
     };
   }, []); // Empty dependency array - only run on mount/unmount
 
+  // SignalR conversation methods
+  const joinConversation = async (conversationId: number): Promise<void> => {
+    if (isSignalRReady) {
+      await signalRService.joinConversation(conversationId);
+    }
+  };
+
+  const leaveConversation = async (conversationId: number): Promise<void> => {
+    if (isSignalRReady) {
+      await signalRService.leaveConversation(conversationId);
+    }
+  };
+
   const value: NotificationContextType = {
     signalRStatus,
     isSignalRReady,
@@ -443,6 +488,8 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
     refreshSignalRConnection,
     refreshExpoNotifications,
     showNotificationBanner,
+    joinConversation,
+    leaveConversation,
   };
 
   return (

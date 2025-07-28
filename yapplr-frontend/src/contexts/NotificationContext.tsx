@@ -220,6 +220,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (type === 'message') {
       console.log('🔔 Refreshing unread message count');
       refreshUnreadCount();
+
+      // For message notifications, also invalidate specific conversation messages
+      if (payload?.data?.conversationId) {
+        const conversationId = parseInt(payload.data.conversationId);
+        console.log('🔔 Invalidating messages for conversation:', conversationId);
+        queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+        queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
+      }
     } else if (['mention', 'reply', 'comment', 'follow', 'like', 'repost', 'follow_request', 'generic', 'VideoProcessingCompleted', 'test', 'systemMessage'].includes(type)) {
       console.log('🔔 Refreshing notification count for type:', type);
       refreshNotificationCount();

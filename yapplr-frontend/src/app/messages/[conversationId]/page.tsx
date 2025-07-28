@@ -13,6 +13,7 @@ import MessageComposer from '@/components/MessageComposer';
 import UserAvatar from '@/components/UserAvatar';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { signalRMessagingService } from '@/lib/signalRMessaging';
 
 interface ConversationPageProps {
   params: Promise<{ conversationId: string }>;
@@ -29,6 +30,20 @@ export default function ConversationPage({ params }: ConversationPageProps) {
       router.push('/login');
     }
   }, [user, isLoading, router]);
+
+  // Join/leave SignalR conversation when component mounts/unmounts
+  useEffect(() => {
+    if (user && conversationId) {
+      const convId = parseInt(conversationId);
+      console.log('🌐💬 Joining SignalR conversation:', convId);
+      signalRMessagingService.joinConversation(convId);
+
+      return () => {
+        console.log('🌐💬 Leaving SignalR conversation:', convId);
+        signalRMessagingService.leaveConversation(convId);
+      };
+    }
+  }, [user, conversationId]);
 
   const { data: conversation, isLoading: conversationLoading, error } = useQuery({
     queryKey: ['conversation', conversationId],
