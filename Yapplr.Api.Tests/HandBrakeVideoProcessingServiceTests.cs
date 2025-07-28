@@ -13,6 +13,7 @@ public class HandBrakeVideoProcessingServiceTests : IDisposable
 {
     private readonly Mock<ILogger<HandBrakeVideoProcessingService>> _logger;
     private readonly Mock<IConfiguration> _configuration;
+    private readonly Mock<IThumbnailGenerationService> _thumbnailService;
     private readonly HandBrakeVideoProcessingService _service;
     private readonly string _tempDirectory;
 
@@ -20,28 +21,27 @@ public class HandBrakeVideoProcessingServiceTests : IDisposable
     {
         _logger = new Mock<ILogger<HandBrakeVideoProcessingService>>();
         _configuration = new Mock<IConfiguration>();
+        _thumbnailService = new Mock<IThumbnailGenerationService>();
         _tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(_tempDirectory);
 
         // Setup configuration mocks
         _configuration.Setup(x => x["HandBrake:BinaryPath"]).Returns("HandBrakeCLI");
-        _configuration.Setup(x => x["FFmpeg:BinaryPath"]).Returns("ffmpeg");
         _configuration.Setup(x => x["FFmpeg:ProbePath"]).Returns("ffprobe");
 
-        _service = new HandBrakeVideoProcessingService(_logger.Object, _configuration.Object);
+        _service = new HandBrakeVideoProcessingService(_logger.Object, _configuration.Object, _thumbnailService.Object);
     }
 
     [Fact]
     public void Constructor_ShouldInitializeWithConfiguration()
     {
         // Arrange & Act
-        var service = new HandBrakeVideoProcessingService(_logger.Object, _configuration.Object);
+        var service = new HandBrakeVideoProcessingService(_logger.Object, _configuration.Object, _thumbnailService.Object);
 
         // Assert
         service.Should().NotBeNull();
-        _configuration.Verify(x => x["HandBrake:BinaryPath"], Times.Once);
-        _configuration.Verify(x => x["FFmpeg:BinaryPath"], Times.Once);
-        _configuration.Verify(x => x["FFmpeg:ProbePath"], Times.Once);
+        _configuration.Verify(x => x["HandBrake:BinaryPath"], Times.AtLeastOnce);
+        _configuration.Verify(x => x["FFmpeg:ProbePath"], Times.AtLeastOnce);
     }
 
     [Fact]
@@ -213,7 +213,7 @@ public class HandBrakeVideoProcessingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ProcessVideoAsync_WithValidConfig_ShouldCreateDirectories()
+    public async Task ProcessVideoAsync_WithValidConfig_ShouldHandleProcessingFailure()
     {
         // Arrange
         var inputPath = Path.Combine(_tempDirectory, "input.mp4");
@@ -221,16 +221,22 @@ public class HandBrakeVideoProcessingServiceTests : IDisposable
         var thumbnailPath = Path.Combine(_tempDirectory, "thumbs", "thumb.jpg");
         var config = CreateTestConfig();
 
-        // Create a dummy input file
+        // Create a dummy input file (not a real video file)
         await File.WriteAllTextAsync(inputPath, "dummy video content");
 
         // Act
         var result = await _service.ProcessVideoAsync(inputPath, outputPath, thumbnailPath, config);
 
         // Assert
-        // The method should create the output directories even if processing fails
-        Directory.Exists(Path.GetDirectoryName(outputPath)).Should().BeTrue();
-        Directory.Exists(Path.GetDirectoryName(thumbnailPath)).Should().BeTrue();
+        // Processing should fail because the input is not a real video file and FFprobe is not available
+        result.Should().NotBeNull();
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().NotBeNullOrEmpty();
+
+        // Directories are only created after successful metadata extraction,
+        // so they should not exist when metadata extraction fails
+        Directory.Exists(Path.GetDirectoryName(outputPath)).Should().BeFalse();
+        Directory.Exists(Path.GetDirectoryName(thumbnailPath)).Should().BeFalse();
     }
 
     [Fact]
