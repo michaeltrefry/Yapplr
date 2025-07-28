@@ -42,35 +42,11 @@ builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.Environment
 builder.Configuration.AddEnvironmentVariables();
 
 // Add services
-// Conditionally register video processing service based on configuration
-var useSimpleProcessor = builder.Configuration.GetValue<bool>("VideoProcessing:UseSimpleProcessor", false);
-var useHandBrakeProcessor = builder.Configuration.GetValue<bool>("VideoProcessing:UseHandBrakeProcessor", false);
+Console.WriteLine("Using HandBrakeVideoProcessingService (HandBrake CLI implementation)");
+builder.Services.AddSingleton<IVideoProcessingService, HandBrakeVideoProcessingService>();
+builder.Services.AddSingleton<IThumbnailGenerationService, FFmpegThumbnailGenerationService>();
+builder.Services.AddSingleton<ICodecTestService, HandBrakeCodecTestService>();
 
-if (useHandBrakeProcessor)
-{
-    Console.WriteLine("Using HandBrakeVideoProcessingService (HandBrake CLI implementation)");
-    builder.Services.AddSingleton<IVideoProcessingService, HandBrakeVideoProcessingService>();
-}
-else if (useSimpleProcessor)
-{
-    Console.WriteLine("Using SimpleVideoProcessingService (direct FFmpeg implementation)");
-    builder.Services.AddSingleton<IVideoProcessingService, SimpleVideoProcessingService>();
-}
-else
-{
-    Console.WriteLine("Using VideoProcessingService (FFMpegCore implementation)");
-    builder.Services.AddSingleton<IVideoProcessingService, VideoProcessingService>();
-}
-
-// Register appropriate codec test service based on processor type
-if (useHandBrakeProcessor)
-{
-    builder.Services.AddSingleton<ICodecTestService, HandBrakeCodecTestService>();
-}
-else
-{
-    builder.Services.AddSingleton<ICodecTestService, CodecTestService>();
-}
 
 // Add MassTransit with RabbitMQ
 builder.Services.AddMassTransit(x =>

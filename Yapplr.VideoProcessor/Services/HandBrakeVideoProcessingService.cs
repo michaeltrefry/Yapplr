@@ -14,20 +14,21 @@ public class HandBrakeVideoProcessingService : IVideoProcessingService
 {
     private readonly ILogger<HandBrakeVideoProcessingService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly IThumbnailGenerationService _thumbnailService;
     private readonly string _handBrakePath;
-    private readonly string _ffmpegPath;
     private readonly string _ffprobePath;
 
     public HandBrakeVideoProcessingService(
         ILogger<HandBrakeVideoProcessingService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IThumbnailGenerationService thumbnailService)
     {
         _logger = logger;
         _configuration = configuration;
-        
+        _thumbnailService = thumbnailService;
+
         // Get tool paths from configuration
         _handBrakePath = _configuration["HandBrake:BinaryPath"] ?? "HandBrakeCLI";
-        _ffmpegPath = _configuration["FFmpeg:BinaryPath"] ?? "ffmpeg";
         _ffprobePath = _configuration["FFmpeg:ProbePath"] ?? "ffprobe";
     }
 
@@ -88,7 +89,7 @@ public class HandBrakeVideoProcessingService : IVideoProcessingService
             var thumbnailFileName = Path.GetFileName(thumbnailPath);
 
             await ProcessVideoFileAsync(inputPath, outputPath, config, originalMetadata);
-            await GenerateThumbnailAsync(outputPath, thumbnailPath, config, originalMetadata);
+            await _thumbnailService.GenerateThumbnailAsync(outputPath, thumbnailPath, config, originalMetadata);
 
             // Get processed video metadata
             var processedMetadata = await GetVideoMetadataAsync(outputPath);
@@ -459,85 +460,10 @@ public class HandBrakeVideoProcessingService : IVideoProcessingService
         _logger.LogDebug("HandBrake {Operation} completed successfully", operation);
     }
 
-    /// <summary>
-    /// Generate thumbnail using FFmpeg from the processed video (no rotation needed)
-    /// </summary>
-    private async Task GenerateThumbnailAsync(string processedVideoPath, string thumbnailPath, VideoProcessingConfig config, VideoMetadata originalMetadata)
-    {
-        // Calculate thumbnail dimensions (no rotation needed since processed video is correctly oriented)
-        var (thumbnailWidth, thumbnailHeight) = CalculateTargetDimensions(
-            originalMetadata.DisplayWidth,
-            originalMetadata.DisplayHeight,
-            config.ThumbnailWidth,
-            config.ThumbnailHeight);
-
-        _logger.LogInformation("Generating thumbnail from processed video: {ProcessedVideoPath} -> {ThumbnailWidth}x{ThumbnailHeight}",
-            processedVideoPath, thumbnailWidth, thumbnailHeight);
-
-        // Build simple scale filter (no rotation needed)
-        var filterString = $"scale={thumbnailWidth}:{thumbnailHeight}";
-
-        // Build FFmpeg arguments for thumbnail
-        var arguments = BuildThumbnailArguments(processedVideoPath, thumbnailPath, config, filterString);
-
-        _logger.LogInformation("FFmpeg thumbnail command: {FFmpegPath} {Arguments}", _ffmpegPath, arguments);
-
-        // Execute FFmpeg for thumbnail generation
-        await ExecuteFFmpegAsync(arguments, "thumbnail generation");
-    }
 
 
 
-    /// <summary>
-    /// Build FFmpeg arguments for thumbnail generation
-    /// </summary>
-    private string BuildThumbnailArguments(string inputPath, string thumbnailPath, VideoProcessingConfig config, string filterString)
-    {
-        var args = new List<string>
-        {
-            "-i", $"\"{inputPath}\"",
-            "-vf", filterString,
-            "-vframes", "1", // Extract only one frame
-            "-ss", config.ThumbnailTimeSeconds.ToString("F1"), // Seek to specified time
-            "-y", // Overwrite output file
-            $"\"{thumbnailPath}\""
-        };
 
-        return string.Join(" ", args);
-    }
-
-    /// <summary>
-    /// Execute FFmpeg with the given arguments (used for thumbnail generation)
-    /// </summary>
-    private async Task ExecuteFFmpegAsync(string arguments, string operation)
-    {
-        var processInfo = new ProcessStartInfo
-        {
-            FileName = _ffmpegPath,
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var process = new Process { StartInfo = processInfo };
-        process.Start();
-
-        var output = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
-
-        await process.WaitForExitAsync();
-
-        if (process.ExitCode != 0)
-        {
-            _logger.LogError("FFmpeg {Operation} failed with exit code {ExitCode}: {Error}",
-                operation, process.ExitCode, error);
-            throw new InvalidOperationException($"FFmpeg {operation} failed: {error}");
-        }
-
-        _logger.LogDebug("FFmpeg {Operation} completed successfully", operation);
-    }
 
     /// <summary>
     /// Extract rotation from video metadata, handling both display matrix and rotate tag
