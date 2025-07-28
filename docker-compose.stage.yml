@@ -114,6 +114,11 @@ services:
       - FFmpeg__TimeoutSeconds=300
       - FFmpeg__EnableHardwareAcceleration=false
       - FFmpeg__LogLevel=info
+      # HandBrake configuration
+      - HandBrake__BinaryPath=/usr/bin/HandBrakeCLI
+      - HandBrake__WorkingDirectory=/tmp
+      - HandBrake__TimeoutSeconds=300
+      - HandBrake__LogLevel=info
     volumes:
       - yapplr_uploads:/app/uploads
       - yapplr_logs:/app/logs

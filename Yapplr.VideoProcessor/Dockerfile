@@ -2,8 +2,11 @@
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 
-# Install FFmpeg with comprehensive codec support and other dependencies
+# Install HandBrake CLI and FFmpeg with comprehensive codec support
 RUN apt-get update && apt-get install -y \
+    # HandBrake CLI for video transcoding
+    handbrake-cli \
+    # FFmpeg for metadata extraction and thumbnail generation
     ffmpeg \
     curl \
     # Additional codec libraries for comprehensive video format support
@@ -62,8 +65,10 @@ RUN mkdir -p /app/uploads/videos \
 # Copy published application
 COPY --from=publish /app/publish .
 
-# Verify FFmpeg installation and available codecs
-RUN ffmpeg -version && \
+# Verify HandBrake and FFmpeg installation
+RUN HandBrakeCLI --version && \
+    echo "HandBrake CLI verification completed successfully" && \
+    ffmpeg -version && \
     ffmpeg -codecs | grep -E "(libx264|libx265|aac|libmp3lame)" && \
     echo "FFmpeg codec verification completed successfully"
 

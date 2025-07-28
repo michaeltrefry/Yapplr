@@ -82,7 +82,7 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
 
   // Debug logging for aspect ratio calculation
   console.log('🎥 VideoPlayer aspect ratio calculation:', {
-    videoUrl: videoUrl.substring(videoUrl.lastIndexOf('/') + 1), // Just filename for brevity
+    videoUrl: videoUrl,
     width,
     height,
     aspectRatio,

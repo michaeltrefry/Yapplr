@@ -69,21 +69,19 @@ public static class VideoEndpoints
                 _ => "application/octet-stream"
             };
 
-            var fileBytes = await File.ReadAllBytesAsync(filePath);
-            return Results.File(fileBytes, contentType);
+            // Use PhysicalFileResult for proper video streaming with range request support
+            return Results.File(filePath, contentType, enableRangeProcessing: true);
         })
         .WithName("GetVideo")
         .WithSummary("Get an uploaded video")
         .Produces(200)
         .Produces(404);
 
-        videos.MapGet("/processed/{fileName}", async (string fileName, IOptions<UploadsConfiguration> uploadsConfig) =>
+        videos.MapGet("/processed/{fileName}", async (string fileName, IOptions<UploadsConfiguration> uploadsConfig, HttpContext context) =>
         {
             var config = uploadsConfig.Value;
             var processedPath = Path.GetFullPath(config.GetProcessedFullPath());
             var filePath = Path.Combine(processedPath, fileName);
-
-
 
             if (!File.Exists(filePath))
             {
@@ -103,8 +101,8 @@ public static class VideoEndpoints
                 _ => "application/octet-stream"
             };
 
-            var fileBytes = await File.ReadAllBytesAsync(filePath);
-            return Results.File(fileBytes, contentType);
+            // Use PhysicalFileResult for proper video streaming with range request support
+            return Results.File(filePath, contentType, enableRangeProcessing: true);
         })
         .WithName("GetProcessedVideo")
         .WithSummary("Get a processed video")

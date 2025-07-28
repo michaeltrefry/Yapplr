@@ -63,6 +63,12 @@ public class PostMedia : IEntity
     [StringLength(50)]
     public string? OriginalVideoFormat { get; set; }
     public double? OriginalVideoBitrate { get; set; }
+
+    // Video rotation metadata
+    public int? OriginalVideoRotation { get; set; }
+    public int? ProcessedVideoRotation { get; set; }
+    public int? DisplayVideoWidth { get; set; }
+    public int? DisplayVideoHeight { get; set; }
     
     // Image metadata
     public int? ImageWidth { get; set; }

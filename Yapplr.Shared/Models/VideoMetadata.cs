@@ -18,4 +18,24 @@ public record VideoMetadata
     public double OriginalBitrate { get; init; }
     public double ProcessedBitrate { get; init; }
     public double CompressionRatio { get; init; }
+
+    /// <summary>
+    /// Original video rotation in degrees (0, 90, 180, 270)
+    /// </summary>
+    public int OriginalRotation { get; init; }
+
+    /// <summary>
+    /// Processed video rotation in degrees (should be 0 after processing)
+    /// </summary>
+    public int ProcessedRotation { get; init; }
+
+    /// <summary>
+    /// Display width after accounting for rotation
+    /// </summary>
+    public int DisplayWidth { get; init; }
+
+    /// <summary>
+    /// Display height after accounting for rotation
+    /// </summary>
+    public int DisplayHeight { get; init; }
 }

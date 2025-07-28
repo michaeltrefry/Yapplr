@@ -46,7 +46,7 @@ services:
       - Analytics__EnableDualWrite=true
       - Analytics__UseInfluxForAdminDashboard=true
     volumes:
-      - yapplr_uploads:/app/uploads
+      - /Users/michael/Repos/Yapplr/uploads:/app/uploads
       - yapplr_logs:/app/logs
     restart: unless-stopped
     networks:
@@ -98,8 +98,13 @@ services:
       - FFmpeg__TimeoutSeconds=300
       - FFmpeg__EnableHardwareAcceleration=false
       - FFmpeg__LogLevel=info
+      # HandBrake configuration
+      - HandBrake__BinaryPath=/usr/bin/HandBrakeCLI
+      - HandBrake__WorkingDirectory=/tmp
+      - HandBrake__TimeoutSeconds=300
+      - HandBrake__LogLevel=info
     volumes:
-      - yapplr_uploads:/app/uploads
+      - /Users/michael/Repos/Yapplr/uploads:/app/uploads
       - yapplr_logs:/app/logs
     restart: unless-stopped
     networks:
@@ -308,7 +313,6 @@ services:
       start_period: 60s
 
 volumes:
-  yapplr_uploads:
   yapplr_logs:
   postgres_data:
   rabbitmq_data:

@@ -165,7 +165,7 @@ public class VideoProcessingService : IVideoProcessingService
                     ProcessingDuration = DateTime.UtcNow - startTime
                 };
             }
-
+            
             // Ensure output directories exist
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
             Directory.CreateDirectory(Path.GetDirectoryName(thumbnailPath)!);
@@ -204,12 +204,16 @@ public class VideoProcessingService : IVideoProcessingService
                 ProcessedFormat = processedMetadata.ProcessedFormat,
                 OriginalBitrate = originalMetadata.OriginalBitrate,
                 ProcessedBitrate = processedMetadata.ProcessedBitrate,
-                CompressionRatio = originalMetadata.OriginalFileSizeBytes > 0 
-                    ? (double)processedMetadata.ProcessedFileSizeBytes / originalMetadata.OriginalFileSizeBytes 
-                    : 1.0
+                CompressionRatio = originalMetadata.OriginalFileSizeBytes > 0
+                    ? (double)processedMetadata.ProcessedFileSizeBytes / originalMetadata.OriginalFileSizeBytes
+                    : 1.0,
+                OriginalRotation = originalMetadata.OriginalRotation,
+                ProcessedRotation = 0, // Always 0 after processing (rotation is corrected)
+                DisplayWidth = originalMetadata.DisplayWidth,
+                DisplayHeight = originalMetadata.DisplayHeight
             };
 
-            _logger.LogInformation("Video processing completed successfully: {OutputPath}", outputPath);
+            _logger.LogInformation("Video processing completed successfully: {OutputPath}\n{Metadata}", outputPath, metadata);
 
             return new VideoProcessingResult
             {
@@ -246,6 +250,17 @@ public class VideoProcessingService : IVideoProcessingService
                 return null;
             }
 
+            // Get rotation from video stream metadata
+            var rotation = await GetVideoRotationAsync(videoPath);
+            var normalizedRotation = NormalizeRotation(rotation);
+
+            // Calculate display dimensions based on rotation
+            var (displayWidth, displayHeight) = GetDisplayDimensions(
+                videoStream.Width, videoStream.Height, normalizedRotation);
+
+            _logger.LogInformation("Video metadata: {Width}x{Height}, rotation: {Rotation}°, display: {DisplayWidth}x{DisplayHeight}",
+                videoStream.Width, videoStream.Height, normalizedRotation, displayWidth, displayHeight);
+
             return new VideoMetadata
             {
                 OriginalWidth = videoStream.Width,
@@ -260,7 +275,11 @@ public class VideoProcessingService : IVideoProcessingService
                 ProcessedFormat = Path.GetExtension(videoPath).TrimStart('.'),
                 OriginalBitrate = videoStream.BitRate,
                 ProcessedBitrate = videoStream.BitRate,
-                CompressionRatio = 1.0
+                CompressionRatio = 1.0,
+                OriginalRotation = normalizedRotation,
+                ProcessedRotation = normalizedRotation,
+                DisplayWidth = displayWidth,
+                DisplayHeight = displayHeight
             };
         }
         catch (Exception ex)
@@ -287,34 +306,48 @@ public class VideoProcessingService : IVideoProcessingService
         var videoCodec = await GetBestAvailableVideoCodecAsync(config.VideoCodec);
         var audioCodec = await GetBestAvailableAudioCodecAsync(config.AudioCodec);
 
-        // Calculate scaling dimensions while maintaining aspect ratio
-        var originalWidth = videoStream.Width;
-        var originalHeight = videoStream.Height;
-        var aspectRatio = (double)originalWidth / originalHeight;
+        // Get rotation and calculate display dimensions
+        var rotation = await GetVideoRotationAsync(inputPath);
+        var normalizedRotation = NormalizeRotation(rotation);
+        var (displayWidth, displayHeight) = GetDisplayDimensions(
+            videoStream.Width, videoStream.Height, normalizedRotation);
+
+        _logger.LogInformation("Video processing analysis:");
+        _logger.LogInformation("  Original stream: {Width}x{Height}", videoStream.Width, videoStream.Height);
+        _logger.LogInformation("  Raw rotation: {Rotation}°", rotation);
+        _logger.LogInformation("  Normalized rotation: {NormalizedRotation}°", normalizedRotation);
+        _logger.LogInformation("  Display dimensions: {DisplayWidth}x{DisplayHeight}", displayWidth, displayHeight);
+        _logger.LogInformation("  Max dimensions: {MaxWidth}x{MaxHeight}", config.MaxWidth, config.MaxHeight);
+
+        // Calculate scaling dimensions using display dimensions (after rotation)
+        var aspectRatio = (double)displayWidth / displayHeight;
 
         int targetWidth, targetHeight;
 
-        if (originalWidth > config.MaxWidth || originalHeight > config.MaxHeight)
+        // Use flexible max dimensions - allow either orientation
+        var maxDimension = Math.Max(config.MaxWidth, config.MaxHeight); // 1920
+
+        _logger.LogInformation("  Max dimension (flexible): {MaxDimension}", maxDimension);
+
+        // Check if we need to scale down
+        if (displayWidth > maxDimension || displayHeight > maxDimension)
         {
             // Scale down while maintaining aspect ratio
-            if (aspectRatio > (double)config.MaxWidth / config.MaxHeight)
-            {
-                // Width is the limiting factor
-                targetWidth = config.MaxWidth;
-                targetHeight = (int)(config.MaxWidth / aspectRatio);
-            }
-            else
-            {
-                // Height is the limiting factor
-                targetHeight = config.MaxHeight;
-                targetWidth = (int)(config.MaxHeight * aspectRatio);
-            }
+            var scaleFactor = Math.Min((double)maxDimension / displayWidth, (double)maxDimension / displayHeight);
+            targetWidth = (int)(displayWidth * scaleFactor);
+            targetHeight = (int)(displayHeight * scaleFactor);
+
+            _logger.LogInformation("  Scaling down by factor {ScaleFactor}: {DisplayWidth}x{DisplayHeight} -> {TargetWidth}x{TargetHeight}",
+                scaleFactor, displayWidth, displayHeight, targetWidth, targetHeight);
         }
         else
         {
-            // Keep original dimensions if smaller than max
-            targetWidth = originalWidth;
-            targetHeight = originalHeight;
+            // Keep display dimensions if smaller than max
+            targetWidth = displayWidth;
+            targetHeight = displayHeight;
+
+            _logger.LogInformation("  No scaling needed: keeping {DisplayWidth}x{DisplayHeight}",
+                displayWidth, displayHeight);
         }
 
         // Ensure dimensions are even numbers (required by libx264 encoder)
@@ -322,8 +355,37 @@ public class VideoProcessingService : IVideoProcessingService
         targetWidth = (targetWidth / 2) * 2;
         targetHeight = (targetHeight / 2) * 2;
 
-        _logger.LogInformation("Video scaling: {OriginalWidth}x{OriginalHeight} -> {TargetWidth}x{TargetHeight}",
-            originalWidth, originalHeight, targetWidth, targetHeight);
+        _logger.LogInformation("Video scaling: {DisplayWidth}x{DisplayHeight} -> {TargetWidth}x{TargetHeight} (rotation: {Rotation}°)",
+            displayWidth, displayHeight, targetWidth, targetHeight, normalizedRotation);
+
+        // For videos with rotation metadata, we need to:
+        // 1. Apply the rotation to get the correct physical dimensions
+        // 2. Scale to target size
+        // 3. Remove rotation metadata so the final video displays correctly
+
+        var filterString = "";
+        if (normalizedRotation == 90)
+        {
+            // 90° clockwise: transpose and scale
+            filterString = $"transpose=1,scale={targetWidth}:{targetHeight}";
+        }
+        else if (normalizedRotation == 180)
+        {
+            // 180°: double transpose and scale
+            filterString = $"transpose=1,transpose=1,scale={targetWidth}:{targetHeight}";
+        }
+        else if (normalizedRotation == 270)
+        {
+            // 270° clockwise (or -90°): transpose counterclockwise and scale
+            filterString = $"transpose=2,scale={targetWidth}:{targetHeight}";
+        }
+        else
+        {
+            // No rotation needed, just scale
+            filterString = $"scale={targetWidth}:{targetHeight}";
+        }
+
+        _logger.LogInformation("FFmpeg filter string: {FilterString}", filterString);
 
         await FFMpegArguments
             .FromFileInput(inputPath)
@@ -331,9 +393,10 @@ public class VideoProcessingService : IVideoProcessingService
                 .WithVideoCodec(videoCodec)
                 .WithAudioCodec(audioCodec)
                 .WithVideoBitrate(config.TargetBitrate)
-                .WithVideoFilters(filterOptions => filterOptions
-                    .Scale(targetWidth, targetHeight))
-                .WithFastStart())
+                .WithCustomArgument($"-vf {filterString}")
+                .WithFastStart()
+                // Remove rotation metadata from output
+                .WithCustomArgument("-metadata:s:v:0 rotate=0"))
             .ProcessAsynchronously();
     }
 
@@ -348,10 +411,14 @@ public class VideoProcessingService : IVideoProcessingService
             throw new InvalidOperationException("No video stream found in input file");
         }
 
-        // Calculate thumbnail dimensions while maintaining aspect ratio
-        var originalWidth = videoStream.Width;
-        var originalHeight = videoStream.Height;
-        var aspectRatio = (double)originalWidth / originalHeight;
+        // Get rotation and calculate display dimensions for thumbnail
+        var rotation = await GetVideoRotationAsync(inputPath);
+        var normalizedRotation = NormalizeRotation(rotation);
+        var (displayWidth, displayHeight) = GetDisplayDimensions(
+            videoStream.Width, videoStream.Height, normalizedRotation);
+
+        // Calculate thumbnail dimensions using display dimensions (after rotation)
+        var aspectRatio = (double)displayWidth / displayHeight;
 
         int thumbnailWidth, thumbnailHeight;
 
@@ -372,16 +439,194 @@ public class VideoProcessingService : IVideoProcessingService
         thumbnailWidth = (thumbnailWidth / 2) * 2;
         thumbnailHeight = (thumbnailHeight / 2) * 2;
 
-        _logger.LogInformation("Thumbnail scaling: {OriginalWidth}x{OriginalHeight} -> {ThumbnailWidth}x{ThumbnailHeight}",
-            originalWidth, originalHeight, thumbnailWidth, thumbnailHeight);
+        _logger.LogInformation("Thumbnail scaling: {DisplayWidth}x{DisplayHeight} -> {ThumbnailWidth}x{ThumbnailHeight} (rotation: {Rotation}°)",
+            displayWidth, displayHeight, thumbnailWidth, thumbnailHeight, normalizedRotation);
+
+        // Build filter string for thumbnail rotation and scaling
+        var thumbnailFilterString = "";
+        if (normalizedRotation == 90)
+        {
+            thumbnailFilterString = $"transpose=1,scale={thumbnailWidth}:{thumbnailHeight}";
+        }
+        else if (normalizedRotation == 180)
+        {
+            thumbnailFilterString = $"transpose=1,transpose=1,scale={thumbnailWidth}:{thumbnailHeight}";
+        }
+        else if (normalizedRotation == 270)
+        {
+            thumbnailFilterString = $"transpose=2,scale={thumbnailWidth}:{thumbnailHeight}";
+        }
+        else
+        {
+            thumbnailFilterString = $"scale={thumbnailWidth}:{thumbnailHeight}";
+        }
 
         await FFMpegArguments
             .FromFileInput(inputPath)
             .OutputToFile(thumbnailPath, true, options => options
-                .WithVideoFilters(filterOptions => filterOptions
-                    .Scale(thumbnailWidth, thumbnailHeight))
+                .WithCustomArgument($"-vf {thumbnailFilterString}")
                 .WithFrameOutputCount(1)
                 .Seek(TimeSpan.FromSeconds(config.ThumbnailTimeSeconds)))
             .ProcessAsynchronously();
+    }
+
+    /// <summary>
+    /// Extract rotation value from video stream metadata
+    /// </summary>
+    private async Task<int> GetVideoRotationAsync(string videoPath)
+    {
+        try
+        {
+            // Use FFProbe directly to get rotation metadata
+            var mediaInfo = await FFProbe.AnalyseAsync(videoPath);
+            var videoStream = mediaInfo.PrimaryVideoStream;
+
+            if (videoStream == null)
+            {
+                _logger.LogWarning("No video stream found for rotation detection");
+                return 0;
+            }
+
+            // Try to get rotation from the video stream
+            var rotation = videoStream.Rotation;
+
+            _logger.LogInformation("Video rotation detection: Rotation property = {Rotation}, Tags count = {TagsCount}",
+                rotation, videoStream.Tags?.Count ?? 0);
+
+            // Log all available tags for debugging
+            if (videoStream.Tags != null)
+            {
+                foreach (var tag in videoStream.Tags)
+                {
+                    _logger.LogInformation("Video tag: {Key} = {Value}", tag.Key, tag.Value);
+                }
+            }
+
+            // Try alternative rotation detection methods
+            if (rotation == 0 && videoStream.Tags != null)
+            {
+                // Check for rotation in tags
+                if (videoStream.Tags.TryGetValue("rotate", out var rotateTag))
+                {
+                    if (int.TryParse(rotateTag, out var tagRotation))
+                    {
+                        _logger.LogInformation("Found rotation in tags: {Rotation}°", tagRotation);
+                        return tagRotation;
+                    }
+                }
+
+                // Check for display matrix rotation
+                if (videoStream.Tags.TryGetValue("displaymatrix", out var displayMatrix))
+                {
+                    _logger.LogInformation("Found display matrix: {DisplayMatrix}", displayMatrix);
+                    // Display matrix parsing would be complex, but we can detect common patterns
+                }
+            }
+
+            // If still no rotation found, try direct FFProbe command
+            if (rotation == 0)
+            {
+                var directRotation = await GetRotationFromDirectFFProbeAsync(videoPath);
+                if (directRotation != 0)
+                {
+                    _logger.LogInformation("Found rotation via direct FFProbe: {Rotation}°", directRotation);
+                    return directRotation;
+                }
+            }
+
+            _logger.LogInformation("Final detected rotation: {Rotation}°", rotation);
+            return rotation;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not extract rotation metadata from video stream, assuming 0°");
+            return 0;
+        }
+    }
+
+    private async Task<int> GetRotationFromDirectFFProbeAsync(string videoPath)
+    {
+        try
+        {
+            var process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = _configuration["FFmpeg:BinaryPath"]?.Replace("ffmpeg", "ffprobe") ?? "ffprobe",
+                    Arguments = $"-v quiet -select_streams v:0 -show_entries stream_tags=rotate -of csv=p=0 \"{videoPath}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            _logger.LogInformation("Direct FFProbe output: '{Output}', Error: '{Error}'", output?.Trim(), error?.Trim());
+
+            if (!string.IsNullOrWhiteSpace(output) && int.TryParse(output.Trim(), out var rotation))
+            {
+                return rotation;
+            }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get rotation via direct FFProbe");
+            return 0;
+        }
+    }
+
+    private int GetVideoRotation(FFMpegCore.VideoStream videoStream)
+    {
+        try
+        {
+            // Fallback method for when we already have the video stream
+            var rotation = videoStream.Rotation;
+            _logger.LogInformation("Video rotation from stream: {Rotation}°", rotation);
+            return rotation;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not extract rotation metadata from video stream, assuming 0°");
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Normalize rotation to 0, 90, 180, or 270 degrees
+    /// </summary>
+    private int NormalizeRotation(int rotation)
+    {
+        // Normalize rotation to 0-359 range
+        var normalized = ((rotation % 360) + 360) % 360;
+
+        // Round to nearest 90-degree increment
+        if (normalized >= 315 || normalized < 45) return 0;
+        if (normalized >= 45 && normalized < 135) return 90;
+        if (normalized >= 135 && normalized < 225) return 180;
+        if (normalized >= 225 && normalized < 315) return 270;
+
+        return 0; // Default fallback
+    }
+
+    /// <summary>
+    /// Calculate display dimensions based on rotation
+    /// </summary>
+    private (int width, int height) GetDisplayDimensions(int originalWidth, int originalHeight, int rotation)
+    {
+        // For 90° and 270° rotations, swap width and height
+        if (rotation == 90 || rotation == 270)
+        {
+            return (originalHeight, originalWidth);
+        }
+
+        // For 0° and 180° rotations, keep original dimensions
+        return (originalWidth, originalHeight);
     }
 }

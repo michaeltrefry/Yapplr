@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Yapplr.Api\Yapplr.Api.csproj" />
+    <ProjectReference Include="..\Yapplr.VideoProcessor\Yapplr.VideoProcessor.csproj" />
   </ItemGroup>
 
 </Project>

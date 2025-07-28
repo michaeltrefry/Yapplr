@@ -82,6 +82,12 @@ public class VideoProcessingCompletedConsumer : IConsumer<VideoProcessingComplet
                 videoMedia.OriginalVideoFileSizeBytes = message.Metadata.OriginalFileSizeBytes;
                 videoMedia.OriginalVideoFormat = message.Metadata.OriginalFormat;
                 videoMedia.OriginalVideoBitrate = message.Metadata.OriginalBitrate;
+
+                // Store rotation metadata
+                videoMedia.OriginalVideoRotation = message.Metadata.OriginalRotation;
+                videoMedia.ProcessedVideoRotation = message.Metadata.ProcessedRotation;
+                videoMedia.DisplayVideoWidth = message.Metadata.DisplayWidth;
+                videoMedia.DisplayVideoHeight = message.Metadata.DisplayHeight;
             }
 
             // Make the post visible at the user's selected privacy level
