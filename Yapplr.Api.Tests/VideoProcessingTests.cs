@@ -319,4 +319,131 @@ public class VideoProcessingTests : IDisposable
         user2Posts.Should().Contain(p => p.Id == textPost.Id); // Regular post visible
         user2Posts.Should().NotContain(p => p.Id == hiddenVideoPost.Id); // Other user's hidden post not visible
     }
+
+    [Fact]
+    public async Task VideoProcessingCompleted_WithHandBrakeMetadata_ShouldUpdatePostCorrectly()
+    {
+        // Arrange
+        var user = new User
+        {
+            Id = 1,
+            Username = "testuser",
+            Email = "test@example.com",
+            EmailVerified = true
+        };
+        _context.Users.Add(user);
+
+        var post = new Post
+        {
+            Id = 1,
+            Content = "Test HandBrake video post",
+            IsHiddenDuringVideoProcessing = true,
+            Privacy = PostPrivacy.Public,
+            UserId = user.Id,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.Posts.Add(post);
+
+        var postMedia = new PostMedia
+        {
+            PostId = post.Id,
+            MediaType = MediaType.Video,
+            OriginalFileName = "handbrake-test-video.mp4",
+            VideoProcessingStatus = VideoProcessingStatus.Processing
+        };
+        _context.PostMedia.Add(postMedia);
+        await _context.SaveChangesAsync();
+
+        // Create HandBrake-specific metadata with better compression
+        var handBrakeMetadata = new VideoMetadata
+        {
+            OriginalWidth = 1920,
+            OriginalHeight = 1080,
+            ProcessedWidth = 1920,
+            ProcessedHeight = 1080,
+            OriginalDuration = TimeSpan.FromMinutes(2),
+            ProcessedDuration = TimeSpan.FromMinutes(2),
+            OriginalFileSizeBytes = 50_000_000, // 50MB original
+            ProcessedFileSizeBytes = 25_000_000, // 25MB processed (50% compression)
+            OriginalFormat = "mov",
+            ProcessedFormat = "mp4",
+            OriginalBitrate = 10000,
+            ProcessedBitrate = 5000,
+            CompressionRatio = 0.5, // Better compression from HandBrake
+            OriginalRotation = 90,
+            ProcessedRotation = 0, // HandBrake corrected rotation
+            DisplayWidth = 1080, // Swapped due to original rotation
+            DisplayHeight = 1920
+        };
+
+        var message = new VideoProcessingCompleted
+        {
+            PostId = post.Id,
+            ProcessedVideoFileName = "handbrake-test-video_processed.mp4",
+            ThumbnailFileName = "handbrake-test-video_thumb.jpg",
+            Metadata = handBrakeMetadata,
+            ProcessingDuration = TimeSpan.FromMinutes(3)
+        };
+
+        var mockContext = new Mock<ConsumeContext<VideoProcessingCompleted>>();
+        mockContext.Setup(x => x.Message).Returns(message);
+
+        // Act
+        await _consumer.Consume(mockContext.Object);
+
+        // Assert
+        var updatedPost = await _context.Posts.FirstAsync(p => p.Id == post.Id);
+        updatedPost.IsHiddenDuringVideoProcessing.Should().BeFalse();
+        updatedPost.VideoProcessingStatus.Should().Be(VideoProcessingStatus.Completed);
+        updatedPost.ProcessedVideoFileName.Should().Be("handbrake-test-video_processed.mp4");
+        updatedPost.VideoThumbnailFileName.Should().Be("handbrake-test-video_thumb.jpg");
+        updatedPost.VideoProcessingCompletedAt.Should().NotBeNull();
+        updatedPost.VideoProcessingError.Should().BeNull();
+
+        // Verify HandBrake-specific improvements through PostMedia
+        var videoMedia = updatedPost.VideoMedia;
+        videoMedia.Should().NotBeNull();
+        videoMedia!.VideoCompressionRatio.Should().Be(0.5); // Better compression
+        videoMedia.ProcessedVideoRotation.Should().Be(0); // Rotation corrected
+        videoMedia.OriginalVideoRotation.Should().Be(90); // Original rotation preserved
+    }
+
+    [Fact]
+    public async Task CreatePostAsync_WithVideoForHandBrakeProcessing_ShouldSetCorrectFlags()
+    {
+        // Arrange
+        var user = new User
+        {
+            Id = 1,
+            Username = "testuser",
+            Email = "test@example.com",
+            EmailVerified = true,
+            TrustScore = 0.8f
+        };
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        var createDto = new CreatePostDto(
+            Content: "Test HandBrake video post",
+            Privacy: PostPrivacy.Public,
+            VideoFileName: "handbrake-test-video.mp4"
+        );
+
+        // Act
+        var result = await _postService.CreatePostAsync(user.Id, createDto);
+
+        // Assert
+        result.Should().NotBeNull();
+
+        var post = await _context.Posts.FirstAsync(p => p.Id == result.Id);
+        post.IsHiddenDuringVideoProcessing.Should().BeTrue();
+        post.VideoProcessingStatus.Should().Be(VideoProcessingStatus.Processing);
+        post.VideoFileName.Should().Be("handbrake-test-video.mp4");
+
+        // Verify that the post is set up for HandBrake processing
+        post.VideoProcessingCompletedAt.Should().BeNull();
+        post.ProcessedVideoFileName.Should().BeNull();
+        post.VideoThumbnailFileName.Should().BeNull();
+    }
 }

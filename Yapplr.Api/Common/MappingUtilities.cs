@@ -361,7 +361,12 @@ public static class MappingUtilities
                 OriginalDuration = videoMedia.OriginalVideoDuration ?? videoMedia.VideoDuration ?? TimeSpan.Zero,
                 OriginalFileSizeBytes = videoMedia.OriginalVideoFileSizeBytes ?? videoMedia.VideoFileSizeBytes ?? 0,
                 OriginalFormat = videoMedia.OriginalVideoFormat ?? videoMedia.VideoFormat ?? string.Empty,
-                OriginalBitrate = videoMedia.OriginalVideoBitrate ?? videoMedia.VideoBitrate ?? 0
+                OriginalBitrate = videoMedia.OriginalVideoBitrate ?? videoMedia.VideoBitrate ?? 0,
+                // Rotation metadata
+                OriginalRotation = videoMedia.OriginalVideoRotation ?? 0,
+                ProcessedRotation = videoMedia.ProcessedVideoRotation ?? 0,
+                DisplayWidth = videoMedia.DisplayVideoWidth ?? videoMedia.VideoWidth.Value,
+                DisplayHeight = videoMedia.DisplayVideoHeight ?? videoMedia.VideoHeight.Value
             };
         }
 
@@ -531,7 +536,12 @@ public static class MappingUtilities
                         OriginalDuration = videoMedia.OriginalVideoDuration ?? videoMedia.VideoDuration ?? TimeSpan.Zero,
                         OriginalFileSizeBytes = videoMedia.OriginalVideoFileSizeBytes ?? videoMedia.VideoFileSizeBytes ?? 0,
                         OriginalFormat = videoMedia.OriginalVideoFormat ?? videoMedia.VideoFormat ?? string.Empty,
-                        OriginalBitrate = videoMedia.OriginalVideoBitrate ?? videoMedia.VideoBitrate ?? 0
+                        OriginalBitrate = videoMedia.OriginalVideoBitrate ?? videoMedia.VideoBitrate ?? 0,
+                        // Rotation metadata
+                        OriginalRotation = videoMedia.OriginalVideoRotation ?? 0,
+                        ProcessedRotation = videoMedia.ProcessedVideoRotation ?? 0,
+                        DisplayWidth = videoMedia.DisplayVideoWidth ?? videoMedia.VideoWidth.Value,
+                        DisplayHeight = videoMedia.DisplayVideoHeight ?? videoMedia.VideoHeight.Value
                     };
                 }
             }
@@ -700,7 +710,12 @@ public static class MappingUtilities
                     OriginalDuration = media.OriginalVideoDuration ?? media.VideoDuration ?? TimeSpan.Zero,
                     OriginalFileSizeBytes = media.OriginalVideoFileSizeBytes ?? media.VideoFileSizeBytes ?? 0,
                     OriginalFormat = media.OriginalVideoFormat ?? media.VideoFormat ?? string.Empty,
-                    OriginalBitrate = media.OriginalVideoBitrate ?? media.VideoBitrate ?? 0
+                    OriginalBitrate = media.OriginalVideoBitrate ?? media.VideoBitrate ?? 0,
+                    // Rotation metadata
+                    OriginalRotation = media.OriginalVideoRotation ?? 0,
+                    ProcessedRotation = media.ProcessedVideoRotation ?? 0,
+                    DisplayWidth = media.DisplayVideoWidth ?? media.VideoWidth.Value,
+                    DisplayHeight = media.DisplayVideoHeight ?? media.VideoHeight.Value
                 };
             }
         }
