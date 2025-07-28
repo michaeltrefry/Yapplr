@@ -88,7 +88,7 @@ public class HandBrakeVideoProcessingService : IVideoProcessingService
             var thumbnailFileName = Path.GetFileName(thumbnailPath);
 
             await ProcessVideoFileAsync(inputPath, outputPath, config, originalMetadata);
-            await GenerateThumbnailAsync(inputPath, thumbnailPath, config, originalMetadata);
+            await GenerateThumbnailAsync(outputPath, thumbnailPath, config, originalMetadata);
 
             // Get processed video metadata
             var processedMetadata = await GetVideoMetadataAsync(outputPath);
@@ -460,28 +460,25 @@ public class HandBrakeVideoProcessingService : IVideoProcessingService
     }
 
     /// <summary>
-    /// Generate thumbnail using FFmpeg (HandBrake doesn't support thumbnail extraction)
+    /// Generate thumbnail using FFmpeg from the processed video (no rotation needed)
     /// </summary>
-    private async Task GenerateThumbnailAsync(string inputPath, string thumbnailPath, VideoProcessingConfig config, VideoMetadata originalMetadata)
+    private async Task GenerateThumbnailAsync(string processedVideoPath, string thumbnailPath, VideoProcessingConfig config, VideoMetadata originalMetadata)
     {
-        var rotation = originalMetadata.OriginalRotation;
-        var normalizedRotation = NormalizeRotation(rotation);
-
-        // Calculate thumbnail dimensions based on rotation
+        // Calculate thumbnail dimensions (no rotation needed since processed video is correctly oriented)
         var (thumbnailWidth, thumbnailHeight) = CalculateTargetDimensions(
             originalMetadata.DisplayWidth,
             originalMetadata.DisplayHeight,
             config.ThumbnailWidth,
             config.ThumbnailHeight);
 
-        _logger.LogInformation("Generating thumbnail: {Width}x{Height} rotation={Rotation}° -> {ThumbnailWidth}x{ThumbnailHeight}",
-            originalMetadata.OriginalWidth, originalMetadata.OriginalHeight, rotation, thumbnailWidth, thumbnailHeight);
+        _logger.LogInformation("Generating thumbnail from processed video: {ProcessedVideoPath} -> {ThumbnailWidth}x{ThumbnailHeight}",
+            processedVideoPath, thumbnailWidth, thumbnailHeight);
 
-        // Build thumbnail filter string
-        var filterString = BuildVideoFilter(normalizedRotation, thumbnailWidth, thumbnailHeight);
+        // Build simple scale filter (no rotation needed)
+        var filterString = $"scale={thumbnailWidth}:{thumbnailHeight}";
 
         // Build FFmpeg arguments for thumbnail
-        var arguments = BuildThumbnailArguments(inputPath, thumbnailPath, config, filterString);
+        var arguments = BuildThumbnailArguments(processedVideoPath, thumbnailPath, config, filterString);
 
         _logger.LogInformation("FFmpeg thumbnail command: {FFmpegPath} {Arguments}", _ffmpegPath, arguments);
 
@@ -489,35 +486,7 @@ public class HandBrakeVideoProcessingService : IVideoProcessingService
         await ExecuteFFmpegAsync(arguments, "thumbnail generation");
     }
 
-    /// <summary>
-    /// Build video filter string for rotation and scaling (used for thumbnails)
-    /// </summary>
-    private string BuildVideoFilter(int normalizedRotation, int targetWidth, int targetHeight)
-    {
-        var filters = new List<string>();
 
-        // Add rotation filter if needed
-        if (normalizedRotation != 0)
-        {
-            var rotationFilter = normalizedRotation switch
-            {
-                90 => "transpose=1",
-                180 => "transpose=1,transpose=1",
-                270 => "transpose=2",
-                _ => ""
-            };
-
-            if (!string.IsNullOrEmpty(rotationFilter))
-            {
-                filters.Add(rotationFilter);
-            }
-        }
-
-        // Add scaling (dimensions should already account for rotation if applied)
-        filters.Add($"scale={targetWidth}:{targetHeight}");
-
-        return string.Join(",", filters);
-    }
 
     /// <summary>
     /// Build FFmpeg arguments for thumbnail generation
