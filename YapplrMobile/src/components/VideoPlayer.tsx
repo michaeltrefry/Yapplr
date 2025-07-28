@@ -533,24 +533,31 @@ VideoPlayer.displayName = 'VideoPlayer';
 
 export default VideoPlayer;
 
-const createStyles = (colors: any, aspectRatio: number = 16 / 9) => StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    // Remove overflow hidden to prevent control cutoff
-  },
-  videoContainer: {
-    position: 'relative',
-    width: '100%',
-    aspectRatio: aspectRatio, // Use calculated aspect ratio
-    borderRadius: 8,
-    overflow: 'hidden',
-    maxHeight: 400, // Prevent videos from being too tall
-  },
-  video: {
-    width: '100%',
-    height: '100%',
-  },
+const createStyles = (colors: any, aspectRatio: number = 16 / 9) => {
+  const isPortrait = aspectRatio < 1;
+
+  return StyleSheet.create({
+    container: {
+      backgroundColor: isPortrait ? '#000' : colors.surface, // Black background for portrait videos
+      borderRadius: 8,
+      // Remove overflow hidden to prevent control cutoff
+    },
+    videoContainer: {
+      position: 'relative',
+      width: '100%',
+      aspectRatio: isPortrait ? 16 / 9 : aspectRatio, // Use 16:9 container for portrait videos to provide space
+      borderRadius: 8,
+      overflow: 'hidden',
+      maxHeight: 400, // Prevent videos from being too tall
+      justifyContent: 'center', // Center the video content
+      alignItems: 'center',
+      backgroundColor: isPortrait ? '#000' : 'transparent', // Black background for portrait videos
+    },
+    video: {
+      width: isPortrait ? 'auto' : '100%', // Auto width for portrait videos to maintain aspect ratio
+      height: isPortrait ? '100%' : '100%', // Full height for portrait videos
+      aspectRatio: aspectRatio, // Maintain original aspect ratio
+    },
   overlay: {
     position: 'absolute',
     top: 0,
@@ -609,15 +616,16 @@ const createStyles = (colors: any, aspectRatio: number = 16 / 9) => StyleSheet.c
   compactControlsOverlay: {
     position: 'absolute',
     bottom: 8,
-    left: 8,
-    right: 8,
+    left: isPortrait ? 8 : 8,
+    right: isPortrait ? 8 : 8,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(64, 64, 64, 0.9)', // Dark grey background for better visibility
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
     height: 40, // Increased height for better touch targets
+    // Remove width override to prevent overflow
   },
   compactControlButton: {
     width: 32,
@@ -684,4 +692,5 @@ const createStyles = (colors: any, aspectRatio: number = 16 / 9) => StyleSheet.c
     fontSize: 12,
     fontWeight: '600',
   },
-});
+  });
+};

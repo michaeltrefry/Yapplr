@@ -367,7 +367,7 @@ export default function FullScreenVideoViewer({
         {/* Video container */}
         <div className="flex flex-col h-full">
           {/* Video area with navigation */}
-          <div className="flex-1 flex items-center justify-center p-4 relative">
+          <div className="flex-1 flex items-center justify-center p-4 relative bg-black">
             {/* Previous button */}
             {canNavigatePrev && (
               <button
@@ -435,15 +435,23 @@ export default function FullScreenVideoViewer({
               }
 
               return videoUrl ? (
-                <video
-                  ref={videoRef}
-                  src={videoUrl}
-                  controls
-                  autoPlay
-                  className="max-w-full max-h-full object-contain"
-                  onClick={(e) => e.stopPropagation()}
-                  onError={() => console.error('Video failed to load:', videoUrl)}
-                />
+                <div className="flex items-center justify-center w-full h-full">
+                  <video
+                    ref={videoRef}
+                    src={videoUrl}
+                    controls
+                    autoPlay
+                    className="max-w-full max-h-full object-contain"
+                    style={{
+                      width: 'auto',
+                      height: 'auto',
+                      maxWidth: '100%',
+                      maxHeight: '100%'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onError={() => console.error('Video failed to load:', videoUrl)}
+                  />
+                </div>
               ) : (
                 <div className="text-gray-500" onClick={(e) => e.stopPropagation()}>No video available</div>
               );

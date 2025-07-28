@@ -113,6 +113,8 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
         queryClient.invalidateQueries({ queryKey: ['posts'] });
         queryClient.invalidateQueries({ queryKey: ['userPosts'] });
         queryClient.invalidateQueries({ queryKey: ['feedPosts'] });
+        queryClient.invalidateQueries({ queryKey: ['timeline'] });
+        queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
         // If we have a specific post ID, we could invalidate just that post
         if (payload.data?.postId) {
           queryClient.invalidateQueries({ queryKey: ['post', payload.data.postId] });
@@ -135,7 +137,6 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
         break;
 
       case 'generic':
-      case 'VideoProcessingCompleted':
       case 'systemMessage':
         console.log('📱🔔 System notification, updating notifications and timeline');
         queryClient.invalidateQueries({ queryKey: ['notifications'] });

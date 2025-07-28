@@ -12,7 +12,7 @@ public class UploadSettings
     /// <summary>
     /// Maximum file size for images in bytes
     /// </summary>
-    public long MaxImageSizeBytes { get; set; } = 5 * 1024 * 1024; // 5MB default
+    public long MaxImageSizeBytes { get; set; } = 10 * 1024 * 1024; // 5MB default
     
     /// <summary>
     /// Maximum file size for videos in bytes
@@ -59,7 +59,7 @@ public class UploadSettings
     /// <summary>
     /// Video processing max height
     /// </summary>
-    public int VideoMaxHeight { get; set; } = 1080;
+    public int VideoMaxHeight { get; set; } = 1920;
     
     /// <summary>
     /// When these settings were created
