@@ -67,15 +67,23 @@ function MediaViewer({ mediaItems, currentIndex, isOpen, onClose, onNext, onPrev
             className="max-w-full max-h-full object-contain"
           />
         ) : currentMedia.mediaType === MediaType.Video && currentMedia.videoUrl ? (
-          <video
-            src={currentMedia.videoUrl}
-            poster={currentMedia.videoThumbnailUrl}
-            controls
-            className="max-w-full max-h-full"
-            autoPlay
-          >
-            Your browser does not support the video tag.
-          </video>
+          <div className="flex items-center justify-center w-full h-full bg-black rounded-lg">
+            <video
+              src={currentMedia.videoUrl}
+              poster={currentMedia.videoThumbnailUrl}
+              controls
+              className="max-w-full max-h-full object-contain"
+              style={{
+                width: 'auto',
+                height: 'auto',
+                maxWidth: '100%',
+                maxHeight: '100%'
+              }}
+              autoPlay
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
         ) : currentMedia.mediaType === MediaType.Gif && currentMedia.gifUrl ? (
           <div className="relative">
             <img
@@ -164,15 +172,21 @@ export default function MediaGallery({ mediaItems, post, className = '' }: Media
         ) : media.mediaType === MediaType.Video ? (
           <div>
             {media.videoProcessingStatus === VideoProcessingStatus.Completed && media.videoUrl ? (
-              <video
-                src={media.videoUrl}
-                poster={media.videoThumbnailUrl}
-                controls
-                className="max-w-full h-auto rounded-lg border border-gray-200"
-                style={{ maxHeight: '400px' }}
-              >
-                Your browser does not support the video tag.
-              </video>
+              <div className="flex items-center justify-center bg-black rounded-lg border border-gray-200" style={{ maxHeight: '400px' }}>
+                <video
+                  src={media.videoUrl}
+                  poster={media.videoThumbnailUrl}
+                  controls
+                  className="max-w-full h-auto rounded-lg object-contain"
+                  style={{
+                    maxHeight: '400px',
+                    width: 'auto',
+                    height: 'auto'
+                  }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
             ) : (
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="flex items-center space-x-2">

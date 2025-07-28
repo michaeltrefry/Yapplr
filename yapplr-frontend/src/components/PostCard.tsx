@@ -674,15 +674,21 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 {/* Legacy single video support */}
                 {post.videoUrl && post.videoProcessingStatus === VideoProcessingStatus.Completed && (
                   <div className="mt-3">
-                    <video
-                      src={post.videoUrl}
-                      poster={post.videoThumbnailUrl}
-                      controls
-                      className="max-w-full h-auto rounded-lg border border-gray-200"
-                      style={{ maxHeight: '400px' }}
-                    >
-                      Your browser does not support the video tag.
-                    </video>
+                    <div className="flex items-center justify-center bg-black rounded-lg border border-gray-200" style={{ maxHeight: '400px' }}>
+                      <video
+                        src={post.videoUrl}
+                        poster={post.videoThumbnailUrl}
+                        controls
+                        className="max-w-full h-auto rounded-lg object-contain"
+                        style={{
+                          maxHeight: '400px',
+                          width: 'auto',
+                          height: 'auto'
+                        }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
                   </div>
                 )}
 

@@ -409,35 +409,7 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
         />
       )}
 
-      {/* Video Processing Status */}
-      {item.post.videoProcessingStatus !== null &&
-       item.post.videoProcessingStatus !== VideoProcessingStatus.Completed && (
-        <View style={styles.videoProcessingContainer}>
-          <View style={styles.videoProcessingContent}>
-            <Ionicons name="play-outline" size={20} color="#6B7280" />
-            <View style={styles.videoProcessingText}>
-              {(item.post.videoProcessingStatus === VideoProcessingStatus.Pending ||
-                item.post.videoProcessingStatus === VideoProcessingStatus.Processing) && (
-                <Text style={styles.videoProcessingMessage}>
-                  Your video is processing. It will be available on your feed when it has completed.
-                </Text>
-              )}
-              {item.post.videoProcessingStatus === VideoProcessingStatus.Failed && (
-                <Text style={[styles.videoProcessingMessage, styles.videoProcessingError]}>
-                  Video processing failed. Please try uploading again.
-                </Text>
-              )}
-              {item.post.videoThumbnailUrl && (
-                <Image
-                  source={{ uri: item.post.videoThumbnailUrl }}
-                  style={styles.videoThumbnail}
-                  resizeMode="cover"
-                />
-              )}
-            </View>
-          </View>
-        </View>
-      )}
+
 
       <View style={styles.postActions}>
         <ReactionPicker
