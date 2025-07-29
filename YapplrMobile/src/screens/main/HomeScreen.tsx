@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { TimelineItem, Post, UserStatus } from '../../types';
+import { TimelineItem, Post, UserStatus, ReactionType } from '../../types';
 
 import PostCard from '../../components/PostCard';
 import { NotificationStatusIndicator } from '../../components/NotificationStatus';
@@ -96,6 +96,24 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     }
   };
 
+  const handleReact = async (postId: number, reactionType: ReactionType) => {
+    try {
+      await api.posts.reactToPost(postId, reactionType);
+      refetch(); // Refresh timeline to show updated reaction
+    } catch (error) {
+      Alert.alert('Error', 'Failed to react to post');
+    }
+  };
+
+  const handleRemoveReaction = async (postId: number) => {
+    try {
+      await api.posts.removePostReaction(postId);
+      refetch(); // Refresh timeline to show updated reaction
+    } catch (error) {
+      Alert.alert('Error', 'Failed to remove reaction');
+    }
+  };
+
   const handleRepost = async (postId: number) => {
     try {
       await api.posts.repostPost(postId);
@@ -162,6 +180,8 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
       <PostCard
         item={item}
         onLike={handleLikePost}
+        onReact={handleReact}
+        onRemoveReaction={handleRemoveReaction}
         onRepost={handleRepost}
         onUserPress={handleUserPress}
         onCommentPress={handleCommentPress}

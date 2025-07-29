@@ -17,9 +17,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Comment, Post } from '../../types';
+import { Comment, Post, ReactionType, MediaType, VideoProcessingStatus } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import ReportModal from '../../components/ReportModal';
+import ReactionPicker from '../../components/ReactionPicker';
+import ReactionCountsDisplay from '../../components/ReactionCountsDisplay';
+import UserAvatar from '../../components/UserAvatar';
+import VideoPlayer from '../../components/VideoPlayer';
+import ImageViewer from '../../components/ImageViewer';
 
 type RootStackParamList = {
   Comments: {
@@ -43,7 +48,7 @@ function CommentItem({ comment, postId, getImageUrl, onDelete }: CommentItemProp
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isLiking, setIsLiking] = useState(false);
+  const [isReacting, setIsReacting] = useState(false);
 
   const isOwner = user && user.id === comment.user.id;
 
@@ -63,24 +68,33 @@ function CommentItem({ comment, postId, getImageUrl, onDelete }: CommentItemProp
     }
   };
 
-  const handleLike = async () => {
+  const handleReact = async (reactionType: ReactionType) => {
     if (!user) return;
 
-    setIsLiking(true);
+    setIsReacting(true);
     try {
-      if (comment.isLikedByCurrentUser) {
-        await api.posts.unlikeComment(postId, comment.id);
-      } else {
-        await api.posts.likeComment(postId, comment.id);
-      }
-      // Note: In a real app, you'd want to update the comment state here
-      // For now, we'll rely on the parent component to refresh
+      await api.posts.reactToComment(postId, comment.id, reactionType);
       onDelete(); // This triggers a refresh of comments
     } catch (error) {
-      console.error('Error liking comment:', error);
-      Alert.alert('Failed to like comment. Please try again.');
+      console.error('Error reacting to comment:', error);
+      Alert.alert('Failed to react to comment. Please try again.');
     } finally {
-      setIsLiking(false);
+      setIsReacting(false);
+    }
+  };
+
+  const handleRemoveReaction = async () => {
+    if (!user) return;
+
+    setIsReacting(true);
+    try {
+      await api.posts.removeCommentReaction(postId, comment.id);
+      onDelete(); // This triggers a refresh of comments
+    } catch (error) {
+      console.error('Error removing reaction from comment:', error);
+      Alert.alert('Failed to remove reaction. Please try again.');
+    } finally {
+      setIsReacting(false);
     }
   };
 
@@ -109,36 +123,44 @@ function CommentItem({ comment, postId, getImageUrl, onDelete }: CommentItemProp
             {comment.isEdited && <Text style={commentStyles.editedText}> (edited)</Text>}
           </Text>
         </View>
+
+        {/* Delete Button - only for comment owner */}
+        {isOwner && (
+          <TouchableOpacity
+            style={commentStyles.deleteButton}
+            onPress={() => setShowDeleteConfirm(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={18} color="#EF4444" />
+          </TouchableOpacity>
+        )}
       </View>
-      <Text style={commentStyles.commentContent}>{comment.content}</Text>
+      {comment.content && comment.content.trim() && (
+        <Text style={commentStyles.commentContent}>{comment.content}</Text>
+      )}
+
+      {/* Reaction counts display */}
+      <ReactionCountsDisplay reactionCounts={comment.reactionCounts} />
 
       {/* Action Bar */}
       <View style={commentStyles.actionBar}>
         <View style={commentStyles.leftActions}>
-          {/* Like Button */}
-          <TouchableOpacity
-            style={commentStyles.actionButton}
-            onPress={handleLike}
-            disabled={isLiking}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={comment.isLikedByCurrentUser ? "heart" : "heart-outline"}
-              size={16}
-              color={comment.isLikedByCurrentUser ? "#EF4444" : "#6B7280"}
-            />
-            <Text style={[commentStyles.actionText, comment.isLikedByCurrentUser && { color: '#EF4444' }]}>
-              {comment.likeCount}
-            </Text>
-          </TouchableOpacity>
+          {/* Reaction Picker */}
+          <ReactionPicker
+            reactionCounts={comment.reactionCounts || []}
+            currentUserReaction={comment.currentUserReaction || null}
+            totalReactionCount={comment.totalReactionCount || comment.likeCount || 0}
+            onReact={handleReact}
+            onRemoveReaction={handleRemoveReaction}
+            disabled={isReacting}
+          />
 
           {/* Reply Button */}
           <TouchableOpacity
             style={commentStyles.actionButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chatbubble-outline" size={16} color="#6B7280" />
-            <Text style={commentStyles.actionText}>Reply</Text>
+            <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
           </TouchableOpacity>
 
           {/* Report Button - only for other users' comments */}
@@ -148,24 +170,10 @@ function CommentItem({ comment, postId, getImageUrl, onDelete }: CommentItemProp
               onPress={() => setShowReportModal(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name="flag-outline" size={16} color="#6B7280" />
-              <Text style={commentStyles.actionText}>Report</Text>
+              <Ionicons name="flag-outline" size={20} color="#6B7280" />
             </TouchableOpacity>
           )}
         </View>
-
-        {/* Owner Actions */}
-        {isOwner && (
-          <View style={commentStyles.rightActions}>
-            <TouchableOpacity
-              style={commentStyles.actionButton}
-              onPress={() => setShowDeleteConfirm(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="trash-outline" size={16} color="#EF4444" />
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
 
       {/* Delete Confirmation Modal */}
@@ -228,6 +236,9 @@ export default function CommentsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentCommentCount, setCurrentCommentCount] = useState(post.commentCount);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
+  const [fullPost, setFullPost] = useState<Post>(post); // Store the full post data
   const flatListRef = useRef<FlatList>(null);
 
   // Helper function to generate image URL
@@ -308,34 +319,117 @@ export default function CommentsScreen() {
   ), [getImageUrl, loadComments, post.id]);
 
   const renderHeader = useMemo(() => (
-    <View style={styles.postContainer}>
-      <View style={styles.postHeader}>
-        <View style={styles.avatar}>
-          {post.user.profileImageFileName ? (
-            <Image
-              source={{ uri: getImageUrl(post.user.profileImageFileName) }}
-              style={styles.profileImage}
-              onError={() => {
-                console.log('Failed to load profile image in post');
-              }}
-            />
-          ) : (
-            <Text style={styles.avatarText}>
-              {post.user.username.charAt(0).toUpperCase()}
+      <View style={styles.postContainer}>
+        <View style={styles.postHeader}>
+          <View style={styles.avatar}>
+            {post.user.profileImageFileName ? (
+              <Image
+                source={{ uri: getImageUrl(post.user.profileImageFileName) }}
+                style={styles.profileImage}
+                onError={() => {
+                  console.log('Failed to load profile image in post');
+                }}
+              />
+            ) : (
+              <Text style={styles.avatarText}>
+                {post.user.username.charAt(0).toUpperCase()}
+              </Text>
+            )}
+          </View>
+          <View>
+            <Text style={styles.username}>@{post.user.username}</Text>
+            <Text style={styles.timestamp}>
+              {new Date(post.createdAt).toLocaleDateString()}
             </Text>
-          )}
+          </View>
         </View>
-        <View>
-          <Text style={styles.username}>@{post.user.username}</Text>
-          <Text style={styles.timestamp}>
-            {new Date(post.createdAt).toLocaleDateString()}
-          </Text>
+        {post.content && post.content.trim() && (
+          <Text style={styles.postContent}>{post.content}</Text>
+        )}
+
+      {/* Media Display - New multiple media support */}
+      {post.mediaItems && post.mediaItems.length > 0 && (
+        <View style={styles.mediaContainer}>
+          {post.mediaItems.map((media, index) => (
+              <View key={media.id} style={styles.mediaItem}>
+                {media.mediaType === MediaType.Image && media.imageUrl && (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => {
+                      setSelectedImageUrl(media.imageUrl!);
+                      setShowImageViewer(true);
+                    }}
+                  >
+                    <Image
+                      source={{ uri: media.imageUrl }}
+                      style={styles.postImage}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                )}
+
+                {media.mediaType === MediaType.Gif && media.gifUrl && (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => {
+                      setSelectedImageUrl(media.gifUrl!);
+                      setShowImageViewer(true);
+                    }}
+                  >
+                    <Image
+                      source={{ uri: media.gifUrl }}
+                      style={styles.postImage}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                )}
+
+              {media.mediaType === MediaType.Video && media.videoUrl &&
+               media.videoProcessingStatus === VideoProcessingStatus.Completed && (
+                <VideoPlayer
+                  playerId={`comment-media-${media.id}`}
+                  videoUrl={media.videoUrl}
+                  thumbnailUrl={media.videoThumbnailUrl}
+                  style={styles.postImage}
+                  autoPlay={false}
+                  showControls={true}
+                  width={media.width}
+                  height={media.height}
+                />
+              )}
+
+              {media.mediaType === MediaType.Video &&
+               (media.videoProcessingStatus === VideoProcessingStatus.Pending ||
+                media.videoProcessingStatus === VideoProcessingStatus.Processing) && (
+                <View style={styles.videoProcessingContainer}>
+                  <View style={styles.videoProcessingContent}>
+                    <Ionicons name="play-outline" size={20} color="#6B7280" />
+                    <View style={styles.videoProcessingText}>
+                      <Text style={styles.videoProcessingMessage}>
+                        Your video is processing. It will be available when completed.
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+              </View>
+            ))}
         </View>
-      </View>
-      <Text style={styles.postContent}>{post.content}</Text>
-      {post.imageUrl && (
-        <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
       )}
+
+      {/* Legacy Image Display (for backward compatibility) */}
+      {!post.mediaItems && post.imageUrl && (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => {
+            setSelectedImageUrl(post.imageUrl!);
+            setShowImageViewer(true);
+          }}
+        >
+          <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
+        </TouchableOpacity>
+      )}
+
       <View style={styles.postStats}>
         <Text style={styles.statsText}>
           {currentCommentCount} {currentCommentCount === 1 ? 'comment' : 'comments'}
@@ -403,6 +497,15 @@ export default function CommentsScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Image Viewer */}
+      {selectedImageUrl && (
+        <ImageViewer
+          visible={showImageViewer}
+          imageUrl={selectedImageUrl}
+          onClose={() => setShowImageViewer(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -496,6 +599,34 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 8,
     marginBottom: 8,
+  },
+  mediaContainer: {
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  mediaItem: {
+    marginBottom: 8,
+  },
+  videoProcessingContainer: {
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  videoProcessingContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  videoProcessingText: {
+    flex: 1,
+  },
+  videoProcessingMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
   },
   postStats: {
     marginTop: 8,
@@ -592,6 +723,9 @@ const commentStyles = StyleSheet.create({
   commentInfo: {
     flex: 1,
   },
+  deleteButton: {
+    padding: 4,
+  },
   username: {
     fontSize: 14,
     fontWeight: '600',
@@ -617,14 +751,12 @@ const commentStyles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
-    borderRadius: 16,
-    backgroundColor: '#F9FAFB',
-    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
   actionBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
     marginLeft: 44,
     marginTop: 8,
@@ -632,11 +764,8 @@ const commentStyles = StyleSheet.create({
   },
   leftActions: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  rightActions: {
-    flexDirection: 'row',
-    gap: 8,
+    flex: 1,
+    justifyContent: 'space-around',
   },
   actionText: {
     fontSize: 12,

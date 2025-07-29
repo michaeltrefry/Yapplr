@@ -315,6 +315,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - ExpoVideo (2.2.2):
+    - ExpoModulesCore
   - ExpoWebBrowser (14.2.0):
     - ExpoModulesCore
   - ExpoWebView (0.1.1):
@@ -2173,6 +2175,7 @@ DEPENDENCIES:
   - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
+  - ExpoVideo (from `../node_modules/expo-video/ios`)
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
   - ExpoWebView (from `../node_modules/expo-web-view/ios`)
   - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
@@ -2298,6 +2301,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-keep-awake/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
+  ExpoVideo:
+    :path: "../node_modules/expo-video/ios"
   ExpoWebBrowser:
     :path: "../node_modules/expo-web-browser/ios"
   ExpoWebView:
@@ -2472,6 +2477,7 @@ SPEC CHECKSUMS:
   ExpoImagePicker: d2fff488a0738343a3cc21e98544ee9feafaa0e6
   ExpoKeepAwake: e8dedc115d9f6f24b153ccd2d1d8efcdfd68a527
   ExpoModulesCore: 16f74d8df26d7e4b6bf7eb3d0effaf0f15df7b80
+  ExpoVideo: 84edf8e48b71317fb1d7f17c3d49a310476dc0f4
   ExpoWebBrowser: eeb47f52e85b2686b56178749675cf90d0822f86
   ExpoWebView: ee639fd4687532ede9f9af35321f10f3c3ca686e
   EXUpdatesInterface: 64f35449b8ef89ce08cdd8952a4d119b5de6821d

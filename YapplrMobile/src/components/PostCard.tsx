@@ -22,6 +22,7 @@ import { ContentHighlight } from '../utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
 import ReportModal from './ReportModal';
 import ReactionPicker from './ReactionPicker';
+import ReactionCountsDisplay from './ReactionCountsDisplay';
 import ContentWithGifs from './ContentWithGifs';
 
 interface PostCardProps {
@@ -217,18 +218,20 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
         </View>
       </View>
 
-      <ContentWithGifs
-        content={item.post.content}
-        style={styles.postContent}
-        textStyle={{ color: colors.text }}
-        onMentionPress={onUserPress}
-        onHashtagPress={onHashtagPress}
-        onLinkPress={(url) => {
-          // Handle link press - could open in browser or in-app
-          console.log('Link pressed:', url);
-        }}
-        maxGifWidth={300}
-      />
+      {item.post.content && item.post.content.trim() && (
+        <ContentWithGifs
+          content={item.post.content}
+          style={styles.postContent}
+          textStyle={{ color: colors.text }}
+          onMentionPress={onUserPress}
+          onHashtagPress={onHashtagPress}
+          onLinkPress={(url) => {
+            // Handle link press - could open in browser or in-app
+            console.log('Link pressed:', url);
+          }}
+          maxGifWidth={300}
+        />
+      )}
 
       {/* Media Display */}
       {item.post.mediaItems && item.post.mediaItems.length > 0 && (
@@ -409,7 +412,8 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
         />
       )}
 
-
+      {/* Reaction counts display */}
+      <ReactionCountsDisplay reactionCounts={item.post.reactionCounts} overlap={true} />
 
       <View style={styles.postActions}>
         <ReactionPicker
@@ -527,7 +531,9 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
 const createStyles = (colors: any) => StyleSheet.create({
   postCard: {
     backgroundColor: colors.card,
-    padding: 16,
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 4, // Reduced bottom padding to bring border line closer
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -605,14 +611,15 @@ const createStyles = (colors: any) => StyleSheet.create({
   postActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingTop: 8,
+    paddingTop: 6, // Reduced from 8
+    paddingBottom: 2, // Minimal bottom padding to bring line closer
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6, // Reduced from 8
     paddingHorizontal: 12,
   },
   actionText: {

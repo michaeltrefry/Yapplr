@@ -229,14 +229,14 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
           <View style={styles.textContainer}>
             <Text style={styles.notificationMessage}>{item.message}</Text>
             <Text style={styles.notificationTime}>{formatTimeAgo(item.createdAt)}</Text>
-            {item.post && (
+            {item.post && item.post.content && item.post.content.trim() && (
               <View style={styles.contentPreview}>
                 <Text style={styles.contentPreviewText} numberOfLines={2}>
                   {item.post.content}
                 </Text>
               </View>
             )}
-            {item.comment && (
+            {item.comment && item.comment.content && item.comment.content.trim() && (
               <View style={styles.contentPreview}>
                 <Text style={styles.contentPreviewText} numberOfLines={2}>
                   {item.comment.content}

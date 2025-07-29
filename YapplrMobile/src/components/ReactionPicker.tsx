@@ -29,12 +29,12 @@ interface ReactionPickerProps {
 }
 
 const reactionConfig = {
-  [ReactionType.Heart]: { emoji: '❤️', icon: 'heart', color: '#EF4444' },
-  [ReactionType.ThumbsUp]: { emoji: '👍', icon: 'thumbs-up', color: '#3B82F6' },
-  [ReactionType.Laugh]: { emoji: '😂', icon: 'happy', color: '#F59E0B' },
-  [ReactionType.Surprised]: { emoji: '😮', icon: 'alert-circle', color: '#8B5CF6' },
-  [ReactionType.Sad]: { emoji: '😢', icon: 'sad', color: '#60A5FA' },
-  [ReactionType.Angry]: { emoji: '😡', icon: 'flame', color: '#DC2626' }
+  [ReactionType.Heart]: { emoji: '❤️', color: '#EF4444' },
+  [ReactionType.ThumbsUp]: { emoji: '👍', color: '#3B82F6' },
+  [ReactionType.Laugh]: { emoji: '😂', color: '#F59E0B' },
+  [ReactionType.Surprised]: { emoji: '😮', color: '#8B5CF6' },
+  [ReactionType.Sad]: { emoji: '😢', color: '#60A5FA' },
+  [ReactionType.Angry]: { emoji: '😡', color: '#DC2626' }
 };
 
 export default function ReactionPicker({
@@ -68,12 +68,6 @@ export default function ReactionPicker({
   };
 
   const currentReactionConfig = currentUserReaction ? reactionConfig[currentUserReaction] : null;
-  const iconName = currentUserReaction 
-    ? (currentReactionConfig?.icon as any) || 'heart'
-    : 'heart-outline';
-  const iconColor = currentUserReaction 
-    ? currentReactionConfig?.color || '#EF4444'
-    : '#6B7280';
 
   return (
     <View>
@@ -82,12 +76,20 @@ export default function ReactionPicker({
         onPress={handleMainButtonPress}
         disabled={disabled}
       >
-        <Ionicons
-          name={iconName}
-          size={20}
-          color={iconColor}
-        />
-        <Text style={styles.actionText}>{totalReactionCount}</Text>
+        {currentUserReaction ? (
+          <Text style={styles.selectedEmoji}>
+            {currentReactionConfig?.emoji || '❤️'}
+          </Text>
+        ) : (
+          <Ionicons
+            name="heart-outline"
+            size={20}
+            color="#6B7280"
+          />
+        )}
+        <Text style={[styles.actionText, currentUserReaction && { color: currentReactionConfig?.color }]}>
+          {totalReactionCount}
+        </Text>
       </TouchableOpacity>
 
       <Modal
@@ -122,21 +124,6 @@ export default function ReactionPicker({
           </View>
         </TouchableOpacity>
       </Modal>
-
-      {/* Reaction counts display */}
-      {reactionCounts.length > 0 && (
-        <View style={styles.reactionCountsContainer}>
-          {reactionCounts
-            .filter(r => r.count > 0)
-            .slice(0, 3) // Show top 3 reactions
-            .map(reaction => (
-              <View key={reaction.reactionType} style={styles.reactionCountItem}>
-                <Text style={styles.reactionCountEmoji}>{reaction.emoji}</Text>
-                <Text style={styles.reactionCountText}>{reaction.count}</Text>
-              </View>
-            ))}
-        </View>
-      )}
     </View>
   );
 }
@@ -146,13 +133,17 @@ function createStyles(colors: any) {
     actionButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 8,
-      paddingVertical: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
     },
     actionText: {
       marginLeft: 4,
       fontSize: 14,
       color: colors.text,
+    },
+    selectedEmoji: {
+      fontSize: 20,
+      lineHeight: 20,
     },
     modalOverlay: {
       flex: 1,
@@ -199,24 +190,6 @@ function createStyles(colors: any) {
       borderRadius: 8,
       minWidth: 16,
       textAlign: 'center',
-    },
-    reactionCountsContainer: {
-      flexDirection: 'row',
-      marginTop: 4,
-      marginLeft: 8,
-    },
-    reactionCountItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginRight: 8,
-    },
-    reactionCountEmoji: {
-      fontSize: 12,
-      marginRight: 2,
-    },
-    reactionCountText: {
-      fontSize: 10,
-      color: colors.textSecondary,
     },
   });
 }
