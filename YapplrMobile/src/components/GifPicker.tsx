@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  Modal,
   StyleSheet,
   Dimensions,
   ActivityIndicator,
@@ -38,28 +37,43 @@ export default function GifPicker({ visible, onClose, onSelectGif }: GifPickerPr
   const [nextPos, setNextPos] = useState<string | undefined>();
   const [hasMore, setHasMore] = useState(true);
 
+  // Debug logging
+  console.log('=== GifPicker render ===');
+  console.log('visible:', visible);
+  console.log('loading:', loading);
+  console.log('error:', error);
+  console.log('gifs.length:', gifs.length);
+
   // Load trending GIFs on mount
   useEffect(() => {
+    console.log('=== GifPicker useEffect ===');
+    console.log('visible:', visible);
+    console.log('activeTab:', activeTab);
     if (visible && activeTab === 'trending') {
+      console.log('Loading trending GIFs...');
       loadTrendingGifs();
     }
   }, [visible, activeTab]);
 
   const loadTrendingGifs = async (loadMore = false) => {
     try {
+      console.log('=== loadTrendingGifs start ===');
       setLoading(true);
       setError(null);
-      
+
+      console.log('Calling getTrendingGifs...');
       const response = await getTrendingGifs(20, loadMore ? nextPos : undefined);
-      
+      console.log('getTrendingGifs response:', response);
+
       if (loadMore) {
         setGifs(prev => [...prev, ...response.results]);
       } else {
         setGifs(response.results);
       }
-      
+
       setNextPos(response.next);
       setHasMore(!!response.next);
+      console.log('=== loadTrendingGifs success ===');
     } catch (err) {
       setError('Failed to load trending GIFs');
       console.error('Error loading trending GIFs:', err);
@@ -156,8 +170,7 @@ export default function GifPicker({ visible, onClose, onSelectGif }: GifPickerPr
   );
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={styles.container}>
+    <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Choose a GIF</Text>
@@ -250,7 +263,6 @@ export default function GifPicker({ visible, onClose, onSelectGif }: GifPickerPr
           )}
         </View>
       </View>
-    </Modal>
   );
 }
 

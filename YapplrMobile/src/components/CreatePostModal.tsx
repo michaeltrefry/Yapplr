@@ -665,11 +665,18 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
       onRequestClose={handleClose}
     >
       <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          style={styles.keyboardAvoid}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        >
+        {showGifPicker ? (
+          <GifPicker
+            visible={true}
+            onClose={() => setShowGifPicker(false)}
+            onSelectGif={handleGifSelect}
+          />
+        ) : (
+          <KeyboardAvoidingView
+            style={styles.keyboardAvoid}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          >
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
@@ -739,7 +746,14 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
 
               <TouchableOpacity
                 style={styles.mediaButton}
-                onPress={() => setShowGifPicker(true)}
+                onPress={() => {
+                  console.log('=== GIF BUTTON PRESSED ===');
+                  console.log('isUploadingMedia:', isUploadingMedia);
+                  console.log('selectedGif:', selectedGif);
+                  console.log('uploadedFiles.length:', uploadedFiles.length);
+                  console.log('selectedFiles.length:', selectedFiles.length);
+                  setShowGifPicker(true);
+                }}
                 disabled={isUploadingMedia || selectedGif !== null || uploadedFiles.length > 0 || selectedFiles.length > 0}
               >
                 <Ionicons
@@ -875,15 +889,9 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
             )}
           </ScrollView>
         </KeyboardAvoidingView>
+        )}
       </SafeAreaView>
     </Modal>
-
-    {/* GIF Picker Modal */}
-    <GifPicker
-      visible={showGifPicker}
-      onClose={() => setShowGifPicker(false)}
-      onSelectGif={handleGifSelect}
-    />
     </>
   );
 }

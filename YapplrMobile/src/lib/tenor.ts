@@ -1,6 +1,6 @@
 // Tenor API configuration and utilities for React Native
 // Note: Mobile app calls Yapplr API endpoints, not Tenor directly
-const API_BASE_URL = 'https://api.yapplr.com'; // Update this to match your API URL
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface TenorGif {
   id: string;
@@ -62,6 +62,12 @@ export interface SelectedGif {
   height: number;
 }
 
+// Get the API base URL from AuthContext
+const getApiBaseUrl = () => {
+  // Use the same URL as AuthContext
+  return 'http://192.168.254.181:8080';
+};
+
 // Search for GIFs
 export async function searchGifs(query: string, limit: number = 20, pos?: string): Promise<TenorSearchResponse> {
   const params = new URLSearchParams({
@@ -73,11 +79,14 @@ export async function searchGifs(query: string, limit: number = 20, pos?: string
     params.append('pos', pos);
   }
 
-  // Get auth token from AsyncStorage (you'll need to implement this)
-  // const token = await AsyncStorage.getItem('token');
-  const token = 'YOUR_AUTH_TOKEN'; // TODO: Get from AsyncStorage
+  // Get auth token from AsyncStorage
+  const token = await AsyncStorage.getItem('yapplr_token');
 
-  const response = await fetch(`${API_BASE_URL}/api/gif/search?${params}`, {
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}/api/gif/search?${params}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -85,7 +94,7 @@ export async function searchGifs(query: string, limit: number = 20, pos?: string
   });
 
   if (!response.ok) {
-    throw new Error(`Tenor API error: ${response.status}`);
+    throw new Error(`GIF API error: ${response.status}`);
   }
 
   return response.json();
@@ -101,11 +110,14 @@ export async function getTrendingGifs(limit: number = 20, pos?: string): Promise
     params.append('pos', pos);
   }
 
-  // Get auth token from AsyncStorage (you'll need to implement this)
-  // const token = await AsyncStorage.getItem('token');
-  const token = 'YOUR_AUTH_TOKEN'; // TODO: Get from AsyncStorage
+  // Get auth token from AsyncStorage
+  const token = await AsyncStorage.getItem('yapplr_token');
 
-  const response = await fetch(`${API_BASE_URL}/api/gif/trending?${params}`, {
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}/api/gif/trending?${params}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -113,7 +125,7 @@ export async function getTrendingGifs(limit: number = 20, pos?: string): Promise
   });
 
   if (!response.ok) {
-    throw new Error(`Tenor API error: ${response.status}`);
+    throw new Error(`GIF API error: ${response.status}`);
   }
 
   return response.json();
