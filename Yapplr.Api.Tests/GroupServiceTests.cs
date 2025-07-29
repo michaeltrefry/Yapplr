@@ -178,7 +178,7 @@ public class GroupServiceTests : IDisposable
     public async Task CreateGroupAsync_WithValidData_ShouldCreateGroupSuccessfully()
     {
         // Arrange
-        var createDto = new CreateGroupDto("New Test Group", "A new group for testing", "test-image.jpg");
+        var createDto = new CreateGroupDto("New Test Group", "A new group for testing", "http://test.com/api/images/test-image.jpg");
         var userId = 1;
 
         // Act
@@ -247,7 +247,7 @@ public class GroupServiceTests : IDisposable
     public async Task UpdateGroupAsync_WithValidDataByOwner_ShouldUpdateSuccessfully()
     {
         // Arrange
-        var updateDto = new UpdateGroupDto("Updated Group Name", "Updated description", "new-image.jpg");
+        var updateDto = new UpdateGroupDto("Updated Group Name", "Updated description", "http://test.com/api/images/new-image.jpg");
         var groupId = 1;
         var userId = 1; // Owner of group 1
 
