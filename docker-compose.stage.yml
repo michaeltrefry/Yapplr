@@ -54,7 +54,7 @@ services:
       - Analytics__EnableDualWrite=true
       - Analytics__UseInfluxForAdminDashboard=true
       # API Base URL for generating media URLs
-      - API_BASE_URL=${STAGE_API_BASE_URL}
+      - API_BASE_URL=${STAGE_API_BASE_URL:-https://stg-api.yapplr.com}
       # Tenor GIF API configuration
       - Tenor__ApiKey=${STAGE_TENOR_API_KEY}
     volumes:
