@@ -54,7 +54,7 @@ public class MessageServiceTests : IDisposable
             Content: "Hello, this is a test message!"
         );
 
-        _mockNotificationService.Setup(n => n.SendMessageNotificationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+        _mockNotificationService.Setup(n => n.SendMessageNotificationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<bool>()))
                                 .Returns(Task.CompletedTask);
 
         // Act
@@ -195,7 +195,7 @@ public class MessageServiceTests : IDisposable
             ImageFileName: "test-image.jpg"
         );
 
-        _mockNotificationService.Setup(n => n.SendMessageNotificationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+        _mockNotificationService.Setup(n => n.SendMessageNotificationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<bool>()))
                                 .Returns(Task.CompletedTask);
 
         // Act
@@ -235,7 +235,7 @@ public class MessageServiceTests : IDisposable
             Content: "Hello from conversation!"
         );
 
-        _mockNotificationService.Setup(n => n.SendMessageNotificationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+        _mockNotificationService.Setup(n => n.SendMessageNotificationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<bool>()))
                                 .Returns(Task.CompletedTask);
 
         // Act

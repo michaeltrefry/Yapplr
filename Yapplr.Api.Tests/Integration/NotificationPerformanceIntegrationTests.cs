@@ -76,6 +76,7 @@ public class NotificationPerformanceIntegrationTests : IDisposable
 
                 // Add required services
                 services.AddScoped<ISignalRConnectionPool, SignalRConnectionPool>();
+                services.AddScoped<IActiveConversationTracker, ActiveConversationTracker>();
                 services.AddScoped<IFirebaseService, FirebaseService>();
                 services.AddScoped<ExpoNotificationService>();
                 services.AddScoped<SignalRNotificationService>();

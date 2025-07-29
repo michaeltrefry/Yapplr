@@ -17,6 +17,7 @@ public class UnifiedNotificationServiceTests : IDisposable
     private readonly Mock<INotificationPreferencesService> _mockPreferencesService;
     private readonly Mock<ISignalRConnectionPool> _mockConnectionPool;
     private readonly Mock<ICountCacheService> _mockCountCache;
+    private readonly Mock<IActiveConversationTracker> _mockConversationTracker;
     private readonly Mock<ILogger<UnifiedNotificationService>> _mockLogger;
     private readonly Mock<INotificationProviderManager> _mockProviderManager;
     private readonly Mock<INotificationQueue> _mockNotificationQueue;
@@ -35,6 +36,7 @@ public class UnifiedNotificationServiceTests : IDisposable
         _mockPreferencesService = new Mock<INotificationPreferencesService>();
         _mockConnectionPool = new Mock<ISignalRConnectionPool>();
         _mockCountCache = new Mock<ICountCacheService>();
+        _mockConversationTracker = new Mock<IActiveConversationTracker>();
         _mockLogger = new Mock<ILogger<UnifiedNotificationService>>();
         _mockProviderManager = new Mock<INotificationProviderManager>();
         _mockNotificationQueue = new Mock<INotificationQueue>();
@@ -46,6 +48,7 @@ public class UnifiedNotificationServiceTests : IDisposable
             _mockPreferencesService.Object,
             _mockConnectionPool.Object,
             _mockCountCache.Object,
+            _mockConversationTracker.Object,
             _mockLogger.Object,
             _mockProviderManager.Object,
             _mockNotificationQueue.Object,
