@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using Yapplr.Api.Common;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.Services;
 
@@ -25,7 +26,7 @@ public static class ImageEndpoints
                 }
 
                 var fileName = await imageService.SaveImageAsync(file);
-                var imageUrl = $"{context.Request.Scheme}://{context.Request.Host}/api/images/{fileName}";
+                var imageUrl = MappingUtilities.GenerateImageUrl(fileName);
 
                 return Results.Ok(new { fileName, imageUrl });
             }
