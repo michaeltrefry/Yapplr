@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { PostMedia, MediaType, VideoProcessingStatus, Post } from '@/types';
 import { Play, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import Image from 'next/image';
 import FullScreenPhotoViewer from './FullScreenPhotoViewer';
 import { PhotoItem } from './PhotoGrid';
 

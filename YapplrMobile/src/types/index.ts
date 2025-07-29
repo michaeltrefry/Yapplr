@@ -22,7 +22,7 @@ export interface User {
   birthday?: string;
   pronouns: string;
   tagline: string;
-  profileImageFileName: string;
+  profileImageUrl?: string;
   createdAt: string;
   lastSeenAt?: string;
   emailVerified: boolean;
@@ -40,7 +40,7 @@ export interface UserProfile {
   birthday?: string;
   pronouns: string;
   tagline: string;
-  profileImageFileName: string;
+  profileImageUrl?: string;
   createdAt: string;
   postCount: number;
   followerCount: number;
@@ -257,7 +257,7 @@ export interface Group {
   id: number;
   name: string;
   description: string;
-  imageFileName?: string;
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
   isOpen: boolean;
@@ -271,7 +271,7 @@ export interface GroupList {
   id: number;
   name: string;
   description: string;
-  imageFileName?: string;
+  imageUrl?: string;
   createdAt: string;
   creatorUsername: string;
   memberCount: number;
@@ -289,13 +289,13 @@ export interface GroupMember {
 export interface CreateGroup {
   name: string;
   description?: string;
-  imageFileName?: string;
+  imageUrl?: string;
 }
 
 export interface UpdateGroup {
   name: string;
   description: string;
-  imageFileName?: string;
+  imageUrl?: string;
 }
 
 export interface PaginatedResult<T> {
@@ -561,6 +561,7 @@ export enum NotificationType {
   Follow = 4,
   Comment = 5,
   FollowRequest = 6,
+  Message = 7, // Private message notifications (excluded from main notifications list)
 
   // Moderation notifications
   UserSuspended = 100,

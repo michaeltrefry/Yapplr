@@ -10,40 +10,60 @@ namespace Yapplr.Api.Common;
 /// </summary>
 public static class MappingUtilities
 {
+    private static readonly string? BaseUrl;
+    static MappingUtilities()
+    {
+        BaseUrl = Environment.GetEnvironmentVariable("API_BASE_URL");
+        Console.WriteLine($"🔧 MappingUtilities: API_BASE_URL environment variable = '{BaseUrl}'");
+        if (string.IsNullOrEmpty(BaseUrl))
+        {
+            Console.WriteLine("⚠️ MappingUtilities: API_BASE_URL environment variable is not set! Video and image URLs will be null.");
+        }
+    }
     /// <summary>
     /// Generate image URL from filename
     /// </summary>
-    public static string? GenerateImageUrl(string? fileName, HttpContext? httpContext)
+    public static string? GenerateImageUrl(string? fileName)
     {
-        if (string.IsNullOrEmpty(fileName) || httpContext?.Request == null)
+        if (string.IsNullOrEmpty(fileName) || BaseUrl == null)
             return null;
 
-        var request = httpContext.Request;
-        return $"{request.Scheme}://{request.Host}/api/images/{fileName}";
+        return $"{BaseUrl}/api/images/{fileName}";
     }
 
     /// <summary>
     /// Generate video URL from filename
     /// </summary>
-    public static string? GenerateVideoUrl(string? fileName, HttpContext? httpContext)
+    public static string? GenerateVideoUrl(string? fileName)
     {
-        if (string.IsNullOrEmpty(fileName) || httpContext?.Request == null)
-            return null;
+        Console.WriteLine($"🎥 GenerateVideoUrl called with fileName: '{fileName}', BaseUrl: '{BaseUrl}'");
 
-        var request = httpContext.Request;
-        return $"{request.Scheme}://{request.Host}/api/videos/processed/{fileName}";
+        if (string.IsNullOrEmpty(fileName))
+        {
+            Console.WriteLine("🎥 GenerateVideoUrl: fileName is null or empty, returning null");
+            return null;
+        }
+
+        if (BaseUrl == null)
+        {
+            Console.WriteLine("🎥 GenerateVideoUrl: BaseUrl is null, returning null");
+            return null;
+        }
+
+        var url = $"{BaseUrl}/api/videos/processed/{fileName}";
+        Console.WriteLine($"🎥 GenerateVideoUrl: Generated URL: '{url}'");
+        return url;
     }
 
     /// <summary>
     /// Generate video thumbnail URL from filename
     /// </summary>
-    public static string? GenerateVideoThumbnailUrl(string? fileName, HttpContext? httpContext)
+    public static string? GenerateVideoThumbnailUrl(string? fileName)
     {
-        if (string.IsNullOrEmpty(fileName) || httpContext?.Request == null)
+        if (string.IsNullOrEmpty(fileName) || BaseUrl == null)
             return null;
 
-        var request = httpContext.Request;
-        return $"{request.Scheme}://{request.Host}/api/videos/thumbnails/{fileName}";
+        return $"{BaseUrl}/api/videos/thumbnails/{fileName}";
     }
 
     /// <summary>
@@ -67,7 +87,7 @@ public static class MappingUtilities
             user.Birthday,
             user.Pronouns,
             user.Tagline,
-            user.ProfileImageFileName,
+            GenerateImageUrl(user.ProfileImageFileName),
             user.CreatedAt,
             user.FcmToken,
             user.ExpoPushToken,
@@ -99,7 +119,7 @@ public static class MappingUtilities
             user.Birthday,
             user.Pronouns,
             user.Tagline,
-            user.ProfileImageFileName,
+            GenerateImageUrl(user.ProfileImageFileName),
             user.CreatedAt,
             postCount,
             followerCount,
@@ -111,6 +131,59 @@ public static class MappingUtilities
         );
     }
 
+    public static AdminUserDetailsDto MapToAdminUserDetailsDto(this User user)
+    {
+        return new AdminUserDetailsDto
+            {
+                // Basic Profile Information
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Bio = user.Bio,
+                Birthday = user.Birthday,
+                Pronouns = user.Pronouns,
+                Tagline = user.Tagline,
+                ProfileImageUrl = GenerateImageUrl(user.ProfileImageFileName),
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt,
+                LastSeenAt = user.LastSeenAt,
+                EmailVerified = user.EmailVerified,
+                TermsAcceptedAt = user.TermsAcceptedAt,
+
+                // Admin/Moderation Information
+                Role = user.Role,
+                Status = user.Status,
+                SuspendedUntil = user.SuspendedUntil,
+                SuspensionReason = user.SuspensionReason,
+                SuspendedByUsername = user.SuspendedByUser?.Username,
+                LastLoginAt = user.LastLoginAt,
+                LastLoginIp = user.LastLoginIp,
+
+                // Trust Score Information
+                TrustScore = user.TrustScore ?? 1.0f,
+                // TrustScoreFactors = trustScoreFactors,
+                // RecentTrustScoreHistory = trustScoreHistory.ToList(),
+
+                // Rate Limiting Settings
+                RateLimitingEnabled = user.RateLimitingEnabled,
+                TrustBasedRateLimitingEnabled = user.TrustBasedRateLimitingEnabled,
+                //IsCurrentlyRateLimited = isCurrentlyRateLimited,
+                RateLimitedUntil = null, // Will be set below if blocked
+                //RecentRateLimitViolations = recentViolations.Count,
+
+                // Activity Statistics
+                PostCount = user.Posts.Count,
+                CommentCount = user.Posts.Count(p => p.PostType == PostType.Comment),
+                LikeCount = user.Likes.Count,
+                FollowerCount = user.Followers.Count,
+                FollowingCount = user.Following.Count,
+                //ReportCount = reportCount,
+                //ModerationActionCount = moderationActionCount,
+
+                // Recent Moderation Actions
+                //RecentModerationActions = recentModerationActions
+            };
+    }
     /// <summary>
     /// Map Tag to TagDto
     /// </summary>
@@ -126,7 +199,7 @@ public static class MappingUtilities
     /// <summary>
     /// Map Post (with PostType.Comment) to CommentDto (without like information)
     /// </summary>
-    public static CommentDto MapToCommentDto(this Post comment, HttpContext? httpContext = null)
+    public static CommentDto MapToCommentDto(this Post comment)
     {
         var userDto = comment.User.MapToUserDto();
         var isEdited = IsEdited(comment.CreatedAt, comment.UpdatedAt);
@@ -144,7 +217,7 @@ public static class MappingUtilities
     /// <summary>
     /// Map Post (with PostType.Comment) to CommentDto with like information
     /// </summary>
-    public static CommentDto MapToCommentDto(this Post comment, int? currentUserId, int likeCount, bool isLikedByCurrentUser, HttpContext? httpContext = null)
+    public static CommentDto MapToCommentDto(this Post comment, int? currentUserId, int likeCount, bool isLikedByCurrentUser)
     {
         var userDto = comment.User.MapToUserDto();
         var isEdited = IsEdited(comment.CreatedAt, comment.UpdatedAt);
@@ -164,7 +237,7 @@ public static class MappingUtilities
     /// <summary>
     /// Map Post (with PostType.Comment) to CommentDto with reaction information
     /// </summary>
-    public static CommentDto MapToCommentDtoWithReactions(this Post comment, int? currentUserId, HttpContext? httpContext = null)
+    public static CommentDto MapToCommentDtoWithReactions(this Post comment, int? currentUserId)
     {
         var userDto = comment.User.MapToUserDto();
         var isEdited = IsEdited(comment.CreatedAt, comment.UpdatedAt);
@@ -282,7 +355,6 @@ public static class MappingUtilities
     public static PostDto MapToPostDto(
         this Post post,
         int? currentUserId,
-        HttpContext? httpContext = null,
         bool includeModeration = false)
     {
         var userDto = post.User.MapToUserDto();
@@ -290,11 +362,11 @@ public static class MappingUtilities
         var isReposted = currentUserId.HasValue && post.Reposts.Any(r => r.UserId == currentUserId.Value);
 
         // Generate legacy imageUrl - use Post.ImageFileName if available, otherwise use first image from PostMedia
-        var imageUrl = GenerateImageUrl(post.ImageFileName, httpContext);
+        var imageUrl = GenerateImageUrl(post.ImageFileName);
         if (string.IsNullOrEmpty(imageUrl) && post.PostMedia.Any(pm => pm.MediaType == MediaType.Image && !string.IsNullOrEmpty(pm.ImageFileName)))
         {
             var firstImage = post.PostMedia.First(pm => pm.MediaType == MediaType.Image && !string.IsNullOrEmpty(pm.ImageFileName));
-            imageUrl = GenerateImageUrl(firstImage.ImageFileName, httpContext);
+            imageUrl = GenerateImageUrl(firstImage.ImageFileName);
         }
 
         var isEdited = IsEdited(post.CreatedAt, post.UpdatedAt);
@@ -338,8 +410,8 @@ public static class MappingUtilities
         }
 
         // Generate video URLs
-        var videoUrl = GenerateVideoUrl(post.ProcessedVideoFileName, httpContext);
-        var videoThumbnailUrl = GenerateVideoThumbnailUrl(post.VideoThumbnailFileName, httpContext);
+        var videoUrl = GenerateVideoUrl(post.ProcessedVideoFileName);
+        var videoThumbnailUrl = GenerateVideoThumbnailUrl(post.VideoThumbnailFileName);
 
         // Map video metadata if available
         VideoMetadata? videoMetadata = null;
@@ -371,7 +443,7 @@ public static class MappingUtilities
         }
 
         // Map media items
-        var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto(httpContext)).ToList();
+        var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto()).ToList();
 
         // Map group information if post is in a group
         GroupDto? groupDto = null;
@@ -381,7 +453,7 @@ public static class MappingUtilities
                 post.Group.Id,
                 post.Group.Name,
                 post.Group.Description,
-                post.Group.ImageFileName,
+                GenerateImageUrl(post.Group.ImageFileName),
                 post.Group.CreatedAt,
                 post.Group.UpdatedAt,
                 post.Group.IsOpen,
@@ -450,7 +522,6 @@ public static class MappingUtilities
         IEnumerable<ReactionCountDto>? reactionCounts = null,
         ReactionType? currentUserReaction = null,
         int totalReactionCount = 0,
-        HttpContext? httpContext = null,
         bool includeModeration = false)
     {
         var userDto = post.User.MapToUserDto();
@@ -458,11 +529,11 @@ public static class MappingUtilities
         var isReposted = currentUserId.HasValue && post.Reposts.Any(r => r.UserId == currentUserId.Value);
 
         // Generate legacy imageUrl - use Post.ImageFileName if available, otherwise use first image from PostMedia
-        var imageUrl = GenerateImageUrl(post.ImageFileName, httpContext);
+        var imageUrl = GenerateImageUrl(post.ImageFileName);
         if (string.IsNullOrEmpty(imageUrl) && post.PostMedia.Any(pm => pm.MediaType == MediaType.Image && !string.IsNullOrEmpty(pm.ImageFileName)))
         {
             var firstImage = post.PostMedia.First(pm => pm.MediaType == MediaType.Image && !string.IsNullOrEmpty(pm.ImageFileName));
-            imageUrl = GenerateImageUrl(firstImage.ImageFileName, httpContext);
+            imageUrl = GenerateImageUrl(firstImage.ImageFileName);
         }
 
         var isEdited = IsEdited(post.CreatedAt, post.UpdatedAt);
@@ -512,8 +583,8 @@ public static class MappingUtilities
 
         if (!string.IsNullOrEmpty(post.VideoFileName))
         {
-            videoUrl = GenerateVideoUrl(post.ProcessedVideoFileName, httpContext);
-            videoThumbnailUrl = GenerateVideoThumbnailUrl(post.VideoThumbnailFileName, httpContext);
+            videoUrl = GenerateVideoUrl(post.ProcessedVideoFileName);
+            videoThumbnailUrl = GenerateVideoThumbnailUrl(post.VideoThumbnailFileName);
 
             // Map video metadata if available
             if (post.PostMedia.Any(pm => pm.MediaType == MediaType.Video))
@@ -548,7 +619,7 @@ public static class MappingUtilities
         }
 
         // Map media items
-        var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto(httpContext)).ToList();
+        var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto()).ToList();
 
         // Map group information if post is in a group
         GroupDto? groupDto = null;
@@ -603,17 +674,15 @@ public static class MappingUtilities
     /// </summary>
     public static MessageDto MapToMessageDto(
         this Message message,
-        int currentUserId,
-        HttpContext? httpContext = null,
-        MessageStatusType? status = null)
+        MessageStatusType? status = null,
+        UserDto? sender = null)
     {
-        var imageUrl = GenerateImageUrl(message.ImageFileName, httpContext);
-        var senderDto = message.Sender?.MapToUserDto() ?? CreateSystemUserDto();
+        var senderDto = sender ?? message.Sender?.MapToUserDto() ?? CreateSystemUserDto();
 
         return new MessageDto(
             message.Id,
             message.Content,
-            imageUrl,
+            GenerateImageUrl(message.ImageFileName),
             message.CreatedAt,
             message.UpdatedAt,
             message.IsEdited,
@@ -630,12 +699,11 @@ public static class MappingUtilities
     public static ConversationDto MapToConversationDto(
         this Conversation conversation,
         int currentUserId,
-        HttpContext? httpContext = null,
         int unreadCount = 0)
     {
         var participants = conversation.Participants.Select(p => p.User.MapToUserDto()).ToList();
         var lastMessage = conversation.Messages.FirstOrDefault();
-        var lastMessageDto = lastMessage?.MapToMessageDto(currentUserId, httpContext);
+        var lastMessageDto = lastMessage?.MapToMessageDto();
 
         return new ConversationDto(
             conversation.Id,
@@ -650,7 +718,7 @@ public static class MappingUtilities
     /// <summary>
     /// Map PostMedia to PostMediaDto
     /// </summary>
-    public static PostMediaDto MapToPostMediaDto(this PostMedia media, HttpContext? httpContext = null)
+    public static PostMediaDto MapToPostMediaDto(this PostMedia media)
     {
 
 
@@ -669,7 +737,7 @@ public static class MappingUtilities
 
         if (media.MediaType == MediaType.Image)
         {
-            imageUrl = GenerateImageUrl(media.ImageFileName, httpContext);
+            imageUrl = GenerateImageUrl(media.ImageFileName);
             width = media.ImageWidth;
             height = media.ImageHeight;
             fileSizeBytes = media.ImageFileSizeBytes;
@@ -684,8 +752,8 @@ public static class MappingUtilities
         }
         else if (media.MediaType == MediaType.Video)
         {
-            videoUrl = GenerateVideoUrl(media.ProcessedVideoFileName, httpContext);
-            videoThumbnailUrl = GenerateVideoThumbnailUrl(media.VideoThumbnailFileName, httpContext);
+            videoUrl = GenerateVideoUrl(media.ProcessedVideoFileName);
+            videoThumbnailUrl = GenerateVideoThumbnailUrl(media.VideoThumbnailFileName);
             videoProcessingStatus = media.VideoProcessingStatus;
             width = media.VideoWidth ?? media.OriginalVideoWidth;
             height = media.VideoHeight ?? media.OriginalVideoHeight;

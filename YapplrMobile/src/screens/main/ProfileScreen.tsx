@@ -27,12 +27,6 @@ export default function ProfileScreen() {
 
   const styles = createStyles(colors);
 
-  // Helper function to generate image URL
-  const getImageUrl = (fileName: string) => {
-    if (!fileName) return '';
-    return `http://192.168.254.181:5161/api/images/${fileName}`;
-  };
-
   // Fetch full profile data for current user
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['userProfile', user?.username],
@@ -105,9 +99,9 @@ export default function ProfileScreen() {
             onPress={() => navigation.navigate('UserProfile', { username: profile.username })}
             activeOpacity={0.7}
           >
-            {profile.profileImageFileName ? (
+            {profile.profileImageUrl ? (
               <Image
-                source={{ uri: getImageUrl(profile.profileImageFileName) }}
+                source={{ uri: profile.profileImageUrl }}
                 style={styles.profileImage}
                 onError={() => {
                   // Fallback to initials if image fails to load

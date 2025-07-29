@@ -26,7 +26,7 @@ export default function CreateGroupScreen({ navigation }: CreateGroupScreenProps
   const [formData, setFormData] = useState<CreateGroup>({
     name: '',
     description: '',
-    imageFileName: undefined,
+    imageUrl: undefined,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 

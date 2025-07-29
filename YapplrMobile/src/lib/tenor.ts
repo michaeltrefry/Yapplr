@@ -62,10 +62,12 @@ export interface SelectedGif {
   height: number;
 }
 
-// Get the API base URL from AuthContext
+// Import API base URL from centralized config
+import { API_BASE_URL } from '../config/api';
+
+// Get the API base URL from centralized config
 const getApiBaseUrl = () => {
-  // Use the same URL as AuthContext
-  return 'http://192.168.254.181:8080';
+  return API_BASE_URL;
 };
 
 // Search for GIFs

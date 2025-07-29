@@ -2,8 +2,8 @@
 
 import { Message } from '@/types';
 import UserAvatar from './UserAvatar';
-import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
+import { getApiBaseUrl } from '@/lib/config';
 
 interface MessageBubbleProps {
   message: Message;
@@ -55,13 +55,10 @@ export default function MessageBubble({ message, isCurrentUser, showAvatar }: Me
           {message.imageUrl && (
             <div className="mb-2">
               <div className="relative rounded-lg overflow-hidden">
-                <Image
-                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161'}${message.imageUrl}`}
+                <img
+                  src={`${getApiBaseUrl()}${message.imageUrl}`}
                   alt="Message attachment"
-                  width={300}
-                  height={200}
-                  className="object-cover max-w-full h-auto"
-                  unoptimized
+                  className="object-cover max-w-full h-auto w-[300px] h-[200px]"
                 />
               </div>
             </div>

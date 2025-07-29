@@ -1,6 +1,5 @@
 import { User } from '@/types';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface UserAvatarProps {
   user: User;
@@ -24,17 +23,10 @@ export default function UserAvatar({
 }: UserAvatarProps) {
   const sizeClass = sizeClasses[size];
   
-  const getImageUrl = (fileName: string) => {
-    if (!fileName) return '';
-    return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161'}/api/images/${fileName}`;
-  };
-
-  const avatarContent = user.profileImageFileName ? (
-    <Image
-      src={getImageUrl(user.profileImageFileName) || ''}
+  const avatarContent = user.profileImageUrl ? (
+    <img
+      src={user.profileImageUrl || ''}
       alt={`${user.username}'s profile`}
-      width={80}
-      height={80}
       className={`${sizeClass} rounded-full object-cover ${className}`}
       onError={(e) => {
         // Fallback to initials if image fails to load
@@ -51,7 +43,7 @@ export default function UserAvatar({
   const fallbackContent = (
     <div
       className={`${sizeClass} bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 ${className}`}
-      style={{ display: user.profileImageFileName ? 'none' : 'flex' }}
+      style={{ display: user.profileImageUrl ? 'none' : 'flex' }}
     >
       <span className="text-white font-semibold">
         {user.username.charAt(0).toUpperCase()}

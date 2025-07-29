@@ -63,19 +63,15 @@ export default function GroupCard({ group, showJoinButton = true, onGroupUpdate 
     });
   };
 
-  const getImageUrl = (imageFileName?: string) => {
-    if (!imageFileName) return '';
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    return `${baseUrl}/api/images/${imageFileName}`;
-  };
+
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       {/* Group Image */}
       <div className="h-32 bg-gradient-to-r from-blue-500 to-purple-600 relative">
-        {group.imageFileName ? (
+        {group.imageUrl ? (
           <img
-            src={getImageUrl(group.imageFileName)}
+            src={group.imageUrl}
             alt={group.name}
             className="w-full h-full object-cover"
           />

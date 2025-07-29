@@ -222,7 +222,7 @@ public class CountCacheService : ICountCacheService
         return await _cache.GetOrSetValueAsync(key, async () =>
         {
             var count = await _context.Notifications
-                .CountAsync(n => n.UserId == userId && !n.IsSeen);
+                .CountAsync(n => n.UserId == userId && !n.IsSeen && n.Type != NotificationType.Message); // Exclude message notifications
             _logger.LogDebug("Calculated unseen notification count for user {UserId}: {Count}", userId, count);
             return count;
         }, NotificationCountExpiration);

@@ -10,7 +10,7 @@ public record UserDto(
     DateTime? Birthday,
     string Pronouns,
     string Tagline,
-    string ProfileImageFileName,
+    string? ProfileImageUrl,
     DateTime CreatedAt,
     string? FcmToken,
     string? ExpoPushToken,

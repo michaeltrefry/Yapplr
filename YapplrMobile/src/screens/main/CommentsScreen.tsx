@@ -39,11 +39,10 @@ type CommentsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Com
 interface CommentItemProps {
   comment: Comment;
   postId: number;
-  getImageUrl: (fileName: string) => string;
   onDelete: () => void;
 }
 
-function CommentItem({ comment, postId, getImageUrl, onDelete }: CommentItemProps) {
+function CommentItem({ comment, postId, onDelete }: CommentItemProps) {
   const { user, api } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -102,9 +101,9 @@ function CommentItem({ comment, postId, getImageUrl, onDelete }: CommentItemProp
     <View style={commentStyles.commentItem}>
       <View style={commentStyles.commentHeader}>
         <View style={commentStyles.avatar}>
-          {comment.user.profileImageFileName ? (
+          {comment.user.profileImageUrl ? (
             <Image
-              source={{ uri: getImageUrl(comment.user.profileImageFileName) }}
+              source={{ uri: comment.user.profileImageUrl }}
               style={commentStyles.profileImage}
               onError={() => {
                 console.log('Failed to load profile image in comments');
@@ -241,12 +240,6 @@ export default function CommentsScreen() {
   const [fullPost, setFullPost] = useState<Post>(post); // Store the full post data
   const flatListRef = useRef<FlatList>(null);
 
-  // Helper function to generate image URL
-  const getImageUrl = useCallback((fileName: string) => {
-    if (!fileName) return '';
-    return `http://192.168.254.181:5161/api/images/${fileName}`;
-  }, []);
-
   useEffect(() => {
     loadComments();
   }, []);
@@ -313,18 +306,17 @@ export default function CommentsScreen() {
     <CommentItem
       comment={item}
       postId={post.id}
-      getImageUrl={getImageUrl}
       onDelete={loadComments}
     />
-  ), [getImageUrl, loadComments, post.id]);
+  ), [loadComments, post.id]);
 
   const renderHeader = useMemo(() => (
       <View style={styles.postContainer}>
         <View style={styles.postHeader}>
           <View style={styles.avatar}>
-            {post.user.profileImageFileName ? (
+            {post.user.profileImageUrl ? (
               <Image
-                source={{ uri: getImageUrl(post.user.profileImageFileName) }}
+                source={{ uri: post.user.profileImageUrl }}
                 style={styles.profileImage}
                 onError={() => {
                   console.log('Failed to load profile image in post');
@@ -436,7 +428,7 @@ export default function CommentsScreen() {
         </Text>
       </View>
     </View>
-  ), [post, currentCommentCount, getImageUrl]);
+  ), [post, currentCommentCount]);
 
   return (
     <SafeAreaView style={styles.container}>

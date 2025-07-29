@@ -60,12 +60,6 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
 
   const styles = createStyles(colors);
 
-  // Helper function to generate image URL
-  const getImageUrl = (fileName: string) => {
-    if (!fileName) return '';
-    return `http://192.168.254.181:5161/api/images/${fileName}`;
-  };
-
   // Helper function to calculate image height based on aspect ratio
   const getImageHeight = (imageKey: string) => {
     const screenWidth = Dimensions.get('window').width;
@@ -170,9 +164,9 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
           activeOpacity={0.7}
         >
           <View style={styles.avatar}>
-            {item.post.user.profileImageFileName ? (
+            {item.post.user.profileImageUrl ? (
               <Image
-                source={{ uri: getImageUrl(item.post.user.profileImageFileName) }}
+                source={{ uri: item.post.user.profileImageUrl }}
                 style={styles.profileImage}
                 onError={() => {
                   console.log('Failed to load profile image in timeline');
@@ -267,6 +261,17 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
               )}
               {media.mediaType === MediaType.Video && (
                 <>
+                  {/* Debug logging for video media */}
+                  {console.log('🎥 PostCard: Video media debug:', {
+                    mediaId: media.id,
+                    videoUrl: media.videoUrl,
+                    videoThumbnailUrl: media.videoThumbnailUrl,
+                    videoProcessingStatus: media.videoProcessingStatus,
+                    width: media.width,
+                    height: media.height,
+                    hasVideoUrl: !!media.videoUrl,
+                    videoUrlLength: media.videoUrl?.length || 0
+                  })}
                   {media.videoProcessingStatus === VideoProcessingStatus.Completed && media.videoUrl && media.width && media.height ? (
                     <VideoPlayer
                       ref={(ref) => {
@@ -383,6 +388,17 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
       )}
 
       {/* Legacy Video Display (for backward compatibility) */}
+      {/* Debug logging for legacy video */}
+      {!item.post.mediaItems && console.log('🎥 PostCard: Legacy video debug:', {
+        postId: item.post.id,
+        videoUrl: item.post.videoUrl,
+        videoThumbnailUrl: item.post.videoThumbnailUrl,
+        videoProcessingStatus: item.post.videoProcessingStatus,
+        videoWidth: item.post.videoWidth,
+        videoHeight: item.post.videoHeight,
+        hasVideoUrl: !!item.post.videoUrl,
+        videoUrlLength: item.post.videoUrl?.length || 0
+      })}
       {!item.post.mediaItems && item.post.videoUrl && item.post.videoProcessingStatus === VideoProcessingStatus.Completed && (
         <View style={styles.mediaContainer}>
           <VideoPlayer

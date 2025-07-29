@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Yapplr.Api.Common;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
@@ -92,6 +93,6 @@ public class BlockService : IBlockService
             .Select(b => b.Blocked)
             .ToListAsync();
 
-        return blockedUsers.Select(user => user.ToDto());
+        return blockedUsers.Select(user => user.MapToUserDto());
     }
 }

@@ -8,7 +8,7 @@ public record UserWithOnlineStatusDto(
     DateTime? Birthday,
     string Pronouns,
     string Tagline,
-    string ProfileImageFileName,
+    string? ProfileImageUrl,
     DateTime CreatedAt,
     bool IsOnline
 );

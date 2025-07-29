@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
   },
   images: {
     // Disable image optimization for local development to avoid Docker networking issues
-    unoptimized: process.env.NODE_ENV === 'development',
+    unoptimized: true, // Force disable optimization for all environments
     remotePatterns: [
       {
         protocol: 'http',

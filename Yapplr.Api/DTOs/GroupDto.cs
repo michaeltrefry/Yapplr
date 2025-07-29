@@ -4,7 +4,7 @@ public record GroupDto(
     int Id,
     string Name,
     string Description,
-    string? ImageFileName,
+    string? ImageUrl,
     DateTime CreatedAt,
     DateTime UpdatedAt,
     bool IsOpen,

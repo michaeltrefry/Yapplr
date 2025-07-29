@@ -18,8 +18,7 @@ if (__DEV__) {
   ]);
 }
 
-// Use your computer's IP address instead of localhost for mobile devices
-const API_BASE_URL = 'http://192.168.254.181:8080'; // Replace with your computer's IP
+import { API_BASE_URL } from './src/config/api';
 
 const queryClient = new QueryClient({
   defaultOptions: {

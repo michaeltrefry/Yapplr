@@ -45,6 +45,7 @@ services:
       # Analytics configuration
       - Analytics__EnableDualWrite=true
       - Analytics__UseInfluxForAdminDashboard=true
+      - API_BASE_URL=http://192.168.254.181:8080
     volumes:
       - /Users/michael/Repos/Yapplr/uploads:/app/uploads
       - yapplr_logs:/app/logs
@@ -118,12 +119,16 @@ services:
       context: yapplr-frontend
       dockerfile: Dockerfile
       args:
+        # Use host.docker.internal for browser access (client-side)
         - NEXT_PUBLIC_API_URL=http://localhost:8080
         # Notification provider configuration (SignalR-only for local web)
         - NEXT_PUBLIC_ENABLE_SIGNALR=true
         # Force rebuild by passing current timestamp
         - CACHE_BUST=$(date +%s)
     environment:
+      # Client-side API URL (for browser requests)
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_ENABLE_SIGNALR=true
       # Internal API URL for server-side operations (image optimization)
       - INTERNAL_API_URL=http://yapplr-api:8080
     image: yapplr-frontend:local

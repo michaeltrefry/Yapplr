@@ -298,7 +298,7 @@ public class PostService : BaseService, IPostService
             .AsSplitQuery()
             .FirstAsync(p => p.Id == post.Id);
 
-        return createdPost.MapToPostDto(userId, _httpContextAccessor.HttpContext);
+        return createdPost.MapToPostDto(userId);
     }
 
     public async Task<PostDto?> CreatePostWithMediaAsync(int userId, CreatePostWithMediaDto createDto)
@@ -508,7 +508,7 @@ public class PostService : BaseService, IPostService
             .AsSplitQuery()
             .FirstAsync(p => p.Id == post.Id);
 
-        return createdPost.MapToPostDto(userId, _httpContextAccessor.HttpContext);
+        return createdPost.MapToPostDto(userId);
     }
 
     public async Task<PostDto?> GetPostByIdAsync(int postId, int? currentUserId = null)
@@ -535,7 +535,7 @@ public class PostService : BaseService, IPostService
             return null; // Post is hidden from this user
         }
 
-        return post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext, includeModeration: true);
+        return post.MapToPostDto(currentUserId, includeModeration: true);
     }
 
     public async Task<IEnumerable<PostDto>> GetTimelineAsync(int userId, int page = 1, int pageSize = 20)
@@ -556,7 +556,7 @@ public class PostService : BaseService, IPostService
             .Take(pageSize)
             .ToListAsync();
 
-        return posts.Select(p => p.MapToPostDto(userId, _httpContextAccessor.HttpContext));
+        return posts.Select(p => p.MapToPostDto(userId));
     }
 
     public async Task<IEnumerable<TimelineItemDto>> GetTimelineWithRepostsAsync(int userId, int page = 1, int pageSize = 20)
@@ -603,7 +603,7 @@ public class PostService : BaseService, IPostService
         foreach (var post in posts)
         {
             timelineItems.Add(new TimelineItemDto("post", post.CreatedAt,
-                post.MapToPostDto(userId, _httpContextAccessor.HttpContext)));
+                post.MapToPostDto(userId)));
         }
 
         // Add reposts
@@ -612,7 +612,7 @@ public class PostService : BaseService, IPostService
             var repostedByUser = repost.User.MapToUserDto();
 
             timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt,
-                repost.Post.MapToPostDto(userId, _httpContextAccessor.HttpContext), repostedByUser));
+                repost.Post.MapToPostDto(userId), repostedByUser));
         }
 
         // Sort by creation date and apply pagination
@@ -656,15 +656,15 @@ public class PostService : BaseService, IPostService
         timelineItems.AddRange(posts.Select(p => new TimelineItemDto(
             "post",
             p.CreatedAt,
-            p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext)
+            p.MapToPostDto(currentUserId)
         )));
 
         // Add reposts
         timelineItems.AddRange(reposts.Select(r => new TimelineItemDto(
             "repost",
             r.CreatedAt,
-            r.Post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext),
-            r.User.ToDto()
+            r.Post.MapToPostDto(currentUserId),
+            r.User.MapToUserDto()
         )));
 
         // Sort by creation date and take the requested page
@@ -709,7 +709,7 @@ public class PostService : BaseService, IPostService
             .Take(pageSize)
             .ToListAsync();
 
-        return posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext));
+        return posts.Select(p => p.MapToPostDto(currentUserId));
     }
 
     public async Task<IEnumerable<PostDto>> GetUserPhotosAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
@@ -747,7 +747,7 @@ public class PostService : BaseService, IPostService
             .Take(pageSize)
             .ToListAsync();
 
-        return posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext));
+        return posts.Select(p => p.MapToPostDto(currentUserId));
     }
 
     public async Task<IEnumerable<PostDto>> GetUserVideosAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
@@ -785,7 +785,7 @@ public class PostService : BaseService, IPostService
             .Take(pageSize)
             .ToListAsync();
 
-        return posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext));
+        return posts.Select(p => p.MapToPostDto(currentUserId));
     }
 
     public async Task<IEnumerable<TimelineItemDto>> GetUserTimelineAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
@@ -870,15 +870,15 @@ public class PostService : BaseService, IPostService
         // Add original posts
         foreach (var post in posts)
         {
-            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext)));
+            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, post.MapToPostDto(currentUserId)));
         }
 
         // Add reposts
         foreach (var repost in reposts)
         {
-            var repostedByUser = repost.User.ToDto();
+            var repostedByUser = repost.User.MapToUserDto();
 
-            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, repost.Post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext), repostedByUser));
+            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, repost.Post.MapToPostDto(currentUserId), repostedByUser));
         }
 
         // Sort by creation date and apply pagination
@@ -1468,7 +1468,7 @@ public class PostService : BaseService, IPostService
         // Perform content moderation analysis on updated content
         await ProcessContentModerationAsync(post.Id, updateDto.Content, userId);
 
-        return post.MapToPostDto(userId, _httpContextAccessor.HttpContext);
+        return post.MapToPostDto(userId);
     }
 
     public async Task<CommentDto?> UpdateCommentAsync(int commentId, int userId, UpdateCommentDto updateDto)

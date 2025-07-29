@@ -15,7 +15,7 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }: Cr
   const [formData, setFormData] = useState<CreateGroup>({
     name: '',
     description: '',
-    imageFileName: undefined,
+    imageUrl: undefined,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +50,7 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }: Cr
     setIsUploadingImage(true);
     try {
       const result = await groupApi.uploadGroupImage(imageFile);
-      return result.fileName;
+      return result.imageUrl;
     } catch (error) {
       console.error('Failed to upload image:', error);
       throw new Error('Failed to upload image');
@@ -65,15 +65,16 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }: Cr
     setError(null);
 
     try {
-      let imageFileName: string | undefined;
-      
+      let imageUrl: string | undefined;
+
       if (imageFile) {
-        imageFileName = await uploadImage();
+        const result = await uploadImage();
+        imageUrl = result;
       }
 
       const groupData: CreateGroup = {
         ...formData,
-        imageFileName,
+        imageUrl,
       };
 
       const newGroup = await groupApi.createGroup(groupData);
@@ -88,7 +89,7 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }: Cr
   };
 
   const handleClose = () => {
-    setFormData({ name: '', description: '', imageFileName: undefined });
+    setFormData({ name: '', description: '', imageUrl: undefined });
     setImageFile(null);
     setImagePreview(null);
     setError(null);

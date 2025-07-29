@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+    <RunConfiguration>
+        <EnvironmentVariables>
+            <API_BASE_URL>http://test.com</API_BASE_URL>
+        </EnvironmentVariables>
+    </RunConfiguration>
+</RunSettings>

@@ -25,12 +25,6 @@ export default function MessagesScreen({ navigation }: { navigation: MessagesScr
 
   const styles = createStyles(colors);
 
-  // Helper function to generate image URL
-  const getImageUrl = (fileName: string) => {
-    if (!fileName) return '';
-    return `http://192.168.254.181:5161/api/images/${fileName}`;
-  };
-
   const { data: conversations, isLoading } = useQuery({
     queryKey: ['conversations'],
     queryFn: () => api.messages.getConversations(),
@@ -68,9 +62,9 @@ export default function MessagesScreen({ navigation }: { navigation: MessagesScr
         activeOpacity={0.7}
       >
         <View style={styles.avatar}>
-          {item.otherParticipant.profileImageFileName ? (
+          {item.otherParticipant.profileImageUrl ? (
             <Image
-              source={{ uri: getImageUrl(item.otherParticipant.profileImageFileName) }}
+              source={{ uri: item.otherParticipant.profileImageUrl }}
               style={styles.profileImage}
               onError={() => {
                 console.log('Failed to load profile image in conversation list');

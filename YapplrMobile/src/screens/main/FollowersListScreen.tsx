@@ -23,12 +23,6 @@ export default function FollowersListScreen({ route, navigation }: FollowersList
   const { userId, username } = route.params;
   const { api } = useAuth();
 
-  // Helper function to generate image URL
-  const getImageUrl = (fileName: string) => {
-    if (!fileName) return '';
-    return `http://192.168.254.181:5161/api/images/${fileName}`;
-  };
-
   const {
     data: followersUsers,
     isLoading,
@@ -56,9 +50,9 @@ export default function FollowersListScreen({ route, navigation }: FollowersList
     >
       <View style={styles.userInfo}>
         <View style={styles.avatar}>
-          {item.profileImageFileName ? (
+          {item.profileImageUrl ? (
             <Image
-              source={{ uri: getImageUrl(item.profileImageFileName) }}
+              source={{ uri: item.profileImageUrl }}
               style={styles.profileImage}
               onError={() => {
                 console.log('Failed to load profile image');

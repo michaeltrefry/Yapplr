@@ -13,7 +13,6 @@ public class AdminUserDetailsDto
     public string Pronouns { get; set; } = string.Empty;
     public string Tagline { get; set; } = string.Empty;
     public string? ProfileImageUrl { get; set; }
-    public string? ProfileImageFileName { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }

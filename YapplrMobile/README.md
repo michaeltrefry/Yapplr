@@ -179,12 +179,14 @@ React Native mobile application for the Yapplr social media platform.
 ## 🔧 **Configuration**
 
 ### **API Base URL**
-Update the API URL in `src/api/client.ts`:
+Update the API URL in `src/config/api.ts`:
 ```typescript
-const API_BASE_URL = 'http://192.168.254.181:8080'; // Change to your API URL
+export const API_BASE_URL = 'http://192.168.254.181:8080'; // Change to your API URL
 ```
 
 For production, use your deployed API URL. For development, use your local network IP address to allow mobile device access.
+
+**Note**: The mobile app now uses URLs directly from API responses rather than constructing them. All media URLs (images, videos, thumbnails, profile images) are provided as complete URLs by the API.
 
 ### **Development vs Production**
 - **Development**: Uses localhost API

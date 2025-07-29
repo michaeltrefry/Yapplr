@@ -1,6 +1,8 @@
 // Tenor API configuration and utilities
 // Use backend proxy to avoid CORS issues
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
+import { getApiBaseUrl } from './config';
+
+const API_BASE_URL = getApiBaseUrl();
 const TENOR_PROXY_URL = `${API_BASE_URL}/api/gif`;
 
 export interface TenorGif {

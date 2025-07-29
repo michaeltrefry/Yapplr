@@ -31,12 +31,6 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
 
   const isOwnProfile = currentUser?.username === username;
 
-  // Helper function to generate image URL
-  const getImageUrl = (fileName: string) => {
-    if (!fileName) return '';
-    return `http://192.168.254.181:5161/api/images/${fileName}`;
-  };
-
   const {
     data: profile,
     isLoading: profileLoading,
@@ -369,9 +363,9 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
           <View style={styles.profileSection}>
             <View style={styles.userHeader}>
               <View style={styles.avatar}>
-                {profile.profileImageFileName ? (
+                {profile.profileImageUrl ? (
                   <Image
-                    source={{ uri: getImageUrl(profile.profileImageFileName) }}
+                    source={{ uri: profile.profileImageUrl }}
                     style={styles.profileImage}
                     onError={() => {
                       // Fallback to initials if image fails to load

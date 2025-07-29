@@ -6,6 +6,7 @@ using Yapplr.Api.Extensions;
 using Yapplr.Api.Utils;
 using Yapplr.Api.Services.Unified;
 using Serilog.Context;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Services;
 
@@ -147,7 +148,7 @@ public class NotificationService : INotificationService
     public async Task<NotificationListDto> GetUserNotificationsAsync(int userId, int page = 1, int pageSize = 25)
     {
         var query = _context.Notifications
-            .Where(n => n.UserId == userId)
+            .Where(n => n.UserId == userId && n.Type != NotificationType.Message) // Exclude message notifications from main list
             .Include(n => n.ActorUser)
             .Include(n => n.Post)
                 .ThenInclude(p => p!.User)
@@ -160,7 +161,7 @@ public class NotificationService : INotificationService
 
         var totalCount = await query.CountAsync();
         var unreadCount = await _context.Notifications
-            .Where(n => n.UserId == userId && !n.IsRead)
+            .Where(n => n.UserId == userId && !n.IsRead && n.Type != NotificationType.Message) // Exclude message notifications from unread count
             .CountAsync();
 
         var notifications = await query
@@ -211,7 +212,7 @@ public class NotificationService : INotificationService
     public async Task<bool> MarkAllNotificationsAsReadAsync(int userId)
     {
         var unreadNotifications = await _context.Notifications
-            .Where(n => n.UserId == userId && !n.IsRead)
+            .Where(n => n.UserId == userId && !n.IsRead && n.Type != NotificationType.Message) // Exclude message notifications
             .ToListAsync();
 
         if (!unreadNotifications.Any())
@@ -283,7 +284,7 @@ public class NotificationService : INotificationService
     public async Task<bool> MarkAllNotificationsAsSeenAsync(int userId)
     {
         var unseenNotifications = await _context.Notifications
-            .Where(n => n.UserId == userId && !n.IsSeen)
+            .Where(n => n.UserId == userId && !n.IsSeen && n.Type != NotificationType.Message) // Exclude message notifications
             .ToListAsync();
 
         if (!unseenNotifications.Any())
@@ -718,7 +719,7 @@ public class NotificationService : INotificationService
             ReadAt = notification.ReadAt,
             SeenAt = notification.SeenAt,
             Status = status,
-            ActorUser = notification.ActorUser?.ToDto()
+            ActorUser = notification.ActorUser?.MapToUserDto()
         };
 
         // Add post information if available
@@ -747,7 +748,7 @@ public class NotificationService : INotificationService
                 notification.Post.Privacy,
                 notification.Post.CreatedAt,
                 notification.Post.UpdatedAt,
-                notification.Post.User.ToDto(),
+                notification.Post.User.MapToUserDto(),
                 null, // Group - not loaded for notifications
                 0, // LikeCount - we don't need this for notifications
                 0, // CommentCount - we don't need this for notifications
@@ -768,7 +769,7 @@ public class NotificationService : INotificationService
                 notification.Comment.Content,
                 notification.Comment.CreatedAt,
                 notification.Comment.UpdatedAt,
-                notification.Comment.User.ToDto(),
+                notification.Comment.User.MapToUserDto(),
                 notification.Comment.UpdatedAt > notification.Comment.CreatedAt.AddMinutes(1), // IsEdited
                 0, // LikeCount - not needed for notifications
                 false // IsLikedByCurrentUser - not needed for notifications
@@ -797,7 +798,7 @@ public class NotificationService : INotificationService
                     notification.Comment.Parent?.Privacy ?? PostPrivacy.Public,
                     notification.Comment.Parent?.CreatedAt ?? DateTime.UtcNow,
                     notification.Comment.Parent?.UpdatedAt ?? DateTime.UtcNow,
-                    notification.Comment.Parent?.User.ToDto() ?? new UserDto(0, "", "", "", null, "", "", "", DateTime.UtcNow, null, null, false, UserRole.User, UserStatus.Active, null, null, null),
+                    notification.Comment.Parent?.User.MapToUserDto() ?? new UserDto(0, "", "", "", null, "", "", "", DateTime.UtcNow, null, null, false, UserRole.User, UserStatus.Active, null, null, null),
                     null, // Group - not loaded for notifications
                     0, // LikeCount - we don't need this for notifications
                     0, // CommentCount - we don't need this for notifications

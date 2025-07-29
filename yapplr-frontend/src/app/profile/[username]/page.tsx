@@ -238,7 +238,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     birthday: profile.birthday,
                     pronouns: profile.pronouns,
                     tagline: profile.tagline,
-                    profileImageFileName: profile.profileImageFileName,
+                    profileImageUrl: profile.profileImageUrl,
                     createdAt: profile.createdAt,
                     emailVerified: false
                   }}

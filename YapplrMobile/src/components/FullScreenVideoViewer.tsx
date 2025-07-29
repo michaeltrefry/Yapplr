@@ -162,7 +162,10 @@ function FullScreenVideoPlayer({
 
     // Add event listeners for debugging and state management
     player.addListener('statusChange', (status: any) => {
-      console.log('🎥 FullScreenVideoViewer status change:', status);
+      console.log('🎥 FullScreenVideoViewer status change:', {
+        ...status,
+        videoUrl: videoUrl
+      });
 
       // Update loading state based on video status
       if (status.status === 'readyToPlay' || status.status === 'idle') {

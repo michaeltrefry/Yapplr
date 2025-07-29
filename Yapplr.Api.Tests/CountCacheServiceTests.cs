@@ -236,6 +236,70 @@ public class CountCacheServiceTests : IDisposable
         _mockCache.Verify(x => x.RemoveByPatternAsync($"count:tag:posts:name:{tagName}"), Times.Once);
     }
 
+    [Fact]
+    public async Task GetUnreadNotificationCountAsync_ExcludesMessageNotifications()
+    {
+        // Arrange
+        var userId = 1;
+
+        // Add test user
+        _context.Users.Add(new User
+        {
+            Id = userId,
+            Username = "testuser",
+            Email = "test@example.com",
+            Status = UserStatus.Active
+        });
+
+        // Add various notification types including message notifications
+        _context.Notifications.AddRange(
+            new Notification
+            {
+                Type = NotificationType.Like,
+                Message = "Someone liked your post",
+                UserId = userId,
+                IsSeen = false
+            },
+            new Notification
+            {
+                Type = NotificationType.Message,
+                Message = "Unseen message notification",
+                UserId = userId,
+                IsSeen = false
+            },
+            new Notification
+            {
+                Type = NotificationType.Follow,
+                Message = "Someone followed you",
+                UserId = userId,
+                IsSeen = false
+            },
+            new Notification
+            {
+                Type = NotificationType.Message,
+                Message = "Another unseen message",
+                UserId = userId,
+                IsSeen = false
+            }
+        );
+        await _context.SaveChangesAsync();
+
+        var cacheKey = $"count:notifications:unseen:{userId}";
+
+        // Setup cache miss
+        _mockCache.Setup(x => x.GetAsync<ValueWrapper<int>>(cacheKey))
+            .ReturnsAsync((ValueWrapper<int>?)null);
+
+        _mockCache.Setup(x => x.SetAsync(cacheKey, It.IsAny<ValueWrapper<int>>(), It.IsAny<TimeSpan>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _service.GetUnreadNotificationCountAsync(userId);
+
+        // Assert
+        Assert.Equal(2, result); // Should only count Like and Follow notifications, not Message notifications
+    }
+
     public void Dispose()
     {
         _context.Dispose();

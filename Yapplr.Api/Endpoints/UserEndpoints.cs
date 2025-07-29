@@ -403,7 +403,7 @@ public static class UserEndpoints
             users.MapGet("/cached/{userId}", async (int userId, ICachingService cachingService, IServiceScopeFactory serviceScopeFactory) =>
             {
                 var user = await cachingService.GetUserByIdAsync(userId, serviceScopeFactory);
-                return user == null ? Results.NotFound() : Results.Ok(user.ToDto());
+                return user == null ? Results.NotFound() : Results.Ok(user.MapToUserDto());
             })
             .WithName("GetUserByIdCached")
             .WithSummary("Get user by ID using cache service")
@@ -413,7 +413,7 @@ public static class UserEndpoints
             users.MapGet("/cached/username/{username}", async (string username, ICachingService cachingService, IServiceScopeFactory serviceScopeFactory) =>
             {
                 var user = await cachingService.GetUserByUsernameAsync(username, serviceScopeFactory);
-                return user == null ? Results.NotFound() : Results.Ok(user.ToDto());
+                return user == null ? Results.NotFound() : Results.Ok(user.MapToUserDto());
             })
             .WithName("GetUserByUsernameCached")
             .WithSummary("Get user by username using cache service")

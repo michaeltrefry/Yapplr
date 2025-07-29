@@ -61,7 +61,7 @@ export interface Group {
   id: number;
   name: string;
   description: string;
-  imageFileName?: string;
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
   isOpen: boolean;
@@ -75,7 +75,7 @@ export interface GroupList {
   id: number;
   name: string;
   description: string;
-  imageFileName?: string;
+  imageUrl?: string;
   createdAt: string;
   creatorUsername: string;
   memberCount: number;
@@ -93,13 +93,13 @@ export interface GroupMember {
 export interface CreateGroup {
   name: string;
   description?: string;
-  imageFileName?: string;
+  imageUrl?: string;
 }
 
 export interface UpdateGroup {
   name: string;
   description: string;
-  imageFileName?: string;
+  imageUrl?: string;
 }
 
 export enum LinkPreviewStatus {

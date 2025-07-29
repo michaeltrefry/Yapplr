@@ -5,6 +5,7 @@ using Yapplr.Api.Models;
 using Yapplr.Api.Services.Unified;
 using Yapplr.Api.Extensions;
 using Serilog.Context;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Services;
 
@@ -395,7 +396,7 @@ public class MessageService : IMessageService
                 conversation.Id,
                 conversation.CreatedAt,
                 conversation.UpdatedAt,
-                MapToUserDto(otherParticipant),
+                otherParticipant.MapToUserDto(),
                 lastMessage != null ? await MapToMessageDto(lastMessage, userId) : null,
                 unreadCount
             ));
@@ -489,10 +490,7 @@ public class MessageService : IMessageService
 
     private async Task<MessageDto> MapToMessageDto(Message message, int currentUserId)
     {
-        var imageUrl = !string.IsNullOrEmpty(message.ImageFileName)
-            ? $"/api/images/{message.ImageFileName}"
-            : null;
-
+        
         // Get message status for current user
         var status = await _context.MessageStatuses
             .Where(ms => ms.MessageId == message.Id && ms.UserId == currentUserId)
@@ -549,26 +547,15 @@ public class MessageService : IMessageService
         }
         else
         {
-            senderDto = MapToUserDto(message.Sender);
+            senderDto = message.Sender.MapToUserDto();
         }
 
-        return new MessageDto(
-            message.Id,
-            message.Content,
-            imageUrl,
-            message.CreatedAt,
-            message.UpdatedAt,
-            message.IsEdited,
-            message.IsDeleted,
-            message.ConversationId,
-            senderDto,
-            status
-        );
+        return message.MapToMessageDto(status, senderDto);
     }
 
     private async Task<ConversationDto> MapToConversationDto(Conversation conversation, int currentUserId)
     {
-        var participants = conversation.Participants.Select(p => MapToUserDto(p.User)).ToList();
+        var participants = conversation.Participants.Select(p => p.User.MapToUserDto()).ToList();
 
         var lastMessage = conversation.Messages.FirstOrDefault();
         var lastMessageDto = lastMessage != null ? await MapToMessageDto(lastMessage, currentUserId) : null;
@@ -584,12 +571,7 @@ public class MessageService : IMessageService
             unreadCount
         );
     }
-
-    private UserDto MapToUserDto(User user)
-    {
-        return user.ToDto();
-    }
-
+    
     public async Task<int> GetTotalUnreadMessageCountAsync(int userId)
     {
         return await _countCache.GetUnreadMessageCountAsync(userId);

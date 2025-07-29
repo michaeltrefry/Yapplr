@@ -16,7 +16,7 @@ export default function EditGroupModal({ isOpen, onClose, group, onGroupUpdated 
   const [formData, setFormData] = useState<UpdateGroup>({
     name: group.name,
     description: group.description,
-    imageFileName: group.imageFileName,
+    imageUrl: group.imageUrl,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -32,7 +32,7 @@ export default function EditGroupModal({ isOpen, onClose, group, onGroupUpdated 
     setFormData({
       name: group.name,
       description: group.description,
-      imageFileName: group.imageFileName,
+      imageUrl: group.imageUrl,
     });
     setImageFile(null);
     setImagePreview(null);
@@ -66,7 +66,7 @@ export default function EditGroupModal({ isOpen, onClose, group, onGroupUpdated 
     setIsUploadingImage(true);
     try {
       const result = await groupApi.uploadGroupImage(imageFile);
-      return result.fileName;
+      return result.imageUrl;
     } catch (error) {
       console.error('Failed to upload image:', error);
       throw new Error('Failed to upload image');
@@ -81,15 +81,15 @@ export default function EditGroupModal({ isOpen, onClose, group, onGroupUpdated 
     setError(null);
 
     try {
-      let imageFileName = formData.imageFileName;
-      
+      let imageUrl = formData.imageUrl;
+
       if (imageFile) {
-        imageFileName = await uploadImage();
+        imageUrl = await uploadImage();
       }
 
       const updateData: UpdateGroup = {
         ...formData,
-        imageFileName,
+        imageUrl,
       };
 
       const updatedGroup = await groupApi.updateGroup(group.id, updateData);
@@ -124,7 +124,7 @@ export default function EditGroupModal({ isOpen, onClose, group, onGroupUpdated 
     setFormData({
       name: group.name,
       description: group.description,
-      imageFileName: group.imageFileName,
+      imageUrl: group.imageUrl,
     });
     setImageFile(null);
     setImagePreview(null);
@@ -136,19 +136,13 @@ export default function EditGroupModal({ isOpen, onClose, group, onGroupUpdated 
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
-    setFormData(prev => ({ ...prev, imageFileName: undefined }));
+    setFormData(prev => ({ ...prev, imageUrl: undefined }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const getImageUrl = (imageFileName?: string) => {
-    if (!imageFileName) return '';
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
-    return `${baseUrl}/api/images/${imageFileName}`;
-  };
-
-  const currentImageUrl = imagePreview || getImageUrl(formData.imageFileName);
+  const currentImageUrl = imagePreview || formData.imageUrl;
 
   if (!isOpen) return null;
 

@@ -1,4 +1,5 @@
 import * as signalR from '@microsoft/signalr';
+import { getApiBaseUrl } from './config';
 
 export interface SignalRNotificationPayload {
   type: 'message' | 'mention' | 'reply' | 'comment' | 'follow' | 'like' | 'repost' | 'follow_request' | 'test' | 'generic' | 'VideoProcessingCompleted' | 'systemMessage';
@@ -72,7 +73,7 @@ class SignalRMessagingService {
       }
 
       // Create SignalR connection with explicit transport configuration
-      const hubUrl = `${process.env.NEXT_PUBLIC_API_URL}/notificationHub`;
+      const hubUrl = `${getApiBaseUrl()}/notificationHub`;
       console.log('📡 Connecting to SignalR hub at:', hubUrl);
 
       this.connection = new signalR.HubConnectionBuilder()
@@ -112,7 +113,7 @@ class SignalRMessagingService {
       console.error('📡 Failed to initialize SignalR messaging:', error);
       console.error('📡 Error details:', {
         message: error instanceof Error ? error.message : 'Unknown error',
-        hubUrl: `${process.env.NEXT_PUBLIC_API_URL}/notificationHub`,
+        hubUrl: `${getApiBaseUrl()}/notificationHub`,
         hasToken: !!localStorage.getItem('token')
       });
 

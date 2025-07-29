@@ -204,7 +204,7 @@ public class MessageServiceTests : IDisposable
         // Assert
         result.Should().NotBeNull();
         result!.Content.Should().Be("");
-        result.ImageUrl.Should().Be("/api/images/test-image.jpg");
+        result.ImageUrl.Should().Be("http://test.com/api/images/test-image.jpg");
         
         // Verify message was created in database
         var messageInDb = await _context.Messages.FirstOrDefaultAsync();

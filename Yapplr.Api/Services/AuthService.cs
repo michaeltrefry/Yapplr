@@ -12,6 +12,7 @@ using Yapplr.Api.Exceptions;
 using Yapplr.Api.CQRS;
 using Yapplr.Api.CQRS.Commands;
 using Serilog.Context;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Services;
 
@@ -126,7 +127,7 @@ public class AuthService : IAuthService
         });
 
         // Return registration response without token - user must verify email first
-        var userDto = user.ToDto();
+        var userDto = user.MapToUserDto();
 
         return new RegisterResponseDto(
             "Registration successful. Please check your email to verify your account before logging in.",
@@ -169,7 +170,7 @@ public class AuthService : IAuthService
         }
 
         var token = GenerateJwtToken(user);
-        var userDto = user.ToDto();
+        var userDto = user.MapToUserDto();
 
         _logger.LogSecurityEvent("LoginSuccess",
             userId: user.Id,

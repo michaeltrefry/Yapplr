@@ -205,6 +205,7 @@ public class NotificationDigestService : INotificationDigestService
             NotificationType.Follow => $"{actorName} started following you",
             NotificationType.FollowRequest => $"{actorName} requested to follow you",
             NotificationType.Mention => $"{actorName} mentioned you",
+            NotificationType.Message => $"New message from {actorName}",
             NotificationType.SystemMessage => "System notification",
             NotificationType.UserSuspended => "Account suspended",
             NotificationType.UserBanned => "Account banned",
@@ -225,6 +226,7 @@ public class NotificationDigestService : INotificationDigestService
                 NotificationType.Follow or NotificationType.FollowRequest
                     when notification.ActorUserId.HasValue => $"https://yapplr.com/user/{notification.ActorUserId}",
                 NotificationType.Comment when notification.CommentId.HasValue => $"https://yapplr.com/post/{notification.PostId}#comment-{notification.CommentId}",
+                NotificationType.Message => "https://yapplr.com/messages",
                 _ => "https://yapplr.com/notifications"
             };
         }

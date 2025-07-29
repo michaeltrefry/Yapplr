@@ -63,6 +63,7 @@ export default function LinkPreview({ linkPreview, style }: LinkPreviewProps) {
 
     return (
       <View style={[styles.container, styles.youtubeContainer, style]}>
+        {/* NOTE: YouTube embed URL construction is acceptable for external content embedding */}
         <WebView
           source={{ uri: `https://www.youtube.com/embed/${youTubeVideoId}` }}
           style={[styles.webview, { height: videoHeight }]}

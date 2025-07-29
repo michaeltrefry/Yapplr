@@ -36,12 +36,6 @@ export default function EditProfileScreen({ navigation }: EditProfileScreenProps
   const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  // Helper function to generate image URL
-  const getImageUrl = (fileName: string) => {
-    if (!fileName) return '';
-    return `http://192.168.254.181:5161/api/images/${fileName}`;
-  };
-
   const updateMutation = useMutation({
     mutationFn: (data: { bio?: string; pronouns?: string; tagline?: string; birthday?: string }) =>
       api.users.updateProfile(data),
@@ -211,9 +205,9 @@ export default function EditProfileScreen({ navigation }: EditProfileScreenProps
               <View style={styles.avatar}>
                 {profileImageUri ? (
                   <Image source={{ uri: profileImageUri }} style={styles.profileImage} />
-                ) : user.profileImageFileName ? (
+                ) : user.profileImageUrl ? (
                   <Image
-                    source={{ uri: getImageUrl(user.profileImageFileName) }}
+                    source={{ uri: user.profileImageUrl }}
                     style={styles.profileImage}
                   />
                 ) : (

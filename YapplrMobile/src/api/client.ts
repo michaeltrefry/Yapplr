@@ -113,6 +113,38 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
     posts: {
       getTimeline: async (page: number, limit: number): Promise<TimelineItem[]> => {
         const response = await client.get(`/api/posts/timeline?page=${page}&limit=${limit}`);
+
+        // Debug logging for video URLs in timeline
+        console.log(`🎥 API Timeline: Mobile app connecting to: ${config.baseURL}`);
+        response.data.forEach((item: TimelineItem, index: number) => {
+          if (item.post.mediaItems && item.post.mediaItems.length > 0) {
+            const videoItems = item.post.mediaItems.filter(media => media.mediaType === 1); // Video type
+            if (videoItems.length > 0) {
+              console.log(`🎥 API Timeline: Post ${item.post.id} video media:`, videoItems.map(v => ({
+                id: v.id,
+                videoUrl: v.videoUrl,
+                videoThumbnailUrl: v.videoThumbnailUrl,
+                videoProcessingStatus: v.videoProcessingStatus,
+                hasVideoUrl: !!v.videoUrl,
+                videoUrlLength: v.videoUrl?.length || 0,
+                urlStartsWith: v.videoUrl?.substring(0, 30) || 'N/A'
+              })));
+            }
+          }
+
+          // Also check legacy video fields
+          if (item.post.videoUrl) {
+            console.log(`🎥 API Timeline: Post ${item.post.id} legacy video:`, {
+              videoUrl: item.post.videoUrl,
+              videoThumbnailUrl: item.post.videoThumbnailUrl,
+              videoProcessingStatus: item.post.videoProcessingStatus,
+              hasVideoUrl: !!item.post.videoUrl,
+              videoUrlLength: item.post.videoUrl?.length || 0,
+              urlStartsWith: item.post.videoUrl?.substring(0, 30) || 'N/A'
+            });
+          }
+        });
+
         return response.data;
       },
 

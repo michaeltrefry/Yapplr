@@ -6,7 +6,6 @@ import { messageApi, imageApi, videoApi, multipleUploadApi } from '@/lib/api';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { Send, Image as ImageIcon, X } from 'lucide-react';
 import { signalRMessagingService } from '@/lib/signalRMessaging';
-import Image from 'next/image';
 
 interface MessageComposerProps {
   conversationId: number;
@@ -262,12 +261,10 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
         <div className="mb-3 relative inline-block">
           <div className="relative rounded-lg overflow-hidden border border-gray-200">
             {imagePreview && (
-              <Image
+              <img
                 src={imagePreview}
                 alt="Image preview"
-                width={200}
-                height={150}
-                className="object-cover"
+                className="w-[200px] h-[150px] object-cover"
               />
             )}
             {videoPreview && (

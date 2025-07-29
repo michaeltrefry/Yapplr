@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Yapplr.Api.Common;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
@@ -315,7 +316,7 @@ public class UserReportService : IUserReportService
                 post.Group.CreatedAt,
                 post.Group.UpdatedAt,
                 post.Group.IsOpen,
-                post.Group.User.ToDto(),
+                post.Group.User.MapToUserDto(),
                 post.Group.Members?.Count ?? 0,
                 post.Group.Posts?.Count ?? 0,
                 false // IsCurrentUserMember - we don't have this info in admin context
@@ -334,7 +335,7 @@ public class UserReportService : IUserReportService
             HiddenByUsername = post.HiddenByUser?.Username,
             CreatedAt = post.CreatedAt,
             UpdatedAt = post.UpdatedAt,
-            User = post.User.ToDto(),
+            User = post.User.MapToUserDto(),
             Group = groupDto,
             LikeCount = post.Likes?.Count ?? 0,
             CommentCount = post.Children?.Count(c => c.PostType == PostType.Comment) ?? 0,
@@ -359,7 +360,7 @@ public class UserReportService : IUserReportService
                 comment.Group.CreatedAt,
                 comment.Group.UpdatedAt,
                 comment.Group.IsOpen,
-                comment.Group.User.ToDto(),
+                comment.Group.User.MapToUserDto(),
                 comment.Group.Members?.Count ?? 0,
                 comment.Group.Posts?.Count ?? 0,
                 false // IsCurrentUserMember - we don't have this info in admin context
@@ -376,7 +377,7 @@ public class UserReportService : IUserReportService
             HiddenByUsername = comment.HiddenByUser?.Username,
             CreatedAt = comment.CreatedAt,
             UpdatedAt = comment.UpdatedAt,
-            User = comment.User.ToDto(),
+            User = comment.User.MapToUserDto(),
             Group = groupDto,
             PostId = comment.ParentId ?? 0 // Comments now use ParentId instead of PostId
         };

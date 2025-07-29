@@ -8,6 +8,7 @@ public enum NotificationType
     Follow = 4,
     Comment = 5,
     FollowRequest = 6,
+    Message = 7, // Private message notifications (excluded from main notifications list)
 
     // Moderation notifications
     UserSuspended = 100,

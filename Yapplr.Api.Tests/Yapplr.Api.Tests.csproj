@@ -7,7 +7,9 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
-
+  <PropertyGroup>
+    <RunSettingsFilePath>$(MSBuildProjectDirectory)\environment.runsettings</RunSettingsFilePath>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
@@ -31,6 +33,12 @@
   <ItemGroup>
     <ProjectReference Include="..\Yapplr.Api\Yapplr.Api.csproj" />
     <ProjectReference Include="..\Yapplr.VideoProcessor\Yapplr.VideoProcessor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="environment.runsettings">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

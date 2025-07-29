@@ -58,6 +58,7 @@ class SignalRService {
       }
 
       // Create SignalR connection with React Native specific configuration
+      // NOTE: SignalR requires URL construction for hub endpoints - this is a framework requirement
       this.connection = new signalR.HubConnectionBuilder()
         .withUrl(`${this.baseURL}/notificationHub`, {
           accessTokenFactory: () => token,

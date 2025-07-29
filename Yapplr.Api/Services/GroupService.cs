@@ -366,7 +366,7 @@ public class GroupService : BaseService, IGroupService
             group.CreatedAt,
             group.UpdatedAt,
             group.IsOpen,
-            group.User.ToDto(),
+            group.User.MapToUserDto(),
             group.Members.Count,
             visiblePostCount,
             isCurrentUserMember
@@ -396,7 +396,7 @@ public class GroupService : BaseService, IGroupService
             m.Id,
             m.JoinedAt,
             m.Role,
-            m.User.ToDto()
+            m.User.MapToUserDto()
         )).ToList();
 
         return PaginatedResult<GroupMemberDto>.Create(memberDtos, page, pageSize, totalCount);
@@ -438,7 +438,7 @@ public class GroupService : BaseService, IGroupService
 
         if (post == null) return null;
 
-        return post.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext);
+        return post.MapToPostDto(currentUserId);
     }
 
     public async Task<PaginatedResult<PostDto>> GetGroupPostsAsync(int groupId, int? currentUserId = null, int page = 1, int pageSize = 20)
@@ -464,7 +464,7 @@ public class GroupService : BaseService, IGroupService
             .Take(pageSize)
             .ToListAsync();
 
-        var postDtos = posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext)).ToList();
+        var postDtos = posts.Select(p => p.MapToPostDto(currentUserId)).ToList();
 
         return PaginatedResult<PostDto>.Create(postDtos, page, pageSize, totalCount);
     }

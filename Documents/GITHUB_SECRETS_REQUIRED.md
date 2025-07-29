@@ -20,11 +20,13 @@ This document lists all the GitHub secrets that need to be configured in your re
 - `STAGE_POSTGRES_PASSWORD` - PostgreSQL database password
 - `STAGE_JWT_SECRET_KEY` - JWT signing key (minimum 32 characters)
 - `STAGE_API_DOMAIN_NAME` - API domain (e.g., stg-api.yapplr.com)
+- `STAGE_API_BASE_URL` - Full API base URL for media URLs (e.g., https://stg-api.yapplr.com)
 
 ### Production Environment
 - `PROD_DATABASE_CONNECTION_STRING` - Full PostgreSQL connection string
 - `PROD_JWT_SECRET_KEY` - JWT signing key (minimum 32 characters)
 - `PROD_API_DOMAIN_NAME` - API domain (e.g., api.yapplr.com)
+- `PROD_API_BASE_URL` - Full API base URL for media URLs (e.g., https://api.yapplr.com)
 
 ## Email Service Secrets
 

@@ -12,56 +12,27 @@ export const FALLBACK_URLS = [
 ];
 
 /**
- * Generate image URL from filename
+ * DEPRECATED: URL construction functions removed
+ * The API now returns complete URLs for all media.
+ * Use the imageUrl, videoUrl, videoThumbnailUrl, profileImageUrl properties directly from API responses.
  */
-export function getImageUrl(fileName: string): string {
-  if (!fileName) return '';
-  return `${API_BASE_URL}/api/images/${fileName}`;
-}
-
-/**
- * Generate video URL from filename
- */
-export function getVideoUrl(fileName: string): string {
-  if (!fileName) return '';
-  return `${API_BASE_URL}/api/videos/processed/${fileName}`;
-}
-
-/**
- * Generate video thumbnail URL from filename
- */
-export function getVideoThumbnailUrl(fileName: string): string {
-  if (!fileName) return '';
-  return `${API_BASE_URL}/api/videos/thumbnails/${fileName}`;
-}
-
-/**
- * Generate profile image URL from filename
- */
-export function getProfileImageUrl(fileName: string): string {
-  if (!fileName) return '';
-  return `${API_BASE_URL}/api/images/${fileName}`;
-}
 
 /**
  * Validate if a URL is properly formatted for video playback
+ * Updated to be more flexible and not assume specific ports or endpoints
  */
 export function validateVideoUrl(url: string): boolean {
   if (!url) return false;
-  
+
   const isValidUrl = url.startsWith('http');
-  const hasCorrectPort = url.includes(':8080');
-  const isVideoEndpoint = url.includes('/api/videos/');
-  
+
   console.log('🎥 Video URL validation:', {
     url,
     isValidUrl,
-    hasCorrectPort,
-    isVideoEndpoint,
     urlLength: url.length
   });
-  
-  return isValidUrl && hasCorrectPort && isVideoEndpoint;
+
+  return isValidUrl;
 }
 
 /**

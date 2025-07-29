@@ -84,7 +84,9 @@ import type {
   AssignSubscriptionTierDto,
 } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5161';
+import { getApiBaseUrl } from './config';
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,
@@ -726,7 +728,7 @@ export const groupApi = {
   },
 
   // Upload group image
-  uploadGroupImage: async (file: File): Promise<{ fileName: string }> => {
+  uploadGroupImage: async (file: File): Promise<{ fileName: string; imageUrl: string }> => {
     const formData = new FormData();
     formData.append('file', file);
     const response = await api.post('/images/upload', formData, {

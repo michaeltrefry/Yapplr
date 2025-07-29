@@ -32,7 +32,7 @@ public class UserService : BaseService, IUserService
         if (user == null)
             return null;
 
-        return user.ToDto();
+        return user.MapToUserDto();
     }
 
     public async Task<UserProfileDto?> GetUserProfileAsync(string username, int? currentUserId = null)
@@ -99,7 +99,7 @@ public class UserService : BaseService, IUserService
 
         await _context.SaveChangesAsync();
 
-        return user.ToDto();
+        return user.MapToUserDto();
     }
 
     public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query)
@@ -110,7 +110,7 @@ public class UserService : BaseService, IUserService
             .Take(20) // Limit results
             .ToListAsync();
 
-        return users.Select(u => u.ToDto());
+        return users.Select(u => u.MapToUserDto());
     }
 
     public async Task<IEnumerable<UserDto>> SearchUsersAsync(string query, int? currentUserId)
@@ -129,7 +129,7 @@ public class UserService : BaseService, IUserService
             users = users.Where(u => !blockedUserIds.Contains(u.Id)).ToList();
         }
 
-        return users.Select(u => u.ToDto());
+        return users.Select(u => u.MapToUserDto());
     }
 
     private new async Task<List<int>> GetBlockedUserIdsAsync(int userId)
@@ -168,7 +168,7 @@ public class UserService : BaseService, IUserService
 
         await _context.SaveChangesAsync();
 
-        return user.ToDto();
+        return user.MapToUserDto();
     }
 
     public async Task<UserDto?> RemoveProfileImageAsync(int userId, IImageService imageService)
@@ -188,7 +188,7 @@ public class UserService : BaseService, IUserService
 
         await _context.SaveChangesAsync();
 
-        return user.ToDto();
+        return user.MapToUserDto();
     }
 
     public async Task<FollowResponseDto> FollowUserAsync(int followerId, int followingId)
@@ -299,7 +299,7 @@ public class UserService : BaseService, IUserService
             .Include(f => f.Following)
             .Where(f => f.FollowerId == userId)
             .OrderBy(f => f.Following.Username)
-            .Select(f => f.Following.ToDto())
+            .Select(f => f.Following.MapToUserDto())
             .ToListAsync();
 
         return following;
@@ -311,7 +311,7 @@ public class UserService : BaseService, IUserService
             .Include(f => f.Follower)
             .Where(f => f.FollowingId == userId)
             .OrderBy(f => f.Follower.Username)
-            .Select(f => f.Follower.ToDto())
+            .Select(f => f.Follower.MapToUserDto())
             .ToListAsync();
 
         return followers;
@@ -333,7 +333,7 @@ public class UserService : BaseService, IUserService
                 f.Following.Birthday,
                 f.Following.Pronouns,
                 f.Following.Tagline,
-                f.Following.ProfileImageFileName,
+                MappingUtilities.GenerateImageUrl(f.Following.ProfileImageFileName),
                 f.Following.CreatedAt,
                 f.Following.LastSeenAt > onlineThreshold
             ))
@@ -376,7 +376,7 @@ public class UserService : BaseService, IUserService
                 f.User.Birthday,
                 f.User.Pronouns,
                 f.User.Tagline,
-                f.User.ProfileImageFileName,
+                MappingUtilities.GenerateImageUrl(f.User.ProfileImageFileName),
                 f.User.CreatedAt,
                 f.User.LastSeenAt > onlineThreshold
             ))
@@ -510,8 +510,8 @@ public class UserService : BaseService, IUserService
             {
                 Id = fr.Id,
                 CreatedAt = fr.CreatedAt,
-                Requester = fr.Requester.ToDto(),
-                Requested = fr.Requested.ToDto()
+                Requester = fr.Requester.MapToUserDto(),
+                Requested = fr.Requested.MapToUserDto()
             })
             .ToListAsync();
 

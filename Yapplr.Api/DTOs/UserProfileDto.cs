@@ -7,7 +7,7 @@ public record UserProfileDto(
     DateTime? Birthday,
     string Pronouns,
     string Tagline,
-    string ProfileImageFileName,
+    string? ProfileImageUrl,
     DateTime CreatedAt,
     int PostCount,
     int FollowerCount,

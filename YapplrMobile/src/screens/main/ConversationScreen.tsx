@@ -45,12 +45,6 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
 
   const styles = createStyles(colors);
 
-  // Helper function to generate image URL
-  const getImageUrl = (fileName: string) => {
-    if (!fileName) return '';
-    return `http://192.168.254.181:5161/api/images/${fileName}`;
-  };
-
   // Fetch conversation messages
   const { data: messages, isLoading, error, refetch } = useQuery({
     queryKey: ['conversationMessages', conversationId],

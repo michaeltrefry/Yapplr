@@ -4,6 +4,7 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
 using Serilog.Context;
+using Yapplr.Api.Common;
 
 namespace Yapplr.Api.Services;
 
@@ -1231,7 +1232,7 @@ public class AdminService : IAdminService
                 post.Group.CreatedAt,
                 post.Group.UpdatedAt,
                 post.Group.IsOpen,
-                post.Group.User.ToDto(),
+                post.Group.User.MapToUserDto(),
                 post.Group.Members?.Count ?? 0,
                 post.Group.Posts?.Count ?? 0,
                 false // IsCurrentUserMember - we don't have this info in admin context
@@ -1250,7 +1251,7 @@ public class AdminService : IAdminService
             HiddenByUsername = post.HiddenByUser?.Username,
             CreatedAt = post.CreatedAt,
             UpdatedAt = post.UpdatedAt,
-            User = post.User.ToDto(),
+            User = post.User.MapToUserDto(),
             Group = groupDto,
             LikeCount = post.Likes?.Count ?? 0,
             CommentCount = post.Children?.Count(c => c.PostType == PostType.Comment) ?? 0,
@@ -1307,7 +1308,7 @@ public class AdminService : IAdminService
                 post.Group.CreatedAt,
                 post.Group.UpdatedAt,
                 post.Group.IsOpen,
-                post.Group.User.ToDto(),
+                post.Group.User.MapToUserDto(),
                 post.Group.Members?.Count ?? 0,
                 post.Group.Posts?.Count ?? 0,
                 false // IsCurrentUserMember - we don't have this info in admin context
@@ -1324,7 +1325,7 @@ public class AdminService : IAdminService
             HiddenByUsername = post.HiddenByUser?.Username,
             CreatedAt = post.CreatedAt,
             UpdatedAt = post.UpdatedAt,
-            User = post.User.ToDto(),
+            User = post.User.MapToUserDto(),
             Group = groupDto,
             PostId = post.ParentId ?? 0, // ParentId is the original PostId for comments
             SystemTags = post.PostSystemTags?.Select(pst => MapToSystemTagDto(pst.SystemTag)).ToList() ?? new List<SystemTagDto>()
@@ -1750,57 +1751,15 @@ public class AdminService : IAdminService
                      al.Action == AuditAction.CommentHidden ||
                      al.Action == AuditAction.UserSuspended ||
                      al.Action == AuditAction.UserBanned));
-
-            return new AdminUserDetailsDto
-            {
-                // Basic Profile Information
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                Bio = user.Bio,
-                Birthday = user.Birthday,
-                Pronouns = user.Pronouns,
-                Tagline = user.Tagline,
-                ProfileImageFileName = user.ProfileImageFileName,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt,
-                LastSeenAt = user.LastSeenAt,
-                EmailVerified = user.EmailVerified,
-                TermsAcceptedAt = user.TermsAcceptedAt,
-
-                // Admin/Moderation Information
-                Role = user.Role,
-                Status = user.Status,
-                SuspendedUntil = user.SuspendedUntil,
-                SuspensionReason = user.SuspensionReason,
-                SuspendedByUsername = user.SuspendedByUser?.Username,
-                LastLoginAt = user.LastLoginAt,
-                LastLoginIp = user.LastLoginIp,
-
-                // Trust Score Information
-                TrustScore = user.TrustScore ?? 1.0f,
-                TrustScoreFactors = trustScoreFactors,
-                RecentTrustScoreHistory = trustScoreHistory.ToList(),
-
-                // Rate Limiting Settings
-                RateLimitingEnabled = user.RateLimitingEnabled,
-                TrustBasedRateLimitingEnabled = user.TrustBasedRateLimitingEnabled,
-                IsCurrentlyRateLimited = isCurrentlyRateLimited,
-                RateLimitedUntil = null, // Will be set below if blocked
-                RecentRateLimitViolations = recentViolations.Count,
-
-                // Activity Statistics
-                PostCount = user.Posts.Count,
-                CommentCount = user.Posts.Count(p => p.PostType == PostType.Comment),
-                LikeCount = user.Likes.Count,
-                FollowerCount = user.Followers.Count,
-                FollowingCount = user.Following.Count,
-                ReportCount = reportCount,
-                ModerationActionCount = moderationActionCount,
-
-                // Recent Moderation Actions
-                RecentModerationActions = recentModerationActions
-            };
+            var dto = user.MapToAdminUserDetailsDto();
+            dto.TrustScoreFactors = trustScoreFactors;
+            dto.RecentTrustScoreHistory = trustScoreHistory.ToList();
+            dto.IsCurrentlyRateLimited = isCurrentlyRateLimited;
+            dto.RecentRateLimitViolations = recentViolations.Count;
+            dto.ReportCount = reportCount;
+            dto.ModerationActionCount = moderationActionCount;
+            dto.RecentModerationActions = recentModerationActions;
+            return dto;
         }
         catch (Exception ex)
         {

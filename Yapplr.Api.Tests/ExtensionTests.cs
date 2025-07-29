@@ -1,5 +1,6 @@
 using Xunit;
 using FluentAssertions;
+using Yapplr.Api.Common;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Models;
 
@@ -7,6 +8,7 @@ namespace Yapplr.Api.Tests;
 
 public class ExtensionTests
 {
+    
     [Fact]
     public void UserToDto_WithCompleteUser_MapsAllProperties()
     {
@@ -33,7 +35,7 @@ public class ExtensionTests
         };
 
         // Act
-        var dto = user.ToDto();
+        var dto = user.MapToUserDto();
 
         // Assert
         dto.Id.Should().Be(1);
@@ -43,7 +45,7 @@ public class ExtensionTests
         dto.Birthday.Should().Be(new DateTime(1990, 1, 1));
         dto.Pronouns.Should().Be("they/them");
         dto.Tagline.Should().Be("Test tagline");
-        dto.ProfileImageFileName.Should().Be("profile.jpg");
+        dto.ProfileImageUrl.Should().Be("http://test.com/api/images/profile.jpg");
         dto.CreatedAt.Should().Be(new DateTime(2023, 1, 1));
         dto.EmailVerified.Should().BeTrue();
         dto.Role.Should().Be(UserRole.User);
@@ -77,7 +79,7 @@ public class ExtensionTests
         };
 
         // Act
-        var dto = user.ToDto();
+        var dto = user.MapToUserDto();
 
         // Assert
         dto.Id.Should().Be(2);
@@ -87,7 +89,7 @@ public class ExtensionTests
         dto.Birthday.Should().BeNull();
         dto.Pronouns.Should().Be("");
         dto.Tagline.Should().Be("");
-        dto.ProfileImageFileName.Should().Be("");
+        dto.ProfileImageUrl.Should().BeNull();
         dto.EmailVerified.Should().BeFalse();
 
         dto.Role.Should().Be(UserRole.User);
@@ -118,8 +120,8 @@ public class ExtensionTests
         };
 
         // Act
-        var adminDto = adminUser.ToDto();
-        var modDto = moderatorUser.ToDto();
+        var adminDto = adminUser.MapToUserDto();
+        var modDto = moderatorUser.MapToUserDto();
 
         // Assert
         adminDto.Role.Should().Be(UserRole.Admin);
@@ -163,10 +165,10 @@ public class ExtensionTests
         };
 
         // Act
-        var activeDto = activeUser.ToDto();
-        var bannedDto = bannedUser.ToDto();
-        var suspendedDto = suspendedUser.ToDto();
-        var shadowDto = shadowBannedUser.ToDto();
+        var activeDto = activeUser.MapToUserDto();
+        var bannedDto = bannedUser.MapToUserDto();
+        var suspendedDto = suspendedUser.MapToUserDto();
+        var shadowDto = shadowBannedUser.MapToUserDto();
 
         // Assert
         activeDto.Status.Should().Be(UserStatus.Active);
@@ -191,7 +193,7 @@ public class ExtensionTests
         };
 
         // Act
-        var dto = suspendedUser.ToDto();
+        var dto = suspendedUser.MapToUserDto();
 
         // Assert
         dto.Status.Should().Be(UserStatus.Suspended);
@@ -301,7 +303,7 @@ public class ExtensionTests
         };
 
         // Act
-        var dto = user.ToDto();
+        var dto = user.MapToUserDto();
 
         // Assert
         dto.CreatedAt.Should().Be(specificDateTime);
@@ -323,7 +325,7 @@ public class ExtensionTests
         };
 
         // Act
-        var dto = user.ToDto();
+        var dto = user.MapToUserDto();
 
         // Assert
         dto.Email.Should().Be("special+chars@example.com");

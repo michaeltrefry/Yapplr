@@ -101,7 +101,7 @@ public class TagService : ITagService
             .Take(pageSize)
             .ToListAsync();
 
-        return posts.Select(p => p.MapToPostDto(currentUserId, _httpContextAccessor.HttpContext));
+        return posts.Select(p => p.MapToPostDto(currentUserId));
     }
 
     public async Task<TagDto?> GetTagByNameAsync(string tagName, int? currentUserId = null)

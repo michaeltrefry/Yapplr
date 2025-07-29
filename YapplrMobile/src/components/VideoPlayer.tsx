@@ -105,7 +105,10 @@ const VideoPlayer = React.forwardRef<VideoPlayerRef, VideoPlayerProps>(({
 
     // Add event listeners for debugging and state management
     player.addListener('statusChange', (status: any) => {
-      console.log('🎥 VideoPlayer status change:', status);
+      console.log('🎥 VideoPlayer status change:', {
+        ...status,
+        videoUrl: videoUrl
+      });
 
       // Update loading state based on video status
       if (status.status === 'readyToPlay' || status.status === 'idle') {

@@ -233,7 +233,7 @@ export default function EditProfilePage() {
                       {uploadImageMutation.isPending ? 'Uploading...' : 'Change photo'}
                     </button>
 
-                    {(user.profileImageFileName || profileImagePreview) && (
+                    {(user.profileImageUrl || profileImagePreview) && (
                       <button
                         type="button"
                         onClick={handleRemoveImage}
