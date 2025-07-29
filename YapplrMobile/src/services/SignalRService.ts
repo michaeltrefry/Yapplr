@@ -29,6 +29,7 @@ class SignalRService {
   private isConnected = false;
   private messageListeners: ((payload: SignalRNotificationPayload) => void)[] = [];
   private connectionListeners: ((status: SignalRConnectionStatus) => void)[] = [];
+  private typingListeners: ((action: 'started' | 'stopped', data: any) => void)[] = [];
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private baseURL: string;
@@ -132,6 +133,17 @@ class SignalRService {
       console.log('📱📡 Left conversation:', conversationId);
     });
 
+    // Handle typing indicator events
+    this.connection.on('UserStartedTyping', (data: any) => {
+      console.log('📱📡 User started typing:', data);
+      this.notifyTypingListeners('started', data);
+    });
+
+    this.connection.on('UserStoppedTyping', (data: any) => {
+      console.log('📱📡 User stopped typing:', data);
+      this.notifyTypingListeners('stopped', data);
+    });
+
     this.connection.on('NewMessage', (messageData: any) => {
       console.log('📱📡 New message in conversation:', messageData);
       // This could trigger a refresh of the conversation
@@ -211,7 +223,11 @@ class SignalRService {
         console.log('📱📡 Joined conversation:', conversationId);
       } catch (error) {
         console.error('📱📡 Error joining conversation:', error);
+        throw error; // Re-throw so caller can handle
       }
+    } else {
+      console.warn('📱📡 Cannot join conversation - SignalR not connected');
+      throw new Error('SignalR not connected');
     }
   }
 
@@ -221,8 +237,37 @@ class SignalRService {
         await this.connection.invoke('LeaveConversation', conversationId);
         console.log('📱📡 Left conversation:', conversationId);
       } catch (error) {
-        console.error('📱📡 Error leaving conversation:', error);
+        // Don't throw error for leave conversation - connection might be closing
+        console.warn('📱📡 Error leaving conversation (connection may be closing):', error);
       }
+    } else {
+      console.warn('📱📡 Cannot leave conversation - SignalR not connected');
+    }
+  }
+
+  async startTyping(conversationId: number): Promise<void> {
+    if (this.connection && this.isConnected) {
+      try {
+        await this.connection.invoke('StartTyping', conversationId);
+        console.log('📱📡 Started typing in conversation:', conversationId);
+      } catch (error) {
+        console.warn('📱📡 Error starting typing indicator (connection may be closed):', error);
+      }
+    } else {
+      console.warn('📱📡 Cannot start typing - SignalR not connected');
+    }
+  }
+
+  async stopTyping(conversationId: number): Promise<void> {
+    if (this.connection && this.isConnected) {
+      try {
+        await this.connection.invoke('StopTyping', conversationId);
+        console.log('📱📡 Stopped typing in conversation:', conversationId);
+      } catch (error) {
+        console.warn('📱📡 Error stopping typing indicator (connection may be closed):', error);
+      }
+    } else {
+      console.warn('📱📡 Cannot stop typing - SignalR not connected');
     }
   }
 
@@ -253,6 +298,19 @@ class SignalRService {
     }
   }
 
+  addTypingListener(callback: (action: 'started' | 'stopped', data: any) => void): void {
+    this.typingListeners.push(callback);
+    console.log('📱📡 Added mobile SignalR typing listener, total:', this.typingListeners.length);
+  }
+
+  removeTypingListener(callback: (action: 'started' | 'stopped', data: any) => void): void {
+    const index = this.typingListeners.indexOf(callback);
+    if (index > -1) {
+      this.typingListeners.splice(index, 1);
+      console.log('📱📡 Removed mobile SignalR typing listener, total:', this.typingListeners.length);
+    }
+  }
+
   private notifyMessageListeners(payload: SignalRNotificationPayload): void {
     this.messageListeners.forEach(listener => {
       try {
@@ -269,6 +327,16 @@ class SignalRService {
         listener(status);
       } catch (error) {
         console.error('📱📡 Error in mobile SignalR connection listener:', error);
+      }
+    });
+  }
+
+  private notifyTypingListeners(action: 'started' | 'stopped', data: any): void {
+    this.typingListeners.forEach(listener => {
+      try {
+        listener(action, data);
+      } catch (error) {
+        console.error('📱📡 Error in mobile SignalR typing listener:', error);
       }
     });
   }

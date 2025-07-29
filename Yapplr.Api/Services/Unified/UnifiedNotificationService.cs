@@ -18,6 +18,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
     private readonly INotificationPreferencesService _preferencesService;
     private readonly ISignalRConnectionPool _connectionPool;
     private readonly ICountCacheService _countCache;
+    private readonly IActiveConversationTracker _conversationTracker;
     private readonly ILogger<UnifiedNotificationService> _logger;
     
     // Optional services for enhanced functionality
@@ -39,6 +40,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         INotificationPreferencesService preferencesService,
         ISignalRConnectionPool connectionPool,
         ICountCacheService countCache,
+        IActiveConversationTracker conversationTracker,
         ILogger<UnifiedNotificationService> logger,
         INotificationProviderManager? providerManager = null,
         INotificationQueue? notificationQueue = null,
@@ -49,6 +51,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         _preferencesService = preferencesService;
         _connectionPool = connectionPool;
         _countCache = countCache;
+        _conversationTracker = conversationTracker;
         _logger = logger;
         _providerManager = providerManager;
         _notificationQueue = notificationQueue;
@@ -91,15 +94,23 @@ public class UnifiedNotificationService : IUnifiedNotificationService
                 }
             }
 
-            // Create database notification
-            _logger.LogDebug("Creating database notification for user {UserId}, type {NotificationType}", request.UserId, request.NotificationType);
-            var notification = await CreateDatabaseNotificationAsync(request);
-            if (notification == null)
+            // Create database notification (unless suppressed)
+            Notification? notification = null;
+            if (!request.SuppressDatabaseNotification)
             {
-                _logger.LogError("Failed to create database notification for user {UserId}", request.UserId);
-                return false;
+                _logger.LogDebug("Creating database notification for user {UserId}, type {NotificationType}", request.UserId, request.NotificationType);
+                notification = await CreateDatabaseNotificationAsync(request);
+                if (notification == null)
+                {
+                    _logger.LogError("Failed to create database notification for user {UserId}", request.UserId);
+                    return false;
+                }
+                _logger.LogDebug("Database notification created successfully with ID {NotificationId} for user {UserId}", notification.Id, request.UserId);
             }
-            _logger.LogDebug("Database notification created successfully with ID {NotificationId} for user {UserId}", notification.Id, request.UserId);
+            else
+            {
+                _logger.LogDebug("Database notification suppressed for user {UserId}, type {NotificationType} (user active in conversation)", request.UserId, request.NotificationType);
+            }
 
             // Increment sent counter for all successfully processed notifications
             Interlocked.Increment(ref _totalNotificationsSent);
@@ -174,15 +185,15 @@ public class UnifiedNotificationService : IUnifiedNotificationService
                 }
             }
 
-            // Queue for later delivery if both real-time and email failed
-            if (_notificationQueue != null)
+            // Queue for later delivery if both real-time and email failed (only if we have a database notification)
+            if (_notificationQueue != null && notification != null)
             {
                 var queuedNotification = CreateQueuedNotification(request, notification.Id);
                 await _notificationQueue.QueueNotificationAsync(queuedNotification);
-                
+
                 Interlocked.Increment(ref _totalNotificationsQueued);
                 _logger.LogDebug("Notification queued for user {UserId}", request.UserId);
-                
+
                 // Record metrics
                 await RecordNotificationEventAsync("queued", request, true);
                 return true;
@@ -862,8 +873,14 @@ public class UnifiedNotificationService : IUnifiedNotificationService
 
     #region Specific Notification Types
 
-    public async Task SendMessageNotificationAsync(int userId, string senderUsername, string messageContent, int conversationId)
+    public async Task SendMessageNotificationAsync(int userId, string senderUsername, string messageContent, int conversationId, bool suppressDatabaseNotification = false)
     {
+        // Check if user is actively viewing this conversation (if not already suppressed)
+        if (!suppressDatabaseNotification)
+        {
+            suppressDatabaseNotification = await _conversationTracker.IsUserActiveInConversationAsync(userId, conversationId);
+        }
+
         var request = new NotificationRequest
         {
             UserId = userId,
@@ -874,8 +891,10 @@ public class UnifiedNotificationService : IUnifiedNotificationService
             {
                 ["type"] = "message",
                 ["conversationId"] = conversationId.ToString(),
-                ["senderUsername"] = senderUsername
-            }
+                ["senderUsername"] = senderUsername,
+                ["suppressNotification"] = suppressDatabaseNotification.ToString().ToLower()
+            },
+            SuppressDatabaseNotification = suppressDatabaseNotification
         };
 
         await SendNotificationAsync(request);

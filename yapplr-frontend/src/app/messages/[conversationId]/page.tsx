@@ -35,8 +35,29 @@ export default function ConversationPage({ params }: ConversationPageProps) {
   useEffect(() => {
     if (user && conversationId) {
       const convId = parseInt(conversationId);
-      console.log('🌐💬 Joining SignalR conversation:', convId);
-      signalRMessagingService.joinConversation(convId);
+      console.log('🌐💬 Attempting to join SignalR conversation:', convId);
+
+      const joinWhenReady = async () => {
+        // Wait for SignalR to be initialized and connected
+        let attempts = 0;
+        const maxAttempts = 30; // 15 seconds max wait
+
+        while (attempts < maxAttempts) {
+          if (signalRMessagingService.isReady()) {
+            console.log('🌐💬 SignalR ready, joining conversation:', convId);
+            await signalRMessagingService.joinConversation(convId);
+            return;
+          }
+
+          console.log('🌐💬 SignalR not ready, waiting... attempt', attempts + 1, 'State:', signalRMessagingService.connectionState);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          attempts++;
+        }
+
+        console.warn('🌐💬 Failed to join conversation - SignalR not ready after', maxAttempts, 'attempts');
+      };
+
+      joinWhenReady();
 
       return () => {
         console.log('🌐💬 Leaving SignalR conversation:', convId);

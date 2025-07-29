@@ -14,4 +14,5 @@ public class NotificationRequest
     public DateTime? ScheduledFor { get; set; }
     public bool RequireDeliveryConfirmation { get; set; } = false;
     public TimeSpan? ExpiresAfter { get; set; }
+    public bool SuppressDatabaseNotification { get; set; } = false;
 }

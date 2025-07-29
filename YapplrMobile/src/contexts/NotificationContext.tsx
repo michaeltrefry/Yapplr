@@ -28,6 +28,7 @@ interface NotificationContextType {
   isSignalRReady: boolean;
   isExpoNotificationReady: boolean;
   expoPushToken: string | null;
+  signalRService: any; // SignalR service instance for typing indicators
   sendTestNotification: () => Promise<void>;
   sendTestExpoNotification: () => Promise<void>;
   refreshSignalRConnection: () => Promise<void>;
@@ -84,6 +85,15 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
   // Smart notification banner display
   const showNotificationBanner = (payload: SignalRNotificationPayload) => {
     console.log('📱🔔 Showing notification banner:', payload);
+
+    // Check if notification should be suppressed (user is actively viewing the conversation)
+    const shouldSuppressNotification = payload?.data?.suppressNotification === 'true';
+
+    if (shouldSuppressNotification) {
+      console.log('📱🔔 Notification banner suppressed (user active in conversation)');
+      return;
+    }
+
     console.log('📱🔔 Global banner function available:', typeof (global as any).showNotificationBanner);
 
     // Use the global banner manager function if available
@@ -467,14 +477,26 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
 
   // SignalR conversation methods
   const joinConversation = async (conversationId: number): Promise<void> => {
-    if (isSignalRReady) {
-      await signalRService.joinConversation(conversationId);
+    if (isSignalRReady && signalRService) {
+      try {
+        await signalRService.joinConversation(conversationId);
+      } catch (error) {
+        console.warn('📱🔔 Error joining SignalR conversation:', error);
+      }
+    } else {
+      console.warn('📱🔔 SignalR not ready, cannot join conversation:', conversationId);
     }
   };
 
   const leaveConversation = async (conversationId: number): Promise<void> => {
-    if (isSignalRReady) {
-      await signalRService.leaveConversation(conversationId);
+    if (isSignalRReady && signalRService) {
+      try {
+        await signalRService.leaveConversation(conversationId);
+      } catch (error) {
+        console.warn('📱🔔 Error leaving SignalR conversation (connection may be closed):', error);
+      }
+    } else {
+      console.warn('📱🔔 SignalR not ready, cannot leave conversation:', conversationId);
     }
   };
 
@@ -483,6 +505,7 @@ export function NotificationProvider({ children, baseURL, apiClient }: Notificat
     isSignalRReady,
     isExpoNotificationReady,
     expoPushToken,
+    signalRService,
     sendTestNotification,
     sendTestExpoNotification,
     refreshSignalRConnection,

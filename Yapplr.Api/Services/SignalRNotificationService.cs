@@ -13,6 +13,7 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
 {
     private readonly IHubContext<NotificationHub> _hubContext;
     private readonly YapplrDbContext _context;
+    private readonly IActiveConversationTracker _conversationTracker;
     private readonly ILogger<SignalRNotificationService> _logger;
 
     private readonly bool _isEnabled;
@@ -20,12 +21,13 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
     public SignalRNotificationService(
         IHubContext<NotificationHub> hubContext,
         YapplrDbContext context,
+        IActiveConversationTracker conversationTracker,
         ILogger<SignalRNotificationService> logger,
-
         IOptions<NotificationProvidersConfiguration> notificationOptions)
     {
         _hubContext = hubContext;
         _context = context;
+        _conversationTracker = conversationTracker;
         _logger = logger;
 
         _isEnabled = notificationOptions.Value.SignalR.Enabled;
@@ -104,13 +106,17 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
     {
         try
         {
+            // Check if user is actively viewing this conversation
+            var isUserActiveInConversation = await _conversationTracker.IsUserActiveInConversationAsync(userId, conversationId);
+
             var title = "New Message";
             var body = $"@{senderUsername}: {TruncateMessage(messageContent)}";
             var data = new Dictionary<string, string>
             {
                 ["type"] = "message",
                 ["conversationId"] = conversationId.ToString(),
-                ["senderUsername"] = senderUsername
+                ["senderUsername"] = senderUsername,
+                ["suppressNotification"] = isUserActiveInConversation.ToString().ToLower()
             };
 
             await _hubContext.SendNotificationToUserAsync(
@@ -121,7 +127,15 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
                 data
             );
 
-            _logger.LogInformation("SignalR message notification sent to user {UserId} from {SenderUsername}", userId, senderUsername);
+            if (isUserActiveInConversation)
+            {
+                _logger.LogInformation("SignalR message notification sent to user {UserId} from {SenderUsername} (suppressed - user active in conversation)", userId, senderUsername);
+            }
+            else
+            {
+                _logger.LogInformation("SignalR message notification sent to user {UserId} from {SenderUsername}", userId, senderUsername);
+            }
+
             return true;
         }
         catch (Exception ex)

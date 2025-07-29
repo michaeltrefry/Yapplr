@@ -418,6 +418,7 @@ public static class ServiceCollectionExtensions
 
         // Register performance and monitoring services
         services.AddSingleton<ISignalRConnectionPool, SignalRConnectionPool>();
+        services.AddSingleton<IActiveConversationTracker, ActiveConversationTracker>();
         services.AddHostedService<SignalRCleanupService>();
 
         // Register advanced notification services

@@ -5,6 +5,7 @@ import { messageApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble';
+import TypingIndicator from './TypingIndicator';
 
 interface MessagesListProps {
   conversationId: number;
@@ -142,6 +143,9 @@ export default function MessagesList({ conversationId }: MessagesListProps) {
           );
         })}
       </div>
+
+      {/* Typing indicator */}
+      <TypingIndicator conversationId={conversationId} />
 
       {/* Scroll anchor */}
       <div ref={messagesEndRef} />

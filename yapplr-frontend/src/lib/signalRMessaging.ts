@@ -20,6 +20,7 @@ class SignalRMessagingService {
   private isConnected = false;
   private messageListeners: ((payload: SignalRNotificationPayload) => void)[] = [];
   private connectionListeners: ((connected: boolean) => void)[] = [];
+  private typingListeners: ((action: 'started' | 'stopped', data: any) => void)[] = [];
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000; // Start with 1 second
@@ -158,6 +159,17 @@ class SignalRMessagingService {
       console.log('📡 Left conversation:', conversationId);
     });
 
+    // Handle typing indicator events
+    this.connection.on('UserStartedTyping', (data: any) => {
+      console.log('📡 User started typing:', data);
+      this.notifyTypingListeners('started', data);
+    });
+
+    this.connection.on('UserStoppedTyping', (data: any) => {
+      console.log('📡 User stopped typing:', data);
+      this.notifyTypingListeners('stopped', data);
+    });
+
     this.connection.on('NewMessage', (messageData: any) => {
       console.log('📡 New message in conversation:', messageData);
 
@@ -257,6 +269,28 @@ class SignalRMessagingService {
     }
   }
 
+  async startTyping(conversationId: number): Promise<void> {
+    if (this.connection && this.isConnected) {
+      try {
+        await this.connection.invoke('StartTyping', conversationId);
+        console.log('📡 Started typing in conversation:', conversationId);
+      } catch (error) {
+        console.error('📡 Error starting typing indicator:', error);
+      }
+    }
+  }
+
+  async stopTyping(conversationId: number): Promise<void> {
+    if (this.connection && this.isConnected) {
+      try {
+        await this.connection.invoke('StopTyping', conversationId);
+        console.log('📡 Stopped typing in conversation:', conversationId);
+      } catch (error) {
+        console.error('📡 Error stopping typing indicator:', error);
+      }
+    }
+  }
+
   // Listener management
   addMessageListener(callback: (payload: SignalRNotificationPayload) => void): void {
     this.messageListeners.push(callback);
@@ -284,6 +318,19 @@ class SignalRMessagingService {
     }
   }
 
+  addTypingListener(callback: (action: 'started' | 'stopped', data: any) => void): void {
+    this.typingListeners.push(callback);
+    console.log('📡 Added SignalR typing listener, total:', this.typingListeners.length);
+  }
+
+  removeTypingListener(callback: (action: 'started' | 'stopped', data: any) => void): void {
+    const index = this.typingListeners.indexOf(callback);
+    if (index > -1) {
+      this.typingListeners.splice(index, 1);
+      console.log('📡 Removed SignalR typing listener, total:', this.typingListeners.length);
+    }
+  }
+
   private notifyMessageListeners(payload: SignalRNotificationPayload): void {
     this.messageListeners.forEach(listener => {
       try {
@@ -300,6 +347,16 @@ class SignalRMessagingService {
         listener(connected);
       } catch (error) {
         console.error('📡 Error in SignalR connection listener:', error);
+      }
+    });
+  }
+
+  private notifyTypingListeners(action: 'started' | 'stopped', data: any): void {
+    this.typingListeners.forEach(listener => {
+      try {
+        listener(action, data);
+      } catch (error) {
+        console.error('📡 Error in SignalR typing listener:', error);
       }
     });
   }

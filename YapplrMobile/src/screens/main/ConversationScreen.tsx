@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,21 +24,24 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Message } from '../../types';
 import { navigationService } from '../../services/NavigationService';
+import TypingIndicator from '../../components/TypingIndicator';
 
 type ConversationScreenProps = StackScreenProps<RootStackParamList, 'Conversation'>;
 
 export default function ConversationScreen({ route, navigation }: ConversationScreenProps) {
   const { conversationId, otherUser } = route.params;
   const { api, user: currentUser } = useAuth();
-  const { joinConversation, leaveConversation } = useNotifications();
+  const { joinConversation, leaveConversation, signalRService } = useNotifications();
   const colors = useThemeColors();
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [selectedMediaUri, setSelectedMediaUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const queryClient = useQueryClient();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const styles = createStyles(colors);
 
@@ -97,6 +100,9 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
         console.error('Failed to mark conversation as read after sending:', error);
       }
 
+      // Stop typing indicator when message is sent
+      stopTyping();
+
       // Refresh messages and unread count
       queryClient.invalidateQueries({ queryKey: ['conversationMessages', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -114,6 +120,48 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
       Alert.alert('Error', 'Failed to send message. Please try again.');
     },
   });
+
+  // Typing indicator functions
+  const startTyping = useCallback(() => {
+    if (!isTyping && signalRService) {
+      setIsTyping(true);
+      signalRService.startTyping(conversationId);
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout to stop typing after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      if (signalRService) {
+        signalRService.stopTyping(conversationId);
+      }
+    }, 3000);
+  }, [conversationId, isTyping]);
+
+  const stopTyping = useCallback(() => {
+    if (isTyping && signalRService) {
+      setIsTyping(false);
+      signalRService.stopTyping(conversationId);
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  }, [conversationId, isTyping]);
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const pickMedia = async () => {
     try {
@@ -373,6 +421,9 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
           }
         />
 
+        {/* Typing indicator */}
+        <TypingIndicator conversationId={conversationId} />
+
         {/* Media preview */}
         {selectedMediaUri && (
           <View style={styles.mediaPreviewContainer}>
@@ -403,7 +454,15 @@ export default function ConversationScreen({ route, navigation }: ConversationSc
             style={styles.messageInput}
             placeholder="Type a message..."
             value={messageText}
-            onChangeText={setMessageText}
+            onChangeText={(text) => {
+              setMessageText(text);
+              // Handle typing indicators
+              if (text.trim().length > 0) {
+                startTyping();
+              } else {
+                stopTyping();
+              }
+            }}
             multiline
             maxLength={1000}
             returnKeyType="send"

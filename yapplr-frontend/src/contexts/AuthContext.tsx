@@ -21,14 +21,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
+      console.log('🔐 Frontend AuthContext: Initializing authentication...');
       const token = localStorage.getItem('token');
+      console.log('🔐 Frontend AuthContext: Token found:', !!token);
+
       if (token) {
         try {
+          console.log('🔐 Frontend AuthContext: Fetching current user...');
           const userData = await userApi.getCurrentUser();
+          console.log('🔐 Frontend AuthContext: User data received:', userData);
           setUser(userData);
-        } catch {
+        } catch (error) {
+          console.error('🔐 Frontend AuthContext: Failed to get current user:', error);
           localStorage.removeItem('token');
         }
+      } else {
+        console.log('🔐 Frontend AuthContext: No token found, user not authenticated');
       }
       setIsLoading(false);
     };

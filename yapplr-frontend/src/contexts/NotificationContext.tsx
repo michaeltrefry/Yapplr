@@ -216,6 +216,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     console.log(`🔔 Message type: ${type}`);
     console.log('🔔 Timestamp:', new Date().toISOString());
 
+    // Check if notification should be suppressed (user is actively viewing the conversation)
+    const shouldSuppressNotification = payload?.data?.suppressNotification === 'true';
+
     // Refresh counts based on notification type
     if (type === 'message') {
       console.log('🔔 Refreshing unread message count');

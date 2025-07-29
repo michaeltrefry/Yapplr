@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { messageApi, imageApi, videoApi, multipleUploadApi } from '@/lib/api';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { Send, Image as ImageIcon, X } from 'lucide-react';
+import { signalRMessagingService } from '@/lib/signalRMessaging';
 import Image from 'next/image';
 
 interface MessageComposerProps {
@@ -18,8 +19,10 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [uploadedVideoFileName, setUploadedVideoFileName] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const queryClient = useQueryClient();
   const { refreshUnreadCount } = useNotifications();
 
@@ -50,6 +53,46 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
     },
   });
 
+  // Typing indicator functions
+  const startTyping = useCallback(() => {
+    if (!isTyping) {
+      setIsTyping(true);
+      signalRMessagingService.startTyping(conversationId);
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout to stop typing after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      signalRMessagingService.stopTyping(conversationId);
+    }, 3000);
+  }, [conversationId, isTyping]);
+
+  const stopTyping = useCallback(() => {
+    if (isTyping) {
+      setIsTyping(false);
+      signalRMessagingService.stopTyping(conversationId);
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  }, [conversationId, isTyping]);
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const sendMessageMutation = useMutation({
     mutationFn: messageApi.sendMessageToConversation,
     onSuccess: () => {
@@ -59,13 +102,17 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
       setUploadedFileName(null);
       setUploadedVideoFileName(null);
       setMediaType(null);
+
+      // Stop typing indicator when message is sent
+      stopTyping();
+
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
-      
+
       // Invalidate queries to refresh messages and conversations
       queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -189,12 +236,20 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
   };
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
-    
+    const newValue = e.target.value;
+    setContent(newValue);
+
     // Auto-resize textarea
     const textarea = e.target;
     textarea.style.height = 'auto';
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+
+    // Handle typing indicators
+    if (newValue.trim().length > 0) {
+      startTyping();
+    } else {
+      stopTyping();
+    }
   };
 
   const isLoading = sendMessageMutation.isPending || uploadImageMutation.isPending || uploadVideoMutation.isPending;

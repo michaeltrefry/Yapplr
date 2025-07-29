@@ -37,7 +37,7 @@ public interface IUnifiedNotificationService
     /// <summary>
     /// Sends a message notification
     /// </summary>
-    Task SendMessageNotificationAsync(int userId, string senderUsername, string messageContent, int conversationId);
+    Task SendMessageNotificationAsync(int userId, string senderUsername, string messageContent, int conversationId, bool suppressDatabaseNotification = false);
     
     /// <summary>
     /// Sends a mention notification
