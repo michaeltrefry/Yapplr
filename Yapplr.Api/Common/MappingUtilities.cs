@@ -444,26 +444,7 @@ public static class MappingUtilities
 
         // Map media items
         var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto()).ToList();
-
-        // Map group information if post is in a group
-        GroupDto? groupDto = null;
-        if (post.Group != null)
-        {
-            groupDto = new GroupDto(
-                post.Group.Id,
-                post.Group.Name,
-                post.Group.Description,
-                GenerateImageUrl(post.Group.ImageFileName),
-                post.Group.CreatedAt,
-                post.Group.UpdatedAt,
-                post.Group.IsOpen,
-                post.Group.User.MapToUserDto(),
-                post.Group.Members?.Count ?? 0,
-                post.Group.Posts?.Count ?? 0,
-                false // IsCurrentUserMember - we don't have this info in this context
-            );
-        }
-
+        
         // Get reaction data
         var reactionCounts = post.Reactions
             .GroupBy(r => r.ReactionType)
@@ -492,7 +473,7 @@ public static class MappingUtilities
             post.CreatedAt,
             post.UpdatedAt,
             userDto,
-            groupDto,
+            post.Group.MapToGroupDto(currentUserId),
             post.Likes.Count,
             post.Children.Count(c => c.PostType == PostType.Comment),
             post.Reposts.Count,
@@ -620,26 +601,7 @@ public static class MappingUtilities
 
         // Map media items
         var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto()).ToList();
-
-        // Map group information if post is in a group
-        GroupDto? groupDto = null;
-        if (post.Group != null)
-        {
-            groupDto = new GroupDto(
-                post.Group.Id,
-                post.Group.Name,
-                post.Group.Description,
-                post.Group.ImageFileName,
-                post.Group.CreatedAt,
-                post.Group.UpdatedAt,
-                post.Group.IsOpen,
-                post.Group.User.MapToUserDto(),
-                post.Group.Members?.Count ?? 0,
-                post.Group.Posts?.Count ?? 0,
-                false // IsCurrentUserMember - we don't have this info in this context
-            );
-        }
-
+        
         return new PostDto(
             post.Id,
             post.Content,
@@ -651,7 +613,7 @@ public static class MappingUtilities
             post.CreatedAt,
             post.UpdatedAt,
             userDto,
-            groupDto,
+            post.Group.MapToGroupDto(currentUserId),
             likeCount,
             commentCount,
             repostCount,
@@ -804,6 +766,31 @@ public static class MappingUtilities
             format,
             media.CreatedAt,
             videoMetadata
+        );
+    }
+    
+    public static GroupDto? MapToGroupDto(this Group? group, int? currentUserId)
+    {
+        if (group == null) return null;
+        var isCurrentUserMember = currentUserId.HasValue &&
+                                  group.Members.Any(m => m.UserId == currentUserId.Value);
+
+        // Calculate visible post count (same filtering as GetGroupPostsAsync)
+        var visiblePostCount = group.Posts.Count(p =>
+            p.PostType == PostType.Post && !p.IsHidden && !p.IsDeletedByUser);
+
+        return new GroupDto(
+            group.Id,
+            group.Name,
+            group.Description,
+            GenerateImageUrl(group.ImageFileName),
+            group.CreatedAt,
+            group.UpdatedAt,
+            group.IsOpen,
+            group.User.MapToUserDto(),
+            group.Members.Count,
+            visiblePostCount,
+            isCurrentUserMember
         );
     }
 }

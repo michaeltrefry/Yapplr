@@ -73,7 +73,7 @@ public class GroupService : BaseService, IGroupService
                 return ServiceResult<GroupDto>.Failure("Failed to retrieve created group.");
             }
 
-            var groupDto = MapToGroupDto(createdGroup, userId);
+            var groupDto = createdGroup.MapToGroupDto(userId);
             
             _logger.LogInformation("Group created successfully: {GroupId} by user {UserId}", group.Id, userId);
             
@@ -130,7 +130,7 @@ public class GroupService : BaseService, IGroupService
                 return ServiceResult<GroupDto>.Failure("Failed to retrieve updated group.");
             }
 
-            var groupDto = MapToGroupDto(updatedGroup, userId);
+            var groupDto = updatedGroup.MapToGroupDto(userId);
             
             _logger.LogInformation("Group updated successfully: {GroupId} by user {UserId}", groupId, userId);
             
@@ -183,7 +183,7 @@ public class GroupService : BaseService, IGroupService
         if (group == null)
             return null;
 
-        return MapToGroupDto(group, currentUserId);
+        return group.MapToGroupDto(currentUserId);
     }
 
     public async Task<GroupDto?> GetGroupByNameAsync(string name, int? currentUserId = null)
@@ -198,7 +198,7 @@ public class GroupService : BaseService, IGroupService
         if (group == null)
             return null;
 
-        return MapToGroupDto(group, currentUserId);
+        return group.MapToGroupDto(currentUserId);
     }
 
     public async Task<PaginatedResult<GroupListDto>> GetGroupsAsync(int? currentUserId = null, int page = 1, int pageSize = 20)
@@ -347,30 +347,6 @@ public class GroupService : BaseService, IGroupService
                 .ThenInclude(m => m.User)
             .Include(g => g.Posts)
             .FirstOrDefaultAsync(g => g.Id == groupId);
-    }
-
-    private GroupDto MapToGroupDto(Group group, int? currentUserId)
-    {
-        var isCurrentUserMember = currentUserId.HasValue &&
-            group.Members.Any(m => m.UserId == currentUserId.Value);
-
-        // Calculate visible post count (same filtering as GetGroupPostsAsync)
-        var visiblePostCount = group.Posts.Count(p =>
-            p.PostType == PostType.Post && !p.IsHidden && !p.IsDeletedByUser);
-
-        return new GroupDto(
-            group.Id,
-            group.Name,
-            group.Description,
-            group.ImageFileName,
-            group.CreatedAt,
-            group.UpdatedAt,
-            group.IsOpen,
-            group.User.MapToUserDto(),
-            group.Members.Count,
-            visiblePostCount,
-            isCurrentUserMember
-        );
     }
 
     public Task<bool> IsUserMemberAsync(int groupId, int userId)
