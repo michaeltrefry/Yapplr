@@ -189,7 +189,7 @@ public class GroupServiceTests : IDisposable
         result.Data.Should().NotBeNull();
         result.Data!.Name.Should().Be("New Test Group");
         result.Data.Description.Should().Be("A new group for testing");
-        result.Data.ImageUrl.Should().Be("test-image.jpg");
+        result.Data.ImageUrl.Should().Be("http://test.com/api/images/test-image.jpg");
         result.Data.User.Id.Should().Be(userId);
         result.Data.IsCurrentUserMember.Should().BeTrue();
         result.Data.MemberCount.Should().Be(1);
@@ -259,7 +259,7 @@ public class GroupServiceTests : IDisposable
         result.Data.Should().NotBeNull();
         result.Data!.Name.Should().Be("Updated Group Name");
         result.Data.Description.Should().Be("Updated description");
-        result.Data.ImageUrl.Should().Be("new-image.jpg");
+        result.Data.ImageUrl.Should().Be("http://test.com/api/images/new-image.jpg");
 
         // Verify in database
         var groupInDb = await _context.Groups.FindAsync(groupId);
