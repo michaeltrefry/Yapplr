@@ -45,7 +45,7 @@ public class GroupService : BaseService, IGroupService
             {
                 Name = createDto.Name,
                 Description = createDto.Description,
-                ImageFileName = createDto.ImageFileName,
+                ImageFileName = MappingUtilities.GetFileNameFromUrl(createDto.ImageUrl),
                 UserId = userId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -119,7 +119,7 @@ public class GroupService : BaseService, IGroupService
 
             group.Name = updateDto.Name;
             group.Description = updateDto.Description;
-            group.ImageFileName = updateDto.ImageFileName;
+            group.ImageFileName = MappingUtilities.GetFileNameFromUrl(updateDto.ImageUrl);
             group.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -215,7 +215,7 @@ public class GroupService : BaseService, IGroupService
             .Take(pageSize)
             .ToListAsync();
 
-        var groupDtos = groups.Select(g => MapToGroupListDto(g, currentUserId)).ToList();
+        var groupDtos = groups.Select(g => g.MapToGroupListDto(currentUserId)).ToList();
 
         return PaginatedResult<GroupListDto>.Create(groupDtos, page, pageSize, totalCount);
     }
@@ -235,7 +235,7 @@ public class GroupService : BaseService, IGroupService
             .Take(pageSize)
             .ToListAsync();
 
-        var groupDtos = groups.Select(g => MapToGroupListDto(g, currentUserId)).ToList();
+        var groupDtos = groups.Select(g => g.MapToGroupListDto(currentUserId)).ToList();
 
         return PaginatedResult<GroupListDto>.Create(groupDtos, page, pageSize, totalCount);
     }
@@ -255,7 +255,7 @@ public class GroupService : BaseService, IGroupService
             .Take(pageSize)
             .ToListAsync();
 
-        var groupDtos = groups.Select(g => MapToGroupListDto(g, currentUserId)).ToList();
+        var groupDtos = groups.Select(g => g.MapToGroupListDto(currentUserId)).ToList();
 
         return PaginatedResult<GroupListDto>.Create(groupDtos, page, pageSize, totalCount);
     }
@@ -455,26 +455,5 @@ public class GroupService : BaseService, IGroupService
         var group = await _context.Groups.FindAsync(groupId);
         return group?.UserId == userId;
     }
-
-    private GroupListDto MapToGroupListDto(Group group, int? currentUserId)
-    {
-        var isCurrentUserMember = currentUserId.HasValue &&
-            group.Members.Any(m => m.UserId == currentUserId.Value);
-
-        // Calculate visible post count (same filtering as GetGroupPostsAsync)
-        var visiblePostCount = group.Posts.Count(p =>
-            p.PostType == PostType.Post && !p.IsHidden && !p.IsDeletedByUser);
-
-        return new GroupListDto(
-            group.Id,
-            group.Name,
-            group.Description,
-            group.ImageFileName,
-            group.CreatedAt,
-            group.User.Username,
-            group.Members.Count,
-            visiblePostCount,
-            isCurrentUserMember
-        );
-    }
+    
 }

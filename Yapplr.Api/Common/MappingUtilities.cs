@@ -31,6 +31,12 @@ public static class MappingUtilities
         return $"{BaseUrl}/api/images/{fileName}";
     }
 
+    public static string? GetFileNameFromUrl(string? url)
+    {
+        if (url == null) return null;
+        var parts = url.Split('/');
+        return parts.Length < 2 ? null : parts[^1];
+    }
     /// <summary>
     /// Generate video URL from filename
     /// </summary>
@@ -788,6 +794,28 @@ public static class MappingUtilities
             group.UpdatedAt,
             group.IsOpen,
             group.User.MapToUserDto(),
+            group.Members.Count,
+            visiblePostCount,
+            isCurrentUserMember
+        );
+    }
+    
+    public static GroupListDto MapToGroupListDto(this Group group, int? currentUserId)
+    {
+        var isCurrentUserMember = currentUserId.HasValue &&
+                                  group.Members.Any(m => m.UserId == currentUserId.Value);
+
+        // Calculate visible post count (same filtering as GetGroupPostsAsync)
+        var visiblePostCount = group.Posts.Count(p =>
+            p.PostType == PostType.Post && !p.IsHidden && !p.IsDeletedByUser);
+
+        return new GroupListDto(
+            group.Id,
+            group.Name,
+            group.Description,
+            GenerateImageUrl(group.ImageFileName),
+            group.CreatedAt,
+            group.User.Username,
             group.Members.Count,
             visiblePostCount,
             isCurrentUserMember

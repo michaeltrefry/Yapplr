@@ -4,7 +4,7 @@ public record GroupListDto(
     int Id,
     string Name,
     string Description,
-    string? ImageFileName,
+    string? ImageUrl,
     DateTime CreatedAt,
     string CreatorUsername,
     int MemberCount,
