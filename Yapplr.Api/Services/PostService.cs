@@ -1321,17 +1321,7 @@ public class PostService : BaseService, IPostService
             throw new InvalidOperationException("You don't have permission to repost this post");
         }
 
-        // Check if user already reposted this post (prevent duplicates)
-        var existingRepost = await _context.Posts
-            .FirstOrDefaultAsync(p => p.PostType == PostType.Repost &&
-                                     p.RepostedPostId == createDto.RepostedPostId &&
-                                     p.UserId == userId &&
-                                     !p.IsDeletedByUser);
-
-        if (existingRepost != null)
-        {
-            throw new InvalidOperationException("You have already reposted this post");
-        }
+        // Allow multiple reposts of the same post (e.g., for memories, sharing again, etc.)
 
         // Create repost as a Post with PostType.Repost and RepostedPostId
         var repost = new Post
@@ -1476,17 +1466,7 @@ public class PostService : BaseService, IPostService
             throw new InvalidOperationException("You don't have permission to repost this post");
         }
 
-        // Check if user already reposted this post (prevent duplicates)
-        var existingRepost = await _context.Posts
-            .FirstOrDefaultAsync(p => p.PostType == PostType.Repost &&
-                                     p.RepostedPostId == createDto.RepostedPostId &&
-                                     p.UserId == userId &&
-                                     !p.IsDeletedByUser);
-
-        if (existingRepost != null)
-        {
-            throw new InvalidOperationException("You have already reposted this post");
-        }
+        // Allow multiple reposts of the same post (e.g., for memories, sharing again, etc.)
 
         // Validate media files
         if (createDto.MediaFiles != null && createDto.MediaFiles.Count > 10)

@@ -71,6 +71,10 @@ public static class EndpointUtilities
         {
             return BadRequest(ex.Message);
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
         catch (UnauthorizedAccessException ex)
         {
             return Forbidden(ex.Message);
