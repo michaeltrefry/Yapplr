@@ -106,15 +106,17 @@ export default function RepostModal({ visible, onClose, repostedPost }: RepostMo
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
       queryClient.invalidateQueries({ queryKey: ['reposts', repostedPost.id] });
-      
+      queryClient.invalidateQueries({ queryKey: ['post', repostedPost.id] });
+
       // Reset form
       setContent('');
       setSelectedFiles([]);
       setUploadedFiles([]);
       setSelectedGif(null);
       setPrivacy(PostPrivacy.Public);
-      
+
       onClose();
     },
     onError: (error: any) => {

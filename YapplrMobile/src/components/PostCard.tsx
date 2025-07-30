@@ -31,7 +31,6 @@ interface PostCardProps {
   onLike: (postId: number) => void; // Legacy - will be replaced by onReact
   onReact?: (postId: number, reactionType: ReactionType) => void;
   onRemoveReaction?: (postId: number) => void;
-  onRepost: (postId: number) => void;
   onUserPress?: (username: string) => void;
   onCommentPress?: (post: Post) => void;
   onCommentCountUpdate?: (postId: number, newCount: number) => void;
@@ -40,7 +39,7 @@ interface PostCardProps {
   onHashtagPress?: (hashtag: string) => void;
 }
 
-export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRepost, onUserPress, onCommentPress, onCommentCountUpdate, onDelete, onUnrepost, onHashtagPress }: PostCardProps) {
+export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUserPress, onCommentPress, onCommentCountUpdate, onDelete, onUnrepost, onHashtagPress }: PostCardProps) {
   const colors = useThemeColors();
   const { user, api } = useAuth();
 
@@ -503,22 +502,10 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
 
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => onRepost(item.post.id)}
-        >
-          <Ionicons
-            name={item.post.isRepostedByCurrentUser ? "repeat" : "repeat-outline"}
-            size={20}
-            color={item.post.isRepostedByCurrentUser ? "#10B981" : "#6B7280"}
-          />
-          <Text style={styles.actionText}>{item.post.repostCount}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
           onPress={() => setShowRepostModal(true)}
         >
-          <Ionicons name="chatbox-outline" size={20} color="#8B5CF6" />
-          <Text style={styles.actionText}>{item.post.repostCount || 0}</Text>
+          <Ionicons name="repeat-outline" size={20} color="#6B7280" />
+          <Text style={styles.actionText}>{item.post.repostCount}</Text>
         </TouchableOpacity>
 
         {/* Report button - only show for other users' posts */}

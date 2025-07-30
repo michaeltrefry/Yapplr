@@ -156,14 +156,7 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     }
   };
 
-  const handleRepost = async (postId: number) => {
-    try {
-      await api.posts.repostPost(postId);
-      refetchTimeline();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to repost');
-    }
-  };
+
 
   const handleReact = async (postId: number, reactionType: ReactionType) => {
     try {
@@ -296,7 +289,6 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
       onLike={handleLikePost}
       onReact={handleReact}
       onRemoveReaction={handleRemoveReaction}
-      onRepost={handleRepost}
       onUserPress={handleUserPress}
       onCommentPress={handleCommentPress}
       onCommentCountUpdate={handleCommentCountUpdate}

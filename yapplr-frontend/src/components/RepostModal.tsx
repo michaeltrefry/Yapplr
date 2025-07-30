@@ -88,8 +88,10 @@ export default function RepostModal({ isOpen, onClose, repostedPost, onRepostCre
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['publicTimeline'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
       queryClient.invalidateQueries({ queryKey: ['reposts', repostedPost.id] });
-      
+      queryClient.invalidateQueries({ queryKey: ['post', repostedPost.id] });
+
       // Reset form
       setContent('');
       setSelectedFiles([]);
@@ -97,7 +99,7 @@ export default function RepostModal({ isOpen, onClose, repostedPost, onRepostCre
       setUploadedFiles([]);
       setSelectedGif(null);
       setPrivacy(PostPrivacy.Public);
-      
+
       onRepostCreated?.();
       onClose();
     },

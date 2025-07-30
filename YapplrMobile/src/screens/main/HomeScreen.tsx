@@ -113,14 +113,7 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     }
   };
 
-  const handleRepost = async (postId: number) => {
-    try {
-      await api.posts.repostPost(postId);
-      refetch(); // Refresh timeline to show updated repost count
-    } catch (error) {
-      Alert.alert('Error', 'Failed to repost');
-    }
-  };
+
 
   const handleUserPress = (username: string) => {
     navigation.navigate('UserProfile', { username });
@@ -181,7 +174,6 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
         onLike={handleLikePost}
         onReact={handleReact}
         onRemoveReaction={handleRemoveReaction}
-        onRepost={handleRepost}
         onUserPress={handleUserPress}
         onCommentPress={handleCommentPress}
         onCommentCountUpdate={handleCommentCountUpdate}

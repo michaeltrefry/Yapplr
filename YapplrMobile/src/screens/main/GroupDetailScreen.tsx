@@ -155,14 +155,7 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
     }
   };
 
-  const handleRepost = async (postId: number) => {
-    try {
-      await api.posts.repostPost(postId);
-      loadGroupPosts(1, true); // Refresh posts to show updated repost count
-    } catch (error) {
-      Alert.alert('Error', 'Failed to repost');
-    }
-  };
+
 
   const handleUserPress = (username: string) => {
     navigation.navigate('UserProfile', { username });
@@ -215,7 +208,6 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
       onLike={handleLikePost}
       onReact={handleReact}
       onRemoveReaction={handleRemoveReaction}
-      onRepost={handleRepost}
       onUserPress={handleUserPress}
       onCommentPress={handleCommentPress}
       onCommentCountUpdate={handleCommentCountUpdate}

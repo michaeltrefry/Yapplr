@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import UserAvatar from './UserAvatar';
 import ShareModal from './ShareModal';
+import RepostModal from './RepostModal';
 import ReactionPicker, { ReactionType } from './ReactionPicker';
 import ReactionCountsDisplay from './ReactionCountsDisplay';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +37,7 @@ export default function FullScreenPhotoViewer({
   onNavigate
 }: FullScreenPhotoViewerProps) {
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showRepostModal, setShowRepostModal] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -106,53 +108,7 @@ export default function FullScreenPhotoViewer({
   }, [isOpen, navigatePrev, navigateNext, onClose]);
 
 
-  const repostMutation = useMutation({
-    mutationFn: async (isCurrentlyReposted: boolean) => {
-      console.log('Repost API call - isCurrentlyReposted:', isCurrentlyReposted);
 
-      if (isCurrentlyReposted) {
-        return await postApi.unrepost(localPost.id);
-      } else {
-        return await postApi.repost(localPost.id);
-      }
-    },
-    onMutate: async () => {
-      // Store the previous state for potential rollback
-      const previousState = {
-        isRepostedByCurrentUser: localPost.isRepostedByCurrentUser,
-        repostCount: localPost.repostCount
-      };
-
-      console.log('Repost mutation onMutate - before optimistic update:', previousState);
-
-      // Optimistic update
-      setLocalPost(prev => ({
-        ...prev,
-        isRepostedByCurrentUser: !prev.isRepostedByCurrentUser,
-        repostCount: prev.isRepostedByCurrentUser ? prev.repostCount - 1 : prev.repostCount + 1
-      }));
-
-      return { previousState };
-    },
-    onSuccess: () => {
-      console.log('Repost mutation success');
-      queryClient.invalidateQueries({ queryKey: ['timeline'] });
-      queryClient.invalidateQueries({ queryKey: ['userPhotos'] });
-      queryClient.invalidateQueries({ queryKey: ['post', localPost.id] });
-    },
-    onError: (error, variables, context) => {
-      console.log('Repost mutation error:', error);
-      console.log('Reverting to:', context?.previousState);
-      // Revert to the previous state
-      if (context?.previousState) {
-        setLocalPost(prev => ({
-          ...prev,
-          isRepostedByCurrentUser: context.previousState.isRepostedByCurrentUser,
-          repostCount: context.previousState.repostCount
-        }));
-      }
-    },
-  });
 
   // Helper functions for reaction mutations
   const getReactionEmoji = (reactionType: ReactionType): string => {
@@ -508,13 +464,8 @@ export default function FullScreenPhotoViewer({
                     </button>
 
                     <button
-                      onClick={() => repostMutation.mutate(localPost.isRepostedByCurrentUser)}
-                      disabled={repostMutation.isPending}
-                      className={`flex items-center space-x-2 transition-colors group ${
-                        localPost.isRepostedByCurrentUser
-                          ? 'text-green-400 hover:text-green-500'
-                          : 'text-text-secondary hover:text-green-400'
-                      }`}
+                      onClick={() => setShowRepostModal(true)}
+                      className="flex items-center space-x-2 transition-colors group text-text-secondary hover:text-green-400"
                     >
                       <div className="p-2 rounded-full group-hover:bg-green-500/10">
                         <Repeat2 className="w-5 h-5" />
@@ -543,6 +494,18 @@ export default function FullScreenPhotoViewer({
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         post={localPost}
+      />
+
+      {/* Repost Modal */}
+      <RepostModal
+        isOpen={showRepostModal}
+        onClose={() => setShowRepostModal(false)}
+        repostedPost={localPost}
+        onRepostCreated={() => {
+          queryClient.invalidateQueries({ queryKey: ['timeline'] });
+          queryClient.invalidateQueries({ queryKey: ['userPhotos'] });
+          queryClient.invalidateQueries({ queryKey: ['post', localPost.id] });
+        }}
       />
     </>
   );

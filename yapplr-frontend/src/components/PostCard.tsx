@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Post, PostPrivacy, VideoProcessingStatus, ReactionType } from '@/types';
 import { formatDate, formatNumber } from '@/lib/utils';
-import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag, Play, Smile, X, Quote } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag, Play, Smile, X } from 'lucide-react';
 import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -262,50 +262,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     }
   };
 
-  const repostMutation = useMutation({
-    mutationFn: async (isCurrentlyReposted: boolean) => {
-      if (isCurrentlyReposted) {
-        return await postApi.unrepost(post.id);
-      } else {
-        return await postApi.repost(post.id);
-      }
-    },
-    onMutate: async () => {
-      // Store the previous state for potential rollback
-      const previousState = {
-        isRepostedByCurrentUser: post.isRepostedByCurrentUser,
-        repostCount: post.repostCount
-      };
 
-      // Create optimistically updated post
-      const updatedPost = {
-        ...post,
-        isRepostedByCurrentUser: !post.isRepostedByCurrentUser,
-        repostCount: post.isRepostedByCurrentUser ? post.repostCount - 1 : post.repostCount + 1
-      };
-
-      // Update parent component's state immediately
-      onPostUpdate?.(updatedPost);
-
-      return { previousState };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['timeline'] });
-      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
-      queryClient.invalidateQueries({ queryKey: ['post', post.id] });
-    },
-    onError: (error, variables, context) => {
-      // Revert to the previous state
-      if (context?.previousState) {
-        const revertedPost = {
-          ...post,
-          isRepostedByCurrentUser: context.previousState.isRepostedByCurrentUser,
-          repostCount: context.previousState.repostCount
-        };
-        onPostUpdate?.(revertedPost);
-      }
-    },
-  });
 
   const commentMutation = useMutation({
     mutationFn: (finalCommentText: string) => {
@@ -349,7 +306,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   };
 
   const handleRepost = () => {
-    repostMutation.mutate(post.isRepostedByCurrentUser);
+    setShowRepostModal(true);
   };
 
   const handleComment = (e: React.FormEvent) => {
@@ -797,28 +754,13 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
 
             <button
               onClick={handleRepost}
-              disabled={repostMutation.isPending}
-              className={`flex items-center space-x-2 transition-colors group ${
-                post.isRepostedByCurrentUser
-                  ? 'text-green-500'
-                  : 'text-gray-500 hover:text-green-500'
-              }`}
+              className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors group"
+              title="Repost"
             >
               <div className="p-2 rounded-full hover:bg-gray-100">
                 <Repeat2 className="w-5 h-5" />
               </div>
               <span className="text-sm">{formatNumber(post.repostCount)}</span>
-            </button>
-
-            <button
-              onClick={() => setShowRepostModal(true)}
-              className="flex items-center space-x-2 text-gray-500 hover:text-purple-500 transition-colors group"
-              title="Repost"
-            >
-              <div className="p-2 rounded-full hover:bg-gray-100">
-                <Quote className="w-5 h-5" />
-              </div>
-              <span className="text-sm">{formatNumber(post.repostCount || 0)}</span>
             </button>
 
             <button
