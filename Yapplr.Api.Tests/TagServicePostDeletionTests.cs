@@ -310,6 +310,131 @@ public class TagServicePostDeletionTests : IDisposable
         Assert.DoesNotContain(postList, p => p.Id == 3); // Deleted post not visible
     }
 
+    [Fact]
+    public async Task GetPostsByTagAsync_ShouldIncludeRepostedContent()
+    {
+        // Arrange
+        var hashtag = "#testrepost";
+
+        // Create a user who will create the original post
+        var originalUser = new User
+        {
+            Id = 100,
+            Username = "originaluser",
+            Email = "original@example.com",
+            PasswordHash = "hash",
+            EmailVerified = true,
+            Status = UserStatus.Active,
+            TrustScore = 0.8f,
+            Role = UserRole.User
+        };
+
+        // Create a user who will repost
+        var reposterUser = new User
+        {
+            Id = 101,
+            Username = "reposteruser",
+            Email = "reposter@example.com",
+            PasswordHash = "hash",
+            EmailVerified = true,
+            Status = UserStatus.Active,
+            TrustScore = 0.8f,
+            Role = UserRole.User
+        };
+
+        _context.Users.AddRange(originalUser, reposterUser);
+        await _context.SaveChangesAsync();
+
+        // Create the original post with content and media
+        var originalPost = new Post
+        {
+            Id = 200,
+            Content = "This is the original post with great content!",
+            UserId = originalUser.Id,
+            PostType = PostType.Post,
+            Privacy = PostPrivacy.Public,
+            CreatedAt = DateTime.UtcNow.AddHours(-2),
+            UpdatedAt = DateTime.UtcNow.AddHours(-2)
+        };
+
+        // Add media to the original post
+        var originalMedia = new PostMedia
+        {
+            Id = 300,
+            PostId = originalPost.Id,
+            MediaType = MediaType.Image,
+            ImageFileName = "original-photo.jpg",
+            ImageFileSizeBytes = 1024,
+            CreatedAt = DateTime.UtcNow.AddHours(-2)
+        };
+
+        _context.Posts.Add(originalPost);
+        _context.PostMedia.Add(originalMedia);
+        await _context.SaveChangesAsync();
+
+        // Create a repost with the hashtag in the repost content
+        var repost = new Post
+        {
+            Id = 201,
+            Content = $"Check out this amazing post! {hashtag}",
+            UserId = reposterUser.Id,
+            PostType = PostType.Repost,
+            RepostedPostId = originalPost.Id,
+            Privacy = PostPrivacy.Public,
+            CreatedAt = DateTime.UtcNow.AddHours(-1),
+            UpdatedAt = DateTime.UtcNow.AddHours(-1)
+        };
+
+        _context.Posts.Add(repost);
+        await _context.SaveChangesAsync();
+
+        // Create the hashtag and link it to the repost
+        var tag = new Tag
+        {
+            Id = 400,
+            Name = hashtag.TrimStart('#'),
+            PostCount = 1,
+            CreatedAt = DateTime.UtcNow.AddHours(-1)
+        };
+
+        var postTag = new PostTag
+        {
+            PostId = repost.Id,
+            TagId = tag.Id
+        };
+
+        _context.Tags.Add(tag);
+        _context.PostTags.Add(postTag);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var results = await _tagService.GetPostsByTagAsync(hashtag, currentUserId: reposterUser.Id);
+        var resultsList = results.ToList();
+
+        // Assert
+        Assert.Single(resultsList);
+        var repostResult = resultsList.First();
+
+        // Verify the repost itself
+        Assert.Equal(repost.Id, repostResult.Id);
+        Assert.Equal(repost.Content, repostResult.Content);
+        Assert.Equal(reposterUser.Username, repostResult.User.Username);
+        Assert.Equal(PostType.Repost, repostResult.PostType);
+
+        // Verify the reposted content is included
+        Assert.NotNull(repostResult.RepostedPost);
+        Assert.Equal(originalPost.Id, repostResult.RepostedPost.Id);
+        Assert.Equal(originalPost.Content, repostResult.RepostedPost.Content);
+        Assert.Equal(originalUser.Username, repostResult.RepostedPost.User.Username);
+
+        // Verify the reposted post's media is included
+        Assert.NotNull(repostResult.RepostedPost.MediaItems);
+        Assert.Single(repostResult.RepostedPost.MediaItems);
+        var mediaItem = repostResult.RepostedPost.MediaItems.First();
+        Assert.NotNull(mediaItem.ImageUrl); // Should have an image URL generated
+        Assert.Equal(MediaType.Image, mediaItem.MediaType);
+    }
+
     public void Dispose()
     {
         _context.Dispose();

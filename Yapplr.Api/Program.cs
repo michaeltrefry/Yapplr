@@ -32,6 +32,12 @@ builder.Host.UseSerilog((context, configuration) =>
         .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
         .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
         .MinimumLevel.Override("System", LogEventLevel.Warning)
+        // Filter out noisy HTTP request logs for health checks and metrics
+        .MinimumLevel.Override("Yapplr.Api.Middleware.LoggingContextMiddleware", LogEventLevel.Warning)
+        // Filter out Prometheus metrics middleware logs
+        .MinimumLevel.Override("Prometheus.HttpMetrics", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.AspNetCore.Hosting.Diagnostics", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.AspNetCore.Routing.EndpointMiddleware", LogEventLevel.Warning)
         .Enrich.FromLogContext()
         .Enrich.WithEnvironmentName()
         .Enrich.WithMachineName()
@@ -39,6 +45,36 @@ builder.Host.UseSerilog((context, configuration) =>
         .Enrich.WithThreadId()
         .Enrich.WithProperty("Application", applicationName)
         .Enrich.WithProperty("Environment", environment)
+        // Filter out noisy HTTP requests
+        .Filter.ByExcluding(logEvent =>
+        {
+            // Skip logging for successful requests to noisy endpoints
+            if (logEvent.Properties.TryGetValue("RequestPath", out var requestPath))
+            {
+                var path = requestPath.ToString().Trim('"').ToLowerInvariant();
+                var isNoisyEndpoint = path switch
+                {
+                    "/health" => true,
+                    "/metrics" => true,
+                    "/favicon.ico" => true,
+                    _ when path.StartsWith("/api/metrics") => true,
+                    _ when path.StartsWith("/swagger") => true,
+                    _ when path.StartsWith("/_framework") => true,
+                    _ when path.StartsWith("/_vs") => true,
+                    _ => false
+                };
+
+                // Only filter out successful requests (2xx status codes) to noisy endpoints
+                if (isNoisyEndpoint && logEvent.Properties.TryGetValue("StatusCode", out var statusCode))
+                {
+                    if (int.TryParse(statusCode.ToString(), out var code) && code >= 200 && code < 300)
+                    {
+                        return true; // Exclude this log
+                    }
+                }
+            }
+            return false; // Don't exclude
+        })
         .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
         .WriteTo.File(
             path: "/app/logs/yapplr-api-.log",

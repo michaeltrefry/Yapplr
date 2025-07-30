@@ -116,7 +116,23 @@ public class TagService : ITagService
                         (p.Privacy == PostPrivacy.Followers && currentUserId.HasValue &&
                          followingIds.Contains(p.UserId))) &&
                        // Group post filtering - exclude group posts from hashtag search
-                       p.GroupId == null)
+                       p.GroupId == null &&
+                       // For reposts, also check visibility of the reposted post
+                       (p.PostType != PostType.Repost ||
+                        (p.RepostedPost != null &&
+                         !p.RepostedPost.IsDeletedByUser &&
+                         (!p.RepostedPost.IsHidden ||
+                          (p.RepostedPost.HiddenReasonType == PostHiddenReasonType.VideoProcessing &&
+                           currentUserId.HasValue && p.RepostedPost.UserId == currentUserId.Value)) &&
+                         p.RepostedPost.User.Status == UserStatus.Active &&
+                         (p.RepostedPost.User.TrustScore >= 0.1f ||
+                          (currentUserId.HasValue && p.RepostedPost.UserId == currentUserId.Value)) &&
+                         !blockedUserIds.Contains(p.RepostedPost.UserId) &&
+                         (p.RepostedPost.Privacy == PostPrivacy.Public ||
+                          (currentUserId.HasValue && p.RepostedPost.UserId == currentUserId.Value) ||
+                          (p.RepostedPost.Privacy == PostPrivacy.Followers && currentUserId.HasValue &&
+                           followingIds.Contains(p.RepostedPost.UserId))) &&
+                         p.RepostedPost.GroupId == null)))
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

@@ -21,7 +21,7 @@ public class LoggingContextMiddleware
     {
         // Generate correlation ID for this request
         var correlationId = Guid.NewGuid().ToString("N")[..8];
-        
+
         // Add correlation ID to response headers for debugging
         context.Response.Headers["X-Correlation-ID"] = correlationId;
 
@@ -69,7 +69,7 @@ public class LoggingContextMiddleware
 
             // Log request start
             var startTime = DateTime.UtcNow;
-            _logger.LogInformation("HTTP {HttpMethod} {RequestPath} started", 
+            _logger.LogInformation("HTTP {HttpMethod} {RequestPath} started",
                 context.Request.Method, context.Request.Path);
 
             // Process request
@@ -78,7 +78,7 @@ public class LoggingContextMiddleware
             // Log request completion
             var duration = DateTime.UtcNow - startTime;
             var statusCode = context.Response.StatusCode;
-            
+
             disposables.Add(LogContext.PushProperty("StatusCode", statusCode));
             disposables.Add(LogContext.PushProperty("Duration", duration.TotalMilliseconds));
 
@@ -108,6 +108,29 @@ public class LoggingContextMiddleware
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Determines if request logging should be skipped for noisy endpoints
+    /// </summary>
+    private static bool ShouldSkipRequestLogging(PathString path)
+    {
+        var pathValue = path.Value?.ToLowerInvariant();
+        if (string.IsNullOrEmpty(pathValue))
+            return false;
+
+        // Skip logging for health checks, metrics, and other noisy endpoints
+        return pathValue switch
+        {
+            "/health" => true,
+            "/metrics" => true,
+            "/favicon.ico" => true,
+            _ when pathValue.StartsWith("/api/metrics") => true,
+            _ when pathValue.StartsWith("/swagger") => true,
+            _ when pathValue.StartsWith("/_framework") => true,
+            _ when pathValue.StartsWith("/_vs") => true,
+            _ => false
+        };
     }
 
     private static string? GetClientIpAddress(HttpContext context)

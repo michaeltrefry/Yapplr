@@ -49,7 +49,7 @@ public class AuthService : IAuthService
             return null; // User already exists
         }
 
-        if (await _context.Users.AnyAsync(u => u.Username == registerDto.Username))
+        if (await _context.Users.AnyAsync(u => EF.Functions.ILike(u.Username, registerDto.Username)))
         {
             _logger.LogWarning("Registration failed: Username {Username} already taken", registerDto.Username);
             return null; // Username already taken

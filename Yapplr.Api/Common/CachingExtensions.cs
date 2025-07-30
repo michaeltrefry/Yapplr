@@ -102,7 +102,7 @@ public static class CachingExtensions
         {
             using var scope = serviceScopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<YapplrDbContext>();
-            return await context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            return await context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
         }, TimeSpan.FromSeconds(30)); // 30 seconds expiration like original UserCacheService
     }
 
