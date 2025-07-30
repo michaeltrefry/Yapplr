@@ -58,7 +58,7 @@ export default function RepostModal({ isOpen, onClose, repostedPost, onRepostCre
       // Add GIF if selected
       if (selectedGif) {
         mediaFiles.push({
-          fileName: `gif_${Date.now()}.gif`,
+          fileName: undefined,
           mediaType: 'Gif' as any,
           width: selectedGif.width,
           height: selectedGif.height,

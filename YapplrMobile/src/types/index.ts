@@ -142,7 +142,7 @@ export interface VideoMetadata {
 }
 
 export interface MediaFile {
-  fileName: string;
+  fileName?: string; // Optional - not required for GIFs
   mediaType: MediaType;
   width?: number;
   height?: number;

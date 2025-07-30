@@ -18,7 +18,7 @@ public record CreatePostWithMediaDto(
 /// DTO for individual media file information
 /// </summary>
 public record MediaFileDto(
-    [Required] string FileName,
+    string? FileName, // Optional - not required for GIFs which use URLs
     [Required] MediaType MediaType,
     int? Width = null,
     int? Height = null,

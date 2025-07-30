@@ -390,6 +390,17 @@ public class PostService : BaseService, IPostService
             _logger.LogDebug("Processing {MediaCount} media files for post {PostId}", createDto.MediaFiles.Count, post.Id);
             foreach (var mediaFile in createDto.MediaFiles)
             {
+                // Validate that non-GIF media types have a fileName
+                if (mediaFile.MediaType != MediaType.Gif && string.IsNullOrEmpty(mediaFile.FileName))
+                {
+                    throw new InvalidOperationException($"FileName is required for {mediaFile.MediaType} media type");
+                }
+
+                // Validate that GIF media types have URLs
+                if (mediaFile.MediaType == MediaType.Gif && (string.IsNullOrEmpty(mediaFile.GifUrl) || string.IsNullOrEmpty(mediaFile.GifPreviewUrl)))
+                {
+                    throw new InvalidOperationException("GifUrl and GifPreviewUrl are required for GIF media type");
+                }
                 var media = new PostMedia
                 {
                     PostId = post.Id,
@@ -1505,6 +1516,17 @@ public class PostService : BaseService, IPostService
             _logger.LogDebug("Processing {MediaCount} media files for repost {PostId}", createDto.MediaFiles.Count, repost.Id);
             foreach (var mediaFile in createDto.MediaFiles)
             {
+                // Validate that non-GIF media types have a fileName
+                if (mediaFile.MediaType != MediaType.Gif && string.IsNullOrEmpty(mediaFile.FileName))
+                {
+                    throw new InvalidOperationException($"FileName is required for {mediaFile.MediaType} media type");
+                }
+
+                // Validate that GIF media types have URLs
+                if (mediaFile.MediaType == MediaType.Gif && (string.IsNullOrEmpty(mediaFile.GifUrl) || string.IsNullOrEmpty(mediaFile.GifPreviewUrl)))
+                {
+                    throw new InvalidOperationException("GifUrl and GifPreviewUrl are required for GIF media type");
+                }
                 var media = new PostMedia
                 {
                     PostId = repost.Id,
