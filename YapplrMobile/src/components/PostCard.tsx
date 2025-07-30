@@ -228,18 +228,26 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
 
       {/* Display repost content if it exists */}
       {item.type === 'repost' && item.post.content && item.post.content.trim() && (
-        <ContentWithGifs
-          content={item.post.content}
-          style={styles.postContent}
-          textStyle={{ color: colors.text }}
-          onMentionPress={onUserPress}
-          onHashtagPress={onHashtagPress}
-          onLinkPress={(url) => {
-            // Handle link press - could open in browser or in-app
-            console.log('Link pressed:', url);
-          }}
-          maxGifWidth={300}
-        />
+        <View style={styles.repostContentContainer}>
+          {/* Add context for hashtag-only reposts */}
+          {item.post.content.trim().match(/^(#\w+\s*)+$/g) && (
+            <Text style={[styles.repostContextText, { color: colors.textSecondary }]}>
+              Reposted with:
+            </Text>
+          )}
+          <ContentWithGifs
+            content={item.post.content}
+            style={styles.postContent}
+            textStyle={{ color: colors.text }}
+            onMentionPress={onUserPress}
+            onHashtagPress={onHashtagPress}
+            onLinkPress={(url) => {
+              // Handle link press - could open in browser or in-app
+              console.log('Link pressed:', url);
+            }}
+            maxGifWidth={300}
+          />
+        </View>
       )}
 
       {/* Display original post content for non-reposts */}
@@ -1078,6 +1086,16 @@ const createStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  repostContentContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+  },
+  repostContextText: {
+    fontSize: 14,
+    marginRight: 4,
+    fontStyle: 'italic',
   },
   quotedAvatar: {
     width: 24,

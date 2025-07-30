@@ -609,9 +609,18 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 </div>
               </form>
             ) : (
-              <div className="text-gray-900">
-                <ContentWithGifs content={post.content} />
-              </div>
+              <>
+                {/* Repost content with improved context */}
+                {post.content && post.content.trim() && (
+                  <div className="text-gray-900">
+                    {/* Add context for hashtag-only reposts */}
+                    {post.repostedPost && post.content.trim().match(/^(#\w+\s*)+$/g) && (
+                      <span className="text-gray-600 text-sm mr-2">Reposted with:</span>
+                    )}
+                    <ContentWithGifs content={post.content} />
+                  </div>
+                )}
+              </>
             )}
             
             {/* Media Gallery - New multiple media support */}
