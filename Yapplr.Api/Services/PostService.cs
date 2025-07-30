@@ -1285,6 +1285,12 @@ public class PostService : BaseService, IPostService
             await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, repost.Id);
         }
 
+        // Perform content moderation analysis (if there's content)
+        if (!string.IsNullOrEmpty(createDto.Content))
+        {
+            await ProcessPostModerationAsync(repost.Id, createDto.Content, userId);
+        }
+
         // Invalidate reposted post's repost count cache
         await _countCache.InvalidatePostCountsAsync(createDto.RepostedPostId);
 
