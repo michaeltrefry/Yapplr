@@ -213,7 +213,8 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
         </View>
       </View>
 
-      {item.post.content && item.post.content.trim() && (
+      {/* Display repost content if it exists */}
+      {item.type === 'repost' && item.post.content && item.post.content.trim() && (
         <ContentWithGifs
           content={item.post.content}
           style={styles.postContent}
@@ -228,10 +229,98 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
         />
       )}
 
-      {/* Media Display */}
-      {item.post.mediaItems && item.post.mediaItems.length > 0 && (
+      {/* Display original post content for non-reposts */}
+      {item.type !== 'repost' && item.post.content && item.post.content.trim() && (
+        <ContentWithGifs
+          content={item.post.content}
+          style={styles.postContent}
+          textStyle={{ color: colors.text }}
+          onMentionPress={onUserPress}
+          onHashtagPress={onHashtagPress}
+          onLinkPress={(url) => {
+            // Handle link press - could open in browser or in-app
+            console.log('Link pressed:', url);
+          }}
+          maxGifWidth={300}
+        />
+      )}
+
+      {/* Display original post content for reposts */}
+      {item.type === 'repost' && item.post.repostedPost && item.post.repostedPost.content && item.post.repostedPost.content.trim() && (
+        <View style={styles.repostedPostContainer}>
+          <ContentWithGifs
+            content={item.post.repostedPost.content}
+            style={styles.postContent}
+            textStyle={{ color: colors.text }}
+            onMentionPress={onUserPress}
+            onHashtagPress={onHashtagPress}
+            onLinkPress={(url) => {
+              // Handle link press - could open in browser or in-app
+              console.log('Link pressed:', url);
+            }}
+            maxGifWidth={300}
+          />
+        </View>
+      )}
+
+      {/* Media Display - show repost's own media if it exists */}
+      {item.type === 'repost' && item.post.mediaItems && item.post.mediaItems.length > 0 && (
         <View style={styles.mediaContainer}>
           {item.post.mediaItems.map((media, index) => (
+            <View key={media.id} style={styles.mediaItem}>
+              {media.mediaType === MediaType.Image && media.imageUrl && (
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => setShowImageViewer(true)}
+                >
+                  <Image
+                    source={{ uri: media.imageUrl }}
+                    style={[
+                      styles.postImage,
+                      { height: getImageHeight(`media-${media.id}`) }
+                    ]}
+                    resizeMode="contain"
+                    onLoad={(event) => {
+                      handleImageLoad(`media-${media.id}`, event);
+                      setImageLoading(false);
+                    }}
+                    onError={() => {
+                      setImageLoading(false);
+                      setImageError(true);
+                    }}
+                    onLoadStart={() => {
+                      setImageLoading(true);
+                      setImageError(false);
+                    }}
+                  />
+                </TouchableOpacity>
+              )}
+              {media.mediaType === MediaType.Gif && media.gifUrl && (
+                <View style={styles.gifContainer}>
+                  <Image
+                    source={{ uri: media.gifUrl }}
+                    style={[
+                      styles.postImage,
+                      { height: getImageHeight(`gif-${media.id}`) }
+                    ]}
+                    resizeMode="contain"
+                    onLoad={(event) => handleImageLoad(`gif-${media.id}`, event)}
+                  />
+                  <View style={styles.gifBadge}>
+                    <Text style={styles.gifBadgeText}>GIF</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Media Display - show original post's media for reposts, or regular media for non-reposts */}
+      {((item.type === 'repost' && item.post.repostedPost?.mediaItems && item.post.repostedPost.mediaItems.length > 0) ||
+        (item.type !== 'repost' && item.post.mediaItems && item.post.mediaItems.length > 0)) && (
+        <View style={styles.mediaContainer}>
+          {(item.type === 'repost' ? item.post.repostedPost?.mediaItems : item.post.mediaItems)?.map((media, index) => (
             <View key={media.id} style={styles.mediaItem}>
               {media.mediaType === MediaType.Image && media.imageUrl && (
                 <TouchableOpacity
@@ -896,5 +985,11 @@ const createStyles = (colors: any) => StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+  },
+  repostedPostContainer: {
+    borderLeftWidth: 3,
+    borderLeftColor: colors.border,
+    paddingLeft: 12,
+    marginTop: 8,
   },
 });

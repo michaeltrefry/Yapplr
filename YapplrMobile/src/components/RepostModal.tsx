@@ -306,9 +306,13 @@ export default function RepostModal({ visible, onClose, repostedPost }: RepostMo
               
               {repostedPost.mediaItems && repostedPost.mediaItems.length > 0 && (
                 <View style={styles.quotedMedia}>
-                  <Image 
-                    source={{ uri: repostedPost.mediaItems[0].imageUrl || repostedPost.mediaItems[0].videoThumbnailUrl }} 
-                    style={styles.quotedMediaImage} 
+                  <Image
+                    source={{
+                      uri: repostedPost.mediaItems[0].gifUrl ||
+                           repostedPost.mediaItems[0].imageUrl ||
+                           repostedPost.mediaItems[0].videoThumbnailUrl
+                    }}
+                    style={styles.quotedMediaImage}
                   />
                   {repostedPost.mediaItems.length > 1 && (
                     <View style={styles.mediaCountBadge}>
