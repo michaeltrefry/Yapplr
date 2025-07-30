@@ -1288,7 +1288,7 @@ public class PostService : BaseService, IPostService
         // Perform content moderation analysis (if there's content)
         if (!string.IsNullOrEmpty(createDto.Content))
         {
-            await ProcessPostModerationAsync(repost.Id, createDto.Content, userId);
+            await ProcessContentModerationAsync(repost.Id, createDto.Content, userId);
         }
 
         // Invalidate reposted post's repost count cache
@@ -1309,7 +1309,7 @@ public class PostService : BaseService, IPostService
         // Perform content moderation analysis (if there's content)
         if (!string.IsNullOrWhiteSpace(createDto.Content))
         {
-            await ProcessPostModerationAsync(repost.Id, createDto.Content, userId);
+            await ProcessContentModerationAsync(repost.Id, createDto.Content, userId);
         }
 
         // Update trust score for post creation
@@ -1478,7 +1478,7 @@ public class PostService : BaseService, IPostService
         // Perform content moderation analysis (if there's content)
         if (!string.IsNullOrWhiteSpace(createDto.Content))
         {
-            await ProcessPostModerationAsync(repost.Id, createDto.Content, userId);
+            await ProcessContentModerationAsync(repost.Id, createDto.Content, userId);
         }
 
         // Update trust score for post creation
@@ -1599,18 +1599,7 @@ public class PostService : BaseService, IPostService
         return false;
     }
 
-    private async Task ProcessPostModerationAsync(int postId, string content, int userId)
-    {
-        try
-        {
-            await _contentModerationService.AnalyzeContentAsync(content);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Content moderation analysis failed for post {PostId}", postId);
-            // Don't throw - allow post creation to continue even if moderation fails
-        }
-    }
+
 
     public async Task<CommentDto?> AddCommentAsync(int postId, int userId, CreateCommentDto createDto)
     {
