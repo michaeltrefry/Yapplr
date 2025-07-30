@@ -18,6 +18,19 @@ import { TimelineItem, Post, VideoProcessingStatus, ReactionType, MediaType } fr
 import ImageViewer from './ImageViewer';
 import VideoPlayer, { VideoPlayerRef } from './VideoPlayer';
 import FullScreenVideoViewer from './FullScreenVideoViewer';
+
+// Simple time formatting function
+const formatTimeAgo = (dateString: string): string => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return `${diffInSeconds}s`;
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d`;
+  return date.toLocaleDateString();
+};
 import { ContentHighlight } from '../utils/contentUtils';
 import LinkPreviewList from './LinkPreviewList';
 import ReportModal from './ReportModal';
@@ -246,20 +259,47 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
       )}
 
       {/* Display original post content for reposts */}
-      {item.type === 'repost' && item.post.repostedPost && item.post.repostedPost.content && item.post.repostedPost.content.trim() && (
+      {item.type === 'repost' && item.post.repostedPost && (
         <View style={styles.repostedPostContainer}>
-          <ContentWithGifs
-            content={item.post.repostedPost.content}
-            style={styles.postContent}
-            textStyle={{ color: colors.text }}
-            onMentionPress={onUserPress}
-            onHashtagPress={onHashtagPress}
-            onLinkPress={(url) => {
-              // Handle link press - could open in browser or in-app
-              console.log('Link pressed:', url);
-            }}
-            maxGifWidth={300}
-          />
+          {/* Original author attribution */}
+          <View style={styles.originalAuthorHeader}>
+            <TouchableOpacity
+              style={styles.originalAuthorInfo}
+              onPress={() => onUserPress(item.post.repostedPost!.user.username)}
+            >
+              <Image
+                source={{ uri: item.post.repostedPost.user.profilePictureUrl || 'https://via.placeholder.com/40' }}
+                style={styles.originalAuthorAvatar}
+              />
+              <View style={styles.originalAuthorText}>
+                <Text style={styles.originalAuthorUsername}>
+                  {item.post.repostedPost.user.username}
+                </Text>
+                <Text style={styles.originalAuthorHandle}>
+                  @{item.post.repostedPost.user.username}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.originalPostTimestamp}>
+              {formatTimeAgo(item.post.repostedPost.createdAt)}
+            </Text>
+          </View>
+
+          {/* Original post content */}
+          {item.post.repostedPost.content && item.post.repostedPost.content.trim() && (
+            <ContentWithGifs
+              content={item.post.repostedPost.content}
+              style={styles.postContent}
+              textStyle={{ color: colors.text }}
+              onMentionPress={onUserPress}
+              onHashtagPress={onHashtagPress}
+              onLinkPress={(url) => {
+                // Handle link press - could open in browser or in-app
+                console.log('Link pressed:', url);
+              }}
+              maxGifWidth={300}
+            />
+          )}
         </View>
       )}
 
@@ -987,9 +1027,44 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontWeight: '600',
   },
   repostedPostContainer: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.border,
-    paddingLeft: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 12,
     marginTop: 8,
+    backgroundColor: colors.card,
+  },
+  originalAuthorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  originalAuthorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  originalAuthorAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  originalAuthorText: {
+    flex: 1,
+  },
+  originalAuthorUsername: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  originalAuthorHandle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  originalPostTimestamp: {
+    fontSize: 12,
+    color: colors.textSecondary,
   },
 });
