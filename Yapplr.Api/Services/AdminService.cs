@@ -1075,10 +1075,10 @@ public class AdminService : IAdminService
             .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        // Get daily reposts
-        var dailyReposts = await _context.Reposts
-            .Where(r => r.CreatedAt >= startDate)
-            .GroupBy(r => r.CreatedAt.Date)
+        // Get daily reposts (using new unified system)
+        var dailyReposts = await _context.Posts
+            .Where(p => p.PostType == PostType.Repost && p.CreatedAt >= startDate)
+            .GroupBy(p => p.CreatedAt.Date)
             .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync();
 
@@ -1140,10 +1140,10 @@ public class AdminService : IAdminService
             .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        // Get daily reposts
-        var dailyRepostsCount = await _context.Reposts
-            .Where(r => r.CreatedAt >= startDate)
-            .GroupBy(r => r.CreatedAt.Date)
+        // Get daily reposts (using new unified system)
+        var dailyRepostsCount = await _context.Posts
+            .Where(p => p.PostType == PostType.Repost && p.CreatedAt >= startDate)
+            .GroupBy(p => p.CreatedAt.Date)
             .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync();
 
@@ -1174,7 +1174,7 @@ public class AdminService : IAdminService
         var totalPosts = await _context.Posts.Where(p => p.PostType == PostType.Post && p.CreatedAt >= startDate).CountAsync();
         var totalComments = await _context.Posts.Where(c => c.PostType == PostType.Comment && c.CreatedAt >= startDate).CountAsync();
         var totalLikes = await _context.Likes.Where(l => l.CreatedAt >= startDate).CountAsync();
-        var totalReposts = await _context.Reposts.Where(r => r.CreatedAt >= startDate).CountAsync();
+        var totalReposts = await _context.Posts.Where(p => p.PostType == PostType.Repost && p.CreatedAt >= startDate).CountAsync();
 
         var totalEngagement = totalPosts + totalComments + totalLikes + totalReposts;
 

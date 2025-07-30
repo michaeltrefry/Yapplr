@@ -88,7 +88,7 @@ public class CountCacheService : ICountCacheService
         var key = $"count:reposts:{postId}";
         return await _cache.GetOrSetValueAsync(key, async () =>
         {
-            var count = await _context.Reposts.CountAsync(r => r.PostId == postId);
+            var count = await _context.Posts.CountAsync(p => p.PostType == PostType.Repost && p.RepostedPostId == postId && !p.IsDeletedByUser);
             _logger.LogDebug("Calculated repost count for post {PostId}: {Count}", postId, count);
             return count;
         }, PostCountExpiration);

@@ -588,42 +588,32 @@ public class PostService : BaseService, IPostService
             .Take(fetchSize)
             .ToListAsync();
 
-        // Get reposts from followed users and self
-        var reposts = await _context.GetRepostsWithIncludes()
-            .Where(r =>
-                // Apply same visibility filters as posts - use hybrid system
-                (!r.Post.IsHidden ||
-                 (r.Post.HiddenReasonType == PostHiddenReasonType.VideoProcessing && r.Post.UserId == userId)) && // Filter out hidden posts except video processing for author
-                r.Post.User.Status == UserStatus.Active && // Hide reposts of posts from suspended/banned users
-                (r.Post.User.TrustScore >= 0.1f || r.Post.UserId == userId) && // Hide reposts of low trust posts except from self
-                !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
-                !blockedUserIds.Contains(r.Post.UserId) && // Filter out reposts of posts from blocked users
-                (r.UserId == userId || followingIds.Contains(r.UserId))) // Reposts from self or followed users
-            .Where(r =>
-                r.Post.Privacy == PostPrivacy.Public || // Public posts can be reposted
-                r.Post.UserId == userId || // User's own posts
-                (r.Post.Privacy == PostPrivacy.Followers && followingIds.Contains(r.Post.UserId))) // Followers-only posts if following original author
-            .OrderByDescending(r => r.CreatedAt)
-            .Take(fetchSize)
-            .ToListAsync();
-
-        // Get reposts with content (formerly quote tweets) with same visibility rules as regular posts
-        var repostsWithContent = await _context.GetPostsWithIncludes()
+        // Get reposts from followed users and self (using new unified system)
+        var reposts = await _context.GetPostsWithIncludes()
             .Where(p => p.PostType == PostType.Repost &&
-                       !string.IsNullOrEmpty(p.Content) && // Only reposts with content
                        !p.IsDeletedByUser &&
+                       // Apply same visibility filters as posts - use hybrid system
                        (!p.IsHidden ||
                         (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing && p.UserId == userId)) && // Filter out hidden posts except video processing for author
                        p.User.Status == UserStatus.Active && // Hide reposts from suspended/banned users
                        (p.User.TrustScore >= 0.1f || p.UserId == userId) && // Hide reposts from low trust users except from self
-                       !blockedUserIds.Contains(p.UserId)) // Filter out reposts from blocked users
-            .Where(p =>
-                p.Privacy == PostPrivacy.Public || // Public reposts (visible to everyone)
-                p.UserId == userId || // User's own reposts
-                (p.Privacy == PostPrivacy.Followers && followingIds.Contains(p.UserId))) // Followers-only reposts if following author
+                       !blockedUserIds.Contains(p.UserId) && // Filter out reposts from blocked users
+                       (p.UserId == userId || followingIds.Contains(p.UserId))) // Reposts from self or followed users
+            .Where(p => p.RepostedPost != null && // Ensure reposted post exists
+                       !p.RepostedPost.IsDeletedByUser &&
+                       (!p.RepostedPost.IsHidden ||
+                        (p.RepostedPost.HiddenReasonType == PostHiddenReasonType.VideoProcessing && p.RepostedPost.UserId == userId)) && // Filter out reposts of hidden posts
+                       p.RepostedPost.User.Status == UserStatus.Active && // Hide reposts of posts from suspended/banned users
+                       (p.RepostedPost.User.TrustScore >= 0.1f || p.RepostedPost.UserId == userId) && // Hide reposts of low trust posts except from self
+                       !blockedUserIds.Contains(p.RepostedPost.UserId) && // Filter out reposts of posts from blocked users
+                       (p.RepostedPost.Privacy == PostPrivacy.Public || // Public posts can be reposted
+                        p.RepostedPost.UserId == userId || // User's own posts
+                        (p.RepostedPost.Privacy == PostPrivacy.Followers && followingIds.Contains(p.RepostedPost.UserId)))) // Followers-only posts if following original author
             .OrderByDescending(p => p.CreatedAt)
             .Take(fetchSize)
             .ToListAsync();
+
+        // Note: reposts with content are now included in the main reposts query above
 
         // Convert to timeline items in memory (no EF translation issues)
         var timelineItems = new List<TimelineItemDto>();
@@ -635,22 +625,14 @@ public class PostService : BaseService, IPostService
                 post.MapToPostDto(userId)));
         }
 
-        // Add reposts
+        // Add reposts (both simple reposts and reposts with content)
         foreach (var repost in reposts)
         {
             var repostedByUser = repost.User.MapToUserDto();
 
+            // For the new unified system, the repost itself is the post, and RepostedPost is what was reposted
             timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt,
-                repost.Post.MapToPostDto(userId), repostedByUser));
-        }
-
-        // Add reposts with content (formerly quote tweets)
-        foreach (var repostWithContent in repostsWithContent)
-        {
-            var repostedByUser = repostWithContent.User.MapToUserDto();
-
-            timelineItems.Add(new TimelineItemDto("repost", repostWithContent.CreatedAt,
-                repostWithContent.MapToPostDto(userId), repostedByUser));
+                repost.RepostedPost!.MapToPostDto(userId), repostedByUser));
         }
 
         // Sort by creation date and apply pagination
@@ -680,23 +662,22 @@ public class PostService : BaseService, IPostService
             .Take(fetchSize)
             .ToListAsync();
 
-        // Get reposts of public posts only
-        var reposts = await _context.GetRepostsWithIncludes()
-            .ApplyRepostVisibilityFilters(blockedUserIds)
-            .OrderByDescending(r => r.CreatedAt)
-            .Take(fetchSize)
-            .ToListAsync();
-
-        // Get public reposts with content only
-        var repostsWithContent = await _context.GetPostsWithIncludes()
+        // Get public reposts (using new unified system)
+        var reposts = await _context.GetPostsWithIncludes()
             .Where(p => p.PostType == PostType.Repost &&
-                       !string.IsNullOrEmpty(p.Content) && // Only reposts with content
                        p.Privacy == PostPrivacy.Public &&
                        !p.IsDeletedByUser &&
                        !p.IsHidden &&
                        p.User.Status == UserStatus.Active &&
                        p.User.TrustScore >= 0.1f &&
                        !blockedUserIds.Contains(p.UserId))
+            .Where(p => p.RepostedPost != null && // Ensure reposted post exists
+                       !p.RepostedPost.IsDeletedByUser &&
+                       !p.RepostedPost.IsHidden &&
+                       p.RepostedPost.User.Status == UserStatus.Active &&
+                       p.RepostedPost.User.TrustScore >= 0.1f &&
+                       p.RepostedPost.Privacy == PostPrivacy.Public && // Only reposts of public posts
+                       !blockedUserIds.Contains(p.RepostedPost.UserId))
             .OrderByDescending(p => p.CreatedAt)
             .Take(fetchSize)
             .ToListAsync();
@@ -711,19 +692,11 @@ public class PostService : BaseService, IPostService
             p.MapToPostDto(currentUserId)
         )));
 
-        // Add reposts
+        // Add reposts (both simple reposts and reposts with content)
         timelineItems.AddRange(reposts.Select(r => new TimelineItemDto(
             "repost",
             r.CreatedAt,
-            r.Post.MapToPostDto(currentUserId),
-            r.User.MapToUserDto()
-        )));
-
-        // Add reposts with content
-        timelineItems.AddRange(repostsWithContent.Select(r => new TimelineItemDto(
-            "repost",
-            r.CreatedAt,
-            r.MapToPostDto(currentUserId),
+            r.RepostedPost!.MapToPostDto(currentUserId),
             r.User.MapToUserDto()
         )));
 
@@ -884,61 +857,29 @@ public class PostService : BaseService, IPostService
             .Take(fetchSize)
             .ToListAsync();
 
-        // Get user's reposts
-        var reposts = await _context.Reposts
-            .Include(r => r.User)
-            .Include(r => r.Post)
-            .ThenInclude(p => p.User)
-            .Include(r => r.Post)
-            .ThenInclude(p => p.Likes)
-            .Include(r => r.Post)
-            .ThenInclude(p => p.Children.Where(c => c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden)) // Filter out user-deleted and moderator-hidden comments
-            .Include(r => r.Post)
-            .ThenInclude(p => p.Reposts)
-            .AsSplitQuery()
-            .Where(r => r.UserId == userId &&
-                   (!r.Post.IsHidden ||
-                    (r.Post.HiddenReasonType == PostHiddenReasonType.VideoProcessing && r.Post.UserId == currentUserId)) && // Use hybrid system for filtering
-                   r.Post.User.Status == UserStatus.Active && // Hide reposts of posts from suspended/banned users
-                   (r.Post.User.TrustScore >= 0.1f || r.Post.UserId == currentUserId)) // Hide reposts of low trust posts except from self
-            .Where(r =>
-                r.Post.Privacy == PostPrivacy.Public || // Public posts can be seen
-                r.Post.UserId == currentUserId || // Current user's own posts
-                (r.Post.Privacy == PostPrivacy.Followers && currentUserId == userId)) // User viewing their own reposts
-            .OrderByDescending(r => r.CreatedAt)
-            .Take(fetchSize)
-            .ToListAsync();
-
-        // Filter reposts based on whether current user follows the original authors (for followers-only posts)
-        if (currentUserId.HasValue && currentUserId.Value != userId)
-        {
-            var currentUserFollowingIds = await _context.Follows
-                .Where(f => f.FollowerId == currentUserId.Value)
-                .Select(f => f.FollowingId)
-                .ToListAsync();
-
-            reposts = reposts.Where(r =>
-                r.Post.Privacy == PostPrivacy.Public ||
-                r.Post.UserId == currentUserId ||
-                (r.Post.Privacy == PostPrivacy.Followers && currentUserFollowingIds.Contains(r.Post.UserId)))
-                .ToList();
-        }
-
-        // Get user's reposts with content
-        var repostsWithContent = await _context.GetPostsWithIncludes()
+        // Get user's reposts (using new unified system)
+        var reposts = await _context.GetPostsWithIncludes()
             .Where(p => p.PostType == PostType.Repost &&
-                       !string.IsNullOrEmpty(p.Content) && // Only reposts with content
-                       p.UserId == userId && // Only reposts from this user
+                       p.UserId == userId &&
                        !p.IsDeletedByUser &&
                        (!p.IsHidden ||
                         (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing && p.UserId == currentUserId))) // Use hybrid system for filtering
-            .Where(p =>
-                p.Privacy == PostPrivacy.Public || // Public reposts (visible to everyone)
-                p.UserId == currentUserId || // Current user's own reposts
-                (p.Privacy == PostPrivacy.Followers && isFollowing)) // Followers-only reposts if following author
+            .Where(p => p.RepostedPost != null && // Ensure reposted post exists
+                       !p.RepostedPost.IsDeletedByUser &&
+                       (!p.RepostedPost.IsHidden ||
+                        (p.RepostedPost.HiddenReasonType == PostHiddenReasonType.VideoProcessing && p.RepostedPost.UserId == currentUserId)) && // Use hybrid system for filtering
+                       p.RepostedPost.User.Status == UserStatus.Active && // Hide reposts of posts from suspended/banned users
+                       (p.RepostedPost.User.TrustScore >= 0.1f || p.RepostedPost.UserId == currentUserId) && // Hide reposts of low trust posts except from self
+                       (p.RepostedPost.Privacy == PostPrivacy.Public || // Public posts can be seen
+                        p.RepostedPost.UserId == currentUserId || // Current user's own posts
+                        (p.RepostedPost.Privacy == PostPrivacy.Followers && currentUserId == userId))) // User viewing their own reposts
             .OrderByDescending(p => p.CreatedAt)
             .Take(fetchSize)
             .ToListAsync();
+
+        // Note: Filtering is now handled in the main query above
+
+        // Note: reposts with content are now included in the main reposts query above
 
         // Convert to timeline items in memory
         var timelineItems = new List<TimelineItemDto>();
@@ -949,20 +890,12 @@ public class PostService : BaseService, IPostService
             timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, post.MapToPostDto(currentUserId)));
         }
 
-        // Add reposts
+        // Add reposts (both simple reposts and reposts with content)
         foreach (var repost in reposts)
         {
             var repostedByUser = repost.User.MapToUserDto();
 
-            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, repost.Post.MapToPostDto(currentUserId), repostedByUser));
-        }
-
-        // Add reposts with content
-        foreach (var repostWithContent in repostsWithContent)
-        {
-            var repostedByUser = repostWithContent.User.MapToUserDto();
-
-            timelineItems.Add(new TimelineItemDto("repost", repostWithContent.CreatedAt, repostWithContent.MapToPostDto(currentUserId), repostedByUser));
+            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, repost.RepostedPost!.MapToPostDto(currentUserId), repostedByUser));
         }
 
         // Sort by creation date and apply pagination
@@ -1384,7 +1317,7 @@ public class PostService : BaseService, IPostService
             .Include(p => p.Likes)
             .Include(p => p.Reactions)
             .Include(p => p.Children.Where(c => c.PostType == PostType.Comment))
-            .Include(p => p.LegacyReposts)
+
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
             .Include(p => p.PostLinkPreviews)
@@ -1396,51 +1329,7 @@ public class PostService : BaseService, IPostService
         return createdRepost.MapToPostDto(userId);
     }
 
-    // Legacy repost methods (for backward compatibility)
-    public async Task<bool> LegacyRepostAsync(int postId, int userId)
-    {
-        // Check if already reposted
-        if (await _context.Reposts.AnyAsync(r => r.PostId == postId && r.UserId == userId))
-            return false;
 
-        var repost = new Repost
-        {
-            PostId = postId,
-            UserId = userId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.Reposts.Add(repost);
-        await _context.SaveChangesAsync();
-
-        // Invalidate post repost count cache
-        await _countCache.InvalidatePostCountsAsync(postId);
-
-        // Get the post owner to create notification
-        var post = await _context.Posts.FindAsync(postId);
-        if (post != null)
-        {
-            await _notificationService.CreateRepostNotificationAsync(post.UserId, userId, postId);
-        }
-
-        return true;
-    }
-
-    public async Task<bool> LegacyUnrepostAsync(int postId, int userId)
-    {
-        var repost = await _context.Reposts.FirstOrDefaultAsync(r => r.PostId == postId && r.UserId == userId);
-
-        if (repost == null)
-            return false;
-
-        _context.Reposts.Remove(repost);
-        await _context.SaveChangesAsync();
-
-        // Invalidate post repost count cache
-        await _countCache.InvalidatePostCountsAsync(postId);
-
-        return true;
-    }
 
     public async Task<PostDto?> CreateRepostWithMediaAsync(int userId, CreateRepostWithMediaDto createDto)
     {
@@ -1591,7 +1480,7 @@ public class PostService : BaseService, IPostService
             .Include(p => p.Likes)
             .Include(p => p.Reactions)
             .Include(p => p.Children.Where(c => c.PostType == PostType.Comment))
-            .Include(p => p.LegacyReposts)
+
             .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
             .Include(p => p.PostLinkPreviews)

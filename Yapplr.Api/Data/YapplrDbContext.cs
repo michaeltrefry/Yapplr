@@ -16,7 +16,7 @@ public class YapplrDbContext : DbContext
     public DbSet<Like> Likes { get; set; } // Legacy - will be removed
     public DbSet<PostReaction> PostReactions { get; set; }
     // Comment-related DbSets removed - now using unified Post model
-    public DbSet<Repost> Reposts { get; set; }
+
     public DbSet<Follow> Follows { get; set; }
     public DbSet<FollowRequest> FollowRequests { get; set; }
     public DbSet<Block> Blocks { get; set; }
@@ -215,23 +215,7 @@ public class YapplrDbContext : DbContext
 
 
 
-        // Legacy Repost configuration (will be phased out)
-        modelBuilder.Entity<Repost>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.UserId, e.PostId }).IsUnique(); // Prevent duplicate reposts
-            entity.HasOne(e => e.User)
-                  .WithMany(e => e.LegacyReposts)
-                  .HasForeignKey(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Post)
-                  .WithMany(e => e.LegacyReposts)
-                  .HasForeignKey(e => e.PostId)
-                  .OnDelete(DeleteBehavior.Cascade);
 
-            // Performance indexes for repost timeline queries
-            entity.HasIndex(e => e.CreatedAt); // Timeline ordering for reposts
-        });
 
         // Follow configuration
         modelBuilder.Entity<Follow>(entity =>

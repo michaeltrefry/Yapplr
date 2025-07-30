@@ -118,48 +118,7 @@ public static class QueryUtilities
 
 
 
-    /// <summary>
-    /// Get reposts query with standard includes
-    /// </summary>
-    public static IQueryable<Repost> GetRepostsWithIncludes(this YapplrDbContext context)
-    {
-        return context.Reposts
-            .Include(r => r.User)
-            .Include(r => r.Post)
-                .ThenInclude(p => p.User)
-            .Include(r => r.Post)
-                .ThenInclude(p => p.Likes)
-            .Include(r => r.Post)
-                .ThenInclude(p => p.Reactions)
-            .Include(r => r.Post)
-                .ThenInclude(p => p.Children.Where(c => c.PostType == PostType.Comment && !c.IsDeletedByUser && !c.IsHidden))
-            .Include(r => r.Post)
-                .ThenInclude(p => p.Reposts)
-            .Include(r => r.Post)
-                .ThenInclude(p => p.PostTags)
-                    .ThenInclude(pt => pt.Tag)
-            .Include(r => r.Post)
-                .ThenInclude(p => p.PostLinkPreviews)
-                    .ThenInclude(plp => plp.LinkPreview)
-            .Include(r => r.Post)
-                .ThenInclude(p => p.PostMedia)
-            .AsSplitQuery();
-    }
 
-    /// <summary>
-    /// Apply repost visibility filters
-    /// </summary>
-    public static IQueryable<Repost> ApplyRepostVisibilityFilters(this IQueryable<Repost> query,
-        HashSet<int> blockedUserIds)
-    {
-        return query.Where(r =>
-            !r.Post.IsHidden && // Filter out reposts of hidden posts (includes DeletedByUser via hybrid system)
-            r.Post.User.Status == UserStatus.Active && // Hide reposts of posts from suspended/banned users
-            r.Post.User.TrustScore >= 0.1f && // Hide reposts of low trust posts from public timeline
-            r.Post.Privacy == PostPrivacy.Public && // Only reposts of public posts
-            !blockedUserIds.Contains(r.UserId) && // Filter out reposts from blocked users
-            !blockedUserIds.Contains(r.Post.UserId)); // Filter out reposts of posts from blocked users
-    }
 
 
 

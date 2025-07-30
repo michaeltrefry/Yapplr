@@ -325,34 +325,7 @@ Each media file object should include:
         .Produces<IEnumerable<PostDto>>(200)
         .Produces(404);
 
-        // Legacy simple repost endpoints (for backward compatibility)
-        posts.MapPost("/{id:int}/repost", async (int id, ClaimsPrincipal user, IPostService postService) =>
-        {
-            var userId = user.GetUserId(true);
-            var success = await postService.LegacyRepostAsync(id, userId);
 
-            return success ? Results.Ok() : Results.BadRequest(new { message = "Already reposted" });
-        })
-        .WithName("LegacyRepostPost")
-        .WithSummary("Legacy simple repost (deprecated - use /repost instead)")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
-
-        posts.MapDelete("/{id:int}/repost", async (int id, ClaimsPrincipal user, IPostService postService) =>
-        {
-            var userId = user.GetUserId(true);
-            var success = await postService.LegacyUnrepostAsync(id, userId);
-
-            return success ? Results.Ok() : Results.BadRequest(new { message = "Not reposted" });
-        })
-        .WithName("LegacyUnrepostPost")
-        .WithSummary("Legacy remove repost (deprecated)")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
 
 
 

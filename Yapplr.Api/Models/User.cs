@@ -80,7 +80,7 @@ public class User : IEntity
     public ICollection<Post> Posts { get; set; } = new List<Post>();
     public ICollection<Like> Likes { get; set; } = new List<Like>(); // Legacy - will be removed
     public ICollection<PostReaction> PostReactions { get; set; } = new List<PostReaction>();
-    public ICollection<Repost> LegacyReposts { get; set; } = new List<Repost>();
+
 
     // Follow relationships
     public ICollection<Follow> Followers { get; set; } = new List<Follow>(); // Users following this user

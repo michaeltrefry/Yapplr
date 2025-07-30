@@ -29,9 +29,7 @@ public interface IPostService
     Task<PostDto?> CreateRepostWithMediaAsync(int userId, CreateRepostWithMediaDto createDto);
     Task<IEnumerable<PostDto>> GetRepostsAsync(int postId, int? currentUserId = null, int page = 1, int pageSize = 20);
 
-    // Legacy repost methods (for backward compatibility)
-    Task<bool> LegacyRepostAsync(int postId, int userId);
-    Task<bool> LegacyUnrepostAsync(int postId, int userId);
+
 
 
 

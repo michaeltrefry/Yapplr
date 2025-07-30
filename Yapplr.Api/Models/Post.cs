@@ -79,7 +79,7 @@ public class Post : IUserOwnedEntity
     public ICollection<Like> Likes { get; set; } = new List<Like>(); // Legacy - will be removed
     public ICollection<PostReaction> Reactions { get; set; } = new List<PostReaction>();
     // Comments are now handled through Children collection (Posts with PostType.Comment)
-    public ICollection<Repost> LegacyReposts { get; set; } = new List<Repost>(); // Legacy - will be removed
+
     public ICollection<PostTag> PostTags { get; set; } = new List<PostTag>();
     public ICollection<PostLinkPreview> PostLinkPreviews { get; set; } = new List<PostLinkPreview>();
     public ICollection<PostSystemTag> PostSystemTags { get; set; } = new List<PostSystemTag>();
@@ -90,7 +90,7 @@ public class Post : IUserOwnedEntity
     public int LikeCount => Likes.Count; // Legacy - will be replaced with reaction counts
     public int ReactionCount => Reactions.Count;
     public int CommentCount => PostType == PostType.Post ? Children.Count(c => c.PostType == PostType.Comment) : 0;
-    public int RepostCount => LegacyReposts.Count + Reposts.Count; // Combined count from both systems
+    public int RepostCount => Reposts.Count; // Count from new unified system
 
 
 

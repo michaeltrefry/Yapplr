@@ -433,11 +433,13 @@ public class UserService : BaseService, IUserService
             .CountAsync();
         score += profileViews * 1.0;
 
-        // Reposts of their content (medium weight)
-        var reposts = await _context.Reposts
-            .Where(r => r.UserId == currentUserId &&
-                       r.Post.UserId == targetUserId &&
-                       r.CreatedAt >= since)
+        // Reposts of their content (medium weight) - using new unified system
+        var reposts = await _context.Posts
+            .Where(p => p.PostType == PostType.Repost &&
+                       p.UserId == currentUserId &&
+                       p.RepostedPost != null &&
+                       p.RepostedPost.UserId == targetUserId &&
+                       p.CreatedAt >= since)
             .CountAsync();
         score += reposts * 5.0;
 

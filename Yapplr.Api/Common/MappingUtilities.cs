@@ -490,7 +490,7 @@ public static class MappingUtilities
             post.Group.MapToGroupDto(currentUserId),
             post.Likes.Count,
             post.Children.Count(c => c.PostType == PostType.Comment),
-            post.LegacyReposts.Count + post.Reposts.Count, // Combined count from both systems
+            post.Reposts.Count, // Count from new unified system
             tags,
             linkPreviews,
             isLiked,
