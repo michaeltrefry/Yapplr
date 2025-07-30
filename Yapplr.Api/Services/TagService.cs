@@ -60,6 +60,8 @@ public class TagService : ITagService
             .Where(t => _context.PostTags
                 .Any(pt => pt.TagId == t.Id &&
                           !pt.Post.IsHidden &&
+                          !pt.Post.IsDeletedByUser &&
+                          (pt.Post.PostType == PostType.Post || pt.Post.PostType == PostType.Repost) &&
                           pt.Post.User.Status == UserStatus.Active))
             .Select(t => new
             {
@@ -67,6 +69,8 @@ public class TagService : ITagService
                 VisiblePostCount = _context.PostTags
                     .Count(pt => pt.TagId == t.Id &&
                                !pt.Post.IsHidden &&
+                               !pt.Post.IsDeletedByUser &&
+                               (pt.Post.PostType == PostType.Post || pt.Post.PostType == PostType.Repost) &&
                                pt.Post.User.Status == UserStatus.Active)
             })
             .Where(x => x.VisiblePostCount > 0)
@@ -93,9 +97,26 @@ public class TagService : ITagService
             ? await _context.GetFollowingUserIdsAsync(currentUserId.Value)
             : new HashSet<int>();
 
-        var posts = await _context.GetPostsForFeed()
-            .Where(p => p.PostTags.Any(pt => pt.Tag.Name == normalizedTagName))
-            .ApplyVisibilityFilters(currentUserId, blockedUserIds, followingIds)
+        // Get both regular posts and reposts that contain the hashtag
+        var posts = await _context.GetPostsWithIncludes()
+            .Where(p => p.PostTags.Any(pt => pt.Tag.Name == normalizedTagName) &&
+                       (p.PostType == PostType.Post || p.PostType == PostType.Repost) &&
+                       !p.IsDeletedByUser &&
+                       // Apply visibility filters
+                       (!p.IsHidden ||
+                        (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing &&
+                         currentUserId.HasValue && p.UserId == currentUserId.Value)) &&
+                       p.User.Status == UserStatus.Active &&
+                       (p.User.TrustScore >= 0.1f ||
+                        (currentUserId.HasValue && p.UserId == currentUserId.Value)) &&
+                       !blockedUserIds.Contains(p.UserId) &&
+                       // Privacy filtering
+                       (p.Privacy == PostPrivacy.Public ||
+                        (currentUserId.HasValue && p.UserId == currentUserId.Value) ||
+                        (p.Privacy == PostPrivacy.Followers && currentUserId.HasValue &&
+                         followingIds.Contains(p.UserId))) &&
+                       // Group post filtering - exclude group posts from hashtag search
+                       p.GroupId == null)
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
