@@ -313,7 +313,7 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
                     <VideoPlayer
                       ref={(ref) => {
                         if (ref) {
-                          videoRefs.current[media.id] = ref;
+                          videoPlayerRefs.current[media.id] = ref;
                         }
                       }}
                       videoUrl={media.videoUrl}
@@ -424,7 +424,7 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
                     <VideoPlayer
                       ref={(ref) => {
                         if (ref) {
-                          videoRefs.current[media.id] = ref;
+                          videoPlayerRefs.current[media.id] = ref;
                         }
                       }}
                       videoUrl={media.videoUrl}
