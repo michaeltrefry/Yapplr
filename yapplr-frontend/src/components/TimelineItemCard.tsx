@@ -34,7 +34,7 @@ export default function TimelineItemCard({ item }: TimelineItemCardProps) {
   };
 
   const deleteRepostMutation = useMutation({
-    mutationFn: () => postApi.unrepost(localItem.post.id),
+    mutationFn: () => postApi.deletePost(localItem.post.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
       queryClient.invalidateQueries({ queryKey: ['userTimeline'] });

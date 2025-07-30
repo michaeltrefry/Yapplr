@@ -137,7 +137,7 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
 
     setIsDeleting(true);
     try {
-      await api.posts.unrepost(item.post.id);
+      await api.posts.deletePost(item.post.id);
       setShowDeleteConfirm(false);
       onUnrepost?.();
     } catch (error) {
