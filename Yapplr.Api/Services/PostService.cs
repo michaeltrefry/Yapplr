@@ -1273,6 +1273,18 @@ public class PostService : BaseService, IPostService
         _context.Posts.Add(repost);
         await _context.SaveChangesAsync();
 
+        // Process hashtags in the repost content (if any)
+        if (!string.IsNullOrEmpty(createDto.Content))
+        {
+            await ProcessPostTagsAsync(repost.Id, createDto.Content);
+        }
+
+        // Create mention notifications for users mentioned in the repost content (if any)
+        if (!string.IsNullOrEmpty(createDto.Content))
+        {
+            await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, repost.Id);
+        }
+
         // Invalidate reposted post's repost count cache
         await _countCache.InvalidatePostCountsAsync(createDto.RepostedPostId);
 
@@ -1443,6 +1455,12 @@ public class PostService : BaseService, IPostService
         if (repostedPost.UserId != userId) // Don't notify if reposting own post
         {
             await _notificationService.CreateRepostNotificationAsync(repostedPost.UserId, userId, createDto.RepostedPostId);
+        }
+
+        // Process hashtags in the repost content (if any)
+        if (!string.IsNullOrWhiteSpace(createDto.Content))
+        {
+            await ProcessPostTagsAsync(repost.Id, createDto.Content);
         }
 
         // Create mention notifications for users mentioned in the repost content (if any)
