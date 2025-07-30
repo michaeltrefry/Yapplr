@@ -9,9 +9,14 @@ public enum PostType
     /// Regular post (top-level content)
     /// </summary>
     Post = 0,
-    
+
     /// <summary>
     /// Comment (reply to another post)
     /// </summary>
-    Comment = 1
+    Comment = 1,
+
+    /// <summary>
+    /// Repost (sharing another post with optional commentary and media)
+    /// </summary>
+    Repost = 2
 }

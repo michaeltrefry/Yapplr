@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
-using Yapplr.Api.Extensions;
 using Serilog.Context;
 using Yapplr.Api.Common;
 
@@ -13,17 +12,15 @@ public class AdminService : IAdminService
     private readonly YapplrDbContext _context;
     private readonly IAuditService _auditService;
     private readonly INotificationService _notificationService;
-    private readonly IModerationMessageService _moderationMessageService;
     private readonly ITrustScoreService _trustScoreService;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AdminService> _logger;
 
-    public AdminService(YapplrDbContext context, IAuditService auditService, INotificationService notificationService, IModerationMessageService moderationMessageService, ITrustScoreService trustScoreService, IServiceProvider serviceProvider, ILogger<AdminService> logger)
+    public AdminService(YapplrDbContext context, IAuditService auditService, INotificationService notificationService, ITrustScoreService trustScoreService, IServiceProvider serviceProvider, ILogger<AdminService> logger)
     {
         _context = context;
         _auditService = auditService;
         _notificationService = notificationService;
-        _moderationMessageService = moderationMessageService;
         _trustScoreService = trustScoreService;
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -45,13 +42,13 @@ public class AdminService : IAdminService
             .ThenBy(st => st.Name)
             .ToListAsync();
 
-        return tags.Select(MapToSystemTagDto);
+        return tags.Select(MappingUtilities.MapToSystemTagDto);
     }
 
     public async Task<SystemTagDto?> GetSystemTagAsync(int id)
     {
         var tag = await _context.SystemTags.FindAsync(id);
-        return tag == null ? null : MapToSystemTagDto(tag);
+        return tag == null ? null : tag.MapToSystemTagDto();
     }
 
     public async Task<SystemTagDto> CreateSystemTagAsync(CreateSystemTagDto createDto)
@@ -72,7 +69,7 @@ public class AdminService : IAdminService
         _context.SystemTags.Add(systemTag);
         await _context.SaveChangesAsync();
 
-        return MapToSystemTagDto(systemTag);
+        return systemTag.MapToSystemTagDto();
     }
 
     public async Task<SystemTagDto?> UpdateSystemTagAsync(int id, UpdateSystemTagDto updateDto)
@@ -92,7 +89,7 @@ public class AdminService : IAdminService
         systemTag.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-        return MapToSystemTagDto(systemTag);
+        return systemTag.MapToSystemTagDto();
     }
 
     public async Task<bool> DeleteSystemTagAsync(int id)
@@ -139,7 +136,7 @@ public class AdminService : IAdminService
             .GroupBy(ast => ast.PostId!.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        return posts.Select(p => MapToAdminPostDtoWithTags(p, aiSuggestedTagsByPostId.GetValueOrDefault(p.Id, new List<AiSuggestedTag>()))).ToList();
+        return posts.Select(p => p.MapToAdminPostDtoWithTags(aiSuggestedTagsByPostId.GetValueOrDefault(p.Id, new List<AiSuggestedTag>()))).ToList();
     }
 
     // Comment Moderation - includes ALL comments (both public and group comments) for admin moderation
@@ -163,7 +160,7 @@ public class AdminService : IAdminService
             .Take(pageSize)
             .ToListAsync();
 
-        return comments.Select(MapPostToAdminCommentDto);
+        return comments.Select(MappingUtilities.MapPostToAdminCommentDto);
     }
 
     public async Task<AdminPostDto?> GetPostForModerationAsync(int postId)
@@ -188,7 +185,7 @@ public class AdminService : IAdminService
             .OrderByDescending(ast => ast.SuggestedAt)
             .ToListAsync();
 
-        return MapToAdminPostDtoWithTags(post, aiSuggestedTags);
+        return post.MapToAdminPostDtoWithTags(aiSuggestedTags);
     }
 
     public async Task<AdminCommentDto?> GetCommentForModerationAsync(int commentId)
@@ -201,7 +198,7 @@ public class AdminService : IAdminService
                 .ThenInclude(pst => pst.SystemTag)
             .FirstOrDefaultAsync(c => c.Id == commentId && c.PostType == PostType.Comment);
 
-        return comment == null ? null : MapPostToAdminCommentDto(comment);
+        return comment == null ? null : comment.MapPostToAdminCommentDto();
     }
 
     public async Task<bool> HidePostAsync(int postId, int hiddenByUserId, string reason)
@@ -593,10 +590,10 @@ public class AdminService : IAdminService
 
         return new ContentQueueDto
         {
-            FlaggedPosts = flaggedPosts.Select(p => MapToAdminPostDtoWithTags(p, aiSuggestedTagsByPostId.GetValueOrDefault(p.Id, new List<AiSuggestedTag>()))).ToList(),
-            FlaggedComments = flaggedComments.Select(MapPostToAdminCommentDto).ToList(),
-            PendingAppeals = pendingAppeals.Select(MapToUserAppealDto).ToList(),
-            UserReports = userReports.Select(MapToUserReportDto).ToList(),
+            FlaggedPosts = flaggedPosts.Select(p => p.MapToAdminPostDtoWithTags(aiSuggestedTagsByPostId.GetValueOrDefault(p.Id, new List<AiSuggestedTag>()))).ToList(),
+            FlaggedComments = flaggedComments.Select(MappingUtilities.MapPostToAdminCommentDto).ToList(),
+            PendingAppeals = pendingAppeals.Select(MappingUtilities.MapToUserAppealDto).ToList(),
+            UserReports = userReports.Select(MappingUtilities.MapToUserReportDto).ToList(),
             TotalFlaggedContent = flaggedPosts.Count + flaggedComments.Count + userReports.Count
         };
     }
@@ -631,7 +628,7 @@ public class AdminService : IAdminService
             .Take(pageSize)
             .ToListAsync();
 
-        return appeals.Select(MapToUserAppealDto);
+        return appeals.Select(MappingUtilities.MapToUserAppealDto);
     }
 
     public async Task<UserAppealDto?> GetUserAppealAsync(int appealId)
@@ -643,7 +640,7 @@ public class AdminService : IAdminService
             .Include(ua => ua.TargetComment)
             .FirstOrDefaultAsync(ua => ua.Id == appealId);
 
-        return appeal == null ? null : MapToUserAppealDto(appeal);
+        return appeal == null ? null : appeal.MapToUserAppealDto();
     }
 
     public async Task<UserAppealDto> CreateUserAppealAsync(int userId, CreateAppealDto createDto)
@@ -678,7 +675,7 @@ public class AdminService : IAdminService
             appeal.TargetCommentId
         );
 
-        return MapToUserAppealDto(appealWithUser);
+        return appealWithUser.MapToUserAppealDto();
     }
 
     public async Task<UserAppealDto?> ReviewUserAppealAsync(int appealId, int reviewedByUserId, ReviewAppealDto reviewDto)
@@ -740,7 +737,7 @@ public class AdminService : IAdminService
             );
         }
 
-        return MapToUserAppealDto(appeal);
+        return appeal.MapToUserAppealDto();
     }
 
     private async Task HandleApprovedAppealAsync(UserAppeal appeal, int reviewedByUserId)
@@ -1198,177 +1195,7 @@ public class AdminService : IAdminService
             EngagementBreakdown = engagementBreakdown
         };
     }
-
-    // Mapping methods
-    private static SystemTagDto MapToSystemTagDto(SystemTag systemTag)
-    {
-        return new SystemTagDto
-        {
-            Id = systemTag.Id,
-            Name = systemTag.Name,
-            Description = systemTag.Description,
-            Category = systemTag.Category,
-            IsVisibleToUsers = systemTag.IsVisibleToUsers,
-            IsActive = systemTag.IsActive,
-            Color = systemTag.Color,
-            Icon = systemTag.Icon,
-            SortOrder = systemTag.SortOrder,
-            CreatedAt = systemTag.CreatedAt,
-            UpdatedAt = systemTag.UpdatedAt
-        };
-    }
-
-    private static AdminPostDto MapToAdminPostDto(Post post)
-    {
-        // Map group information if post is in a group
-        GroupDto? groupDto = null;
-        if (post.Group != null)
-        {
-            groupDto = new GroupDto(
-                post.Group.Id,
-                post.Group.Name,
-                post.Group.Description,
-                post.Group.ImageFileName,
-                post.Group.CreatedAt,
-                post.Group.UpdatedAt,
-                post.Group.IsOpen,
-                post.Group.User.MapToUserDto(),
-                post.Group.Members?.Count ?? 0,
-                post.Group.Posts?.Count ?? 0,
-                false // IsCurrentUserMember - we don't have this info in admin context
-            );
-        }
-
-        return new AdminPostDto
-        {
-            Id = post.Id,
-            Content = post.Content,
-            ImageFileName = post.ImageFileName,
-            Privacy = post.Privacy,
-            IsHidden = post.IsHidden,
-            HiddenReason = post.HiddenReason ?? post.HiddenReasonType.ToString(),
-            HiddenAt = post.HiddenAt,
-            HiddenByUsername = post.HiddenByUser?.Username,
-            CreatedAt = post.CreatedAt,
-            UpdatedAt = post.UpdatedAt,
-            User = post.User.MapToUserDto(),
-            Group = groupDto,
-            LikeCount = post.Likes?.Count ?? 0,
-            CommentCount = post.Children?.Count(c => c.PostType == PostType.Comment) ?? 0,
-            RepostCount = post.Reposts?.Count ?? 0,
-            SystemTags = post.PostSystemTags?.Select(pst => MapToSystemTagDto(pst.SystemTag)).ToList() ?? new List<SystemTagDto>()
-        };
-    }
-
-    private static AdminPostDto MapToAdminPostDtoWithTags(Post post, List<AiSuggestedTag> aiSuggestedTags)
-    {
-        var adminPostDto = MapToAdminPostDto(post);
-        adminPostDto.AiSuggestedTags = aiSuggestedTags.Select(MapToAiSuggestedTagDto).ToList();
-        return adminPostDto;
-    }
-
-
-
-    private static AiSuggestedTagDto MapToAiSuggestedTagDto(AiSuggestedTag aiSuggestedTag)
-    {
-        return new AiSuggestedTagDto
-        {
-            Id = aiSuggestedTag.Id,
-            TagName = aiSuggestedTag.TagName,
-            Category = aiSuggestedTag.Category,
-            Confidence = aiSuggestedTag.Confidence,
-            RiskLevel = aiSuggestedTag.RiskLevel,
-            RequiresReview = aiSuggestedTag.RequiresReview,
-            SuggestedAt = aiSuggestedTag.SuggestedAt,
-            IsApproved = aiSuggestedTag.IsApproved,
-            IsRejected = aiSuggestedTag.IsRejected,
-            ApprovedByUserId = aiSuggestedTag.ApprovedByUserId,
-            ApprovedByUsername = aiSuggestedTag.ApprovedByUser?.Username,
-            ApprovedAt = aiSuggestedTag.ApprovedAt,
-            ApprovalReason = aiSuggestedTag.ApprovalReason
-        };
-    }
-
-
-
-    private static AdminCommentDto MapPostToAdminCommentDto(Post post)
-    {
-        if (post.PostType != PostType.Comment)
-            throw new ArgumentException("Post must be of type Comment", nameof(post));
-
-        // Map group information if comment is in a group
-        GroupDto? groupDto = null;
-        if (post.Group != null)
-        {
-            groupDto = new GroupDto(
-                post.Group.Id,
-                post.Group.Name,
-                post.Group.Description,
-                post.Group.ImageFileName,
-                post.Group.CreatedAt,
-                post.Group.UpdatedAt,
-                post.Group.IsOpen,
-                post.Group.User.MapToUserDto(),
-                post.Group.Members?.Count ?? 0,
-                post.Group.Posts?.Count ?? 0,
-                false // IsCurrentUserMember - we don't have this info in admin context
-            );
-        }
-
-        return new AdminCommentDto
-        {
-            Id = post.Id,
-            Content = post.Content,
-            IsHidden = post.IsHidden,
-            HiddenReason = post.HiddenReason,
-            HiddenAt = post.HiddenAt,
-            HiddenByUsername = post.HiddenByUser?.Username,
-            CreatedAt = post.CreatedAt,
-            UpdatedAt = post.UpdatedAt,
-            User = post.User.MapToUserDto(),
-            Group = groupDto,
-            PostId = post.ParentId ?? 0, // ParentId is the original PostId for comments
-            SystemTags = post.PostSystemTags?.Select(pst => MapToSystemTagDto(pst.SystemTag)).ToList() ?? new List<SystemTagDto>()
-        };
-    }
-
-    private static UserAppealDto MapToUserAppealDto(UserAppeal appeal)
-    {
-        return new UserAppealDto
-        {
-            Id = appeal.Id,
-            Username = appeal.User.Username,
-            Type = appeal.Type,
-            Status = appeal.Status,
-            Reason = appeal.Reason,
-            AdditionalInfo = appeal.AdditionalInfo,
-            TargetPostId = appeal.TargetPostId,
-            TargetCommentId = appeal.TargetCommentId,
-            ReviewedByUsername = appeal.ReviewedByUser?.Username,
-            ReviewNotes = appeal.ReviewNotes,
-            ReviewedAt = appeal.ReviewedAt,
-            CreatedAt = appeal.CreatedAt
-        };
-    }
-
-    private static UserReportDto MapToUserReportDto(UserReport report)
-    {
-        return new UserReportDto
-        {
-            Id = report.Id,
-            ReportedByUsername = report.ReportedByUser.Username,
-            Status = report.Status,
-            Reason = report.Reason,
-            CreatedAt = report.CreatedAt,
-            ReviewedAt = report.ReviewedAt,
-            ReviewedByUsername = report.ReviewedByUser?.Username,
-            ReviewNotes = report.ReviewNotes,
-            Post = report.Post != null ? MapToAdminPostDto(report.Post) : null,
-            Comment = report.Comment != null ? MapPostToAdminCommentDto(report.Comment) : null,
-            SystemTags = report.UserReportSystemTags?.Select(urst => MapToSystemTagDto(urst.SystemTag)).ToList() ?? new List<SystemTagDto>()
-        };
-    }
-
+    
     // AI Suggested Tags Management
     public async Task<IEnumerable<AiSuggestedTagDto>> GetPendingAiSuggestionsAsync(int? postId = null, int? commentId = null, int page = 1, int pageSize = 25)
     {
@@ -1392,7 +1219,7 @@ public class AdminService : IAdminService
             .Take(pageSize)
             .ToListAsync();
 
-        return suggestions.Select(MapToAiSuggestedTagDto);
+        return suggestions.Select(MappingUtilities.MapToAiSuggestedTagDto);
     }
 
     public async Task<bool> ApproveAiSuggestedTagAsync(int suggestedTagId, int approvedByUserId, string? reason = null)

@@ -74,7 +74,7 @@ public interface INotificationService
     /// Creates a repost notification
     /// </summary>
     Task CreateRepostNotificationAsync(int originalUserId, int repostingUserId, int postId);
-    
+
     /// <summary>
     /// Creates a follow notification
     /// </summary>

@@ -468,6 +468,14 @@ public static class MappingUtilities
 
         var totalReactionCount = post.Reactions.Count;
 
+        // Map reposted post if this is a repost
+        PostDto? repostedPostDto = null;
+        if (post.PostType == PostType.Repost && post.RepostedPost != null)
+        {
+            // Recursively map the reposted post (but don't include moderation info to avoid deep nesting)
+            repostedPostDto = post.RepostedPost.MapToPostDto(currentUserId, includeModeration: false);
+        }
+
         return new PostDto(
             post.Id,
             post.Content,
@@ -482,7 +490,7 @@ public static class MappingUtilities
             post.Group.MapToGroupDto(currentUserId),
             post.Likes.Count,
             post.Children.Count(c => c.PostType == PostType.Comment),
-            post.Reposts.Count,
+            post.LegacyReposts.Count + post.Reposts.Count, // Combined count from both systems
             tags,
             linkPreviews,
             isLiked,
@@ -493,7 +501,9 @@ public static class MappingUtilities
             mediaItems,
             reactionCounts,
             currentUserReaction,
-            totalReactionCount
+            totalReactionCount,
+            post.PostType,
+            repostedPostDto
         );
     }
 
@@ -607,7 +617,15 @@ public static class MappingUtilities
 
         // Map media items
         var mediaItems = post.PostMedia.Select(media => media.MapToPostMediaDto()).ToList();
-        
+
+        // Map reposted post if this is a repost
+        PostDto? repostedPostDto = null;
+        if (post.PostType == PostType.Repost && post.RepostedPost != null)
+        {
+            // Recursively map the reposted post (but don't include moderation info to avoid deep nesting)
+            repostedPostDto = post.RepostedPost.MapToPostDto(currentUserId, includeModeration: false);
+        }
+
         return new PostDto(
             post.Id,
             post.Content,
@@ -633,7 +651,9 @@ public static class MappingUtilities
             mediaItems,
             reactionCounts,
             currentUserReaction,
-            totalReactionCount
+            totalReactionCount,
+            post.PostType,
+            repostedPostDto
         );
     }
 
@@ -713,10 +733,21 @@ public static class MappingUtilities
         }
         else if (media.MediaType == MediaType.Gif)
         {
+            Console.WriteLine($"🎭 Mapping GIF media: ID={media.Id}, GifUrl='{media.GifUrl}', GifPreviewUrl='{media.GifPreviewUrl}'");
             gifUrl = media.GifUrl;
             gifPreviewUrl = media.GifPreviewUrl;
             width = media.ImageWidth;
             height = media.ImageHeight;
+
+            // Validate GIF URLs
+            if (string.IsNullOrEmpty(gifUrl))
+            {
+                Console.WriteLine($"⚠️ Warning: GIF media {media.Id} has null or empty GifUrl");
+            }
+            if (string.IsNullOrEmpty(gifPreviewUrl))
+            {
+                Console.WriteLine($"⚠️ Warning: GIF media {media.Id} has null or empty GifPreviewUrl");
+            }
         }
         else if (media.MediaType == MediaType.Video)
         {
@@ -821,4 +852,172 @@ public static class MappingUtilities
             isCurrentUserMember
         );
     }
+    
+    public static SystemTagDto MapToSystemTagDto(this SystemTag systemTag)
+    {
+        return new SystemTagDto
+        {
+            Id = systemTag.Id,
+            Name = systemTag.Name,
+            Description = systemTag.Description,
+            Category = systemTag.Category,
+            IsVisibleToUsers = systemTag.IsVisibleToUsers,
+            IsActive = systemTag.IsActive,
+            Color = systemTag.Color,
+            Icon = systemTag.Icon,
+            SortOrder = systemTag.SortOrder,
+            CreatedAt = systemTag.CreatedAt,
+            UpdatedAt = systemTag.UpdatedAt
+        };
+    }
+    
+    public static AdminPostDto MapToAdminPostDto(this Post post)
+    {
+        // Map group information if post is in a group
+        GroupDto? groupDto = null;
+        if (post.Group != null)
+        {
+            groupDto = new GroupDto(
+                post.Group.Id,
+                post.Group.Name,
+                post.Group.Description,
+                post.Group.ImageFileName,
+                post.Group.CreatedAt,
+                post.Group.UpdatedAt,
+                post.Group.IsOpen,
+                post.Group.User.MapToUserDto(),
+                post.Group.Members?.Count ?? 0,
+                post.Group.Posts?.Count ?? 0,
+                false // IsCurrentUserMember - we don't have this info in admin context
+            );
+        }
+
+        return new AdminPostDto
+        {
+            Id = post.Id,
+            Content = post.Content,
+            ImageUrl = GenerateImageUrl(post.ImageFileName),
+            Privacy = post.Privacy,
+            IsHidden = post.IsHidden,
+            HiddenReason = post.HiddenReason ?? post.HiddenReasonType.ToString(),
+            HiddenAt = post.HiddenAt,
+            HiddenByUsername = post.HiddenByUser?.Username,
+            CreatedAt = post.CreatedAt,
+            UpdatedAt = post.UpdatedAt,
+            User = post.User.MapToUserDto(),
+            Group = groupDto,
+            LikeCount = post.Likes?.Count ?? 0,
+            CommentCount = post.Children?.Count(c => c.PostType == PostType.Comment) ?? 0,
+            RepostCount = post.Reposts?.Count ?? 0,
+            SystemTags = post.PostSystemTags?.Select(pst => pst.SystemTag.MapToSystemTagDto()).ToList() ?? new List<SystemTagDto>()
+        };
+    }
+
+    public static AdminPostDto MapToAdminPostDtoWithTags(this Post post, List<AiSuggestedTag> aiSuggestedTags)
+    {
+        var adminPostDto = MapToAdminPostDto(post);
+        adminPostDto.AiSuggestedTags = aiSuggestedTags.Select(MapToAiSuggestedTagDto).ToList();
+        return adminPostDto;
+    }
+
+
+
+    public static AiSuggestedTagDto MapToAiSuggestedTagDto(this AiSuggestedTag aiSuggestedTag)
+    {
+        return new AiSuggestedTagDto
+        {
+            Id = aiSuggestedTag.Id,
+            TagName = aiSuggestedTag.TagName,
+            Category = aiSuggestedTag.Category,
+            Confidence = aiSuggestedTag.Confidence,
+            RiskLevel = aiSuggestedTag.RiskLevel,
+            RequiresReview = aiSuggestedTag.RequiresReview,
+            SuggestedAt = aiSuggestedTag.SuggestedAt,
+            IsApproved = aiSuggestedTag.IsApproved,
+            IsRejected = aiSuggestedTag.IsRejected,
+            ApprovedByUserId = aiSuggestedTag.ApprovedByUserId,
+            ApprovedByUsername = aiSuggestedTag.ApprovedByUser?.Username,
+            ApprovedAt = aiSuggestedTag.ApprovedAt,
+            ApprovalReason = aiSuggestedTag.ApprovalReason
+        };
+    }
+    
+    public static AdminCommentDto MapPostToAdminCommentDto(this Post post)
+    {
+        if (post.PostType != PostType.Comment)
+            throw new ArgumentException("Post must be of type Comment", nameof(post));
+
+        // Map group information if comment is in a group
+        GroupDto? groupDto = null;
+        if (post.Group != null)
+        {
+            groupDto = new GroupDto(
+                post.Group.Id,
+                post.Group.Name,
+                post.Group.Description,
+                GenerateImageUrl(post.Group.ImageFileName),
+                post.Group.CreatedAt,
+                post.Group.UpdatedAt,
+                post.Group.IsOpen,
+                post.Group.User.MapToUserDto(),
+                post.Group.Members?.Count ?? 0,
+                post.Group.Posts?.Count ?? 0,
+                false // IsCurrentUserMember - we don't have this info in admin context
+            );
+        }
+
+        return new AdminCommentDto
+        {
+            Id = post.Id,
+            Content = post.Content,
+            IsHidden = post.IsHidden,
+            HiddenReason = post.HiddenReason,
+            HiddenAt = post.HiddenAt,
+            HiddenByUsername = post.HiddenByUser?.Username,
+            CreatedAt = post.CreatedAt,
+            UpdatedAt = post.UpdatedAt,
+            User = post.User.MapToUserDto(),
+            Group = groupDto,
+            PostId = post.ParentId ?? 0, // ParentId is the original PostId for comments
+            SystemTags = post.PostSystemTags?.Select(pst => pst.SystemTag.MapToSystemTagDto()).ToList() ?? new List<SystemTagDto>()
+        };
+    }
+
+    public static UserAppealDto MapToUserAppealDto(this UserAppeal appeal)
+    {
+        return new UserAppealDto
+        {
+            Id = appeal.Id,
+            Username = appeal.User.Username,
+            Type = appeal.Type,
+            Status = appeal.Status,
+            Reason = appeal.Reason,
+            AdditionalInfo = appeal.AdditionalInfo,
+            TargetPostId = appeal.TargetPostId,
+            TargetCommentId = appeal.TargetCommentId,
+            ReviewedByUsername = appeal.ReviewedByUser?.Username,
+            ReviewNotes = appeal.ReviewNotes,
+            ReviewedAt = appeal.ReviewedAt,
+            CreatedAt = appeal.CreatedAt
+        };
+    }
+
+    public static UserReportDto MapToUserReportDto(this UserReport report)
+    {
+        return new UserReportDto
+        {
+            Id = report.Id,
+            ReportedByUsername = report.ReportedByUser.Username,
+            Status = report.Status,
+            Reason = report.Reason,
+            CreatedAt = report.CreatedAt,
+            ReviewedAt = report.ReviewedAt,
+            ReviewedByUsername = report.ReviewedByUser?.Username,
+            ReviewNotes = report.ReviewNotes,
+            Post = report.Post != null ? MapToAdminPostDto(report.Post) : null,
+            Comment = report.Comment != null ? MapPostToAdminCommentDto(report.Comment) : null,
+            SystemTags = report.UserReportSystemTags?.Select(urst => urst.SystemTag.MapToSystemTagDto()).ToList() ?? new List<SystemTagDto>()
+        };
+    }
+
 }

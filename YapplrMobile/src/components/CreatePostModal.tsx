@@ -176,7 +176,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
 
       console.log('=== Step 5: Creating picker options ===');
       const pickerOptions = {
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'], // Use array format instead of MediaTypeOptions
         allowsEditing: false,
         quality: 1,
       };
@@ -372,7 +372,7 @@ export default function CreatePostModal({ visible, onClose }: CreatePostModalPro
       console.log('=== Launching image picker with proper permissions ===');
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All, // Support both images and videos
+        mediaTypes: ['images', 'videos'], // Use array format instead of MediaTypeOptions
         allowsEditing: false,
         quality: 0.8,
         allowsMultipleSelection: false, // Start with single selection for stability

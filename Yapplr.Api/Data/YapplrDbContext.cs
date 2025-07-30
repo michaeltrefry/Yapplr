@@ -139,10 +139,17 @@ public class YapplrDbContext : DbContext
                   .HasForeignKey(e => e.ParentId)
                   .OnDelete(DeleteBehavior.Cascade);
 
+            // Configure self-referencing relationship for RepostedPost/Reposts
+            entity.HasOne(e => e.RepostedPost)
+                  .WithMany(e => e.Reposts)
+                  .HasForeignKey(e => e.RepostedPostId)
+                  .OnDelete(DeleteBehavior.Restrict); // Don't cascade delete when reposted post is deleted
+
             // Performance indexes for unified post model
             entity.HasIndex(e => new { e.PostType, e.CreatedAt }); // For filtering posts vs comments by date
             entity.HasIndex(e => new { e.ParentId, e.PostType, e.CreatedAt }); // For getting comments for a post
             entity.HasIndex(e => new { e.UserId, e.PostType, e.CreatedAt }); // For user's posts vs comments
+            entity.HasIndex(e => new { e.RepostedPostId, e.PostType, e.CreatedAt }); // For getting reposts of a post
 
             // Performance indexes for common query patterns
             entity.HasIndex(e => new { e.UserId, e.CreatedAt }); // User profile posts ordered by date
@@ -208,17 +215,17 @@ public class YapplrDbContext : DbContext
 
 
 
-        // Repost configuration
+        // Legacy Repost configuration (will be phased out)
         modelBuilder.Entity<Repost>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.PostId }).IsUnique(); // Prevent duplicate reposts
             entity.HasOne(e => e.User)
-                  .WithMany(e => e.Reposts)
+                  .WithMany(e => e.LegacyReposts)
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.Post)
-                  .WithMany(e => e.Reposts)
+                  .WithMany(e => e.LegacyReposts)
                   .HasForeignKey(e => e.PostId)
                   .OnDelete(DeleteBehavior.Cascade);
 

@@ -327,7 +327,7 @@ public class UserReportService : IUserReportService
         {
             Id = post.Id,
             Content = post.Content,
-            ImageFileName = post.ImageFileName,
+            ImageUrl = post.ImageFileName,
             Privacy = post.Privacy,
             IsHidden = post.IsHidden,
             HiddenReason = post.HiddenReason ?? post.HiddenReasonType.ToString(),

@@ -500,7 +500,7 @@ public class NotificationService : INotificationService
         // Send real-time notification (Firebase with SignalR fallback)
         await _notificationService.SendRepostNotificationAsync(originalUserId, repostingUser.Username, postId);
     }
-
+    
     public async Task CreateFollowNotificationAsync(int followedUserId, int followingUserId)
     {
         // Check if user has blocked the following user
@@ -757,7 +757,15 @@ public class NotificationService : INotificationService
                 new List<LinkPreviewDto>(), // LinkPreviews - empty for notifications
                 false, // IsLikedByCurrentUser - not relevant for notifications
                 false, // IsRepostedByCurrentUser - not relevant for notifications
-                notification.Post.UpdatedAt > notification.Post.CreatedAt.AddMinutes(1) // IsEdited
+                notification.Post.UpdatedAt > notification.Post.CreatedAt.AddMinutes(1), // IsEdited
+                null, // ModerationInfo - not needed for notifications
+                null, // VideoMetadata - not needed for notifications
+                new List<PostMediaDto>(), // MediaItems - empty for notifications
+                new List<ReactionCountDto>(), // ReactionCounts - empty for notifications
+                null, // CurrentUserReaction - not relevant for notifications
+                0, // TotalReactionCount - we don't need this for notifications
+                notification.Post.PostType, // PostType
+                null // RepostedPost - not loaded for notifications
             );
         }
 
@@ -807,7 +815,15 @@ public class NotificationService : INotificationService
                     new List<LinkPreviewDto>(), // LinkPreviews - empty for notifications
                     false, // IsLikedByCurrentUser - not relevant for notifications
                     false, // IsRepostedByCurrentUser - not relevant for notifications
-                    (notification.Comment.Parent?.UpdatedAt ?? DateTime.UtcNow) > (notification.Comment.Parent?.CreatedAt ?? DateTime.UtcNow).AddMinutes(1) // IsEdited
+                    (notification.Comment.Parent?.UpdatedAt ?? DateTime.UtcNow) > (notification.Comment.Parent?.CreatedAt ?? DateTime.UtcNow).AddMinutes(1), // IsEdited
+                    null, // ModerationInfo - not needed for notifications
+                    null, // VideoMetadata - not needed for notifications
+                    new List<PostMediaDto>(), // MediaItems - empty for notifications
+                    new List<ReactionCountDto>(), // ReactionCounts - empty for notifications
+                    null, // CurrentUserReaction - not relevant for notifications
+                    0, // TotalReactionCount - we don't need this for notifications
+                    notification.Comment.Parent?.PostType ?? PostType.Post, // PostType
+                    null // RepostedPost - not loaded for notifications
                 );
             }
         }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Post, PostPrivacy, VideoProcessingStatus, ReactionType } from '@/types';
 import { formatDate, formatNumber } from '@/lib/utils';
-import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag, Play, Smile, X } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag, Play, Smile, X, Quote } from 'lucide-react';
 import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import CommentList from './CommentList';
 import UserAvatar from './UserAvatar';
 import ShareModal from './ShareModal';
 import ReportModal from './ReportModal';
+import RepostModal from './RepostModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentHighlight } from '@/utils/contentUtils';
 import MediaGallery from './MediaGallery';
@@ -35,6 +36,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const [commentText, setCommentText] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showRepostModal, setShowRepostModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
@@ -728,6 +730,45 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 <LinkPreviewList linkPreviews={post.linkPreviews} />
               </div>
             )}
+
+            {/* Reposted Post Display (includes former quote tweets) */}
+            {post.repostedPost && (
+              <div className="mt-3 border border-gray-200 rounded-lg p-3 bg-gray-50">
+                <div className="flex items-start space-x-3">
+                  <UserAvatar user={post.repostedPost.user} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Link href={`/profile/${post.repostedPost.user.username}`} className="font-medium text-gray-900 hover:underline">
+                        {post.repostedPost.user.username}
+                      </Link>
+                      <span className="text-gray-500">@{post.repostedPost.user.username}</span>
+                      <span className="text-gray-500">·</span>
+                      <span className="text-gray-500 text-sm">{formatDate(post.repostedPost.createdAt)}</span>
+                    </div>
+
+                    {post.repostedPost.content && (
+                      <div className="text-gray-900 mb-2 whitespace-pre-wrap break-words">
+                        <ContentWithGifs content={post.repostedPost.content} />
+                      </div>
+                    )}
+
+                    {/* Reposted Post Media */}
+                    {post.repostedPost.mediaItems && post.repostedPost.mediaItems.length > 0 && (
+                      <div className="mb-2">
+                        <MediaGallery mediaItems={post.repostedPost.mediaItems} post={post.repostedPost} />
+                      </div>
+                    )}
+
+                    {/* Reposted Post Link Previews */}
+                    {post.repostedPost.linkPreviews && post.repostedPost.linkPreviews.length > 0 && (
+                      <div className="mb-2">
+                        <LinkPreviewList linkPreviews={post.repostedPost.linkPreviews} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Reaction Counts Display */}
@@ -767,6 +808,17 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
                 <Repeat2 className="w-5 h-5" />
               </div>
               <span className="text-sm">{formatNumber(post.repostCount)}</span>
+            </button>
+
+            <button
+              onClick={() => setShowRepostModal(true)}
+              className="flex items-center space-x-2 text-gray-500 hover:text-purple-500 transition-colors group"
+              title="Repost"
+            >
+              <div className="p-2 rounded-full hover:bg-gray-100">
+                <Quote className="w-5 h-5" />
+              </div>
+              <span className="text-sm">{formatNumber(post.repostCount || 0)}</span>
             </button>
 
             <button
@@ -908,6 +960,18 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
         postId={post.id}
         contentType="post"
         contentPreview={post.content}
+      />
+
+      {/* Repost Modal */}
+      <RepostModal
+        isOpen={showRepostModal}
+        onClose={() => setShowRepostModal(false)}
+        repostedPost={post}
+        onRepostCreated={() => {
+          // Refresh the timeline to show the new repost
+          queryClient.invalidateQueries({ queryKey: ['timeline'] });
+          queryClient.invalidateQueries({ queryKey: ['publicTimeline'] });
+        }}
       />
 
       {/* Delete Confirmation Modal */}

@@ -168,6 +168,24 @@ export interface CreatePostWithMediaData {
   groupId?: number;
 }
 
+// Enhanced repost types (replaces quote tweet functionality)
+export interface CreateRepostData {
+  content?: string; // Optional - empty for simple reposts
+  repostedPostId: number;
+  privacy?: PostPrivacy;
+  groupId?: number;
+}
+
+export interface CreateRepostWithMediaData {
+  content?: string; // Optional - empty for simple reposts
+  repostedPostId: number;
+  privacy?: PostPrivacy;
+  groupId?: number;
+  mediaFiles?: MediaFile[];
+}
+
+
+
 export interface UploadedFile {
   fileName: string;
   fileUrl: string;
@@ -319,7 +337,8 @@ export enum ReactionType {
 
 export enum PostType {
   Post = 0,
-  Comment = 1
+  Comment = 1,
+  Repost = 2
 }
 
 export interface ReactionCount {
@@ -347,6 +366,7 @@ export interface Post {
   likeCount: number; // Legacy - will be replaced by reactionCounts
   commentCount: number;
   repostCount: number;
+  quoteTweetCount: number;
   tags: Tag[];
   linkPreviews: LinkPreview[];
   isLikedByCurrentUser: boolean; // Legacy - will be replaced by currentUserReaction
@@ -356,6 +376,8 @@ export interface Post {
   reactionCounts?: ReactionCount[];
   currentUserReaction?: ReactionType | null;
   totalReactionCount?: number;
+  postType?: PostType;
+  quotedPost?: Post;
 }
 
 export interface Comment {
@@ -656,11 +678,17 @@ export interface YapplrApi {
     repostPost: (postId: number) => Promise<void>;
     deletePost: (postId: number) => Promise<void>;
     unrepost: (postId: number) => Promise<void>;
+    createRepost: (data: CreateRepostData) => Promise<Post>;
+    createRepostWithMedia: (data: CreateRepostWithMediaData) => Promise<Post>;
+    getReposts: (postId: number, page?: number, pageSize?: number) => Promise<Post[]>;
+
     getUserTimeline: (userId: number, page: number, limit: number) => Promise<TimelineItem[]>;
     getComments: (postId: number) => Promise<Comment[]>;
     addComment: (postId: number, data: CreateCommentData) => Promise<Comment>;
     likeComment: (postId: number, commentId: number) => Promise<void>;
     unlikeComment: (postId: number, commentId: number) => Promise<void>;
+    reactToComment: (postId: number, commentId: number, reactionType: number) => Promise<void>;
+    removeCommentReaction: (postId: number, commentId: number) => Promise<void>;
     updateComment: (commentId: number, data: UpdateCommentData) => Promise<Comment>;
     deleteComment: (commentId: number) => Promise<void>;
   };

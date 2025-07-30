@@ -6,7 +6,7 @@ public class AdminPostDto
 {
     public int Id { get; set; }
     public string Content { get; set; } = string.Empty;
-    public string? ImageFileName { get; set; }
+    public string? ImageUrl { get; set; }
     public PostPrivacy Privacy { get; set; }
     public bool IsHidden { get; set; }
     public string? HiddenReason { get; set; }

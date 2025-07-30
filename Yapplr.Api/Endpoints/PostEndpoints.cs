@@ -264,16 +264,77 @@ Each media file object should include:
         .Produces(400)
         .Produces(401);
 
-        // Repost/Unrepost
+        // Enhanced Repost functionality (replaces simple repost and quote tweet)
+        posts.MapPost("/repost", async ([FromBody] CreateRepostDto createDto, ClaimsPrincipal user, IPostService postService, ILogger<Program> logger) =>
+        {
+            try
+            {
+                var userId = user.GetUserId(true);
+                logger.LogInformation("Repost endpoint called by user {UserId} with data: {@CreateDto}", userId, createDto);
+
+                var repost = await postService.CreateRepostAsync(userId, createDto);
+
+                if (repost == null)
+                {
+                    logger.LogWarning("CreateRepostAsync returned null for user {UserId}", userId);
+                    return Results.BadRequest("Failed to create repost");
+                }
+
+                logger.LogInformation("Repost created successfully with ID {PostId}", repost.Id);
+                return Results.Created($"/api/posts/{repost.Id}", repost);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Exception in repost endpoint: {ExceptionType} - {Message}", ex.GetType().Name, ex.Message);
+                return Results.BadRequest($"Error: {ex.Message}");
+            }
+        })
+        .WithName("CreateRepost")
+        .WithSummary("Create a repost with optional content")
+        .RequireAuthorization("ActiveUser")
+        .Produces<PostDto>(201)
+        .Produces(400)
+        .Produces(401);
+
+        posts.MapPost("/repost-with-media", async ([FromBody] CreateRepostWithMediaDto createDto, ClaimsPrincipal user, IPostService postService) =>
+        {
+            var userId = user.GetUserId(true);
+            return await EndpointUtilities.HandleAsync(
+                async () => await postService.CreateRepostWithMediaAsync(userId, createDto),
+                $"/api/posts/{{id}}"
+            );
+        })
+        .WithName("CreateRepostWithMedia")
+        .WithSummary("Create a repost with optional content and media attachments")
+        .RequireAuthorization("ActiveUser")
+        .Produces<PostDto>(201)
+        .Produces(400)
+        .Produces(401);
+
+        posts.MapGet("/{id:int}/reposts", async (int id, ClaimsPrincipal? user, IPostService postService, int page = 1, int pageSize = 20) =>
+        {
+            var currentUserId = user?.Identity?.IsAuthenticated == true
+                ? int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value)
+                : (int?)null;
+
+            var reposts = await postService.GetRepostsAsync(id, currentUserId, page, pageSize);
+            return Results.Ok(reposts);
+        })
+        .WithName("GetReposts")
+        .WithSummary("Get reposts for a specific post")
+        .Produces<IEnumerable<PostDto>>(200)
+        .Produces(404);
+
+        // Legacy simple repost endpoints (for backward compatibility)
         posts.MapPost("/{id:int}/repost", async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
-            var success = await postService.RepostAsync(id, userId);
+            var success = await postService.LegacyRepostAsync(id, userId);
 
             return success ? Results.Ok() : Results.BadRequest(new { message = "Already reposted" });
         })
-        .WithName("RepostPost")
-        .WithSummary("Repost a post")
+        .WithName("LegacyRepostPost")
+        .WithSummary("Legacy simple repost (deprecated - use /repost instead)")
         .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)
@@ -282,16 +343,22 @@ Each media file object should include:
         posts.MapDelete("/{id:int}/repost", async (int id, ClaimsPrincipal user, IPostService postService) =>
         {
             var userId = user.GetUserId(true);
-            var success = await postService.UnrepostAsync(id, userId);
-            
+            var success = await postService.LegacyUnrepostAsync(id, userId);
+
             return success ? Results.Ok() : Results.BadRequest(new { message = "Not reposted" });
         })
-        .WithName("UnrepostPost")
-        .WithSummary("Remove repost")
+        .WithName("LegacyUnrepostPost")
+        .WithSummary("Legacy remove repost (deprecated)")
         .RequireAuthorization("ActiveUser")
         .Produces(200)
         .Produces(400)
         .Produces(401);
+
+
+
+
+
+
 
         // Comments
         posts.MapPost("/{id:int}/comments", async (int id, [FromBody] CreateCommentDto createDto, ClaimsPrincipal user, IPostService postService) =>

@@ -46,19 +46,18 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     queryFn: async () => {
       const result = await api.posts.getTimeline(1, 25);
       console.log('Timeline loaded:', result.length, 'items');
-      // Log comment counts for debugging
-      result.forEach(item => {
-        console.log(`Post ${item.post.id} has ${item.post.commentCount} comments`);
-      });
-      const postsWithImages = result.filter(item => item.post.imageUrl);
-      console.log('Posts with images:', postsWithImages.length);
-      postsWithImages.forEach(item => {
-        console.log('Post with image:', {
-          id: item.post.id,
-          content: item.post.content.substring(0, 50) + '...',
-          imageUrl: item.post.imageUrl
-        });
-      });
+
+      // Debug timeline item types
+      const itemTypes = result.reduce((acc, item) => {
+        acc[item.type] = (acc[item.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log('Timeline item types:', itemTypes);
+
+      // Log reposts with content (formerly quote tweets)
+      const repostsWithContent = result.filter(item => item.type === 'repost' && item.post.content);
+      console.log('Reposts with content found:', repostsWithContent.length);
+
       return result;
     },
     enabled: !!user,

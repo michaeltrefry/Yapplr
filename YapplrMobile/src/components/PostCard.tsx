@@ -24,6 +24,7 @@ import ReportModal from './ReportModal';
 import ReactionPicker from './ReactionPicker';
 import ReactionCountsDisplay from './ReactionCountsDisplay';
 import ContentWithGifs from './ContentWithGifs';
+import RepostModal from './RepostModal';
 
 interface PostCardProps {
   item: TimelineItem;
@@ -52,6 +53,7 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
   const [selectedVideoThumbnail, setSelectedVideoThumbnail] = useState<string>('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showRepostModal, setShowRepostModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [imageDimensions, setImageDimensions] = useState<{ [key: string]: { width: number; height: number } }>({});
 
@@ -428,6 +430,57 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
         />
       )}
 
+      {/* Quoted Post Display */}
+      {item.post.quotedPost && (
+        <View style={[styles.quotedPost, { borderColor: colors.border, backgroundColor: colors.cardBackground }]}>
+          <View style={styles.quotedPostHeader}>
+            <Image
+              source={{ uri: item.post.quotedPost.user.profileImageUrl || 'https://via.placeholder.com/32' }}
+              style={styles.quotedAvatar}
+            />
+            <TouchableOpacity onPress={() => onUserPress?.(item.post.quotedPost?.user.username)}>
+              <Text style={[styles.quotedUsername, { color: colors.text }]}>
+                {item.post.quotedPost?.user.username}
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.quotedDate, { color: colors.textSecondary }]}>
+              {new Date(item.post.quotedPost.createdAt).toLocaleDateString()}
+            </Text>
+          </View>
+
+          {item.post.quotedPost.content && (
+            <ContentWithGifs
+              content={item.post.quotedPost.content}
+              style={styles.quotedContent}
+              textStyle={{ color: colors.text }}
+              onMentionPress={onUserPress}
+              onHashtagPress={onHashtagPress}
+              maxGifWidth={250}
+            />
+          )}
+
+          {item.post.quotedPost.mediaItems && item.post.quotedPost.mediaItems.length > 0 && (
+            <View style={styles.quotedMedia}>
+              <Image
+                source={{
+                  uri: item.post.quotedPost.mediaItems[0].imageUrl ||
+                       item.post.quotedPost.mediaItems[0].videoThumbnailUrl
+                }}
+                style={styles.quotedMediaImage}
+                resizeMode="cover"
+              />
+              {item.post.quotedPost.mediaItems.length > 1 && (
+                <View style={styles.mediaCountBadge}>
+                  <Text style={styles.mediaCountText}>
+                    +{item.post.quotedPost.mediaItems.length - 1}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Reaction counts display */}
       <ReactionCountsDisplay reactionCounts={item.post.reactionCounts} overlap={true} />
 
@@ -458,6 +511,14 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
             color={item.post.isRepostedByCurrentUser ? "#10B981" : "#6B7280"}
           />
           <Text style={styles.actionText}>{item.post.repostCount}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => setShowRepostModal(true)}
+        >
+          <Ionicons name="chatbox-outline" size={20} color="#8B5CF6" />
+          <Text style={styles.actionText}>{item.post.repostCount || 0}</Text>
         </TouchableOpacity>
 
         {/* Report button - only show for other users' posts */}
@@ -539,6 +600,13 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onRe
         postId={item.post.id}
         contentType="post"
         contentPreview={item.post.content}
+      />
+
+      {/* Repost Modal */}
+      <RepostModal
+        visible={showRepostModal}
+        onClose={() => setShowRepostModal(false)}
+        repostedPost={item.post}
       />
     </View>
   );
@@ -789,6 +857,57 @@ const createStyles = (colors: any) => StyleSheet.create({
   gifBadgeText: {
     color: '#fff',
     fontSize: 10,
+    fontWeight: '600',
+  },
+  quotedPost: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+  },
+  quotedPostHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  quotedAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  quotedUsername: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  quotedDate: {
+    fontSize: 12,
+    marginLeft: 'auto',
+  },
+  quotedContent: {
+    marginBottom: 8,
+  },
+  quotedMedia: {
+    position: 'relative',
+  },
+  quotedMediaImage: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+  },
+  mediaCountBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  mediaCountText: {
+    color: 'white',
+    fontSize: 12,
     fontWeight: '600',
   },
 });

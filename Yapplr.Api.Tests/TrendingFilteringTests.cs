@@ -38,8 +38,7 @@ public class TrendingFilteringTests : IDisposable
 
         _tagService = new TagService(_context, mockHttpContextAccessor, mockBlockService.Object, mockCountCache.Object);
         _tagAnalyticsService = new TagAnalyticsService(_context, mockAnalyticsService.Object, mockLogger.Object);
-        _adminService = new AdminService(_context, mockAuditService.Object, mockNotificationService.Object,
-            mockModerationMessageService.Object, mockTrustScoreService.Object, mockServiceProvider.Object, mockAdminLogger.Object);
+        _adminService = new AdminService(_context, mockAuditService.Object, mockNotificationService.Object, mockTrustScoreService.Object, mockServiceProvider.Object, mockAdminLogger.Object);
     }
 
     [Fact]

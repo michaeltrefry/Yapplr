@@ -41,7 +41,6 @@ public class AdminServicePostModerationTests : IDisposable
             _context,
             _mockAuditService.Object,
             _mockNotificationService.Object,
-            _mockModerationMessageService.Object,
             _mockTrustScoreService.Object,
             _mockServiceProvider.Object,
             _mockLogger.Object);

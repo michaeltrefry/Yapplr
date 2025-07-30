@@ -596,6 +596,24 @@ public class PostService : BaseService, IPostService
             .Take(fetchSize)
             .ToListAsync();
 
+        // Get reposts with content (formerly quote tweets) with same visibility rules as regular posts
+        var repostsWithContent = await _context.GetPostsWithIncludes()
+            .Where(p => p.PostType == PostType.Repost &&
+                       !string.IsNullOrEmpty(p.Content) && // Only reposts with content
+                       !p.IsDeletedByUser &&
+                       (!p.IsHidden ||
+                        (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing && p.UserId == userId)) && // Filter out hidden posts except video processing for author
+                       p.User.Status == UserStatus.Active && // Hide reposts from suspended/banned users
+                       (p.User.TrustScore >= 0.1f || p.UserId == userId) && // Hide reposts from low trust users except from self
+                       !blockedUserIds.Contains(p.UserId)) // Filter out reposts from blocked users
+            .Where(p =>
+                p.Privacy == PostPrivacy.Public || // Public reposts (visible to everyone)
+                p.UserId == userId || // User's own reposts
+                (p.Privacy == PostPrivacy.Followers && followingIds.Contains(p.UserId))) // Followers-only reposts if following author
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(fetchSize)
+            .ToListAsync();
+
         // Convert to timeline items in memory (no EF translation issues)
         var timelineItems = new List<TimelineItemDto>();
 
@@ -613,6 +631,15 @@ public class PostService : BaseService, IPostService
 
             timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt,
                 repost.Post.MapToPostDto(userId), repostedByUser));
+        }
+
+        // Add reposts with content (formerly quote tweets)
+        foreach (var repostWithContent in repostsWithContent)
+        {
+            var repostedByUser = repostWithContent.User.MapToUserDto();
+
+            timelineItems.Add(new TimelineItemDto("repost", repostWithContent.CreatedAt,
+                repostWithContent.MapToPostDto(userId), repostedByUser));
         }
 
         // Sort by creation date and apply pagination
@@ -649,7 +676,21 @@ public class PostService : BaseService, IPostService
             .Take(fetchSize)
             .ToListAsync();
 
-        // Combine posts and reposts into timeline items
+        // Get public reposts with content only
+        var repostsWithContent = await _context.GetPostsWithIncludes()
+            .Where(p => p.PostType == PostType.Repost &&
+                       !string.IsNullOrEmpty(p.Content) && // Only reposts with content
+                       p.Privacy == PostPrivacy.Public &&
+                       !p.IsDeletedByUser &&
+                       !p.IsHidden &&
+                       p.User.Status == UserStatus.Active &&
+                       p.User.TrustScore >= 0.1f &&
+                       !blockedUserIds.Contains(p.UserId))
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(fetchSize)
+            .ToListAsync();
+
+        // Combine posts, reposts, and quote tweets into timeline items
         var timelineItems = new List<TimelineItemDto>();
 
         // Add original posts
@@ -664,6 +705,14 @@ public class PostService : BaseService, IPostService
             "repost",
             r.CreatedAt,
             r.Post.MapToPostDto(currentUserId),
+            r.User.MapToUserDto()
+        )));
+
+        // Add reposts with content
+        timelineItems.AddRange(repostsWithContent.Select(r => new TimelineItemDto(
+            "repost",
+            r.CreatedAt,
+            r.MapToPostDto(currentUserId),
             r.User.MapToUserDto()
         )));
 
@@ -864,6 +913,22 @@ public class PostService : BaseService, IPostService
                 .ToList();
         }
 
+        // Get user's reposts with content
+        var repostsWithContent = await _context.GetPostsWithIncludes()
+            .Where(p => p.PostType == PostType.Repost &&
+                       !string.IsNullOrEmpty(p.Content) && // Only reposts with content
+                       p.UserId == userId && // Only reposts from this user
+                       !p.IsDeletedByUser &&
+                       (!p.IsHidden ||
+                        (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing && p.UserId == currentUserId))) // Use hybrid system for filtering
+            .Where(p =>
+                p.Privacy == PostPrivacy.Public || // Public reposts (visible to everyone)
+                p.UserId == currentUserId || // Current user's own reposts
+                (p.Privacy == PostPrivacy.Followers && isFollowing)) // Followers-only reposts if following author
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(fetchSize)
+            .ToListAsync();
+
         // Convert to timeline items in memory
         var timelineItems = new List<TimelineItemDto>();
 
@@ -879,6 +944,14 @@ public class PostService : BaseService, IPostService
             var repostedByUser = repost.User.MapToUserDto();
 
             timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, repost.Post.MapToPostDto(currentUserId), repostedByUser));
+        }
+
+        // Add reposts with content
+        foreach (var repostWithContent in repostsWithContent)
+        {
+            var repostedByUser = repostWithContent.User.MapToUserDto();
+
+            timelineItems.Add(new TimelineItemDto("repost", repostWithContent.CreatedAt, repostWithContent.MapToPostDto(currentUserId), repostedByUser));
         }
 
         // Sort by creation date and apply pagination
@@ -1207,7 +1280,123 @@ public class PostService : BaseService, IPostService
         return true;
     }
 
-    public async Task<bool> RepostAsync(int postId, int userId)
+    // Enhanced Repost functionality (replaces simple repost and quote tweet)
+    public async Task<PostDto?> CreateRepostAsync(int userId, CreateRepostDto createDto)
+    {
+        _logger.LogInformation("Creating repost for user {UserId}, repostedPostId: {RepostedPostId}, content: '{Content}'",
+            userId, createDto.RepostedPostId, createDto.Content);
+
+        // Check trust-based permissions
+        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.CreatePost))
+        {
+            _logger.LogWarning("User {UserId} denied repost creation due to insufficient trust score", userId);
+            throw new InvalidOperationException("Insufficient trust score to create reposts");
+        }
+
+        // Verify the reposted post exists and is accessible
+        var repostedPost = await _context.Posts
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.Id == createDto.RepostedPostId && !p.IsDeletedByUser);
+
+        if (repostedPost == null)
+        {
+            _logger.LogWarning("Repost creation failed: reposted post {RepostedPostId} not found or deleted", createDto.RepostedPostId);
+            throw new InvalidOperationException("Reposted post not found or has been deleted");
+        }
+
+        // Check if user can see the reposted post (privacy rules)
+        if (!await CanUserSeePostAsync(repostedPost, userId))
+        {
+            throw new InvalidOperationException("You don't have permission to repost this post");
+        }
+
+        // Check if user already reposted this post (prevent duplicates)
+        var existingRepost = await _context.Posts
+            .FirstOrDefaultAsync(p => p.PostType == PostType.Repost &&
+                                     p.RepostedPostId == createDto.RepostedPostId &&
+                                     p.UserId == userId &&
+                                     !p.IsDeletedByUser);
+
+        if (existingRepost != null)
+        {
+            throw new InvalidOperationException("You have already reposted this post");
+        }
+
+        // Create repost as a Post with PostType.Repost and RepostedPostId
+        var repost = new Post
+        {
+            Content = createDto.Content ?? string.Empty, // Allow empty content for simple reposts
+            RepostedPostId = createDto.RepostedPostId,
+            PostType = PostType.Repost,
+            UserId = userId,
+            Privacy = createDto.Privacy,
+            GroupId = createDto.GroupId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Posts.Add(repost);
+        await _context.SaveChangesAsync();
+
+        // Invalidate reposted post's repost count cache
+        await _countCache.InvalidatePostCountsAsync(createDto.RepostedPostId);
+
+        // Create notification for the reposted post owner
+        if (repostedPost.UserId != userId) // Don't notify if reposting own post
+        {
+            await _notificationService.CreateRepostNotificationAsync(repostedPost.UserId, userId, createDto.RepostedPostId);
+        }
+
+        // Create mention notifications for users mentioned in the repost content (if any)
+        if (!string.IsNullOrWhiteSpace(createDto.Content))
+        {
+            await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, repost.Id);
+        }
+
+        // Perform content moderation analysis (if there's content)
+        if (!string.IsNullOrWhiteSpace(createDto.Content))
+        {
+            await ProcessPostModerationAsync(repost.Id, createDto.Content, userId);
+        }
+
+        // Update trust score for post creation
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.PostCreated,
+                string.IsNullOrWhiteSpace(createDto.Content) ? "simple_repost" : "repost_with_content",
+                repost.Id
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to update trust score for repost creation by user {UserId}", userId);
+        }
+
+        // Load the created repost with all necessary includes
+        var createdRepost = await _context.Posts
+            .Include(p => p.User)
+            .Include(p => p.Group)
+            .Include(p => p.RepostedPost)
+                .ThenInclude(rp => rp!.User)
+            .Include(p => p.Likes)
+            .Include(p => p.Reactions)
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment))
+            .Include(p => p.LegacyReposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
+            .AsSplitQuery()
+            .FirstAsync(p => p.Id == repost.Id);
+
+        return createdRepost.MapToPostDto(userId);
+    }
+
+    // Legacy repost methods (for backward compatibility)
+    public async Task<bool> LegacyRepostAsync(int postId, int userId)
     {
         // Check if already reposted
         if (await _context.Reposts.AnyAsync(r => r.PostId == postId && r.UserId == userId))
@@ -1236,10 +1425,10 @@ public class PostService : BaseService, IPostService
         return true;
     }
 
-    public async Task<bool> UnrepostAsync(int postId, int userId)
+    public async Task<bool> LegacyUnrepostAsync(int postId, int userId)
     {
         var repost = await _context.Reposts.FirstOrDefaultAsync(r => r.PostId == postId && r.UserId == userId);
-        
+
         if (repost == null)
             return false;
 
@@ -1250,6 +1439,261 @@ public class PostService : BaseService, IPostService
         await _countCache.InvalidatePostCountsAsync(postId);
 
         return true;
+    }
+
+    public async Task<PostDto?> CreateRepostWithMediaAsync(int userId, CreateRepostWithMediaDto createDto)
+    {
+        // Check trust-based permissions
+        if (!await _trustBasedModerationService.CanPerformActionAsync(userId, TrustRequiredAction.CreatePost))
+        {
+            throw new InvalidOperationException("Insufficient trust score to create reposts");
+        }
+
+        // Verify the reposted post exists and is accessible
+        var repostedPost = await _context.Posts
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.Id == createDto.RepostedPostId && !p.IsDeletedByUser);
+
+        if (repostedPost == null)
+        {
+            throw new InvalidOperationException("Reposted post not found or has been deleted");
+        }
+
+        // Check if user can see the reposted post (privacy rules)
+        if (!await CanUserSeePostAsync(repostedPost, userId))
+        {
+            throw new InvalidOperationException("You don't have permission to repost this post");
+        }
+
+        // Check if user already reposted this post (prevent duplicates)
+        var existingRepost = await _context.Posts
+            .FirstOrDefaultAsync(p => p.PostType == PostType.Repost &&
+                                     p.RepostedPostId == createDto.RepostedPostId &&
+                                     p.UserId == userId &&
+                                     !p.IsDeletedByUser);
+
+        if (existingRepost != null)
+        {
+            throw new InvalidOperationException("You have already reposted this post");
+        }
+
+        // Validate media files
+        if (createDto.MediaFiles != null && createDto.MediaFiles.Count > 10)
+        {
+            throw new InvalidOperationException("Cannot upload more than 10 media files per repost");
+        }
+
+        // Create repost as a Post with PostType.Repost and RepostedPostId
+        var repost = new Post
+        {
+            Content = createDto.Content ?? string.Empty, // Allow empty content for simple reposts
+            RepostedPostId = createDto.RepostedPostId,
+            PostType = PostType.Repost,
+            UserId = userId,
+            Privacy = createDto.Privacy,
+            GroupId = createDto.GroupId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Posts.Add(repost);
+        await _context.SaveChangesAsync();
+
+        // Handle media files if any
+        if (createDto.MediaFiles != null && createDto.MediaFiles.Count > 0)
+        {
+            _logger.LogDebug("Processing {MediaCount} media files for repost {PostId}", createDto.MediaFiles.Count, repost.Id);
+            foreach (var mediaFile in createDto.MediaFiles)
+            {
+                var media = new PostMedia
+                {
+                    PostId = repost.Id,
+                    MediaType = mediaFile.MediaType,
+                    OriginalFileName = mediaFile.FileName,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                if (mediaFile.MediaType == MediaType.Image)
+                {
+                    media.ImageFileName = mediaFile.FileName;
+                    media.ImageWidth = mediaFile.Width;
+                    media.ImageHeight = mediaFile.Height;
+                    media.ImageFileSizeBytes = mediaFile.FileSizeBytes;
+                }
+                else if (mediaFile.MediaType == MediaType.Video)
+                {
+                    media.VideoFileName = mediaFile.FileName;
+                    media.VideoProcessingStatus = VideoProcessingStatus.Pending;
+                    media.OriginalVideoWidth = mediaFile.Width;
+                    media.OriginalVideoHeight = mediaFile.Height;
+                    media.OriginalVideoDuration = mediaFile.Duration;
+                    media.OriginalVideoFileSizeBytes = mediaFile.FileSizeBytes;
+                }
+                else if (mediaFile.MediaType == MediaType.Gif)
+                {
+                    media.GifUrl = mediaFile.GifUrl;
+                    media.GifPreviewUrl = mediaFile.GifPreviewUrl;
+                    media.ImageWidth = mediaFile.Width;
+                    media.ImageHeight = mediaFile.Height;
+                }
+
+                _context.PostMedia.Add(media);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        // Invalidate reposted post's repost count cache
+        await _countCache.InvalidatePostCountsAsync(createDto.RepostedPostId);
+
+        // Create notification for the reposted post owner
+        if (repostedPost.UserId != userId) // Don't notify if reposting own post
+        {
+            await _notificationService.CreateRepostNotificationAsync(repostedPost.UserId, userId, createDto.RepostedPostId);
+        }
+
+        // Create mention notifications for users mentioned in the repost content (if any)
+        if (!string.IsNullOrWhiteSpace(createDto.Content))
+        {
+            await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, repost.Id);
+        }
+
+        // Perform content moderation analysis (if there's content)
+        if (!string.IsNullOrWhiteSpace(createDto.Content))
+        {
+            await ProcessPostModerationAsync(repost.Id, createDto.Content, userId);
+        }
+
+        // Update trust score for post creation
+        try
+        {
+            await _trustScoreService.UpdateTrustScoreForActionAsync(
+                userId,
+                TrustScoreAction.PostCreated,
+                "repost_with_media",
+                repost.Id
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to update trust score for repost with media creation by user {UserId}", userId);
+        }
+
+        // Load the created repost with all necessary includes
+        var createdRepost = await _context.Posts
+            .Include(p => p.User)
+            .Include(p => p.Group)
+            .Include(p => p.RepostedPost)
+                .ThenInclude(rp => rp!.User)
+            .Include(p => p.Likes)
+            .Include(p => p.Reactions)
+            .Include(p => p.Children.Where(c => c.PostType == PostType.Comment))
+            .Include(p => p.LegacyReposts)
+            .Include(p => p.PostTags)
+                .ThenInclude(pt => pt.Tag)
+            .Include(p => p.PostLinkPreviews)
+                .ThenInclude(plp => plp.LinkPreview)
+            .Include(p => p.PostMedia)
+            .AsSplitQuery()
+            .FirstAsync(p => p.Id == repost.Id);
+
+        return createdRepost.MapToPostDto(userId);
+    }
+
+
+
+
+
+
+
+    public async Task<IEnumerable<PostDto>> GetRepostsAsync(int postId, int? currentUserId = null, int page = 1, int pageSize = 20)
+    {
+        var query = _context.Posts
+            .Include(p => p.User)
+            .Include(p => p.Group)
+            .Include(p => p.RepostedPost)
+                .ThenInclude(rp => rp!.User)
+            .Include(p => p.PostMedia)
+            .Where(p => p.RepostedPostId == postId &&
+                       p.PostType == PostType.Repost &&
+                       !p.IsDeletedByUser &&
+                       !p.IsHidden)
+            .OrderByDescending(p => p.CreatedAt);
+
+        var reposts = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var repostDtos = new List<PostDto>();
+        foreach (var repost in reposts)
+        {
+            // Check if current user can see this repost
+            if (await CanUserSeePostAsync(repost, currentUserId))
+            {
+                var dto = repost.MapToPostDto(currentUserId);
+                repostDtos.Add(dto);
+            }
+        }
+
+        return repostDtos;
+    }
+
+    private async Task<bool> CanUserSeePostAsync(Post post, int? currentUserId)
+    {
+        // If post is deleted, no one can see it
+        if (post.IsDeletedByUser)
+            return false;
+
+        // If post is hidden and not video processing, only author can see it
+        if (post.IsHidden && post.HiddenReasonType != PostHiddenReasonType.VideoProcessing)
+            return false;
+
+        // If post is hidden for video processing, only author can see it
+        if (post.IsHidden && post.HiddenReasonType == PostHiddenReasonType.VideoProcessing && post.UserId != currentUserId)
+            return false;
+
+        // Public posts can be seen by everyone
+        if (post.Privacy == PostPrivacy.Public)
+            return true;
+
+        // Private posts can only be seen by the author
+        if (post.Privacy == PostPrivacy.Private)
+            return currentUserId == post.UserId;
+
+        // Followers-only posts
+        if (post.Privacy == PostPrivacy.Followers)
+        {
+            // Author can always see their own posts
+            if (currentUserId == post.UserId)
+                return true;
+
+            // Check if current user follows the post author
+            if (currentUserId.HasValue)
+            {
+                var isFollowing = await _context.Follows
+                    .AnyAsync(f => f.FollowerId == currentUserId.Value && f.FollowingId == post.UserId);
+                return isFollowing;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
+    private async Task ProcessPostModerationAsync(int postId, string content, int userId)
+    {
+        try
+        {
+            await _contentModerationService.AnalyzeContentAsync(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Content moderation analysis failed for post {PostId}", postId);
+            // Don't throw - allow post creation to continue even if moderation fails
+        }
     }
 
     public async Task<CommentDto?> AddCommentAsync(int postId, int userId, CreateCommentDto createDto)

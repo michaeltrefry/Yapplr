@@ -62,19 +62,24 @@ public class Post : IUserOwnedEntity
     public int UserId { get; set; }
     public int? GroupId { get; set; } // Optional - null for regular posts, set for group posts
     public int? ParentId { get; set; } // Optional - null for top-level posts, set for comments/replies
+    public int? RepostedPostId { get; set; } // Optional - null for regular posts, set for reposts
 
-    // Post type to distinguish between posts and comments
+    // Post type to distinguish between posts, comments, and reposts
     public PostType PostType { get; set; } = PostType.Post;
 
     // Navigation properties
     public User User { get; set; } = null!;
     public Group? Group { get; set; } // Optional - only set for group posts
     public Post? Parent { get; set; } // Optional - only set for comments/replies
+    public Post? RepostedPost { get; set; } // Optional - only set for reposts
     public ICollection<Post> Children { get; set; } = new List<Post>(); // Comments/replies to this post
+    public ICollection<Post> Reposts { get; set; } = new List<Post>(); // Reposts of this post
+
+
     public ICollection<Like> Likes { get; set; } = new List<Like>(); // Legacy - will be removed
     public ICollection<PostReaction> Reactions { get; set; } = new List<PostReaction>();
     // Comments are now handled through Children collection (Posts with PostType.Comment)
-    public ICollection<Repost> Reposts { get; set; } = new List<Repost>();
+    public ICollection<Repost> LegacyReposts { get; set; } = new List<Repost>(); // Legacy - will be removed
     public ICollection<PostTag> PostTags { get; set; } = new List<PostTag>();
     public ICollection<PostLinkPreview> PostLinkPreviews { get; set; } = new List<PostLinkPreview>();
     public ICollection<PostSystemTag> PostSystemTags { get; set; } = new List<PostSystemTag>();
@@ -85,17 +90,27 @@ public class Post : IUserOwnedEntity
     public int LikeCount => Likes.Count; // Legacy - will be replaced with reaction counts
     public int ReactionCount => Reactions.Count;
     public int CommentCount => PostType == PostType.Post ? Children.Count(c => c.PostType == PostType.Comment) : 0;
-    public int RepostCount => Reposts.Count;
+    public int RepostCount => LegacyReposts.Count + Reposts.Count; // Combined count from both systems
+
+
 
     // Unified model helper properties
     [NotMapped]
     public bool IsComment => PostType == PostType.Comment;
 
     [NotMapped]
+    public bool IsRepost => PostType == PostType.Repost;
+
+
+
+    [NotMapped]
     public bool IsTopLevelPost => PostType == PostType.Post && ParentId == null;
 
     [NotMapped]
     public IEnumerable<Post> ChildComments => Children.Where(c => c.PostType == PostType.Comment);
+
+    [NotMapped]
+    public IEnumerable<Post> ChildReposts => Children.Where(c => c.PostType == PostType.Repost);
 
     // Reaction count helpers
     public int GetReactionCount(ReactionType reactionType) => Reactions.Count(r => r.ReactionType == reactionType);

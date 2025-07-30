@@ -23,8 +23,17 @@ public interface IPostService
     Task<bool> UnlikePostAsync(int postId, int userId); // Legacy - will be removed
     Task<bool> ReactToPostAsync(int postId, int userId, ReactionType reactionType);
     Task<bool> RemovePostReactionAsync(int postId, int userId);
-    Task<bool> RepostAsync(int postId, int userId);
-    Task<bool> UnrepostAsync(int postId, int userId);
+
+    // Enhanced Repost functionality (replaces simple repost and quote tweet)
+    Task<PostDto?> CreateRepostAsync(int userId, CreateRepostDto createDto);
+    Task<PostDto?> CreateRepostWithMediaAsync(int userId, CreateRepostWithMediaDto createDto);
+    Task<IEnumerable<PostDto>> GetRepostsAsync(int postId, int? currentUserId = null, int page = 1, int pageSize = 20);
+
+    // Legacy repost methods (for backward compatibility)
+    Task<bool> LegacyRepostAsync(int postId, int userId);
+    Task<bool> LegacyUnrepostAsync(int postId, int userId);
+
+
 
     // Comments
     Task<CommentDto?> AddCommentAsync(int postId, int userId, CreateCommentDto createDto);

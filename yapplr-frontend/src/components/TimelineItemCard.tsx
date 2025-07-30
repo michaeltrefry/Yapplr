@@ -3,7 +3,7 @@
 import { TimelineItem, Post } from '@/types';
 import PostCard from './PostCard';
 import UserAvatar from './UserAvatar';
-import { Repeat2, Trash2 } from 'lucide-react';
+import { Repeat2, Trash2, Quote } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -51,8 +51,8 @@ export default function TimelineItemCard({ item }: TimelineItemCardProps) {
     return <PostCard post={localItem.post} onPostUpdate={handlePostUpdate} />;
   }
 
-  // Repost
-  const isRepostOwner = user && user.id === localItem.repostedBy!.id;
+  // Repost (both simple reposts and reposts with content now have repostedBy)
+  const isRepostOwner = user && localItem.repostedBy && user.id === localItem.repostedBy.id;
 
   return (
     <>

@@ -187,7 +187,8 @@ export enum ReactionType {
 
 export enum PostType {
   Post = 0,
-  Comment = 1
+  Comment = 1,
+  Repost = 2
 }
 
 export interface ReactionCount {
@@ -257,6 +258,7 @@ export interface Post {
   likeCount: number; // Legacy - will be replaced by reactionCounts
   commentCount: number;
   repostCount: number;
+  quoteTweetCount: number;
   tags: Tag[];
   linkPreviews: LinkPreview[];
   isLikedByCurrentUser: boolean; // Legacy - will be replaced by currentUserReaction
@@ -267,6 +269,8 @@ export interface Post {
   reactionCounts?: ReactionCount[];
   currentUserReaction?: ReactionType | null;
   totalReactionCount?: number;
+  postType?: PostType;
+  repostedPost?: Post;
 }
 
 export interface PostModerationInfo {
@@ -416,6 +420,24 @@ export interface UpdatePostData {
   content: string;
   privacy?: PostPrivacy;
 }
+
+// Enhanced repost types (replaces quote tweet functionality)
+export interface CreateRepostData {
+  content?: string; // Optional - empty for simple reposts
+  repostedPostId: number;
+  privacy?: PostPrivacy;
+  groupId?: number;
+}
+
+export interface CreateRepostWithMediaData {
+  content?: string; // Optional - empty for simple reposts
+  repostedPostId: number;
+  privacy?: PostPrivacy;
+  groupId?: number;
+  mediaFiles?: MediaFile[];
+}
+
+
 
 export interface CreateCommentData {
   content: string;

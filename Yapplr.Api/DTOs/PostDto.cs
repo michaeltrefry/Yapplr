@@ -18,6 +18,7 @@ public record PostDto(
     int LikeCount, // Legacy - will be replaced by ReactionCounts
     int CommentCount,
     int RepostCount,
+
     IEnumerable<TagDto> Tags,
     IEnumerable<LinkPreviewDto> LinkPreviews,
     bool IsLikedByCurrentUser = false, // Legacy - will be replaced by CurrentUserReaction
@@ -28,5 +29,7 @@ public record PostDto(
     IEnumerable<PostMediaDto>? MediaItems = null,
     IEnumerable<ReactionCountDto>? ReactionCounts = null,
     ReactionType? CurrentUserReaction = null,
-    int TotalReactionCount = 0
+    int TotalReactionCount = 0,
+    PostType PostType = PostType.Post,
+    PostDto? RepostedPost = null // Only set for reposts
 );

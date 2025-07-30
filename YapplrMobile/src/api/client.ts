@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { YapplrApi, LoginData, RegisterData, AuthResponse, RegisterResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, CreatePostWithMediaData, Post, ImageUploadResponse, VideoUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag, ContentPageVersion, MultipleFileUploadResponse, UploadLimits, Group, GroupList, GroupMember, CreateGroup, UpdateGroup, PaginatedResult } from '../types';
+import { YapplrApi, LoginData, RegisterData, AuthResponse, RegisterResponse, User, UserProfile, TimelineItem, ConversationListItem, Conversation, CanMessageResponse, Message, SendMessageData, FollowResponse, CreatePostData, CreatePostWithMediaData, CreateRepostData, CreateRepostWithMediaData, Post, ImageUploadResponse, VideoUploadResponse, Comment, CreateCommentData, UpdateCommentData, BlockResponse, BlockStatusResponse, NotificationList, UnreadCountResponse, CreateAppealDto, CreateUserReportDto, UserReport, SystemTag, ContentPageVersion, MultipleFileUploadResponse, UploadLimits, Group, GroupList, GroupMember, CreateGroup, UpdateGroup, PaginatedResult } from '../types';
 
 interface ApiConfig {
   baseURL: string;
@@ -112,7 +112,7 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
 
     posts: {
       getTimeline: async (page: number, limit: number): Promise<TimelineItem[]> => {
-        const response = await client.get(`/api/posts/timeline?page=${page}&limit=${limit}`);
+        const response = await client.get(`/api/posts/timeline?page=${page}&pageSize=${limit}`);
 
         // Debug logging for video URLs in timeline
         console.log(`🎥 API Timeline: Mobile app connecting to: ${config.baseURL}`);
@@ -181,6 +181,28 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
       unrepost: async (postId: number): Promise<void> => {
         await client.delete(`/api/posts/${postId}/repost`);
       },
+
+      // Enhanced repost functionality (replaces simple repost and quote tweet)
+      createRepost: async (data: CreateRepostData): Promise<Post> => {
+        const response = await client.post('/api/posts/repost', data);
+        return response.data;
+      },
+
+      createRepostWithMedia: async (data: CreateRepostWithMediaData): Promise<Post> => {
+        const response = await client.post('/api/posts/repost-with-media', data);
+        return response.data;
+      },
+
+      getReposts: async (postId: number, page: number = 1, pageSize: number = 20): Promise<Post[]> => {
+        const response = await client.get(`/api/posts/${postId}/reposts`, {
+          params: { page, pageSize }
+        });
+        return response.data;
+      },
+
+
+
+
 
       getUserTimeline: async (userId: number, page: number, limit: number): Promise<TimelineItem[]> => {
         const response = await client.get(`/api/posts/user/${userId}/timeline?page=${page}&pageSize=${limit}`);

@@ -8,6 +8,9 @@ import type {
   CreatePostData,
   CreatePostWithMediaData,
   UpdatePostData,
+  CreateRepostData,
+  CreateRepostWithMediaData,
+
   Comment,
   CreateCommentData,
   UpdateCommentData,
@@ -328,6 +331,25 @@ export const postApi = {
     await api.delete(`/posts/${postId}/comments/${commentId}/react`);
   },
 
+  // Enhanced repost functionality (replaces simple repost and quote tweet)
+  createRepost: async (data: CreateRepostData): Promise<Post> => {
+    const response = await api.post('/posts/repost', data);
+    return response.data;
+  },
+
+  createRepostWithMedia: async (data: CreateRepostWithMediaData): Promise<Post> => {
+    const response = await api.post('/posts/repost-with-media', data);
+    return response.data;
+  },
+
+  getReposts: async (postId: number, page: number = 1, pageSize: number = 20): Promise<Post[]> => {
+    const response = await api.get(`/posts/${postId}/reposts`, {
+      params: { page, pageSize }
+    });
+    return response.data;
+  },
+
+  // Legacy simple repost methods (for backward compatibility)
   repost: async (id: number): Promise<void> => {
     await api.post(`/posts/${id}/repost`);
   },
@@ -335,6 +357,8 @@ export const postApi = {
   unrepost: async (id: number): Promise<void> => {
     await api.delete(`/posts/${id}/repost`);
   },
+
+
 
   addComment: async (postId: number, data: CreateCommentData): Promise<Comment> => {
     const response = await api.post(`/posts/${postId}/comments`, data);

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Yapplr.Api.Data;
@@ -11,9 +12,11 @@ using Yapplr.Api.Data;
 namespace Yapplr.Api.Migrations
 {
     [DbContext(typeof(YapplrDbContext))]
-    partial class YapplrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250729194724_AddQuoteTweetSupport")]
+    partial class AddQuoteTweetSupport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -103,7 +106,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("PostId", "TagName")
                         .HasDatabaseName("IX_AiSuggestedTags_PostId_TagName");
 
-                    b.ToTable("AiSuggestedTags", (string)null);
+                    b.ToTable("AiSuggestedTags");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Analytics.ContentEngagement", b =>
@@ -170,7 +173,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId", "EngagementType", "CreatedAt");
 
-                    b.ToTable("ContentEngagements", (string)null);
+                    b.ToTable("ContentEngagements");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Analytics.PerformanceMetric", b =>
@@ -248,7 +251,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("Source", "CreatedAt");
 
-                    b.ToTable("PerformanceMetrics", (string)null);
+                    b.ToTable("PerformanceMetrics");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Analytics.TagAnalytics", b =>
@@ -314,7 +317,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId", "CreatedAt");
 
-                    b.ToTable("TagAnalytics", (string)null);
+                    b.ToTable("TagAnalytics");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Analytics.UserActivity", b =>
@@ -379,7 +382,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId", "CreatedAt");
 
-                    b.ToTable("UserActivities", (string)null);
+                    b.ToTable("UserActivities");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Analytics.UserTrustScoreHistory", b =>
@@ -446,7 +449,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId", "CreatedAt");
 
-                    b.ToTable("UserTrustScoreHistories", (string)null);
+                    b.ToTable("UserTrustScoreHistories");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.AuditLog", b =>
@@ -505,7 +508,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("TargetUserId");
 
-                    b.ToTable("AuditLogs", (string)null);
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Block", b =>
@@ -532,7 +535,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("BlockerId", "BlockedId")
                         .IsUnique();
 
-                    b.ToTable("Blocks", (string)null);
+                    b.ToTable("Blocks");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.ContentPage", b =>
@@ -576,7 +579,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("Type")
                         .IsUnique();
 
-                    b.ToTable("ContentPages", (string)null);
+                    b.ToTable("ContentPages");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.ContentPageVersion", b =>
@@ -630,7 +633,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("ContentPageId", "VersionNumber")
                         .IsUnique();
 
-                    b.ToTable("ContentPageVersions", (string)null);
+                    b.ToTable("ContentPageVersions");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Conversation", b =>
@@ -651,7 +654,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UpdatedAt");
 
-                    b.ToTable("Conversations", (string)null);
+                    b.ToTable("Conversations");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.ConversationParticipant", b =>
@@ -681,7 +684,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("ConversationId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("ConversationParticipants", (string)null);
+                    b.ToTable("ConversationParticipants");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.EmailVerification", b =>
@@ -726,7 +729,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("EmailVerifications", (string)null);
+                    b.ToTable("EmailVerifications");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Follow", b =>
@@ -753,7 +756,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("FollowerId", "FollowingId")
                         .IsUnique();
 
-                    b.ToTable("Follows", (string)null);
+                    b.ToTable("Follows");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.FollowRequest", b =>
@@ -785,7 +788,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("RequesterId", "RequestedId", "Status");
 
-                    b.ToTable("FollowRequests", (string)null);
+                    b.ToTable("FollowRequests");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Group", b =>
@@ -831,7 +834,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Groups", (string)null);
+                    b.ToTable("Groups");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.GroupMember", b =>
@@ -867,7 +870,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("GroupId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("GroupMembers", (string)null);
+                    b.ToTable("GroupMembers");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Like", b =>
@@ -894,7 +897,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("UserId", "PostId")
                         .IsUnique();
 
-                    b.ToTable("Likes", (string)null);
+                    b.ToTable("Likes");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.LinkPreview", b =>
@@ -954,7 +957,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("Url")
                         .IsUnique();
 
-                    b.ToTable("LinkPreviews", (string)null);
+                    b.ToTable("LinkPreviews");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Mention", b =>
@@ -1003,7 +1006,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("MentionedUserId", "PostId");
 
-                    b.ToTable("Mentions", (string)null);
+                    b.ToTable("Mentions");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Message", b =>
@@ -1052,7 +1055,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("ConversationId", "IsDeleted", "CreatedAt");
 
-                    b.ToTable("Messages", (string)null);
+                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.MessageStatus", b =>
@@ -1084,7 +1087,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("MessageId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("MessageStatuses", (string)null);
+                    b.ToTable("MessageStatuses");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Notification", b =>
@@ -1148,7 +1151,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId", "IsSeen");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.NotificationAuditLog", b =>
@@ -1201,7 +1204,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("NotificationAuditLogs", (string)null);
+                    b.ToTable("NotificationAuditLogs");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.NotificationDeliveryConfirmation", b =>
@@ -1254,7 +1257,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("NotificationDeliveryConfirmations", (string)null);
+                    b.ToTable("NotificationDeliveryConfirmations");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.NotificationHistory", b =>
@@ -1311,7 +1314,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("NotificationHistory", (string)null);
+                    b.ToTable("NotificationHistory");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.NotificationPreferences", b =>
@@ -1436,7 +1439,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("NotificationPreferences", (string)null);
+                    b.ToTable("NotificationPreferences");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PasswordReset", b =>
@@ -1481,7 +1484,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PasswordResets", (string)null);
+                    b.ToTable("PasswordResets");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PaymentGlobalConfiguration", b =>
@@ -1534,7 +1537,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PaymentGlobalConfigurations", (string)null);
+                    b.ToTable("PaymentGlobalConfigurations");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PaymentMethod", b =>
@@ -1644,7 +1647,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId", "IsDefault");
 
-                    b.ToTable("PaymentMethods", (string)null);
+                    b.ToTable("PaymentMethods");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PaymentProviderConfiguration", b =>
@@ -1693,7 +1696,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("ProviderName")
                         .IsUnique();
 
-                    b.ToTable("PaymentProviderConfigurations", (string)null);
+                    b.ToTable("PaymentProviderConfigurations");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PaymentProviderSetting", b =>
@@ -1744,7 +1747,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("PaymentProviderConfigurationId", "Key")
                         .IsUnique();
 
-                    b.ToTable("PaymentProviderSettings", (string)null);
+                    b.ToTable("PaymentProviderSettings");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PaymentTransaction", b =>
@@ -1849,7 +1852,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId", "Status");
 
-                    b.ToTable("PaymentTransactions", (string)null);
+                    b.ToTable("PaymentTransactions");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Post", b =>
@@ -1921,7 +1924,7 @@ namespace Yapplr.Api.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
-                    b.Property<int?>("RepostedPostId")
+                    b.Property<int?>("QuotedPostId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -1946,7 +1949,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("ParentId", "PostType", "CreatedAt");
 
-                    b.HasIndex("RepostedPostId", "PostType", "CreatedAt");
+                    b.HasIndex("QuotedPostId", "PostType", "CreatedAt");
 
                     b.HasIndex("UserId", "PostType", "CreatedAt");
 
@@ -1954,7 +1957,7 @@ namespace Yapplr.Api.Migrations
                         .HasDatabaseName("IX_Posts_HybridVisibility")
                         .HasFilter("\"IsHidden\" = false OR \"HiddenReasonType\" = 3");
 
-                    b.ToTable("Posts", (string)null);
+                    b.ToTable("Posts");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PostLinkPreview", b =>
@@ -1983,7 +1986,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("PostId", "LinkPreviewId")
                         .IsUnique();
 
-                    b.ToTable("PostLinkPreviews", (string)null);
+                    b.ToTable("PostLinkPreviews");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PostMedia", b =>
@@ -2125,7 +2128,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("PostId", "MediaType");
 
-                    b.ToTable("PostMedia", (string)null);
+                    b.ToTable("PostMedia");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PostReaction", b =>
@@ -2158,7 +2161,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("UserId", "PostId")
                         .IsUnique();
 
-                    b.ToTable("PostReactions", (string)null);
+                    b.ToTable("PostReactions");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PostSystemTag", b =>
@@ -2194,7 +2197,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("PostId", "SystemTagId")
                         .IsUnique();
 
-                    b.ToTable("PostSystemTags", (string)null);
+                    b.ToTable("PostSystemTags");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PostTag", b =>
@@ -2223,7 +2226,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("PostId", "TagId")
                         .IsUnique();
 
-                    b.ToTable("PostTags", (string)null);
+                    b.ToTable("PostTags");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.QueuedNotification", b =>
@@ -2286,7 +2289,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId", "DeliveredAt");
 
-                    b.ToTable("QueuedNotifications", (string)null);
+                    b.ToTable("QueuedNotifications");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Repost", b =>
@@ -2315,7 +2318,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("UserId", "PostId")
                         .IsUnique();
 
-                    b.ToTable("Reposts", (string)null);
+                    b.ToTable("Reposts");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.SubscriptionTier", b =>
@@ -2382,7 +2385,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("SortOrder");
 
-                    b.ToTable("SubscriptionTiers", (string)null);
+                    b.ToTable("SubscriptionTiers");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.SystemConfiguration", b =>
@@ -2427,7 +2430,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SystemConfigurations", (string)null);
+                    b.ToTable("SystemConfigurations");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.SystemTag", b =>
@@ -2484,7 +2487,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("SystemTags", (string)null);
+                    b.ToTable("SystemTags");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.Tag", b =>
@@ -2515,7 +2518,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("PostCount");
 
-                    b.ToTable("Tags", (string)null);
+                    b.ToTable("Tags");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.UploadSettings", b =>
@@ -2579,7 +2582,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("UploadSettings", (string)null);
+                    b.ToTable("UploadSettings");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.User", b =>
@@ -2700,7 +2703,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.UserAppeal", b =>
@@ -2772,7 +2775,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserAppeals", (string)null);
+                    b.ToTable("UserAppeals");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.UserPreferences", b =>
@@ -2803,7 +2806,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserPreferences", (string)null);
+                    b.ToTable("UserPreferences");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.UserReport", b =>
@@ -2861,7 +2864,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("UserReports", (string)null);
+                    b.ToTable("UserReports");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.UserReportSystemTag", b =>
@@ -2888,7 +2891,7 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("UserReportId", "SystemTagId")
                         .IsUnique();
 
-                    b.ToTable("UserReportSystemTags", (string)null);
+                    b.ToTable("UserReportSystemTags");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.UserSubscription", b =>
@@ -2993,7 +2996,7 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId", "Status");
 
-                    b.ToTable("UserSubscriptions", (string)null);
+                    b.ToTable("UserSubscriptions");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.AiSuggestedTag", b =>
@@ -3527,9 +3530,9 @@ namespace Yapplr.Api.Migrations
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("Yapplr.Api.Models.Post", "RepostedPost")
-                        .WithMany("Reposts")
-                        .HasForeignKey("RepostedPostId")
+                    b.HasOne("Yapplr.Api.Models.Post", "QuotedPost")
+                        .WithMany("QuoteTweets")
+                        .HasForeignKey("QuotedPostId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Yapplr.Api.Models.User", "User")
@@ -3544,7 +3547,7 @@ namespace Yapplr.Api.Migrations
 
                     b.Navigation("Parent");
 
-                    b.Navigation("RepostedPost");
+                    b.Navigation("QuotedPost");
 
                     b.Navigation("User");
                 });
@@ -3658,13 +3661,13 @@ namespace Yapplr.Api.Migrations
             modelBuilder.Entity("Yapplr.Api.Models.Repost", b =>
                 {
                     b.HasOne("Yapplr.Api.Models.Post", "Post")
-                        .WithMany("LegacyReposts")
+                        .WithMany("Reposts")
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Yapplr.Api.Models.User", "User")
-                        .WithMany("LegacyReposts")
+                        .WithMany("Reposts")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -3861,8 +3864,6 @@ namespace Yapplr.Api.Migrations
 
                     b.Navigation("Children");
 
-                    b.Navigation("LegacyReposts");
-
                     b.Navigation("Likes");
 
                     b.Navigation("PostLinkPreviews");
@@ -3872,6 +3873,8 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("PostSystemTags");
 
                     b.Navigation("PostTags");
+
+                    b.Navigation("QuoteTweets");
 
                     b.Navigation("Reactions");
 
@@ -3915,8 +3918,6 @@ namespace Yapplr.Api.Migrations
 
                     b.Navigation("GroupMemberships");
 
-                    b.Navigation("LegacyReposts");
-
                     b.Navigation("Likes");
 
                     b.Navigation("MentionsMade");
@@ -3932,6 +3933,8 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("PostReactions");
 
                     b.Navigation("Posts");
+
+                    b.Navigation("Reposts");
 
                     b.Navigation("SentMessages");
 
