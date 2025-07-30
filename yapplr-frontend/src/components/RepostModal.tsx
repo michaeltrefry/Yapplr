@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { postApi, multipleUploadApi } from '@/lib/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { X, Image as ImageIcon, Video, Globe, Users, Lock, ChevronDown, AlertCircle, Smile } from 'lucide-react';
-import { PostPrivacy, Post, MediaFile, UploadedFile, CreateRepostData, CreateRepostWithMediaData } from '@/types';
+import { PostPrivacy, Post, MediaFile, UploadedFile, CreateRepostData, CreateRepostWithMediaData, MediaType } from '@/types';
 import UserAvatar from './UserAvatar';
 import { formatDate } from '@/lib/utils';
 import MediaGallery from './MediaGallery';
@@ -59,7 +59,7 @@ export default function RepostModal({ isOpen, onClose, repostedPost, onRepostCre
       if (selectedGif) {
         mediaFiles.push({
           fileName: null,
-          mediaType: 'Gif' as any,
+          mediaType: MediaType.Gif,
           width: selectedGif.width,
           height: selectedGif.height,
           gifUrl: selectedGif.url,
