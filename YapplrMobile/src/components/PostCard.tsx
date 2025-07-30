@@ -342,13 +342,10 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
               onPress={() => onUserPress(item.post.repostedPost!.user.username)}
             >
               <Image
-                source={{ uri: item.post.repostedPost.user.profilePictureUrl || 'https://via.placeholder.com/40' }}
+                source={{ uri: item.post.repostedPost.user.profileImageUrl || 'https://via.placeholder.com/40' }}
                 style={styles.originalAuthorAvatar}
               />
               <View style={styles.originalAuthorText}>
-                <Text style={styles.originalAuthorUsername}>
-                  {item.post.repostedPost.user.username}
-                </Text>
                 <Text style={styles.originalAuthorHandle}>
                   @{item.post.repostedPost.user.username}
                 </Text>
@@ -1150,14 +1147,10 @@ const createStyles = (colors: any) => StyleSheet.create({
   originalAuthorText: {
     flex: 1,
   },
-  originalAuthorUsername: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
   originalAuthorHandle: {
-    fontSize: 12,
-    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text,
   },
   originalPostTimestamp: {
     fontSize: 12,
