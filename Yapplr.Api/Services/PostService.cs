@@ -630,9 +630,10 @@ public class PostService : BaseService, IPostService
         {
             var repostedByUser = repost.User.MapToUserDto();
 
-            // For the new unified system, the repost itself is the post, and RepostedPost is what was reposted
+            // Pass the repost itself as the post so actions (like delete) use the repost ID
+            // The repost's RepostedPost field contains the original post for display
             timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt,
-                repost.RepostedPost!.MapToPostDto(userId), repostedByUser));
+                repost.MapToPostDto(userId), repostedByUser));
         }
 
         // Sort by creation date and apply pagination
@@ -696,7 +697,7 @@ public class PostService : BaseService, IPostService
         timelineItems.AddRange(reposts.Select(r => new TimelineItemDto(
             "repost",
             r.CreatedAt,
-            r.RepostedPost!.MapToPostDto(currentUserId),
+            r.MapToPostDto(currentUserId), // Pass the repost itself for correct ID handling
             r.User.MapToUserDto()
         )));
 
@@ -895,7 +896,7 @@ public class PostService : BaseService, IPostService
         {
             var repostedByUser = repost.User.MapToUserDto();
 
-            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, repost.RepostedPost!.MapToPostDto(currentUserId), repostedByUser));
+            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, repost.MapToPostDto(currentUserId), repostedByUser));
         }
 
         // Sort by creation date and apply pagination
