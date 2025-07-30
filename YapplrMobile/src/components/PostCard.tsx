@@ -261,6 +261,80 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
       {/* Display original post content for reposts */}
       {item.type === 'repost' && item.post.repostedPost && (
         <View style={styles.repostedPostContainer}>
+          {/* Repost's own media (if any) */}
+          {item.post.mediaItems && item.post.mediaItems.length > 0 && (
+            <View style={styles.mediaContainer}>
+              {item.post.mediaItems.map((media, index) => (
+                <View key={media.id} style={styles.mediaItem}>
+                  {media.mediaType === MediaType.Image && media.imageUrl && (
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      onPress={() => setShowImageViewer(true)}
+                    >
+                      <Image
+                        source={{ uri: media.imageUrl }}
+                        style={[
+                          styles.postImage,
+                          { height: getImageHeight(`media-${media.id}`) }
+                        ]}
+                        resizeMode="contain"
+                        onLoad={(event) => {
+                          handleImageLoad(`media-${media.id}`, event);
+                          setImageLoading(false);
+                        }}
+                        onError={() => {
+                          setImageLoading(false);
+                          setImageError(true);
+                        }}
+                        onLoadStart={() => {
+                          setImageLoading(true);
+                          setImageError(false);
+                        }}
+                      />
+                    </TouchableOpacity>
+                  )}
+                  {media.mediaType === MediaType.Gif && media.gifUrl && (
+                    <View style={styles.gifContainer}>
+                      <Image
+                        source={{ uri: media.gifUrl }}
+                        style={[
+                          styles.postImage,
+                          { height: getImageHeight(`gif-${media.id}`) }
+                        ]}
+                        resizeMode="contain"
+                        onLoad={(event) => handleImageLoad(`gif-${media.id}`, event)}
+                      />
+                      <View style={styles.gifBadge}>
+                        <Text style={styles.gifBadgeText}>GIF</Text>
+                      </View>
+                    </View>
+                  )}
+                  {media.mediaType === MediaType.Video && media.videoUrl && (
+                    <VideoPlayer
+                      ref={(ref) => {
+                        if (ref) {
+                          videoRefs.current[media.id] = ref;
+                        }
+                      }}
+                      videoUrl={media.videoUrl}
+                      thumbnailUrl={media.videoThumbnailUrl}
+                      aspectRatio={media.width && media.height ? media.width / media.height : 16/9}
+                      onPress={() => {
+                        setSelectedVideo({
+                          url: media.videoUrl!,
+                          thumbnail: media.videoThumbnailUrl,
+                          aspectRatio: media.width && media.height ? media.width / media.height : 16/9
+                        });
+                        setShowFullScreenVideo(true);
+                      }}
+                      style={styles.postVideo}
+                    />
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+
           {/* Original author attribution */}
           <View style={styles.originalAuthorHeader}>
             <TouchableOpacity
@@ -300,67 +374,89 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
               maxGifWidth={300}
             />
           )}
+
+          {/* Original post media */}
+          {item.post.repostedPost.mediaItems && item.post.repostedPost.mediaItems.length > 0 && (
+            <View style={styles.mediaContainer}>
+              {item.post.repostedPost.mediaItems.map((media, index) => (
+                <View key={media.id} style={styles.mediaItem}>
+                  {media.mediaType === MediaType.Image && media.imageUrl && (
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      onPress={() => setShowImageViewer(true)}
+                    >
+                      <Image
+                        source={{ uri: media.imageUrl }}
+                        style={[
+                          styles.postImage,
+                          { height: getImageHeight(`media-${media.id}`) }
+                        ]}
+                        resizeMode="contain"
+                        onLoad={(event) => {
+                          handleImageLoad(`media-${media.id}`, event);
+                          setImageLoading(false);
+                        }}
+                        onError={() => {
+                          setImageLoading(false);
+                          setImageError(true);
+                        }}
+                        onLoadStart={() => {
+                          setImageLoading(true);
+                          setImageError(false);
+                        }}
+                      />
+                    </TouchableOpacity>
+                  )}
+                  {media.mediaType === MediaType.Gif && media.gifUrl && (
+                    <View style={styles.gifContainer}>
+                      <Image
+                        source={{ uri: media.gifUrl }}
+                        style={[
+                          styles.postImage,
+                          { height: getImageHeight(`gif-${media.id}`) }
+                        ]}
+                        resizeMode="contain"
+                        onLoad={(event) => handleImageLoad(`gif-${media.id}`, event)}
+                      />
+                      <View style={styles.gifBadge}>
+                        <Text style={styles.gifBadgeText}>GIF</Text>
+                      </View>
+                    </View>
+                  )}
+                  {media.mediaType === MediaType.Video && media.videoUrl && (
+                    <VideoPlayer
+                      ref={(ref) => {
+                        if (ref) {
+                          videoRefs.current[media.id] = ref;
+                        }
+                      }}
+                      videoUrl={media.videoUrl}
+                      thumbnailUrl={media.videoThumbnailUrl}
+                      aspectRatio={media.width && media.height ? media.width / media.height : 16/9}
+                      onPress={() => {
+                        setSelectedVideo({
+                          url: media.videoUrl!,
+                          thumbnail: media.videoThumbnailUrl,
+                          aspectRatio: media.width && media.height ? media.width / media.height : 16/9
+                        });
+                        setShowFullScreenVideo(true);
+                      }}
+                      style={styles.postVideo}
+                    />
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       )}
 
-      {/* Media Display - show repost's own media if it exists */}
-      {item.type === 'repost' && item.post.mediaItems && item.post.mediaItems.length > 0 && (
+
+
+      {/* Media Display - only for non-reposts (repost media is handled inside the reposted post container) */}
+      {item.type !== 'repost' && item.post.mediaItems && item.post.mediaItems.length > 0 && (
         <View style={styles.mediaContainer}>
           {item.post.mediaItems.map((media, index) => (
-            <View key={media.id} style={styles.mediaItem}>
-              {media.mediaType === MediaType.Image && media.imageUrl && (
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={() => setShowImageViewer(true)}
-                >
-                  <Image
-                    source={{ uri: media.imageUrl }}
-                    style={[
-                      styles.postImage,
-                      { height: getImageHeight(`media-${media.id}`) }
-                    ]}
-                    resizeMode="contain"
-                    onLoad={(event) => {
-                      handleImageLoad(`media-${media.id}`, event);
-                      setImageLoading(false);
-                    }}
-                    onError={() => {
-                      setImageLoading(false);
-                      setImageError(true);
-                    }}
-                    onLoadStart={() => {
-                      setImageLoading(true);
-                      setImageError(false);
-                    }}
-                  />
-                </TouchableOpacity>
-              )}
-              {media.mediaType === MediaType.Gif && media.gifUrl && (
-                <View style={styles.gifContainer}>
-                  <Image
-                    source={{ uri: media.gifUrl }}
-                    style={[
-                      styles.postImage,
-                      { height: getImageHeight(`gif-${media.id}`) }
-                    ]}
-                    resizeMode="contain"
-                    onLoad={(event) => handleImageLoad(`gif-${media.id}`, event)}
-                  />
-                  <View style={styles.gifBadge}>
-                    <Text style={styles.gifBadgeText}>GIF</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Media Display - show original post's media for reposts, or regular media for non-reposts */}
-      {((item.type === 'repost' && item.post.repostedPost?.mediaItems && item.post.repostedPost.mediaItems.length > 0) ||
-        (item.type !== 'repost' && item.post.mediaItems && item.post.mediaItems.length > 0)) && (
-        <View style={styles.mediaContainer}>
-          {(item.type === 'repost' ? item.post.repostedPost?.mediaItems : item.post.mediaItems)?.map((media, index) => (
             <View key={media.id} style={styles.mediaItem}>
               {media.mediaType === MediaType.Image && media.imageUrl && (
                 <TouchableOpacity
