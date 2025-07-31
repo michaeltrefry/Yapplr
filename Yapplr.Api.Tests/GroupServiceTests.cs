@@ -7,6 +7,7 @@ using Moq;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Common;
 
@@ -25,7 +26,7 @@ public class GroupServiceTests : IDisposable
     private readonly TestYapplrDbContext _context;
     private readonly GroupService _groupService;
     private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
-    private readonly Mock<INotificationService> _mockNotificationService;
+    private readonly Mock<IUnifiedNotificationService> _mockNotificationService;
     private readonly Mock<ICountCacheService> _mockCountCacheService;
     private readonly Mock<ILogger<GroupService>> _mockLogger;
 
@@ -37,7 +38,7 @@ public class GroupServiceTests : IDisposable
 
         _context = new TestYapplrDbContext(options);
         _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
-        _mockNotificationService = new Mock<INotificationService>();
+        _mockNotificationService = new Mock<IUnifiedNotificationService>();
         _mockCountCacheService = new Mock<ICountCacheService>();
         _mockLogger = new Mock<ILogger<GroupService>>();
 

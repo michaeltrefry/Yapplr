@@ -12,8 +12,7 @@ namespace Yapplr.Api.Tests.Services;
 public class NotificationServiceMessageExclusionTests : IDisposable
 {
     private readonly YapplrDbContext _context;
-    private readonly NotificationService _service;
-    private readonly Mock<IUnifiedNotificationService> _mockNotificationService;
+    private readonly UnifiedNotificationService _service;
     private readonly Mock<ICountCacheService> _mockCountCache;
 
     public NotificationServiceMessageExclusionTests()
@@ -23,14 +22,18 @@ public class NotificationServiceMessageExclusionTests : IDisposable
             .Options;
 
         _context = new YapplrDbContext(options);
-        _mockNotificationService = new Mock<IUnifiedNotificationService>();
         _mockCountCache = new Mock<ICountCacheService>();
-        var mockLogger = new Mock<ILogger<NotificationService>>();
+        var mockLogger = new Mock<ILogger<UnifiedNotificationService>>();
+        var mockPreferencesService = new Mock<INotificationPreferencesService>();
+        var mockConnectionPool = new Mock<ISignalRConnectionPool>();
+        var mockConversationTracker = new Mock<IActiveConversationTracker>();
 
-        _service = new NotificationService(
+        _service = new UnifiedNotificationService(
             _context,
-            _mockNotificationService.Object,
+            mockPreferencesService.Object,
+            mockConnectionPool.Object,
             _mockCountCache.Object,
+            mockConversationTracker.Object,
             mockLogger.Object
         );
 

@@ -1020,4 +1020,22 @@ public static class MappingUtilities
         };
     }
 
+    public static NotificationDto MapToNotificationDto(this Notification notification)
+    {
+        return new NotificationDto
+        {
+            Id = notification.Id,
+            Type = notification.Type,
+            Message = notification.Message,
+            IsRead = notification.IsRead,
+            IsSeen = notification.IsSeen,
+            CreatedAt = notification.CreatedAt,
+            ReadAt = notification.ReadAt,
+            SeenAt = notification.SeenAt,
+            ActorUser = notification.ActorUser?.MapToUserDto(),
+            Post = notification.Post
+                ?.MapToPostDto(null), // Pass null for currentUserId since we don't need reaction info here
+            Comment = notification.Comment?.MapToCommentDto() // Use the basic mapping without like info
+        };
+    }
 }

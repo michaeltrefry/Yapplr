@@ -4,6 +4,7 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Common;
+using Yapplr.Api.Services.Unified;
 using Serilog.Context;
 
 namespace Yapplr.Api.Services;
@@ -11,13 +12,13 @@ namespace Yapplr.Api.Services;
 public class GroupService : BaseService, IGroupService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly INotificationService _notificationService;
+    private readonly IUnifiedNotificationService _notificationService;
     private readonly ICountCacheService _countCache;
 
     public GroupService(
         YapplrDbContext context,
         IHttpContextAccessor httpContextAccessor,
-        INotificationService notificationService,
+        IUnifiedNotificationService notificationService,
         ICountCacheService countCache,
         ILogger<GroupService> logger) : base(context, logger)
     {

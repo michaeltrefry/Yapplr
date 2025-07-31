@@ -338,7 +338,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
         services.AddScoped<IUploadSettingsService, UploadSettingsService>();
-        services.AddScoped<INotificationService, NotificationService>();
+
         services.AddScoped<INotificationDigestService, NotificationDigestService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();

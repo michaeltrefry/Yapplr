@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using Yapplr.Api.Data;
+using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Utils;
+using Yapplr.Api.Common;
 using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.CQRS;
 
@@ -635,8 +637,11 @@ public class UnifiedNotificationService : IUnifiedNotificationService
     /// <summary>
     /// Creates mention notifications for users mentioned in content
     /// </summary>
-    public async Task CreateMentionNotificationsAsync(string content, int mentioningUserId, int? postId = null, int? commentId = null)
+    public async Task CreateMentionNotificationsAsync(string? content, int mentioningUserId, int? postId = null, int? commentId = null)
     {
+        if (string.IsNullOrWhiteSpace(content))
+            return;
+
         var mentionedUsernames = MentionParser.ExtractMentions(content);
         if (!mentionedUsernames.Any())
             return;
@@ -1718,6 +1723,455 @@ public class UnifiedNotificationService : IUnifiedNotificationService
             _logger.LogWarning(ex, "Failed to determine media type for post {PostId}, defaulting to 'post'", postId);
             return "post";
         }
+    }
+
+    #endregion
+
+    #region Missing Notification Creation Methods
+
+    /// <summary>
+    /// Creates a reaction notification
+    /// </summary>
+    public async Task CreateReactionNotificationAsync(int reactedUserId, int reactingUserId, int postId, ReactionType reactionType)
+    {
+        // Don't notify if user reacts to their own post
+        if (reactedUserId == reactingUserId)
+            return;
+
+        // Check if user has blocked the reacting user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == reactedUserId && b.BlockedId == reactingUserId);
+
+        if (isBlocked)
+            return;
+
+        var reactingUser = await _context.Users.FindAsync(reactingUserId);
+        if (reactingUser == null)
+            return;
+
+        // Get media type for notification message
+        var mediaTypeText = await GetMediaTypeTextAsync(postId);
+        var reactionEmoji = reactionType.GetEmoji();
+
+        // Create database notification
+        var notification = new Notification
+        {
+            Type = NotificationType.Like, // Reuse like type for now, could add new reaction type later
+            Message = $"@{reactingUser.Username} reacted {reactionEmoji} to your {mediaTypeText}",
+            UserId = reactedUserId,
+            ActorUserId = reactingUserId,
+            PostId = postId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(reactedUserId);
+
+        // Send real-time notification
+        await SendLikeNotificationAsync(reactedUserId, reactingUser.Username, postId);
+    }
+
+    /// <summary>
+    /// Creates a comment reaction notification
+    /// </summary>
+    public async Task CreateCommentReactionNotificationAsync(int commentOwnerId, int reactingUserId, int postId, int commentId, ReactionType reactionType)
+    {
+        // Don't notify if user reacts to their own comment
+        if (commentOwnerId == reactingUserId)
+            return;
+
+        // Check if user has blocked the reacting user
+        var isBlocked = await _context.Blocks
+            .AnyAsync(b => b.BlockerId == commentOwnerId && b.BlockedId == reactingUserId);
+
+        if (isBlocked)
+            return;
+
+        var reactingUser = await _context.Users.FindAsync(reactingUserId);
+        if (reactingUser == null)
+            return;
+
+        var reactionEmoji = reactionType.GetEmoji();
+
+        // Create database notification
+        var notification = new Notification
+        {
+            Type = NotificationType.Like,
+            Message = $"@{reactingUser.Username} reacted {reactionEmoji} to your comment",
+            UserId = commentOwnerId,
+            ActorUserId = reactingUserId,
+            PostId = postId,
+            CommentId = commentId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(commentOwnerId);
+
+        // Send real-time notification
+        await SendCommentLikeNotificationAsync(commentOwnerId, reactingUser.Username, postId, commentId);
+    }
+
+    #endregion
+
+
+
+
+
+    #region Notification Management Methods
+
+    /// <summary>
+    /// Gets notifications for a user with pagination
+    /// </summary>
+    public async Task<NotificationListDto> GetUserNotificationsAsync(int userId, int page = 1, int pageSize = 25)
+    {
+        var query = _context.Notifications
+            .Where(n => n.UserId == userId && n.Type != NotificationType.Message) // Exclude message notifications from main list
+            .Include(n => n.ActorUser)
+            .Include(n => n.Post)
+                .ThenInclude(p => p.User)
+            .Include(n => n.Comment)
+                .ThenInclude(c => c.User)
+            .OrderByDescending(n => n.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+        var notifications = await query
+            .Where(n => n.UserId == userId && !n.IsRead && n.Type != NotificationType.Message) // Exclude message notifications from unread count
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new NotificationListDto
+        {
+            Notifications = notifications.Select(MappingUtilities.MapToNotificationDto).ToList(),
+            TotalCount = totalCount,
+            UnreadCount = notifications.Count(n => !n.IsRead),
+            HasMore = (page * pageSize) < totalCount
+        };
+    }
+
+    /// <summary>
+    /// Gets the count of unread notifications for a user
+    /// </summary>
+    public async Task<int> GetUnreadNotificationCountAsync(int userId)
+    {
+        return await _context.Notifications
+            .Where(n => n.UserId == userId && !n.IsRead && n.Type != NotificationType.Message) // Exclude message notifications from unread count
+            .CountAsync();
+    }
+
+    /// <summary>
+    /// Marks a notification as read
+    /// </summary>
+    public async Task<bool> MarkNotificationAsReadAsync(int notificationId, int userId)
+    {
+        var notification = await _context.Notifications
+            .FirstOrDefaultAsync(n => n.Id == notificationId && n.UserId == userId);
+
+        if (notification == null)
+            return false;
+
+        notification.IsRead = true;
+        notification.ReadAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Marks all notifications as read for a user
+    /// </summary>
+    public async Task<bool> MarkAllNotificationsAsReadAsync(int userId)
+    {
+        var unreadNotifications = await _context.Notifications
+            .Where(n => n.UserId == userId && !n.IsRead && n.Type != NotificationType.Message) // Exclude message notifications
+            .ToListAsync();
+
+        if (!unreadNotifications.Any())
+            return false;
+
+        foreach (var notification in unreadNotifications)
+        {
+            notification.IsRead = true;
+            notification.ReadAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Marks a notification as seen
+    /// </summary>
+    public async Task<bool> MarkNotificationAsSeenAsync(int notificationId, int userId)
+    {
+        var notification = await _context.Notifications
+            .FirstOrDefaultAsync(n => n.Id == notificationId && n.UserId == userId);
+
+        if (notification == null)
+            return false;
+
+        notification.IsSeen = true;
+        notification.SeenAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Marks multiple notifications as seen
+    /// </summary>
+    public async Task<bool> MarkNotificationsAsSeenAsync(int[] notificationIds, int userId)
+    {
+        var notifications = await _context.Notifications
+            .Where(n => notificationIds.Contains(n.Id) && n.UserId == userId && !n.IsSeen)
+            .ToListAsync();
+
+        if (!notifications.Any())
+            return false;
+
+        foreach (var notification in notifications)
+        {
+            notification.IsSeen = true;
+            notification.SeenAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Marks all notifications as seen for a user
+    /// </summary>
+    public async Task<bool> MarkAllNotificationsAsSeenAsync(int userId)
+    {
+        var unseenNotifications = await _context.Notifications
+            .Where(n => n.UserId == userId && !n.IsSeen && n.Type != NotificationType.Message) // Exclude message notifications
+            .ToListAsync();
+
+        if (!unseenNotifications.Any())
+            return false;
+
+        foreach (var notification in unseenNotifications)
+        {
+            notification.IsSeen = true;
+            notification.SeenAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+
+
+    #endregion
+
+    #region Additional Missing Methods
+
+    /// <summary>
+    /// Creates a user suspension notification
+    /// </summary>
+    public async Task CreateUserSuspensionNotificationAsync(int userId, string reason, DateTime? suspendedUntil, string moderatorUsername)
+    {
+        var suspensionText = suspendedUntil.HasValue
+            ? $"until {suspendedUntil.Value:yyyy-MM-dd HH:mm} UTC"
+            : "indefinitely";
+
+        var message = $"Your account has been suspended {suspensionText} by @{moderatorUsername}. Reason: {reason}";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.UserSuspended,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        // Send real-time notification
+        await SendSystemMessageAsync(userId, "Account Suspended", message);
+    }
+
+    /// <summary>
+    /// Creates a user unsuspension notification
+    /// </summary>
+    public async Task CreateUserUnsuspensionNotificationAsync(int userId, string moderatorUsername)
+    {
+        var message = $"Your account suspension has been lifted by @{moderatorUsername}. Welcome back!";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.UserUnsuspended,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        // Send real-time notification
+        await SendSystemMessageAsync(userId, "Account Unsuspended", message);
+    }
+
+    /// <summary>
+    /// Creates a user unban notification
+    /// </summary>
+    public async Task CreateUserUnbanNotificationAsync(int userId, string moderatorUsername)
+    {
+        var message = $"Your account ban has been lifted by @{moderatorUsername}. Welcome back!";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.UserUnbanned,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        // Send real-time notification
+        await SendSystemMessageAsync(userId, "Account Unbanned", message);
+    }
+
+    /// <summary>
+    /// Creates a content restored notification
+    /// </summary>
+    public async Task CreateContentRestoredNotificationAsync(int userId, string contentType, int contentId, string moderatorUsername)
+    {
+        var message = $"Your {contentType} has been restored by @{moderatorUsername}.";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.ContentRestored,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            PostId = contentType == "post" ? contentId : null,
+            CommentId = contentType == "comment" ? contentId : null,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        // Send real-time notification
+        await SendSystemMessageAsync(userId, "Content Restored", message);
+    }
+
+    /// <summary>
+    /// Creates an appeal approved notification
+    /// </summary>
+    public async Task CreateAppealApprovedNotificationAsync(int userId, int appealId, string reviewNotes, string moderatorUsername)
+    {
+        var message = $"Your appeal has been approved by @{moderatorUsername}. The moderation action has been reversed.";
+        if (!string.IsNullOrWhiteSpace(reviewNotes))
+        {
+            message += $" Review notes: {reviewNotes}";
+        }
+
+        var notification = new Notification
+        {
+            Type = NotificationType.AppealApproved,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        // Send real-time notification
+        await SendAppealApprovedNotificationAsync(userId, "appeal", appealId);
+    }
+
+    /// <summary>
+    /// Creates an appeal denied notification
+    /// </summary>
+    public async Task CreateAppealDeniedNotificationAsync(int userId, int appealId, string reviewNotes, string moderatorUsername)
+    {
+        var message = $"Your appeal has been denied by @{moderatorUsername}. Review notes: {reviewNotes}";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.AppealDenied,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        // Send real-time notification
+        await SendAppealDeniedNotificationAsync(userId, "appeal", appealId, reviewNotes);
+    }
+
+    /// <summary>
+    /// Creates a video processing completion notification
+    /// </summary>
+    public async Task CreateVideoProcessingCompletedNotificationAsync(int userId, int postId)
+    {
+        var message = "Your video has finished processing and is now available.";
+
+        var notification = new Notification
+        {
+            Type = NotificationType.VideoProcessingCompleted,
+            Message = message,
+            UserId = userId,
+            ActorUserId = null, // System notification
+            PostId = postId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Invalidate notification count cache
+        await _countCache.InvalidateNotificationCountsAsync(userId);
+
+        // Send real-time notification
+        await SendSystemMessageAsync(userId, "Video Processing Complete", message);
     }
 
     #endregion

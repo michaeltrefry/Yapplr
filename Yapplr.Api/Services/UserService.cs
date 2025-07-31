@@ -4,19 +4,20 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Common;
+using Yapplr.Api.Services.Unified;
 using Serilog.Context;
 
 namespace Yapplr.Api.Services;
 
 public class UserService : BaseService, IUserService
 {
-    private readonly INotificationService _notificationService;
+    private readonly IUnifiedNotificationService _notificationService;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
     private readonly ICountCacheService _countCache;
     private readonly ITrustScoreService _trustScoreService;
 
-    public UserService(YapplrDbContext context, INotificationService notificationService, IEmailService emailService, IConfiguration configuration, ICountCacheService countCache, ITrustScoreService trustScoreService, ILogger<UserService> logger) : base(context, logger)
+    public UserService(YapplrDbContext context, IUnifiedNotificationService notificationService, IEmailService emailService, IConfiguration configuration, ICountCacheService countCache, ITrustScoreService trustScoreService, ILogger<UserService> logger) : base(context, logger)
     {
         _notificationService = notificationService;
         _emailService = emailService;

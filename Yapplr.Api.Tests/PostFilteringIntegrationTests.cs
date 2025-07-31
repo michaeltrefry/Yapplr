@@ -1,9 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 using FluentAssertions;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Common;
+using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.Tests;
 
@@ -14,6 +18,7 @@ namespace Yapplr.Api.Tests;
 public class PostFilteringIntegrationTests : IDisposable
 {
     private readonly YapplrDbContext _context;
+    private readonly PostService _postService;
 
     public PostFilteringIntegrationTests()
     {
@@ -22,6 +27,45 @@ public class PostFilteringIntegrationTests : IDisposable
             .Options;
 
         _context = new TestYapplrDbContext(options);
+
+        // Set up PostService with mocked dependencies
+        var mockHttpContextAccessor = new Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor>();
+        var mockBlockService = new Mock<IBlockService>();
+        var mockNotificationService = new Mock<IUnifiedNotificationService>();
+        var mockLinkPreviewService = new Mock<ILinkPreviewService>();
+        var mockContentModerationService = new Mock<IContentModerationService>();
+        var mockConfiguration = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
+        var mockPublishEndpoint = new Mock<MassTransit.IPublishEndpoint>();
+        var mockCountCacheService = new Mock<ICountCacheService>();
+        var mockTrustScoreService = new Mock<ITrustScoreService>();
+        var mockTrustBasedModerationService = new Mock<ITrustBasedModerationService>();
+        var mockAnalyticsService = new Mock<IAnalyticsService>();
+        var mockLogger = new Mock<ILogger<PostService>>();
+
+        // Setup default mocks
+        mockTrustBasedModerationService
+            .Setup(x => x.CanPerformActionAsync(It.IsAny<int>(), It.IsAny<TrustRequiredAction>()))
+            .ReturnsAsync(true);
+
+        mockCountCacheService
+            .Setup(x => x.InvalidateUserCountsAsync(It.IsAny<int>()))
+            .Returns(Task.CompletedTask);
+
+        _postService = new PostService(
+            _context,
+            mockHttpContextAccessor.Object,
+            mockBlockService.Object,
+            mockNotificationService.Object,
+            mockLinkPreviewService.Object,
+            mockContentModerationService.Object,
+            mockConfiguration.Object,
+            mockPublishEndpoint.Object,
+            mockCountCacheService.Object,
+            mockTrustScoreService.Object,
+            mockTrustBasedModerationService.Object,
+            mockAnalyticsService.Object,
+            mockLogger.Object
+        );
     }
 
     #region Complex Scenario Tests
@@ -211,6 +255,70 @@ public class PostFilteringIntegrationTests : IDisposable
 
     #endregion
 
+    #region Repost Visibility Tests
+
+    [Fact]
+    public async Task RepostVisibilityQuery_PublicReposts_ShouldBeVisibleRegardlessOfFollowingStatus()
+    {
+        // Arrange
+        var originalAuthor = await CreateUserAsync("originalauthor", UserStatus.Active, 0.8f);
+        var reposter = await CreateUserAsync("reposter", UserStatus.Active, 0.8f);
+        var viewer = await CreateUserAsync("viewer", UserStatus.Active, 0.8f);
+
+        // Create an original public post
+        var originalPost = await CreatePostAsync(originalAuthor, "Original post content", PostPrivacy.Public);
+
+        // Create a public repost by someone the viewer doesn't follow
+        var publicRepost = new Post
+        {
+            Content = "Check this out!",
+            PostType = PostType.Repost,
+            RepostedPostId = originalPost.Id,
+            UserId = reposter.Id,
+            Privacy = PostPrivacy.Public,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.Posts.Add(publicRepost);
+        await _context.SaveChangesAsync();
+
+        // Act - Test the repost visibility query logic directly
+        var blockedUserIds = new HashSet<int>();
+        var followingIds = new HashSet<int>(); // Viewer doesn't follow anyone
+
+        var reposts = await _context.GetPostsWithIncludes()
+            .Where(p => p.PostType == PostType.Repost &&
+                       !p.IsDeletedByUser &&
+                       (!p.IsHidden ||
+                        (p.HiddenReasonType == PostHiddenReasonType.VideoProcessing && p.UserId == viewer.Id)) &&
+                       p.User.Status == UserStatus.Active &&
+                       (p.User.TrustScore >= 0.1f || p.UserId == viewer.Id) &&
+                       !blockedUserIds.Contains(p.UserId) &&
+                       (p.UserId == viewer.Id || // Reposts from self
+                        followingIds.Contains(p.UserId) || // Reposts from followed users
+                        p.Privacy == PostPrivacy.Public)) // Public reposts from any user
+            .Where(p => p.RepostedPost != null &&
+                       !p.RepostedPost.IsDeletedByUser &&
+                       (!p.RepostedPost.IsHidden ||
+                        (p.RepostedPost.HiddenReasonType == PostHiddenReasonType.VideoProcessing && p.RepostedPost.UserId == viewer.Id)) &&
+                       p.RepostedPost.User.Status == UserStatus.Active &&
+                       (p.RepostedPost.User.TrustScore >= 0.1f || p.RepostedPost.UserId == viewer.Id) &&
+                       !blockedUserIds.Contains(p.RepostedPost.UserId) &&
+                       (p.RepostedPost.Privacy == PostPrivacy.Public ||
+                        p.RepostedPost.UserId == viewer.Id ||
+                        (p.RepostedPost.Privacy == PostPrivacy.Followers && followingIds.Contains(p.RepostedPost.UserId))))
+            .ToListAsync();
+
+        // Assert
+        reposts.Should().HaveCount(1, "Public repost should be visible even when not following the reposter");
+        reposts.First().Id.Should().Be(publicRepost.Id);
+        reposts.First().Privacy.Should().Be(PostPrivacy.Public);
+    }
+
+
+
+    #endregion
+
     #region Performance and Edge Case Tests
 
     [Fact]
@@ -307,6 +415,8 @@ public class PostFilteringIntegrationTests : IDisposable
             Username = username,
             Email = $"{username}@example.com",
             EmailVerified = true,
+            PasswordHash = "test-hash",
+            Role = UserRole.User,
             Status = status,
             TrustScore = trustScore,
             CreatedAt = DateTime.UtcNow.AddDays(-30),

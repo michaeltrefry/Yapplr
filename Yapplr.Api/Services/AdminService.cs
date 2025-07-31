@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
+using Yapplr.Api.Services.Unified;
 using Serilog.Context;
 using Yapplr.Api.Common;
 
@@ -11,12 +12,12 @@ public class AdminService : IAdminService
 {
     private readonly YapplrDbContext _context;
     private readonly IAuditService _auditService;
-    private readonly INotificationService _notificationService;
+    private readonly IUnifiedNotificationService _notificationService;
     private readonly ITrustScoreService _trustScoreService;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AdminService> _logger;
 
-    public AdminService(YapplrDbContext context, IAuditService auditService, INotificationService notificationService, ITrustScoreService trustScoreService, IServiceProvider serviceProvider, ILogger<AdminService> logger)
+    public AdminService(YapplrDbContext context, IAuditService auditService, IUnifiedNotificationService notificationService, ITrustScoreService trustScoreService, IServiceProvider serviceProvider, ILogger<AdminService> logger)
     {
         _context = context;
         _auditService = auditService;

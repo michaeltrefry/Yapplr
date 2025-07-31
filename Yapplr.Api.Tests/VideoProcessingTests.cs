@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Yapplr.Api.Data;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 using Yapplr.Api.CQRS.Consumers;
 using Yapplr.Api.Models;
 using Yapplr.Api.DTOs;
@@ -19,7 +20,7 @@ public class VideoProcessingTests : IDisposable
     private readonly TestYapplrDbContext _context;
     private readonly Mock<ILogger<PostService>> _postServiceLogger;
     private readonly Mock<ILogger<VideoProcessingCompletedConsumer>> _consumerLogger;
-    private readonly Mock<INotificationService> _notificationService;
+    private readonly Mock<IUnifiedNotificationService> _notificationService;
     private readonly Mock<IAnalyticsService> _analyticsService;
     private readonly Mock<IPublishEndpoint> _publishEndpoint;
     private readonly Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor> _httpContextAccessor;
@@ -36,7 +37,7 @@ public class VideoProcessingTests : IDisposable
         _context = new TestYapplrDbContext(options);
         _postServiceLogger = new Mock<ILogger<PostService>>();
         _consumerLogger = new Mock<ILogger<VideoProcessingCompletedConsumer>>();
-        _notificationService = new Mock<INotificationService>();
+        _notificationService = new Mock<IUnifiedNotificationService>();
         _analyticsService = new Mock<IAnalyticsService>();
         _publishEndpoint = new Mock<IPublishEndpoint>();
         _httpContextAccessor = new Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor>();
@@ -306,14 +307,14 @@ public class VideoProcessingTests : IDisposable
 
         // Assert
         // User1 should see their own hidden video post and the text post, but not user2's hidden video post
-        var user1Posts = timelineForUser1.ToList();
+        var user1Posts = timelineForUser1.Where(t => t.Type == "post").Select(t => t.Post).ToList();
         user1Posts.Should().HaveCount(2);
         user1Posts.Should().Contain(p => p.Id == hiddenVideoPost.Id); // Own hidden post visible
         user1Posts.Should().Contain(p => p.Id == textPost.Id); // Regular post visible
         user1Posts.Should().NotContain(p => p.Id == otherUserVideoPost.Id); // Other user's hidden post not visible
 
         // User2 should see their own hidden video post and the text post, but not user1's hidden video post
-        var user2Posts = timelineForUser2.ToList();
+        var user2Posts = timelineForUser2.Where(t => t.Type == "post").Select(t => t.Post).ToList();
         user2Posts.Should().HaveCount(2);
         user2Posts.Should().Contain(p => p.Id == otherUserVideoPost.Id); // Own hidden post visible
         user2Posts.Should().Contain(p => p.Id == textPost.Id); // Regular post visible

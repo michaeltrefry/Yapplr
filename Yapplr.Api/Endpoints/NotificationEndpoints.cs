@@ -13,7 +13,7 @@ public static class NotificationEndpoints
         var notifications = app.MapGroup("/api/notifications").WithTags("Notifications");
 
         // Get user notifications with pagination
-        notifications.MapGet("/", async (ClaimsPrincipal user, INotificationService notificationService, int page = 1, int pageSize = 25) => 
+        notifications.MapGet("/", async (ClaimsPrincipal user, IUnifiedNotificationService notificationService, int page = 1, int pageSize = 25) =>
             {
                 var userId = user.GetUserId(true);
                 var result = await notificationService.GetUserNotificationsAsync(userId, page, pageSize);
@@ -27,7 +27,7 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Get unread notification count
-        notifications.MapGet("/unread-count", async (ClaimsPrincipal user, INotificationService notificationService) =>
+        notifications.MapGet("/unread-count", async (ClaimsPrincipal user, IUnifiedNotificationService notificationService) =>
         {
             var userId = user.GetUserId(true);
             var unreadCount = await notificationService.GetUnreadNotificationCountAsync(userId);
@@ -40,7 +40,7 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Get combined unread counts for notifications and messages
-        notifications.MapGet("/combined-unread-count", async (ClaimsPrincipal user, INotificationService notificationService, IMessageService messageService) =>
+        notifications.MapGet("/combined-unread-count", async (ClaimsPrincipal user, IUnifiedNotificationService notificationService, IMessageService messageService) =>
         {
             var userId = user.GetUserId(true);
 
@@ -61,7 +61,7 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Mark notification as read
-        notifications.MapPut("/{notificationId:int}/read", async (int notificationId, ClaimsPrincipal user, INotificationService notificationService) =>
+        notifications.MapPut("/{notificationId:int}/read", async (int notificationId, ClaimsPrincipal user, IUnifiedNotificationService notificationService) =>
         {
             var userId = user.GetUserId(true);
             var success = await notificationService.MarkNotificationAsReadAsync(notificationId, userId);
@@ -76,7 +76,7 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Mark all notifications as read
-        notifications.MapPut("/read-all", async (ClaimsPrincipal user, INotificationService notificationService) =>
+        notifications.MapPut("/read-all", async (ClaimsPrincipal user, IUnifiedNotificationService notificationService) =>
         {
             var userId = user.GetUserId(true);
             var success = await notificationService.MarkAllNotificationsAsReadAsync(userId);
@@ -90,7 +90,7 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Mark notification as seen
-        notifications.MapPut("/{notificationId:int}/seen", async (int notificationId, ClaimsPrincipal user, INotificationService notificationService) =>
+        notifications.MapPut("/{notificationId:int}/seen", async (int notificationId, ClaimsPrincipal user, IUnifiedNotificationService notificationService) =>
         {
             var userId = user.GetUserId(true);
             var success = await notificationService.MarkNotificationAsSeenAsync(notificationId, userId);
@@ -105,7 +105,7 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Mark multiple notifications as seen
-        notifications.MapPut("/seen", async (int[] notificationIds, ClaimsPrincipal user, INotificationService notificationService) =>
+        notifications.MapPut("/seen", async (int[] notificationIds, ClaimsPrincipal user, IUnifiedNotificationService notificationService) =>
         {
             var userId = user.GetUserId(true);
             var success = await notificationService.MarkNotificationsAsSeenAsync(notificationIds, userId);
@@ -119,7 +119,7 @@ public static class NotificationEndpoints
         .Produces(401);
 
         // Mark all notifications as seen
-        notifications.MapPut("/seen-all", async (ClaimsPrincipal user, INotificationService notificationService) =>
+        notifications.MapPut("/seen-all", async (ClaimsPrincipal user, IUnifiedNotificationService notificationService) =>
         {
             var userId = user.GetUserId(true);
             var success = await notificationService.MarkAllNotificationsAsSeenAsync(userId);

@@ -4,6 +4,7 @@ using Yapplr.Api.CQRS.Commands;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.CQRS.Handlers;
 
@@ -14,12 +15,12 @@ public class ApplyModerationActionCommandHandler : BaseCommandHandler<ApplyModer
 {
     private readonly YapplrDbContext _dbContext;
     private readonly ICommandPublisher _commandPublisher;
-    private readonly INotificationService _notificationService;
+    private readonly IUnifiedNotificationService _notificationService;
 
     public ApplyModerationActionCommandHandler(
         YapplrDbContext dbContext,
         ICommandPublisher commandPublisher,
-        INotificationService notificationService,
+        IUnifiedNotificationService notificationService,
         ILogger<ApplyModerationActionCommandHandler> logger) : base(logger)
     {
         _dbContext = dbContext;

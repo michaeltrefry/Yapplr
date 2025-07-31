@@ -91,11 +91,11 @@ Each media file object should include:
             var (validPage, validPageSize) = EndpointUtilities.GetPaginationParams(page, pageSize);
 
             return await EndpointUtilities.HandleAsync(
-                async () => await postService.GetTimelineWithRepostsAsync(userId, validPage, validPageSize)
+                async () => await postService.GetTimelineAsync(userId, validPage, validPageSize)
             );
         })
         .WithName("GetTimeline")
-        .WithSummary("Get timeline feed with reposts")
+        .WithSummary("Get timeline feed")
         .RequireAuthorization("User")
         .Produces<IEnumerable<TimelineItemDto>>(200)
         .Produces(401);

@@ -6,6 +6,7 @@ using FluentAssertions;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Unified;
 
 namespace Yapplr.Api.Tests;
 
@@ -15,7 +16,7 @@ namespace Yapplr.Api.Tests;
 public class AdminServicePostModerationTests : IDisposable
 {
     private readonly YapplrDbContext _context;
-    private readonly Mock<INotificationService> _mockNotificationService;
+    private readonly Mock<IUnifiedNotificationService> _mockNotificationService;
     private readonly Mock<IAuditService> _mockAuditService;
     private readonly Mock<IModerationMessageService> _mockModerationMessageService;
     private readonly Mock<ITrustScoreService> _mockTrustScoreService;
@@ -30,7 +31,7 @@ public class AdminServicePostModerationTests : IDisposable
             .Options;
 
         _context = new TestYapplrDbContext(options);
-        _mockNotificationService = new Mock<INotificationService>();
+        _mockNotificationService = new Mock<IUnifiedNotificationService>();
         _mockAuditService = new Mock<IAuditService>();
         _mockModerationMessageService = new Mock<IModerationMessageService>();
         _mockTrustScoreService = new Mock<ITrustScoreService>();

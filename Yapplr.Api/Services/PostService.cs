@@ -6,6 +6,7 @@ using Yapplr.Api.Models.Analytics;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Utils;
 using Yapplr.Api.Common;
+using Yapplr.Api.Services.Unified;
 using MassTransit;
 using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
@@ -17,7 +18,7 @@ public class PostService : BaseService, IPostService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IBlockService _blockService;
-    private readonly INotificationService _notificationService;
+    private readonly IUnifiedNotificationService _notificationService;
     private readonly ILinkPreviewService _linkPreviewService;
     private readonly IContentModerationService _contentModerationService;
     private readonly IConfiguration _configuration;
@@ -31,7 +32,7 @@ public class PostService : BaseService, IPostService
         YapplrDbContext context,
         IHttpContextAccessor httpContextAccessor,
         IBlockService blockService,
-        INotificationService notificationService,
+        IUnifiedNotificationService notificationService,
         ILinkPreviewService linkPreviewService,
         IContentModerationService contentModerationService,
         IConfiguration configuration,
@@ -549,30 +550,11 @@ public class PostService : BaseService, IPostService
         return post.MapToPostDto(currentUserId, includeModeration: true);
     }
 
-    public async Task<IEnumerable<PostDto>> GetTimelineAsync(int userId, int page = 1, int pageSize = 20)
+
+
+    public async Task<IEnumerable<TimelineItemDto>> GetTimelineAsync(int userId, int page = 1, int pageSize = 20)
     {
-        // Get user's following list for privacy filtering
-        var followingIds = await _context.Follows
-            .Where(f => f.FollowerId == userId)
-            .Select(f => f.FollowingId)
-            .ToListAsync();
-
-        // Get blocked user IDs to filter them out
-        var blockedUserIds = await GetBlockedUserIdsAsync(userId);
-
-        var posts = await _context.GetPostsForFeed()
-            .ApplyVisibilityFilters(userId, blockedUserIds.ToHashSet(), followingIds.ToHashSet())
-            .OrderByDescending(p => p.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        return posts.Select(p => p.MapToPostDto(userId));
-    }
-
-    public async Task<IEnumerable<TimelineItemDto>> GetTimelineWithRepostsAsync(int userId, int page = 1, int pageSize = 20)
-    {
-        LogOperation(nameof(GetTimelineWithRepostsAsync), new { userId, page, pageSize });
+        LogOperation(nameof(GetTimelineAsync), new { userId, page, pageSize });
 
         // Get user's following list and blocked users for filtering
         var followingIds = await GetFollowingUserIdsAsync(userId);
@@ -588,7 +570,7 @@ public class PostService : BaseService, IPostService
             .Take(fetchSize)
             .ToListAsync();
 
-        // Get reposts from followed users and self (using new unified system)
+        // Get reposts from followed users, self, and public reposts from any user (using new unified system)
         var reposts = await _context.GetPostsWithIncludes()
             .Where(p => p.PostType == PostType.Repost &&
                        !p.IsDeletedByUser &&
@@ -598,7 +580,9 @@ public class PostService : BaseService, IPostService
                        p.User.Status == UserStatus.Active && // Hide reposts from suspended/banned users
                        (p.User.TrustScore >= 0.1f || p.UserId == userId) && // Hide reposts from low trust users except from self
                        !blockedUserIds.Contains(p.UserId) && // Filter out reposts from blocked users
-                       (p.UserId == userId || followingIds.Contains(p.UserId))) // Reposts from self or followed users
+                       (p.UserId == userId || // Reposts from self
+                        followingIds.Contains(p.UserId) || // Reposts from followed users
+                        p.Privacy == PostPrivacy.Public)) // Public reposts from any user
             .Where(p => p.RepostedPost != null && // Ensure reposted post exists
                        !p.RepostedPost.IsDeletedByUser &&
                        (!p.RepostedPost.IsHidden ||
@@ -615,35 +599,40 @@ public class PostService : BaseService, IPostService
 
         // Note: reposts with content are now included in the main reposts query above
 
-        // Convert to timeline items in memory (no EF translation issues)
+        // Create timeline items and apply pagination
+        return CreateTimelineItems(posts, reposts, userId, page, pageSize);
+    }
+
+    private static List<TimelineItemDto> CreateTimelineItems(
+        IEnumerable<Post> posts,
+        IEnumerable<Post> reposts,
+        int? currentUserId,
+        int page,
+        int pageSize)
+    {
         var timelineItems = new List<TimelineItemDto>();
 
         // Add original posts
-        foreach (var post in posts)
-        {
-            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt,
-                post.MapToPostDto(userId)));
-        }
+        timelineItems.AddRange(posts.Select(p => new TimelineItemDto(
+            "post",
+            p.CreatedAt,
+            p.MapToPostDto(currentUserId)
+        )));
 
         // Add reposts (both simple reposts and reposts with content)
-        foreach (var repost in reposts)
-        {
-            var repostedByUser = repost.User.MapToUserDto();
-
-            // Pass the repost itself as the post so actions (like delete) use the repost ID
-            // The repost's RepostedPost field contains the original post for display
-            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt,
-                repost.MapToPostDto(userId), repostedByUser));
-        }
+        timelineItems.AddRange(reposts.Select(r => new TimelineItemDto(
+            "repost",
+            r.CreatedAt,
+            r.MapToPostDto(currentUserId), // Pass the repost itself for correct ID handling
+            r.User.MapToUserDto()
+        )));
 
         // Sort by creation date and apply pagination
-        var result = timelineItems
+        return timelineItems
             .OrderByDescending(item => item.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToList();
-
-        return result;
     }
 
     public async Task<IEnumerable<TimelineItemDto>> GetPublicTimelineAsync(int? currentUserId = null, int page = 1, int pageSize = 20)
@@ -683,30 +672,8 @@ public class PostService : BaseService, IPostService
             .Take(fetchSize)
             .ToListAsync();
 
-        // Combine posts, reposts, and quote tweets into timeline items
-        var timelineItems = new List<TimelineItemDto>();
-
-        // Add original posts
-        timelineItems.AddRange(posts.Select(p => new TimelineItemDto(
-            "post",
-            p.CreatedAt,
-            p.MapToPostDto(currentUserId)
-        )));
-
-        // Add reposts (both simple reposts and reposts with content)
-        timelineItems.AddRange(reposts.Select(r => new TimelineItemDto(
-            "repost",
-            r.CreatedAt,
-            r.MapToPostDto(currentUserId), // Pass the repost itself for correct ID handling
-            r.User.MapToUserDto()
-        )));
-
-        // Sort by creation date and take the requested page
-        return timelineItems
-            .OrderByDescending(item => item.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        // Create timeline items and apply pagination
+        return CreateTimelineItems(posts, reposts, currentUserId, page, pageSize);
     }
 
     public async Task<IEnumerable<PostDto>> GetUserPostsAsync(int userId, int? currentUserId = null, int page = 1, int pageSize = 20)
@@ -882,31 +849,8 @@ public class PostService : BaseService, IPostService
 
         // Note: reposts with content are now included in the main reposts query above
 
-        // Convert to timeline items in memory
-        var timelineItems = new List<TimelineItemDto>();
-
-        // Add original posts
-        foreach (var post in posts)
-        {
-            timelineItems.Add(new TimelineItemDto("post", post.CreatedAt, post.MapToPostDto(currentUserId)));
-        }
-
-        // Add reposts (both simple reposts and reposts with content)
-        foreach (var repost in reposts)
-        {
-            var repostedByUser = repost.User.MapToUserDto();
-
-            timelineItems.Add(new TimelineItemDto("repost", repost.CreatedAt, repost.MapToPostDto(currentUserId), repostedByUser));
-        }
-
-        // Sort by creation date and apply pagination
-        var result = timelineItems
-            .OrderByDescending(item => item.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-
-        return result;
+        // Create timeline items and apply pagination
+        return CreateTimelineItems(posts, reposts, currentUserId, page, pageSize);
     }
 
     public async Task<bool> DeletePostAsync(int postId, int userId)
@@ -1277,12 +1221,6 @@ public class PostService : BaseService, IPostService
         if (!string.IsNullOrEmpty(createDto.Content))
         {
             await ProcessPostTagsAsync(repost.Id, createDto.Content);
-        }
-
-        // Create mention notifications for users mentioned in the repost content (if any)
-        if (!string.IsNullOrEmpty(createDto.Content))
-        {
-            await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, repost.Id);
         }
 
         // Perform content moderation analysis (if there's content)
