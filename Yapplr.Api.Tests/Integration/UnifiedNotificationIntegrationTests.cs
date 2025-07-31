@@ -26,7 +26,7 @@ public class UnifiedNotificationIntegrationTests : IDisposable
     private readonly TestServer _server;
     private readonly IServiceProvider _serviceProvider;
     private readonly YapplrDbContext _dbContext;
-    private readonly IUnifiedNotificationService _unifiedService;
+    private readonly INotificationService _service;
     private readonly INotificationProviderManager _providerManager;
     private readonly INotificationQueue _notificationQueue;
     private readonly INotificationEnhancementService _enhancementService;
@@ -67,7 +67,7 @@ public class UnifiedNotificationIntegrationTests : IDisposable
                 services.AddScoped<INotificationProviderManager, NotificationProviderManager>();
                 services.AddScoped<INotificationQueue, NotificationQueue>();
                 services.AddScoped<INotificationEnhancementService, NotificationEnhancementService>();
-                services.AddScoped<IUnifiedNotificationService, UnifiedNotificationService>();
+                services.AddScoped<INotificationService, NotificationService>();
 
                 // Add other required services
                 services.AddScoped<ISignalRConnectionPool, SignalRConnectionPool>();
@@ -95,7 +95,7 @@ public class UnifiedNotificationIntegrationTests : IDisposable
         _dbContext.Database.EnsureCreated();
 
         // Get the unified notification services
-        _unifiedService = _serviceProvider.GetRequiredService<IUnifiedNotificationService>();
+        _service = _serviceProvider.GetRequiredService<INotificationService>();
         _providerManager = _serviceProvider.GetRequiredService<INotificationProviderManager>();
         _notificationQueue = _serviceProvider.GetRequiredService<INotificationQueue>();
         _enhancementService = _serviceProvider.GetRequiredService<INotificationEnhancementService>();
@@ -173,7 +173,7 @@ public class UnifiedNotificationIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _unifiedService.SendNotificationAsync(request);
+        var result = await _service.SendNotificationAsync(request);
 
         // Assert
         result.Should().BeTrue();
@@ -282,7 +282,7 @@ public class UnifiedNotificationIntegrationTests : IDisposable
         };
 
         // Act - Send notification through unified service
-        var sendResult = await _unifiedService.SendNotificationAsync(request);
+        var sendResult = await _service.SendNotificationAsync(request);
 
         // Assert - Verify complete flow
         sendResult.Should().BeTrue();
@@ -295,11 +295,11 @@ public class UnifiedNotificationIntegrationTests : IDisposable
         dbNotification!.Message.Should().Contain("Someone liked your post");
 
         // Check system health
-        var isHealthy = await _unifiedService.IsHealthyAsync();
+        var isHealthy = await _service.IsHealthyAsync();
         isHealthy.Should().BeTrue();
 
         // Check stats are updated
-        var stats = await _unifiedService.GetStatsAsync();
+        var stats = await _service.GetStatsAsync();
         stats.Should().NotBeNull();
         stats.TotalNotificationsSent.Should().BeGreaterThan(0);
     }
@@ -319,7 +319,7 @@ public class UnifiedNotificationIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _unifiedService.SendMulticastNotificationAsync(userIds, request);
+        var result = await _service.SendMulticastNotificationAsync(userIds, request);
 
         // Assert
         result.Should().BeTrue();
@@ -396,7 +396,7 @@ public class UnifiedNotificationIntegrationTests : IDisposable
         await _dbContext.SaveChangesAsync();
 
         // Act - Create a like notification for the photo post
-        await _unifiedService.CreateLikeNotificationAsync(user1.Id, user2.Id, photoPost.Id);
+        await _service.CreateLikeNotificationAsync(user1.Id, user2.Id, photoPost.Id);
 
         // Assert - Verify the notification message mentions "photo"
         var notification = await _dbContext.Notifications

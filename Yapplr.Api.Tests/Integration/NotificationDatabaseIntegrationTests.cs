@@ -26,7 +26,7 @@ public class NotificationDatabaseIntegrationTests : IDisposable
     private readonly TestServer _server;
     private readonly IServiceProvider _serviceProvider;
     private readonly YapplrDbContext _dbContext;
-    private readonly IUnifiedNotificationService _unifiedService;
+    private readonly INotificationService _service;
     private readonly INotificationQueue _notificationQueue;
     private readonly INotificationEnhancementService _enhancementService;
 
@@ -66,7 +66,7 @@ public class NotificationDatabaseIntegrationTests : IDisposable
                 services.AddScoped<INotificationProviderManager, NotificationProviderManager>();
                 services.AddScoped<INotificationQueue, NotificationQueue>();
                 services.AddScoped<INotificationEnhancementService, NotificationEnhancementService>();
-                services.AddScoped<IUnifiedNotificationService, UnifiedNotificationService>();
+                services.AddScoped<INotificationService, NotificationService>();
 
                 // Add required services
                 services.AddScoped<ISignalRConnectionPool, SignalRConnectionPool>();
@@ -92,7 +92,7 @@ public class NotificationDatabaseIntegrationTests : IDisposable
         _dbContext = _serviceProvider.GetRequiredService<YapplrDbContext>();
         _dbContext.Database.EnsureCreated();
 
-        _unifiedService = _serviceProvider.GetRequiredService<IUnifiedNotificationService>();
+        _service = _serviceProvider.GetRequiredService<INotificationService>();
         _notificationQueue = _serviceProvider.GetRequiredService<INotificationQueue>();
         _enhancementService = _serviceProvider.GetRequiredService<INotificationEnhancementService>();
 
@@ -197,7 +197,7 @@ public class NotificationDatabaseIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _unifiedService.SendNotificationAsync(request);
+        var result = await _service.SendNotificationAsync(request);
 
         // Assert
         result.Should().BeTrue();
@@ -272,7 +272,7 @@ public class NotificationDatabaseIntegrationTests : IDisposable
                 Priority = NotificationPriority.Normal
             };
 
-            tasks.Add(_unifiedService.SendNotificationAsync(request));
+            tasks.Add(_service.SendNotificationAsync(request));
         }
 
         // Act - Execute all tasks concurrently
@@ -371,7 +371,7 @@ public class NotificationDatabaseIntegrationTests : IDisposable
         };
 
         // Act
-        var result = await _unifiedService.SendNotificationAsync(request);
+        var result = await _service.SendNotificationAsync(request);
 
         // Assert
         result.Should().BeTrue();
@@ -404,7 +404,7 @@ public class NotificationDatabaseIntegrationTests : IDisposable
                 Priority = NotificationPriority.Normal
             };
 
-            tasks.Add(_unifiedService.SendNotificationAsync(request));
+            tasks.Add(_service.SendNotificationAsync(request));
         }
 
         await Task.WhenAll(tasks);
@@ -480,7 +480,7 @@ public class NotificationDatabaseIntegrationTests : IDisposable
         };
 
         // Act - Send notification
-        await _unifiedService.SendNotificationAsync(request);
+        await _service.SendNotificationAsync(request);
 
         // Get the notification (history_test maps to SystemMessage)
         var notification = await _dbContext.Notifications
@@ -488,13 +488,13 @@ public class NotificationDatabaseIntegrationTests : IDisposable
         notification.Should().NotBeNull();
 
         // Confirm delivery
-        await _unifiedService.ConfirmDeliveryAsync(notification!.Id.ToString());
+        await _service.ConfirmDeliveryAsync(notification!.Id.ToString());
 
         // Confirm read
-        await _unifiedService.ConfirmReadAsync(notification.Id.ToString());
+        await _service.ConfirmReadAsync(notification.Id.ToString());
 
         // Assert - Check notification history
-        var history = await _unifiedService.GetNotificationHistoryAsync(1, 10);
+        var history = await _service.GetNotificationHistoryAsync(1, 10);
         history.Should().NotBeEmpty();
 
         var historyEntry = history.FirstOrDefault(h => h.NotificationType == "SystemMessage");
@@ -525,7 +525,7 @@ public class NotificationDatabaseIntegrationTests : IDisposable
                     Priority = NotificationPriority.Normal
                 };
 
-                tasks.Add(_unifiedService.SendNotificationAsync(request));
+                tasks.Add(_service.SendNotificationAsync(request));
             }
 
             await Task.WhenAll(tasks);

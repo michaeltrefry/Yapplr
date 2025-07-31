@@ -85,7 +85,7 @@ public static class NotificationConfigurationEndpoints
 
     private static async Task<IResult> SendTestNotificationToUser(
         int userId,
-        IUnifiedNotificationService notificationService)
+        INotificationService notificationService)
     {
         try
         {
@@ -112,7 +112,7 @@ public static class NotificationConfigurationEndpoints
 
     private static async Task<IResult> SendTestNotificationToCurrentUser(
         ClaimsPrincipal user,
-        IUnifiedNotificationService notificationService)
+        INotificationService notificationService)
     {
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))

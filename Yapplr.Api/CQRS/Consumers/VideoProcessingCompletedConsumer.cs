@@ -17,13 +17,13 @@ public class VideoProcessingCompletedConsumer : IConsumer<VideoProcessingComplet
 {
     private readonly YapplrDbContext _context;
     private readonly ILogger<VideoProcessingCompletedConsumer> _logger;
-    private readonly IUnifiedNotificationService _notificationService;
+    private readonly INotificationService _notificationService;
     private readonly IAnalyticsService _analyticsService;
 
     public VideoProcessingCompletedConsumer(
         YapplrDbContext context,
         ILogger<VideoProcessingCompletedConsumer> logger,
-        IUnifiedNotificationService notificationService,
+        INotificationService notificationService,
         IAnalyticsService analyticsService)
     {
         _context = context;

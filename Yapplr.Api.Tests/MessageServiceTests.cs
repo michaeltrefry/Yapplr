@@ -16,7 +16,7 @@ public class MessageServiceTests : IDisposable
     private readonly TestYapplrDbContext _context;
     private readonly MessageService _messageService;
     private readonly Mock<IUserService> _mockUserService;
-    private readonly Mock<IUnifiedNotificationService> _mockNotificationService;
+    private readonly Mock<INotificationService> _mockNotificationService;
     private readonly Mock<ICountCacheService> _mockCountCache;
 
     public MessageServiceTests()
@@ -27,7 +27,7 @@ public class MessageServiceTests : IDisposable
 
         _context = new TestYapplrDbContext(options);
         _mockUserService = new Mock<IUserService>();
-        _mockNotificationService = new Mock<IUnifiedNotificationService>();
+        _mockNotificationService = new Mock<INotificationService>();
         _mockCountCache = new Mock<ICountCacheService>();
         var mockLogger = new Mock<ILogger<MessageService>>();
 

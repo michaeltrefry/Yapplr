@@ -500,7 +500,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationProviderManager, NotificationProviderManager>();
         services.AddScoped<INotificationQueue, NotificationQueue>();
         services.AddScoped<INotificationEnhancementService, NotificationEnhancementService>();
-        services.AddScoped<IUnifiedNotificationService, UnifiedNotificationService>();
+        services.AddScoped<INotificationService, NotificationService>();
 
 
 

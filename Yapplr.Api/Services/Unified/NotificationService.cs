@@ -14,14 +14,14 @@ namespace Yapplr.Api.Services.Unified;
 /// Unified notification service that serves as the single entry point for all notification operations.
 /// Consolidates functionality from NotificationService and CompositeNotificationService.
 /// </summary>
-public class UnifiedNotificationService : IUnifiedNotificationService
+public class NotificationService : INotificationService
 {
     private readonly YapplrDbContext _context;
     private readonly INotificationPreferencesService _preferencesService;
     private readonly ISignalRConnectionPool _connectionPool;
     private readonly ICountCacheService _countCache;
     private readonly IActiveConversationTracker _conversationTracker;
-    private readonly ILogger<UnifiedNotificationService> _logger;
+    private readonly ILogger<NotificationService> _logger;
     
     // Optional services for enhanced functionality
     private readonly INotificationProviderManager? _providerManager;
@@ -37,13 +37,13 @@ public class UnifiedNotificationService : IUnifiedNotificationService
     private readonly ConcurrentDictionary<string, long> _notificationTypeBreakdown = new();
     private readonly object _statsLock = new();
 
-    public UnifiedNotificationService(
+    public NotificationService(
         YapplrDbContext context,
         INotificationPreferencesService preferencesService,
         ISignalRConnectionPool connectionPool,
         ICountCacheService countCache,
         IActiveConversationTracker conversationTracker,
-        ILogger<UnifiedNotificationService> logger,
+        ILogger<NotificationService> logger,
         INotificationProviderManager? providerManager = null,
         INotificationQueue? notificationQueue = null,
         INotificationEnhancementService? enhancementService = null,
@@ -1481,7 +1481,7 @@ public class UnifiedNotificationService : IUnifiedNotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Health check failed for UnifiedNotificationService");
+            _logger.LogError(ex, "Health check failed for NotificationService");
             return false;
         }
     }

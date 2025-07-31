@@ -27,7 +27,7 @@ public class NotificationPerformanceIntegrationTests : IDisposable
     private readonly TestServer _server;
     private readonly IServiceProvider _serviceProvider;
     private readonly YapplrDbContext _dbContext;
-    private readonly IUnifiedNotificationService _unifiedService;
+    private readonly INotificationService _service;
     private readonly INotificationQueue _notificationQueue;
     private readonly INotificationEnhancementService _enhancementService;
 
@@ -72,7 +72,7 @@ public class NotificationPerformanceIntegrationTests : IDisposable
                 services.AddScoped<INotificationProviderManager, NotificationProviderManager>();
                 services.AddScoped<INotificationQueue, NotificationQueue>();
                 services.AddScoped<INotificationEnhancementService, NotificationEnhancementService>();
-                services.AddScoped<IUnifiedNotificationService, UnifiedNotificationService>();
+                services.AddScoped<INotificationService, NotificationService>();
 
                 // Add required services
                 services.AddScoped<ISignalRConnectionPool, SignalRConnectionPool>();
@@ -98,7 +98,7 @@ public class NotificationPerformanceIntegrationTests : IDisposable
         _dbContext = _serviceProvider.GetRequiredService<YapplrDbContext>();
         _dbContext.Database.EnsureCreated();
 
-        _unifiedService = _serviceProvider.GetRequiredService<IUnifiedNotificationService>();
+        _service = _serviceProvider.GetRequiredService<INotificationService>();
         _notificationQueue = _serviceProvider.GetRequiredService<INotificationQueue>();
         _enhancementService = _serviceProvider.GetRequiredService<INotificationEnhancementService>();
 
@@ -159,7 +159,7 @@ public class NotificationPerformanceIntegrationTests : IDisposable
 
         // Act & Assert - Measure notification creation time
         var stopwatch = Stopwatch.StartNew();
-        var result = await _unifiedService.SendNotificationAsync(request);
+        var result = await _service.SendNotificationAsync(request);
         stopwatch.Stop();
 
         // Assert
@@ -188,7 +188,7 @@ public class NotificationPerformanceIntegrationTests : IDisposable
                 Priority = NotificationPriority.Normal
             };
 
-            tasks.Add(_unifiedService.SendNotificationAsync(request));
+            tasks.Add(_service.SendNotificationAsync(request));
         }
 
         var results = await Task.WhenAll(tasks);
@@ -269,7 +269,7 @@ public class NotificationPerformanceIntegrationTests : IDisposable
 
         // Act
         var stopwatch = Stopwatch.StartNew();
-        var result = await _unifiedService.SendMulticastNotificationAsync(userIds, request);
+        var result = await _service.SendMulticastNotificationAsync(userIds, request);
         stopwatch.Stop();
 
         // Assert
@@ -349,7 +349,7 @@ public class NotificationPerformanceIntegrationTests : IDisposable
                 Body = $"Testing mixed load {i}",
                 Priority = NotificationPriority.Normal
             };
-            tasks.Add(_unifiedService.SendNotificationAsync(request));
+            tasks.Add(_service.SendNotificationAsync(request));
         }
 
         // Add queue processing tasks
@@ -392,7 +392,7 @@ public class NotificationPerformanceIntegrationTests : IDisposable
             "Mixed load of 100 operations should complete within 10 seconds");
 
         // Verify system health after load
-        var isHealthy = await _unifiedService.IsHealthyAsync();
+        var isHealthy = await _service.IsHealthyAsync();
         isHealthy.Should().BeTrue("System should remain healthy after mixed load");
     }
 
@@ -422,7 +422,7 @@ public class NotificationPerformanceIntegrationTests : IDisposable
                     Body = $"Testing memory usage batch {batch} item {i}",
                     Priority = NotificationPriority.Normal
                 };
-                batchTasks.Add(_unifiedService.SendNotificationAsync(request));
+                batchTasks.Add(_service.SendNotificationAsync(request));
             }
             
             await Task.WhenAll(batchTasks);

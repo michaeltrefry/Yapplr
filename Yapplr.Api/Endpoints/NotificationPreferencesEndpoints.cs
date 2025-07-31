@@ -118,7 +118,7 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> GetDeliveryStatus(
         ClaimsPrincipal user,
-        IUnifiedNotificationService notificationService,
+        INotificationService notificationService,
         [FromQuery] int count = 50)
     {
         try
@@ -135,7 +135,7 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> GetNotificationHistory(
         ClaimsPrincipal user,
-        IUnifiedNotificationService notificationService,
+        INotificationService notificationService,
         [FromQuery] int count = 100)
     {
         try
@@ -152,7 +152,7 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> GetUndeliveredNotifications(
         ClaimsPrincipal user,
-        IUnifiedNotificationService notificationService)
+        INotificationService notificationService)
     {
         try
         {
@@ -168,7 +168,7 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> ReplayMissedNotifications(
         ClaimsPrincipal user,
-        IUnifiedNotificationService notificationService)
+        INotificationService notificationService)
     {
         try
         {
@@ -184,7 +184,7 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> ConfirmDelivery(
         string notificationId,
-        IUnifiedNotificationService notificationService)
+        INotificationService notificationService)
     {
         try
         {
@@ -199,7 +199,7 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> ConfirmRead(
         string notificationId,
-        IUnifiedNotificationService notificationService)
+        INotificationService notificationService)
     {
         try
         {
@@ -214,7 +214,7 @@ public static class NotificationPreferencesEndpoints
 
     private static async Task<IResult> GetDeliveryStats(
         ClaimsPrincipal user,
-        IUnifiedNotificationService notificationService,
+        INotificationService notificationService,
         [FromQuery] int? timeWindowHours = null)
     {
         try

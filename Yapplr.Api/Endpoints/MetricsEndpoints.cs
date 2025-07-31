@@ -66,7 +66,7 @@ public static class MetricsEndpoints
     }
 
     private static async Task<IResult> GetNotificationMetrics(
-        IUnifiedNotificationService notificationService,
+        INotificationService notificationService,
         [FromQuery] int? timeWindowMinutes = null)
     {
         try
@@ -125,7 +125,7 @@ public static class MetricsEndpoints
     }
 
     private static async Task<IResult> GetHealthCheck(
-        IUnifiedNotificationService notificationService,
+        INotificationService notificationService,
         ISignalRConnectionPool connectionPool,
         INotificationQueue queueService)
     {
@@ -172,7 +172,7 @@ public static class MetricsEndpoints
     }
 
     private static async Task<IResult> ResetMetrics(
-        IUnifiedNotificationService notificationService,
+        INotificationService notificationService,
         ClaimsPrincipal user)
     {
         // Simple admin check - in production, you'd want proper role-based authorization

@@ -13,11 +13,11 @@ public class MessageService : IMessageService
 {
     private readonly YapplrDbContext _context;
     private readonly IUserService _userService;
-    private readonly IUnifiedNotificationService _notificationService;
+    private readonly INotificationService _notificationService;
     private readonly ICountCacheService _countCache;
     private readonly ILogger<MessageService> _logger;
 
-    public MessageService(YapplrDbContext context, IUserService userService, IUnifiedNotificationService notificationService, ICountCacheService countCache, ILogger<MessageService> logger)
+    public MessageService(YapplrDbContext context, IUserService userService, INotificationService notificationService, ICountCacheService countCache, ILogger<MessageService> logger)
     {
         _context = context;
         _userService = userService;

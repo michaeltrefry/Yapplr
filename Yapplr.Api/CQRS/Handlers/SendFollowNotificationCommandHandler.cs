@@ -9,10 +9,10 @@ namespace Yapplr.Api.CQRS.Handlers;
 /// </summary>
 public class SendFollowNotificationCommandHandler : BaseCommandHandler<SendFollowNotificationCommand>
 {
-    private readonly IUnifiedNotificationService _notificationService;
+    private readonly INotificationService _notificationService;
 
     public SendFollowNotificationCommandHandler(
-        IUnifiedNotificationService notificationService,
+        INotificationService notificationService,
         ILogger<SendFollowNotificationCommandHandler> logger) : base(logger)
     {
         _notificationService = notificationService;

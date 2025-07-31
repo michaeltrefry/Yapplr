@@ -7,7 +7,7 @@ namespace Yapplr.Api.Services.Unified;
 /// Unified notification service that serves as the single entry point for all notification operations.
 /// Replaces NotificationService and CompositeNotificationService with a simplified, focused API.
 /// </summary>
-public interface IUnifiedNotificationService
+public interface INotificationService
 {
     #region Core Notification Methods
     

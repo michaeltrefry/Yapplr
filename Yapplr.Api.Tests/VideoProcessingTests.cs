@@ -20,7 +20,7 @@ public class VideoProcessingTests : IDisposable
     private readonly TestYapplrDbContext _context;
     private readonly Mock<ILogger<PostService>> _postServiceLogger;
     private readonly Mock<ILogger<VideoProcessingCompletedConsumer>> _consumerLogger;
-    private readonly Mock<IUnifiedNotificationService> _notificationService;
+    private readonly Mock<INotificationService> _notificationService;
     private readonly Mock<IAnalyticsService> _analyticsService;
     private readonly Mock<IPublishEndpoint> _publishEndpoint;
     private readonly Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor> _httpContextAccessor;
@@ -37,7 +37,7 @@ public class VideoProcessingTests : IDisposable
         _context = new TestYapplrDbContext(options);
         _postServiceLogger = new Mock<ILogger<PostService>>();
         _consumerLogger = new Mock<ILogger<VideoProcessingCompletedConsumer>>();
-        _notificationService = new Mock<IUnifiedNotificationService>();
+        _notificationService = new Mock<INotificationService>();
         _analyticsService = new Mock<IAnalyticsService>();
         _publishEndpoint = new Mock<IPublishEndpoint>();
         _httpContextAccessor = new Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor>();

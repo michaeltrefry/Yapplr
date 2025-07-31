@@ -15,12 +15,12 @@ public class ApplyModerationActionCommandHandler : BaseCommandHandler<ApplyModer
 {
     private readonly YapplrDbContext _dbContext;
     private readonly ICommandPublisher _commandPublisher;
-    private readonly IUnifiedNotificationService _notificationService;
+    private readonly INotificationService _notificationService;
 
     public ApplyModerationActionCommandHandler(
         YapplrDbContext dbContext,
         ICommandPublisher commandPublisher,
-        IUnifiedNotificationService notificationService,
+        INotificationService notificationService,
         ILogger<ApplyModerationActionCommandHandler> logger) : base(logger)
     {
         _dbContext = dbContext;

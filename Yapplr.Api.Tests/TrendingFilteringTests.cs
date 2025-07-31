@@ -31,7 +31,7 @@ public class TrendingFilteringTests : IDisposable
         var mockAnalyticsService = new Mock<IAnalyticsService>();
         var mockLogger = new Mock<ILogger<TagAnalyticsService>>();
         var mockAuditService = new Mock<IAuditService>();
-        var mockNotificationService = new Mock<IUnifiedNotificationService>();
+        var mockNotificationService = new Mock<INotificationService>();
         var mockModerationMessageService = new Mock<IModerationMessageService>();
         var mockTrustScoreService = new Mock<ITrustScoreService>();
         var mockServiceProvider = new Mock<IServiceProvider>();

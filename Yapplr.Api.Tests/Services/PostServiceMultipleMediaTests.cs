@@ -20,7 +20,7 @@ public class PostServiceMultipleMediaTests : IDisposable
     private readonly YapplrDbContext _context;
     private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
     private readonly Mock<IBlockService> _mockBlockService;
-    private readonly Mock<IUnifiedNotificationService> _mockNotificationService;
+    private readonly Mock<INotificationService> _mockNotificationService;
     private readonly Mock<ILinkPreviewService> _mockLinkPreviewService;
     private readonly Mock<IContentModerationService> _mockContentModerationService;
     private readonly Mock<IConfiguration> _mockConfiguration;
@@ -41,7 +41,7 @@ public class PostServiceMultipleMediaTests : IDisposable
         _context = new YapplrDbContext(options);
         _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
         _mockBlockService = new Mock<IBlockService>();
-        _mockNotificationService = new Mock<IUnifiedNotificationService>();
+        _mockNotificationService = new Mock<INotificationService>();
         _mockLinkPreviewService = new Mock<ILinkPreviewService>();
         _mockContentModerationService = new Mock<IContentModerationService>();
         _mockConfiguration = new Mock<IConfiguration>();

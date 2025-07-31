@@ -11,20 +11,20 @@ using QueuedNotification = Yapplr.Api.Services.Unified.QueuedNotification;
 
 namespace Yapplr.Tests.Services.Unified;
 
-public class UnifiedNotificationServiceTests : IDisposable
+public class NotificationServiceTests : IDisposable
 {
     private readonly YapplrDbContext _context;
     private readonly Mock<INotificationPreferencesService> _mockPreferencesService;
     private readonly Mock<ISignalRConnectionPool> _mockConnectionPool;
     private readonly Mock<ICountCacheService> _mockCountCache;
     private readonly Mock<IActiveConversationTracker> _mockConversationTracker;
-    private readonly Mock<ILogger<UnifiedNotificationService>> _mockLogger;
+    private readonly Mock<ILogger<NotificationService>> _mockLogger;
     private readonly Mock<INotificationProviderManager> _mockProviderManager;
     private readonly Mock<INotificationQueue> _mockNotificationQueue;
     private readonly Mock<INotificationEnhancementService> _mockEnhancementService;
-    private readonly UnifiedNotificationService _service;
+    private readonly NotificationService _service;
 
-    public UnifiedNotificationServiceTests()
+    public NotificationServiceTests()
     {
         // Setup in-memory database
         var options = new DbContextOptionsBuilder<YapplrDbContext>()
@@ -37,13 +37,13 @@ public class UnifiedNotificationServiceTests : IDisposable
         _mockConnectionPool = new Mock<ISignalRConnectionPool>();
         _mockCountCache = new Mock<ICountCacheService>();
         _mockConversationTracker = new Mock<IActiveConversationTracker>();
-        _mockLogger = new Mock<ILogger<UnifiedNotificationService>>();
+        _mockLogger = new Mock<ILogger<NotificationService>>();
         _mockProviderManager = new Mock<INotificationProviderManager>();
         _mockNotificationQueue = new Mock<INotificationQueue>();
         _mockEnhancementService = new Mock<INotificationEnhancementService>();
 
         // Create service with all dependencies
-        _service = new UnifiedNotificationService(
+        _service = new NotificationService(
             _context,
             _mockPreferencesService.Object,
             _mockConnectionPool.Object,

@@ -31,7 +31,7 @@ public class PostFilteringIntegrationTests : IDisposable
         // Set up PostService with mocked dependencies
         var mockHttpContextAccessor = new Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor>();
         var mockBlockService = new Mock<IBlockService>();
-        var mockNotificationService = new Mock<IUnifiedNotificationService>();
+        var mockNotificationService = new Mock<INotificationService>();
         var mockLinkPreviewService = new Mock<ILinkPreviewService>();
         var mockContentModerationService = new Mock<IContentModerationService>();
         var mockConfiguration = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();

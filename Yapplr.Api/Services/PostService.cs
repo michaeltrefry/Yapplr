@@ -18,7 +18,7 @@ public class PostService : BaseService, IPostService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IBlockService _blockService;
-    private readonly IUnifiedNotificationService _notificationService;
+    private readonly INotificationService _notificationService;
     private readonly ILinkPreviewService _linkPreviewService;
     private readonly IContentModerationService _contentModerationService;
     private readonly IConfiguration _configuration;
@@ -32,7 +32,7 @@ public class PostService : BaseService, IPostService
         YapplrDbContext context,
         IHttpContextAccessor httpContextAccessor,
         IBlockService blockService,
-        IUnifiedNotificationService notificationService,
+        INotificationService notificationService,
         ILinkPreviewService linkPreviewService,
         IContentModerationService contentModerationService,
         IConfiguration configuration,
