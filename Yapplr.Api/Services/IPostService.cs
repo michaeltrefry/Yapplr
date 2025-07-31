@@ -18,8 +18,6 @@ public interface IPostService
     Task<bool> DeletePostAsync(int postId, int userId);
 
     // Social features
-    Task<bool> LikePostAsync(int postId, int userId); // Legacy - will be removed
-    Task<bool> UnlikePostAsync(int postId, int userId); // Legacy - will be removed
     Task<bool> ReactToPostAsync(int postId, int userId, ReactionType reactionType);
     Task<bool> RemovePostReactionAsync(int postId, int userId);
 
@@ -39,9 +37,7 @@ public interface IPostService
     Task<IEnumerable<CommentDto>> GetPostCommentsAsync(int postId, int currentUserId);
     Task<bool> DeleteCommentAsync(int commentId, int userId);
 
-    // Comment likes
-    Task<bool> LikeCommentAsync(int commentId, int userId); // Legacy - will be removed
-    Task<bool> UnlikeCommentAsync(int commentId, int userId); // Legacy - will be removed
+    // Comment reactions
     Task<bool> ReactToCommentAsync(int commentId, int userId, ReactionType reactionType);
     Task<bool> RemoveCommentReactionAsync(int commentId, int userId);
 }

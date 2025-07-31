@@ -41,9 +41,8 @@ import RepostModal from './RepostModal';
 
 interface PostCardProps {
   item: TimelineItem;
-  onLike: (postId: number) => void; // Legacy - will be replaced by onReact
-  onReact?: (postId: number, reactionType: ReactionType) => void;
-  onRemoveReaction?: (postId: number) => void;
+  onReact: (postId: number, reactionType: ReactionType) => void;
+  onRemoveReaction: (postId: number) => void;
   onUserPress?: (username: string) => void;
   onCommentPress?: (post: Post) => void;
   onCommentCountUpdate?: (postId: number, newCount: number) => void;
@@ -52,7 +51,7 @@ interface PostCardProps {
   onHashtagPress?: (hashtag: string) => void;
 }
 
-export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUserPress, onCommentPress, onCommentCountUpdate, onDelete, onUnrepost, onHashtagPress }: PostCardProps) {
+export default function PostCard({ item, onReact, onRemoveReaction, onUserPress, onCommentPress, onCommentCountUpdate, onDelete, onUnrepost, onHashtagPress }: PostCardProps) {
   const colors = useThemeColors();
   const { user, api } = useAuth();
 
@@ -718,8 +717,8 @@ export default function PostCard({ item, onLike, onReact, onRemoveReaction, onUs
           reactionCounts={item.post.reactionCounts}
           currentUserReaction={item.post.currentUserReaction}
           totalReactionCount={item.post.totalReactionCount || item.post.likeCount || 0}
-          onReact={(reactionType) => onReact ? onReact(item.post.id, reactionType) : onLike(item.post.id)}
-          onRemoveReaction={() => onRemoveReaction ? onRemoveReaction(item.post.id) : onLike(item.post.id)}
+          onReact={(reactionType) => onReact(item.post.id, reactionType)}
+          onRemoveReaction={() => onRemoveReaction(item.post.id)}
         />
 
         <TouchableOpacity

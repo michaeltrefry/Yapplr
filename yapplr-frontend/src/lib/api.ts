@@ -299,21 +299,7 @@ export const postApi = {
     await api.delete(`/posts/${id}`);
   },
 
-  likePost: async (id: number): Promise<void> => {
-    await api.post(`/posts/${id}/like`);
-  },
 
-  unlikePost: async (id: number): Promise<void> => {
-    await api.delete(`/posts/${id}/like`);
-  },
-
-  likeComment: async (postId: number, commentId: number): Promise<void> => {
-    await api.post(`/posts/${postId}/comments/${commentId}/like`);
-  },
-
-  unlikeComment: async (postId: number, commentId: number): Promise<void> => {
-    await api.delete(`/posts/${postId}/comments/${commentId}/like`);
-  },
 
   reactToPost: async (id: number, reactionType: number): Promise<void> => {
     await api.post(`/posts/${id}/react`, { reactionType });

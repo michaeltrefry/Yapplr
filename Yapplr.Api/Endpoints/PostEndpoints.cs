@@ -206,34 +206,7 @@ Each media file object should include:
         .Produces(401)
         .Produces(404);
 
-        // Like/Unlike post
-        posts.MapPost("/{id:int}/like", async (int id, ClaimsPrincipal user, IPostService postService) =>
-        {
-            var userId = user.GetUserId(true);
-            var success = await postService.LikePostAsync(id, userId);
 
-            return success ? Results.Ok() : Results.BadRequest(new { message = "Already liked" });
-        })
-        .WithName("LikePost")
-        .WithSummary("Like a post")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
-
-        posts.MapDelete("/{id:int}/like", async (int id, ClaimsPrincipal user, IPostService postService) =>
-        {
-            var userId = user.GetUserId(true);
-            var success = await postService.UnlikePostAsync(id, userId);
-
-            return success ? Results.Ok() : Results.BadRequest(new { message = "Not liked" });
-        })
-        .WithName("UnlikePost")
-        .WithSummary("Unlike a post")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
 
         // React/Remove reaction from post
         posts.MapPost("/{id:int}/react", async (int id, ReactionDto dto, ClaimsPrincipal user, IPostService postService) =>
@@ -399,34 +372,7 @@ Each media file object should include:
         .Produces(401)
         .Produces(404);
 
-        // Comment likes
-        posts.MapPost("/{postId:int}/comments/{commentId:int}/like", async (int postId, int commentId, ClaimsPrincipal user, IPostService postService) =>
-        {
-            var userId = user.GetUserId(true);
-            var success = await postService.LikeCommentAsync(commentId, userId);
 
-            return success ? Results.Ok() : Results.BadRequest(new { message = "Already liked" });
-        })
-        .WithName("LikeComment")
-        .WithSummary("Like a comment")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
-
-        posts.MapDelete("/{postId:int}/comments/{commentId:int}/like", async (int postId, int commentId, ClaimsPrincipal user, IPostService postService) =>
-        {
-            var userId = user.GetUserId(true);
-            var success = await postService.UnlikeCommentAsync(commentId, userId);
-
-            return success ? Results.Ok() : Results.BadRequest(new { message = "Not liked" });
-        })
-        .WithName("UnlikeComment")
-        .WithSummary("Unlike a comment")
-        .RequireAuthorization("ActiveUser")
-        .Produces(200)
-        .Produces(400)
-        .Produces(401);
 
         // Comment reactions
         posts.MapPost("/{postId:int}/comments/{commentId:int}/react", async (int postId, int commentId, ReactionDto dto, ClaimsPrincipal user, IPostService postService) =>

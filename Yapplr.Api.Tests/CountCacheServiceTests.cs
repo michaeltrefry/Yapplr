@@ -107,42 +107,6 @@ public class CountCacheServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetLikeCountAsync_CountsCorrectly()
-    {
-        // Arrange
-        var userId1 = 1;
-        var userId2 = 2;
-
-        // Add test data - let EF generate the ID
-        var post = new Post { UserId = userId1, Content = "Test post" };
-        _context.Posts.Add(post);
-        await _context.SaveChangesAsync(); // Save to get the generated ID
-
-        var postId = post.Id;
-
-        _context.Likes.AddRange(
-            new Like { PostId = postId, UserId = userId1 },
-            new Like { PostId = postId, UserId = userId2 }
-        );
-        await _context.SaveChangesAsync();
-
-        var cacheKey = $"count:likes:{postId}";
-
-        // Setup cache miss
-        _mockCache.Setup(x => x.GetAsync<ValueWrapper<int>>(cacheKey))
-            .ReturnsAsync((ValueWrapper<int>?)null);
-
-        _mockCache.Setup(x => x.SetAsync(cacheKey, It.IsAny<ValueWrapper<int>>(), It.IsAny<TimeSpan>()))
-            .Returns(Task.CompletedTask);
-
-        // Act
-        var result = await _service.GetLikeCountAsync(postId);
-
-        // Assert
-        Assert.Equal(2, result);
-    }
-
-    [Fact]
     public async Task GetCommentCountAsync_ExcludesDeletedAndHiddenComments()
     {
         // Arrange
@@ -255,7 +219,7 @@ public class CountCacheServiceTests : IDisposable
         _context.Notifications.AddRange(
             new Notification
             {
-                Type = NotificationType.Like,
+                Type = NotificationType.React,
                 Message = "Someone liked your post",
                 UserId = userId,
                 IsSeen = false
@@ -297,7 +261,7 @@ public class CountCacheServiceTests : IDisposable
         var result = await _service.GetUnreadNotificationCountAsync(userId);
 
         // Assert
-        Assert.Equal(2, result); // Should only count Like and Follow notifications, not Message notifications
+        Assert.Equal(2, result); // Should only count ReactReact and Follow notifications, not Message notifications
     }
 
     public void Dispose()

@@ -12,8 +12,8 @@ using Yapplr.Api.Data;
 namespace Yapplr.Api.Migrations
 {
     [DbContext(typeof(YapplrDbContext))]
-    [Migration("20250713190405_AddYouTubeVideoIdToLinkPreview")]
-    partial class AddYouTubeVideoIdToLinkPreview
+    [Migration("20250731120750_RemoveLikeTable")]
+    partial class RemoveLikeTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -538,107 +538,6 @@ namespace Yapplr.Api.Migrations
                     b.ToTable("Blocks");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Models.Comment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DeletedByUserAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("FlaggedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("FlaggedReason")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<DateTime?>("HiddenAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("HiddenByUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("HiddenReason")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<bool>("IsDeletedByUser")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsFlagged")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsHidden")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("PostId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("HiddenByUserId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("PostId", "CreatedAt");
-
-                    b.ToTable("Comments");
-                });
-
-            modelBuilder.Entity("Yapplr.Api.Models.CommentSystemTag", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AppliedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("AppliedByUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CommentId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("SystemTagId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AppliedByUserId");
-
-                    b.HasIndex("SystemTagId");
-
-                    b.HasIndex("CommentId", "SystemTagId")
-                        .IsUnique();
-
-                    b.ToTable("CommentSystemTags");
-                });
-
             modelBuilder.Entity("Yapplr.Api.Models.ContentPage", b =>
                 {
                     b.Property<int>("Id")
@@ -892,7 +791,89 @@ namespace Yapplr.Api.Migrations
                     b.ToTable("FollowRequests");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Models.React", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Group", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ImageFileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<bool>("IsOpen")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Groups");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.GroupMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Role")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("JoinedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("GroupId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("GroupMembers");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.Like", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -913,10 +894,9 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("PostId");
 
-                    b.HasIndex("UserId", "PostId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
-                    b.ToTable("Likes");
+                    b.ToTable("Like");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.LinkPreview", b =>
@@ -1129,6 +1109,9 @@ namespace Yapplr.Api.Migrations
                     b.Property<bool>("IsRead")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsSeen")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -1138,6 +1121,9 @@ namespace Yapplr.Api.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("SeenAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
@@ -1162,7 +1148,62 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("UserId", "IsRead");
 
+                    b.HasIndex("UserId", "IsSeen");
+
                     b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.NotificationAuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdditionalData")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("EventId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("NotificationAuditLogs");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.NotificationDeliveryConfirmation", b =>
@@ -1289,7 +1330,16 @@ namespace Yapplr.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("EmailDigestFrequencyHours")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("EnableCommentNotifications")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnableEmailDigest")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnableEmailNotifications")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("EnableFollowNotifications")
@@ -1299,6 +1349,9 @@ namespace Yapplr.Api.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<bool>("EnableFrequencyLimits")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnableInstantEmailNotifications")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("EnableLikeNotifications")
@@ -1433,6 +1486,374 @@ namespace Yapplr.Api.Migrations
                     b.ToTable("PasswordResets");
                 });
 
+            modelBuilder.Entity("Yapplr.Api.Models.PaymentGlobalConfiguration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DefaultCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("DefaultProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("DefaultTrialDays")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("EnableProration")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnableTrialPeriods")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("GracePeriodDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxPaymentRetries")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RetryIntervalDays")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("VerifyWebhookSignatures")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("WebhookTimeoutSeconds")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PaymentGlobalConfigurations");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.PaymentMethod", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BillingAddress")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("BillingCity")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("BillingCountry")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("BillingEmail")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("BillingPostalCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("BillingState")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Brand")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExpiryMonth")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
+
+                    b.Property<string>("ExpiryYear")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
+
+                    b.Property<string>("ExternalPaymentMethodId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("HolderName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Last4")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("PaymentProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ProviderData")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("VerifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExternalPaymentMethodId");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PaymentProvider", "ExternalPaymentMethodId");
+
+                    b.HasIndex("UserId", "IsDefault");
+
+                    b.ToTable("PaymentMethods");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.PaymentProviderConfiguration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Environment")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("MaxRetries")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProviderName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SupportedCurrencies")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("TimeoutSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderName")
+                        .IsUnique();
+
+                    b.ToTable("PaymentProviderConfigurations");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.PaymentProviderSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSensitive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("PaymentProviderConfigurationId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentProviderConfigurationId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("PaymentProviderSettings");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.PaymentTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTime>("BillingPeriodEnd")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("BillingPeriodStart")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ExternalSubscriptionId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("ExternalTransactionId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime?>("FailedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("PaymentProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProviderResponse")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SubscriptionTierId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("UserSubscriptionId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("WebhookEventId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("ExternalSubscriptionId");
+
+                    b.HasIndex("ExternalTransactionId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubscriptionTierId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserSubscriptionId");
+
+                    b.HasIndex("BillingPeriodStart", "BillingPeriodEnd");
+
+                    b.HasIndex("PaymentProvider", "ExternalTransactionId");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("PaymentTransactions");
+                });
+
             modelBuilder.Entity("Yapplr.Api.Models.Post", b =>
                 {
                     b.Property<int>("Id")
@@ -1443,8 +1864,8 @@ namespace Yapplr.Api.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1459,6 +1880,9 @@ namespace Yapplr.Api.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<int?>("GroupId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("HiddenAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1466,8 +1890,13 @@ namespace Yapplr.Api.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("HiddenReason")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("HiddenReasonType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<bool>("IsDeletedByUser")
                         .HasColumnType("boolean");
@@ -1481,10 +1910,21 @@ namespace Yapplr.Api.Migrations
                     b.Property<bool>("IsHiddenDuringVideoProcessing")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PostType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<int>("Privacy")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
+
+                    b.Property<int?>("RepostedPostId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1498,9 +1938,23 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("HiddenByUserId");
 
+                    b.HasIndex("GroupId", "CreatedAt");
+
+                    b.HasIndex("PostType", "CreatedAt");
+
                     b.HasIndex("Privacy", "CreatedAt");
 
                     b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("ParentId", "PostType", "CreatedAt");
+
+                    b.HasIndex("RepostedPostId", "PostType", "CreatedAt");
+
+                    b.HasIndex("UserId", "PostType", "CreatedAt");
+
+                    b.HasIndex("IsHidden", "HiddenReasonType", "UserId", "Privacy", "CreatedAt")
+                        .HasDatabaseName("IX_Posts_HybridVisibility")
+                        .HasFilter("\"IsHidden\" = false OR \"HiddenReasonType\" = 3");
 
                     b.ToTable("Posts");
                 });
@@ -1545,6 +1999,20 @@ namespace Yapplr.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("DisplayVideoHeight")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("DisplayVideoWidth")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("GifPreviewUrl")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("GifUrl")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
                     b.Property<string>("ImageFileName")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -1585,6 +2053,9 @@ namespace Yapplr.Api.Migrations
                     b.Property<int?>("OriginalVideoHeight")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("OriginalVideoRotation")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("OriginalVideoWidth")
                         .HasColumnType("integer");
 
@@ -1594,6 +2065,9 @@ namespace Yapplr.Api.Migrations
                     b.Property<string>("ProcessedVideoFileName")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
+
+                    b.Property<int?>("ProcessedVideoRotation")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1654,6 +2128,39 @@ namespace Yapplr.Api.Migrations
                     b.HasIndex("PostId", "MediaType");
 
                     b.ToTable("PostMedia");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.PostReaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ReactionType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId", "ReactionType");
+
+                    b.HasIndex("UserId", "PostId")
+                        .IsUnique();
+
+                    b.ToTable("PostReactions");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PostSystemTag", b =>
@@ -1721,19 +2228,50 @@ namespace Yapplr.Api.Migrations
                     b.ToTable("PostTags");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Models.Repost", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.QueuedNotification", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("PostId")
+                    b.Property<string>("Data")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeliveredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("MaxRetries")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("NextRetryAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RetryDelayMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
@@ -1742,12 +2280,127 @@ namespace Yapplr.Api.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.HasIndex("PostId");
+                    b.HasIndex("DeliveredAt");
 
-                    b.HasIndex("UserId", "PostId")
+                    b.HasIndex("NextRetryAt");
+
+                    b.HasIndex("Type", "CreatedAt");
+
+                    b.HasIndex("UserId", "DeliveredAt");
+
+                    b.ToTable("QueuedNotifications");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.SubscriptionTier", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BillingCycleMonths")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Features")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("HasVerifiedBadge")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<bool>("ShowAdvertisements")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Reposts");
+                    b.HasIndex("SortOrder");
+
+                    b.ToTable("SubscriptionTiers");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.SystemConfiguration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsEditable")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemConfigurations");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.SystemTag", b =>
@@ -1838,6 +2491,70 @@ namespace Yapplr.Api.Migrations
                     b.ToTable("Tags");
                 });
 
+            modelBuilder.Entity("Yapplr.Api.Models.UploadSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AllowedImageExtensions")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("AllowedVideoExtensions")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("DeleteOriginalAfterProcessing")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("MaxImageSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("MaxMediaFilesPerPost")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxVideoDurationSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("MaxVideoSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("UpdateReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VideoMaxHeight")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VideoMaxWidth")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VideoTargetBitrate")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UpdatedAt");
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("UploadSettings");
+                });
+
             modelBuilder.Entity("Yapplr.Api.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -1907,6 +2624,9 @@ namespace Yapplr.Api.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("SubscriptionTierId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("SuspendedByUserId")
                         .HasColumnType("integer");
 
@@ -1945,6 +2665,8 @@ namespace Yapplr.Api.Migrations
                         .IsUnique();
 
                     b.HasIndex("LastSeenAt");
+
+                    b.HasIndex("SubscriptionTierId");
 
                     b.HasIndex("SuspendedByUserId");
 
@@ -2142,7 +2864,7 @@ namespace Yapplr.Api.Migrations
                     b.ToTable("UserReportSystemTags");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Services.NotificationAuditLog", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.UserSubscription", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -2150,72 +2872,101 @@ namespace Yapplr.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AdditionalDataJson")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                    b.Property<int>("BillingCycleCount")
+                        .HasColumnType("integer");
 
-                    b.Property<string>("Body")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("DeliveryMethod")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("ErrorMessage")
+                    b.Property<string>("CancellationReason")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<string>("EventId")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("NotificationType")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                    b.Property<string>("ExternalSubscriptionId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
-                    b.Property<TimeSpan?>("ProcessingTime")
-                        .HasColumnType("interval");
+                    b.Property<DateTime?>("GracePeriodEndDate")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("SecurityFlags")
+                    b.Property<bool>("IsTrialPeriod")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastRetryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastSyncDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NextBillingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<bool>("Success")
-                        .HasColumnType("boolean");
+                    b.Property<string>("PaymentMethodId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("PaymentMethodLast4")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
-                    b.Property<string>("Title")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("UserAgent")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Username")
+                    b.Property<string>("PaymentMethodType")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("PaymentProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SubscriptionTierId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("TrialEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("TrialProcessed")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.ToTable("NotificationAuditLogs");
+                    b.HasIndex("ExternalSubscriptionId");
+
+                    b.HasIndex("NextBillingDate");
+
+                    b.HasIndex("SubscriptionTierId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PaymentProvider", "ExternalSubscriptionId");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("UserSubscriptions");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.AiSuggestedTag", b =>
@@ -2225,7 +2976,7 @@ namespace Yapplr.Api.Migrations
                         .HasForeignKey("ApprovedByUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
+                    b.HasOne("Yapplr.Api.Models.Post", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -2326,8 +3077,8 @@ namespace Yapplr.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Yapplr.Api.Models.Comment", "TargetComment")
-                        .WithMany("AuditLogs")
+                    b.HasOne("Yapplr.Api.Models.Post", "TargetComment")
+                        .WithMany()
                         .HasForeignKey("TargetCommentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
@@ -2367,58 +3118,6 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Blocked");
 
                     b.Navigation("Blocker");
-                });
-
-            modelBuilder.Entity("Yapplr.Api.Models.Comment", b =>
-                {
-                    b.HasOne("Yapplr.Api.Models.User", "HiddenByUser")
-                        .WithMany()
-                        .HasForeignKey("HiddenByUserId");
-
-                    b.HasOne("Yapplr.Api.Models.Post", "Post")
-                        .WithMany("Comments")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Yapplr.Api.Models.User", "User")
-                        .WithMany("Comments")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("HiddenByUser");
-
-                    b.Navigation("Post");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Yapplr.Api.Models.CommentSystemTag", b =>
-                {
-                    b.HasOne("Yapplr.Api.Models.User", "AppliedByUser")
-                        .WithMany()
-                        .HasForeignKey("AppliedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
-                        .WithMany("CommentSystemTags")
-                        .HasForeignKey("CommentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Yapplr.Api.Models.SystemTag", "SystemTag")
-                        .WithMany("CommentSystemTags")
-                        .HasForeignKey("SystemTagId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AppliedByUser");
-
-                    b.Navigation("Comment");
-
-                    b.Navigation("SystemTag");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.ContentPage", b =>
@@ -2525,7 +3224,37 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Requester");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Models.React", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.Group", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.User", "User")
+                        .WithMany("CreatedGroups")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.GroupMember", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.Group", "Group")
+                        .WithMany("Members")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Yapplr.Api.Models.User", "User")
+                        .WithMany("GroupMemberships")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.Like", b =>
                 {
                     b.HasOne("Yapplr.Api.Models.Post", "Post")
                         .WithMany("Likes")
@@ -2546,7 +3275,7 @@ namespace Yapplr.Api.Migrations
 
             modelBuilder.Entity("Yapplr.Api.Models.Mention", b =>
                 {
-                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
+                    b.HasOne("Yapplr.Api.Models.Post", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -2630,7 +3359,7 @@ namespace Yapplr.Api.Migrations
                         .HasForeignKey("ActorUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
+                    b.HasOne("Yapplr.Api.Models.Post", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -2651,6 +3380,15 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Comment");
 
                     b.Navigation("Post");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.NotificationAuditLog", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });
@@ -2699,11 +3437,73 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Yapplr.Api.Models.PaymentMethod", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.PaymentProviderSetting", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.PaymentProviderConfiguration", "PaymentProviderConfiguration")
+                        .WithMany("Settings")
+                        .HasForeignKey("PaymentProviderConfigurationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PaymentProviderConfiguration");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.PaymentTransaction", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.SubscriptionTier", "SubscriptionTier")
+                        .WithMany()
+                        .HasForeignKey("SubscriptionTierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Yapplr.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Yapplr.Api.Models.UserSubscription", "UserSubscription")
+                        .WithMany("PaymentTransactions")
+                        .HasForeignKey("UserSubscriptionId");
+
+                    b.Navigation("SubscriptionTier");
+
+                    b.Navigation("User");
+
+                    b.Navigation("UserSubscription");
+                });
+
             modelBuilder.Entity("Yapplr.Api.Models.Post", b =>
                 {
+                    b.HasOne("Yapplr.Api.Models.Group", "Group")
+                        .WithMany("Posts")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("Yapplr.Api.Models.User", "HiddenByUser")
                         .WithMany()
                         .HasForeignKey("HiddenByUserId");
+
+                    b.HasOne("Yapplr.Api.Models.Post", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Yapplr.Api.Models.Post", "RepostedPost")
+                        .WithMany("Reposts")
+                        .HasForeignKey("RepostedPostId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Yapplr.Api.Models.User", "User")
                         .WithMany("Posts")
@@ -2711,7 +3511,13 @@ namespace Yapplr.Api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Group");
+
                     b.Navigation("HiddenByUser");
+
+                    b.Navigation("Parent");
+
+                    b.Navigation("RepostedPost");
 
                     b.Navigation("User");
                 });
@@ -2744,6 +3550,25 @@ namespace Yapplr.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.PostReaction", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.Post", "Post")
+                        .WithMany("Reactions")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Yapplr.Api.Models.User", "User")
+                        .WithMany("PostReactions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PostSystemTag", b =>
@@ -2792,31 +3617,40 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Tag");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Models.Repost", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.QueuedNotification", b =>
                 {
-                    b.HasOne("Yapplr.Api.Models.Post", "Post")
-                        .WithMany("Reposts")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Yapplr.Api.Models.User", "User")
-                        .WithMany("Reposts")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Post");
-
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.UploadSettings", b =>
+                {
+                    b.HasOne("Yapplr.Api.Models.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.User", b =>
                 {
+                    b.HasOne("Yapplr.Api.Models.SubscriptionTier", "SubscriptionTier")
+                        .WithMany("Users")
+                        .HasForeignKey("SubscriptionTierId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Yapplr.Api.Models.User", "SuspendedByUser")
                         .WithMany("SuspendedUsers")
                         .HasForeignKey("SuspendedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("SubscriptionTier");
 
                     b.Navigation("SuspendedByUser");
                 });
@@ -2833,7 +3667,7 @@ namespace Yapplr.Api.Migrations
                         .HasForeignKey("ReviewedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Yapplr.Api.Models.Comment", "TargetComment")
+                    b.HasOne("Yapplr.Api.Models.Post", "TargetComment")
                         .WithMany()
                         .HasForeignKey("TargetCommentId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -2873,7 +3707,7 @@ namespace Yapplr.Api.Migrations
 
             modelBuilder.Entity("Yapplr.Api.Models.UserReport", b =>
                 {
-                    b.HasOne("Yapplr.Api.Models.Comment", "Comment")
+                    b.HasOne("Yapplr.Api.Models.Post", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -2922,11 +3756,23 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("UserReport");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Models.Comment", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.UserSubscription", b =>
                 {
-                    b.Navigation("AuditLogs");
+                    b.HasOne("Yapplr.Api.Models.SubscriptionTier", "SubscriptionTier")
+                        .WithMany()
+                        .HasForeignKey("SubscriptionTierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
-                    b.Navigation("CommentSystemTags");
+                    b.HasOne("Yapplr.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SubscriptionTier");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.ContentPage", b =>
@@ -2941,6 +3787,13 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Participants");
                 });
 
+            modelBuilder.Entity("Yapplr.Api.Models.Group", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("Posts");
+                });
+
             modelBuilder.Entity("Yapplr.Api.Models.LinkPreview", b =>
                 {
                     b.Navigation("PostLinkPreviews");
@@ -2951,11 +3804,16 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("MessageStatuses");
                 });
 
+            modelBuilder.Entity("Yapplr.Api.Models.PaymentProviderConfiguration", b =>
+                {
+                    b.Navigation("Settings");
+                });
+
             modelBuilder.Entity("Yapplr.Api.Models.Post", b =>
                 {
                     b.Navigation("AuditLogs");
 
-                    b.Navigation("Comments");
+                    b.Navigation("Children");
 
                     b.Navigation("Likes");
 
@@ -2967,13 +3825,18 @@ namespace Yapplr.Api.Migrations
 
                     b.Navigation("PostTags");
 
+                    b.Navigation("Reactions");
+
                     b.Navigation("Reposts");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.SubscriptionTier", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.SystemTag", b =>
                 {
-                    b.Navigation("CommentSystemTags");
-
                     b.Navigation("PostSystemTags");
                 });
 
@@ -2990,9 +3853,9 @@ namespace Yapplr.Api.Migrations
 
                     b.Navigation("BlockedUsers");
 
-                    b.Navigation("Comments");
-
                     b.Navigation("ConversationParticipants");
+
+                    b.Navigation("CreatedGroups");
 
                     b.Navigation("FollowRequestsReceived");
 
@@ -3001,6 +3864,8 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Followers");
 
                     b.Navigation("Following");
+
+                    b.Navigation("GroupMemberships");
 
                     b.Navigation("Likes");
 
@@ -3014,9 +3879,9 @@ namespace Yapplr.Api.Migrations
 
                     b.Navigation("PerformedAuditLogs");
 
-                    b.Navigation("Posts");
+                    b.Navigation("PostReactions");
 
-                    b.Navigation("Reposts");
+                    b.Navigation("Posts");
 
                     b.Navigation("SentMessages");
 
@@ -3030,6 +3895,11 @@ namespace Yapplr.Api.Migrations
             modelBuilder.Entity("Yapplr.Api.Models.UserReport", b =>
                 {
                     b.Navigation("UserReportSystemTags");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.UserSubscription", b =>
+                {
+                    b.Navigation("PaymentTransactions");
                 });
 #pragma warning restore 612, 618
         }

@@ -86,19 +86,10 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     return unsubscribe;
   }, [navigation, refetch]);
 
-  const handleLikePost = async (postId: number) => {
-    try {
-      await api.posts.likePost(postId);
-      refetch(); // Refresh timeline to show updated like count
-    } catch (error) {
-      Alert.alert('Error', 'Failed to like post');
-    }
-  };
-
   const handleReact = async (postId: number, reactionType: ReactionType) => {
     try {
       await api.posts.reactToPost(postId, reactionType);
-      refetch(); // Refresh timeline to show updated reaction
+      refetch(); // Refresh timeline to show updated reaction count
     } catch (error) {
       Alert.alert('Error', 'Failed to react to post');
     }
@@ -107,11 +98,13 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
   const handleRemoveReaction = async (postId: number) => {
     try {
       await api.posts.removePostReaction(postId);
-      refetch(); // Refresh timeline to show updated reaction
+      refetch(); // Refresh timeline to show updated reaction count
     } catch (error) {
       Alert.alert('Error', 'Failed to remove reaction');
     }
   };
+
+
 
 
 
@@ -171,7 +164,6 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
     return (
       <PostCard
         item={item}
-        onLike={handleLikePost}
         onReact={handleReact}
         onRemoveReaction={handleRemoveReaction}
         onUserPress={handleUserPress}

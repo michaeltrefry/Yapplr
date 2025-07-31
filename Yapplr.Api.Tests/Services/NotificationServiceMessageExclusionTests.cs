@@ -59,7 +59,7 @@ public class NotificationServiceMessageExclusionTests : IDisposable
         {
             new Notification
             {
-                Type = NotificationType.Like,
+                Type = NotificationType.React,
                 Message = "Someone liked your post",
                 UserId = userId,
                 CreatedAt = DateTime.UtcNow.AddMinutes(-5)
@@ -94,10 +94,10 @@ public class NotificationServiceMessageExclusionTests : IDisposable
         var result = await _service.GetUserNotificationsAsync(userId);
 
         // Assert
-        Assert.Equal(2, result.Notifications.Count()); // Should only include Like and Follow notifications
+        Assert.Equal(2, result.Notifications.Count()); // Should only include ReactReact and Follow notifications
         Assert.Equal(2, result.TotalCount); // Total count should exclude message notifications
         Assert.DoesNotContain(result.Notifications, n => n.Type == NotificationType.Message);
-        Assert.Contains(result.Notifications, n => n.Type == NotificationType.Like);
+        Assert.Contains(result.Notifications, n => n.Type == NotificationType.React);
         Assert.Contains(result.Notifications, n => n.Type == NotificationType.Follow);
     }
 
@@ -112,7 +112,7 @@ public class NotificationServiceMessageExclusionTests : IDisposable
         {
             new Notification
             {
-                Type = NotificationType.Like,
+                Type = NotificationType.React,
                 Message = "Someone liked your post",
                 UserId = userId,
                 IsRead = false,
@@ -143,7 +143,7 @@ public class NotificationServiceMessageExclusionTests : IDisposable
         var result = await _service.GetUserNotificationsAsync(userId);
 
         // Assert
-        Assert.Equal(1, result.UnreadCount); // Should only count the unread Like notification
+        Assert.Equal(1, result.UnreadCount); // Should only count the unread ReactReact notification
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public class NotificationServiceMessageExclusionTests : IDisposable
         {
             new Notification
             {
-                Type = NotificationType.Like,
+                Type = NotificationType.React,
                 Message = "Someone liked your post",
                 UserId = userId,
                 IsRead = false
@@ -191,7 +191,7 @@ public class NotificationServiceMessageExclusionTests : IDisposable
             .Where(n => n.UserId == userId)
             .ToListAsync();
 
-        var likeNotification = updatedNotifications.First(n => n.Type == NotificationType.Like);
+        var likeNotification = updatedNotifications.First(n => n.Type == NotificationType.React);
         var messageNotification = updatedNotifications.First(n => n.Type == NotificationType.Message);
         var followNotification = updatedNotifications.First(n => n.Type == NotificationType.Follow);
 
@@ -210,7 +210,7 @@ public class NotificationServiceMessageExclusionTests : IDisposable
         {
             new Notification
             {
-                Type = NotificationType.Like,
+                Type = NotificationType.React,
                 Message = "Someone liked your post",
                 UserId = userId,
                 IsSeen = false
@@ -245,7 +245,7 @@ public class NotificationServiceMessageExclusionTests : IDisposable
             .Where(n => n.UserId == userId)
             .ToListAsync();
 
-        var likeNotification = updatedNotifications.First(n => n.Type == NotificationType.Like);
+        var likeNotification = updatedNotifications.First(n => n.Type == NotificationType.React);
         var messageNotification = updatedNotifications.First(n => n.Type == NotificationType.Message);
         var followNotification = updatedNotifications.First(n => n.Type == NotificationType.Follow);
 

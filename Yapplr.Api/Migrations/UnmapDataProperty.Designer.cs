@@ -535,7 +535,7 @@ namespace Yapplr.Api.Migrations
                     b.ToTable("FollowRequests");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Models.Like", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.React", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1918,7 +1918,7 @@ namespace Yapplr.Api.Migrations
                     b.Navigation("Requester");
                 });
 
-            modelBuilder.Entity("Yapplr.Api.Models.Like", b =>
+            modelBuilder.Entity("Yapplr.Api.Models.React", b =>
                 {
                     b.HasOne("Yapplr.Api.Models.Post", "Post")
                         .WithMany("Likes")

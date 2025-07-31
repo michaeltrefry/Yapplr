@@ -58,19 +58,7 @@ public class CountCacheService : ICountCacheService
             return count;
         }, UserCountExpiration);
     }
-
-    // Post counts
-    public async Task<int> GetLikeCountAsync(int postId)
-    {
-        var key = $"count:likes:{postId}";
-        return await _cache.GetOrSetValueAsync(key, async () =>
-        {
-            var count = await _context.Likes.CountAsync(l => l.PostId == postId);
-            _logger.LogDebug("Calculated like count for post {PostId}: {Count}", postId, count);
-            return count;
-        }, PostCountExpiration);
-    }
-
+    
     public async Task<int> GetCommentCountAsync(int postId)
     {
         var key = $"count:comments:{postId}";
@@ -93,32 +81,7 @@ public class CountCacheService : ICountCacheService
             return count;
         }, PostCountExpiration);
     }
-
-    // Comment counts
-    public async Task<int> GetCommentLikeCountAsync(int commentId)
-    {
-        var key = $"count:comment:likes:{commentId}";
-        return await _cache.GetOrSetValueAsync(key, async () =>
-        {
-            // Legacy - now using PostReactions with Heart reaction type
-            var count = await _context.PostReactions.CountAsync(pr => pr.PostId == commentId && pr.ReactionType == ReactionType.Heart);
-            _logger.LogDebug("Calculated like count for comment {CommentId}: {Count}", commentId, count);
-            return count;
-        }, PostCountExpiration);
-    }
-
-    public async Task<bool> HasUserLikedCommentAsync(int commentId, int userId)
-    {
-        var key = $"user:liked:comment:{userId}:{commentId}";
-        return await _cache.GetOrSetValueAsync(key, async () =>
-        {
-            // Legacy - now using PostReactions with Heart reaction type
-            var hasLiked = await _context.PostReactions.AnyAsync(pr => pr.PostId == commentId && pr.UserId == userId && pr.ReactionType == ReactionType.Heart);
-            _logger.LogDebug("Checked if user {UserId} liked comment {CommentId}: {HasLiked}", userId, commentId, hasLiked);
-            return hasLiked;
-        }, PostCountExpiration);
-    }
-
+    
     // Post reaction counts
     public async Task<int> GetPostReactionCountAsync(int postId, ReactionType reactionType)
     {

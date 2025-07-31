@@ -13,10 +13,7 @@ public class YapplrDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Post> Posts { get; set; }
     public DbSet<PostMedia> PostMedia { get; set; }
-    public DbSet<Like> Likes { get; set; } // Legacy - will be removed
     public DbSet<PostReaction> PostReactions { get; set; }
-    // Comment-related DbSets removed - now using unified Post model
-
     public DbSet<Follow> Follows { get; set; }
     public DbSet<FollowRequest> FollowRequests { get; set; }
     public DbSet<Block> Blocks { get; set; }
@@ -177,23 +174,6 @@ public class YapplrDbContext : DbContext
                   .HasForeignKey(e => e.PostId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
-
-        // Like configuration
-        modelBuilder.Entity<Like>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.UserId, e.PostId }).IsUnique(); // Prevent duplicate likes
-            entity.HasOne(e => e.User)
-                  .WithMany(e => e.Likes)
-                  .HasForeignKey(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Post)
-                  .WithMany(e => e.Likes)
-                  .HasForeignKey(e => e.PostId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
-        
-
 
         // PostReaction configuration
         modelBuilder.Entity<PostReaction>(entity =>

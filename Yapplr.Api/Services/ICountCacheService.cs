@@ -13,7 +13,6 @@ public interface ICountCacheService
     Task<int> GetPostCountAsync(int userId);
     
     // Post counts
-    Task<int> GetLikeCountAsync(int postId); // Legacy - will be removed
     Task<int> GetPostReactionCountAsync(int postId, ReactionType reactionType);
     Task<Dictionary<ReactionType, int>> GetPostReactionCountsAsync(int postId);
     Task<int> GetTotalPostReactionCountAsync(int postId);
@@ -22,12 +21,10 @@ public interface ICountCacheService
     Task<int> GetRepostCountAsync(int postId);
 
     // Comment counts
-    Task<int> GetCommentLikeCountAsync(int commentId); // Legacy - will be removed
     Task<int> GetCommentReactionCountAsync(int commentId, ReactionType reactionType);
     Task<Dictionary<ReactionType, int>> GetCommentReactionCountsAsync(int commentId);
     Task<int> GetTotalCommentReactionCountAsync(int commentId);
     Task<ReactionType?> GetUserCommentReactionAsync(int commentId, int userId);
-    Task<bool> HasUserLikedCommentAsync(int commentId, int userId); // Legacy - will be removed
 
     // Notification counts
     Task<int> GetUnreadNotificationCountAsync(int userId);

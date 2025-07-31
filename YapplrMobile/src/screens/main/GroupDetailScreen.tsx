@@ -128,19 +128,10 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
   };
 
   // Post interaction handlers
-  const handleLikePost = async (postId: number) => {
-    try {
-      await api.posts.likePost(postId);
-      loadGroupPosts(1, true); // Refresh posts to show updated like count
-    } catch (error) {
-      Alert.alert('Error', 'Failed to like post');
-    }
-  };
-
   const handleReact = async (postId: number, reactionType: ReactionType) => {
     try {
       await api.posts.reactToPost(postId, reactionType);
-      loadGroupPosts(1, true); // Refresh posts to show updated reaction
+      loadGroupPosts(1, true); // Refresh posts to show updated reaction count
     } catch (error) {
       Alert.alert('Error', 'Failed to react to post');
     }
@@ -149,11 +140,13 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
   const handleRemoveReaction = async (postId: number) => {
     try {
       await api.posts.removePostReaction(postId);
-      loadGroupPosts(1, true); // Refresh posts to show updated reaction
+      loadGroupPosts(1, true); // Refresh posts to show updated reaction count
     } catch (error) {
       Alert.alert('Error', 'Failed to remove reaction');
     }
   };
+
+
 
 
 
@@ -205,7 +198,6 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
   const renderTimelineItem = ({ item }: { item: TimelineItem }) => (
     <PostCard
       item={item}
-      onLike={handleLikePost}
       onReact={handleReact}
       onRemoveReaction={handleRemoveReaction}
       onUserPress={handleUserPress}

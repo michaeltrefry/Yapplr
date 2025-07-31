@@ -379,7 +379,7 @@ public class NotificationService : INotificationService
         return notificationTypeString.ToLower() switch
         {
             "mention" => NotificationType.Mention,
-            "like" => NotificationType.Like,
+            "like" => NotificationType.React,
             "repost" => NotificationType.Repost,
             "follow" => NotificationType.Follow,
             "comment" => NotificationType.Comment,
@@ -429,49 +429,7 @@ public class NotificationService : INotificationService
 
     #region Legacy Compatibility Methods (for gradual migration)
 
-    /// <summary>
-    /// Creates a like notification with blocking and validation logic
-    /// </summary>
-    public async Task CreateLikeNotificationAsync(int likedUserId, int likingUserId, int postId)
-    {
-        // Don't notify if user likes their own post
-        if (likedUserId == likingUserId)
-            return;
-
-        // Check if user has blocked the liking user
-        var isBlocked = await _context.Blocks
-            .AnyAsync(b => b.BlockerId == likedUserId && b.BlockedId == likingUserId);
-
-        if (isBlocked)
-            return;
-
-        var likingUser = await _context.Users.FindAsync(likingUserId);
-        if (likingUser == null)
-            return;
-
-        // Get media type for notification message
-        var mediaTypeText = await GetMediaTypeTextAsync(postId);
-
-        // Create database notification with proper foreign keys
-        var notification = new Notification
-        {
-            Type = NotificationType.Like,
-            Message = $"@{likingUser.Username} liked your {mediaTypeText}",
-            UserId = likedUserId,
-            ActorUserId = likingUserId,
-            PostId = postId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.Notifications.Add(notification);
-        await _context.SaveChangesAsync();
-
-        // Invalidate notification count cache
-        await _countCache.InvalidateNotificationCountsAsync(likedUserId);
-
-        // Send real-time notification
-        await SendLikeNotificationAsync(likedUserId, likingUser.Username, postId);
-    }
+    
 
     /// <summary>
     /// Creates a repost notification with blocking and validation logic
@@ -822,7 +780,7 @@ public class NotificationService : INotificationService
         var notificationTypesToDelete = new[]
         {
             NotificationType.Mention,                    // 1
-            NotificationType.Like,                       // 2
+            NotificationType.React,                       // 2
             NotificationType.Repost,                     // 3
             NotificationType.Follow,                     // 4 (shouldn't be post-related but included for completeness)
             NotificationType.Comment,                    // 5
@@ -1038,6 +996,29 @@ public class NotificationService : INotificationService
                 ["type"] = "like",
                 ["postId"] = postId.ToString(),
                 ["likerUsername"] = likerUsername
+            }
+        };
+
+        await SendNotificationAsync(request);
+    }
+
+    public async Task SendReactionNotificationAsync(int userId, string reactorUsername, int postId, ReactionType reactionType)
+    {
+        var mediaTypeText = await GetMediaTypeTextAsync(postId);
+        var reactionEmoji = reactionType.GetEmoji();
+        var request = new NotificationRequest
+        {
+            UserId = userId,
+            NotificationType = "reaction",
+            Title = "Post Reaction",
+            Body = $"@{reactorUsername} reacted {reactionEmoji} to your {mediaTypeText}",
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "reaction",
+                ["postId"] = postId.ToString(),
+                ["reactorUsername"] = reactorUsername,
+                ["reactionType"] = ((int)reactionType).ToString(),
+                ["reactionEmoji"] = reactionEmoji
             }
         };
 
@@ -1756,7 +1737,7 @@ public class NotificationService : INotificationService
         // Create database notification
         var notification = new Notification
         {
-            Type = NotificationType.Like, // Reuse like type for now, could add new reaction type later
+            Type = NotificationType.React, // Reuse like type for now, could add new reaction type later
             Message = $"@{reactingUser.Username} reacted {reactionEmoji} to your {mediaTypeText}",
             UserId = reactedUserId,
             ActorUserId = reactingUserId,
@@ -1771,7 +1752,7 @@ public class NotificationService : INotificationService
         await _countCache.InvalidateNotificationCountsAsync(reactedUserId);
 
         // Send real-time notification
-        await SendLikeNotificationAsync(reactedUserId, reactingUser.Username, postId);
+        await SendReactionNotificationAsync(reactedUserId, reactingUser.Username, postId, reactionType);
     }
 
     /// <summary>
@@ -1799,7 +1780,7 @@ public class NotificationService : INotificationService
         // Create database notification
         var notification = new Notification
         {
-            Type = NotificationType.Like,
+            Type = NotificationType.React,
             Message = $"@{reactingUser.Username} reacted {reactionEmoji} to your comment",
             UserId = commentOwnerId,
             ActorUserId = reactingUserId,
@@ -1842,7 +1823,7 @@ public class NotificationService : INotificationService
 
         var totalCount = await query.CountAsync();
         var notifications = await query
-            .Where(n => n.UserId == userId && !n.IsRead && n.Type != NotificationType.Message) // Exclude message notifications from unread count
+            .Where(n => n.UserId == userId && n.Type != NotificationType.Message) // Exclude message notifications from unread count
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

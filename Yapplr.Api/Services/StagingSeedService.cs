@@ -279,7 +279,7 @@ public class StagingSeedService
 
             // Spam-like content
             ("Buy now! Amazing deal! Click here! Limited time offer! Don't miss out!", "Spam - Promotional content"),
-            ("Follow me follow me follow me! Like and subscribe! Check my profile!", "Spam - Attention seeking")
+            ("Follow me follow me follow me! React and subscribe! Check my profile!", "Spam - Attention seeking")
         };
 
         // Create regular posts (15 posts) using PostService

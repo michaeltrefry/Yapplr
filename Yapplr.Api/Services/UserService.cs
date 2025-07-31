@@ -408,7 +408,7 @@ public class UserService : BaseService, IUserService
         score += messagesReceived * 8.0;
 
         // Likes on their posts (medium weight)
-        var likesGiven = await _context.Likes
+        var likesGiven = await _context.PostReactions
             .Where(l => l.UserId == currentUserId &&
                        l.Post.UserId == targetUserId &&
                        l.CreatedAt >= since)

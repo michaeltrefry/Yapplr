@@ -342,7 +342,7 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
     {
         try
         {
-            var title = "New Like";
+            var title = "New React";
             var body = $"@{likerUsername} liked your post";
             var data = new Dictionary<string, string>
             {
@@ -373,7 +373,7 @@ public class SignalRNotificationService : IRealtimeNotificationProvider
     {
         try
         {
-            var title = "New Like";
+            var title = "New React";
             var body = $"@{likerUsername} liked your comment";
             var data = new Dictionary<string, string>
             {

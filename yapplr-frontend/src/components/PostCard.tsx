@@ -63,50 +63,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const likeMutation = useMutation({
-    mutationFn: async (isCurrentlyLiked: boolean) => {
-      if (isCurrentlyLiked) {
-        return await postApi.unlikePost(post.id);
-      } else {
-        return await postApi.likePost(post.id);
-      }
-    },
-    onMutate: async () => {
-      // Store the previous state for potential rollback
-      const previousState = {
-        isLikedByCurrentUser: post.isLikedByCurrentUser,
-        likeCount: post.likeCount
-      };
 
-      // Create optimistically updated post
-      const updatedPost = {
-        ...post,
-        isLikedByCurrentUser: !post.isLikedByCurrentUser,
-        likeCount: post.isLikedByCurrentUser ? post.likeCount - 1 : post.likeCount + 1
-      };
-
-      // Update parent component's state immediately
-      onPostUpdate?.(updatedPost);
-
-      return { previousState };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['timeline'] });
-      queryClient.invalidateQueries({ queryKey: ['userTimeline'] });
-      queryClient.invalidateQueries({ queryKey: ['post', post.id] });
-    },
-    onError: (error, variables, context) => {
-      // Revert to the previous state
-      if (context?.previousState) {
-        const revertedPost = {
-          ...post,
-          isLikedByCurrentUser: context.previousState.isLikedByCurrentUser,
-          likeCount: context.previousState.likeCount
-        };
-        onPostUpdate?.(revertedPost);
-      }
-    },
-  });
 
   const reactMutation = useMutation({
     mutationFn: async (reactionType: ReactionType) => {
@@ -301,9 +258,7 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     },
   });
 
-  const handleLike = () => {
-    likeMutation.mutate(post.isLikedByCurrentUser);
-  };
+
 
   const handleRepost = () => {
     setShowRepostModal(true);

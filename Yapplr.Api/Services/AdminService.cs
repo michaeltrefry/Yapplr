@@ -1063,7 +1063,7 @@ public class AdminService : IAdminService
         var engagementTrends = new List<DailyStatsDto>();
 
         // Get daily likes
-        var dailyLikes = await _context.Likes
+        var dailyReactions = await _context.PostReactions
             .Where(l => l.CreatedAt >= startDate)
             .GroupBy(l => l.CreatedAt.Date)
             .Select(g => new { Date = g.Key, Count = g.Count() })
@@ -1084,7 +1084,7 @@ public class AdminService : IAdminService
             .ToListAsync();
 
         // Combine all engagement data by date
-        var allDates = dailyLikes.Select(d => d.Date)
+        var allDates = dailyReactions.Select(d => d.Date)
             .Union(dailyCommentsCount.Select(d => d.Date))
             .Union(dailyReposts.Select(d => d.Date))
             .Distinct()
@@ -1092,14 +1092,14 @@ public class AdminService : IAdminService
 
         foreach (var date in allDates)
         {
-            var likesCount = dailyLikes.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
+            var reactCount = dailyReactions.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
             var commentsCount = dailyCommentsCount.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
             var repostsCount = dailyReposts.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
 
             engagementTrends.Add(new DailyStatsDto
             {
                 Date = date,
-                Count = likesCount + commentsCount + repostsCount,
+                Count = reactCount + commentsCount + repostsCount,
                 Label = date.ToString("MMM dd")
             });
         }
@@ -1128,7 +1128,7 @@ public class AdminService : IAdminService
             .ToListAsync();
 
         // Get daily likes
-        var dailyLikesCount = await _context.Likes
+        var dailyReactions = await _context.PostReactions
             .Where(l => l.CreatedAt >= startDate)
             .GroupBy(l => l.CreatedAt.Date)
             .Select(g => new { Date = g.Key, Count = g.Count() })
@@ -1150,7 +1150,7 @@ public class AdminService : IAdminService
 
         // Combine all engagement data by date
         var allEngagementDates = dailyPostsCount.Select(d => d.Date)
-            .Union(dailyLikesCount.Select(d => d.Date))
+            .Union(dailyReactions.Select(d => d.Date))
             .Union(dailyCommentsEngagement.Select(d => d.Date))
             .Union(dailyRepostsCount.Select(d => d.Date))
             .Distinct()
@@ -1159,14 +1159,14 @@ public class AdminService : IAdminService
         foreach (var date in allEngagementDates)
         {
             var postsCount = dailyPostsCount.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
-            var likesCount = dailyLikesCount.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
+            var reactCount = dailyReactions.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
             var commentsCount = dailyCommentsEngagement.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
             var repostsCount = dailyRepostsCount.FirstOrDefault(d => d.Date == date)?.Count ?? 0;
 
             dailyEngagement.Add(new DailyStatsDto
             {
                 Date = date,
-                Count = postsCount + likesCount + commentsCount + repostsCount,
+                Count = postsCount + reactCount + commentsCount + repostsCount,
                 Label = date.ToString("MMM dd")
             });
         }
@@ -1174,16 +1174,16 @@ public class AdminService : IAdminService
         // Engagement breakdown by type
         var totalPosts = await _context.Posts.Where(p => p.PostType == PostType.Post && p.CreatedAt >= startDate).CountAsync();
         var totalComments = await _context.Posts.Where(c => c.PostType == PostType.Comment && c.CreatedAt >= startDate).CountAsync();
-        var totalLikes = await _context.Likes.Where(l => l.CreatedAt >= startDate).CountAsync();
+        var totalReacts = await _context.PostReactions.Where(l => l.CreatedAt >= startDate).CountAsync();
         var totalReposts = await _context.Posts.Where(p => p.PostType == PostType.Repost && p.CreatedAt >= startDate).CountAsync();
 
-        var totalEngagement = totalPosts + totalComments + totalLikes + totalReposts;
+        var totalEngagement = totalPosts + totalComments + totalReacts + totalReposts;
 
         var engagementBreakdown = new List<EngagementTypeStatsDto>
         {
             new() { Type = "Posts", Count = totalPosts, Percentage = totalEngagement > 0 ? Math.Round((double)totalPosts / totalEngagement * 100, 2) : 0 },
             new() { Type = "Comments", Count = totalComments, Percentage = totalEngagement > 0 ? Math.Round((double)totalComments / totalEngagement * 100, 2) : 0 },
-            new() { Type = "Likes", Count = totalLikes, Percentage = totalEngagement > 0 ? Math.Round((double)totalLikes / totalEngagement * 100, 2) : 0 },
+            new() { Type = "Reactions", Count = totalReacts, Percentage = totalEngagement > 0 ? Math.Round((double)totalReacts / totalEngagement * 100, 2) : 0 },
             new() { Type = "Reposts", Count = totalReposts, Percentage = totalEngagement > 0 ? Math.Round((double)totalReposts / totalEngagement * 100, 2) : 0 }
         };
 

@@ -275,7 +275,7 @@ public class UnifiedNotificationIntegrationTests : IDisposable
         {
             UserId = 1,
             NotificationType = "like",
-            Title = "New Like",
+            Title = "New ReactReaction",
             Body = "Someone liked your post",
             Priority = NotificationPriority.Normal,
             Data = new Dictionary<string, string> { { "postId", "123" } }
@@ -287,9 +287,9 @@ public class UnifiedNotificationIntegrationTests : IDisposable
         // Assert - Verify complete flow
         sendResult.Should().BeTrue();
 
-        // Check database notification was created (like maps to Like)
+        // Check database notification was created (like maps to ReactReact)
         var dbNotification = await _dbContext.Notifications
-            .FirstOrDefaultAsync(n => n.UserId == 1 && n.Type == NotificationType.Like);
+            .FirstOrDefaultAsync(n => n.UserId == 1 && n.Type == NotificationType.React);
 
         dbNotification.Should().NotBeNull();
         dbNotification!.Message.Should().Contain("Someone liked your post");
@@ -396,15 +396,15 @@ public class UnifiedNotificationIntegrationTests : IDisposable
         await _dbContext.SaveChangesAsync();
 
         // Act - Create a like notification for the photo post
-        await _service.CreateLikeNotificationAsync(user1.Id, user2.Id, photoPost.Id);
+        await _service.CreateReactionNotificationAsync(user1.Id, user2.Id, photoPost.Id, ReactionType.Heart);
 
         // Assert - Verify the notification message mentions "photo"
         var notification = await _dbContext.Notifications
-            .FirstOrDefaultAsync(n => n.PostId == photoPost.Id && n.Type == NotificationType.Like);
+            .FirstOrDefaultAsync(n => n.PostId == photoPost.Id && n.Type == NotificationType.React);
 
         notification.Should().NotBeNull();
         notification!.Message.Should().Contain("photo", "Photo post notifications should mention 'photo'");
-        notification.Message.Should().Be("@testuser2 liked your photo");
+        notification.Message.Should().Be("@testuser2 reacted ❤️ to your photo");
     }
 
     public void Dispose()

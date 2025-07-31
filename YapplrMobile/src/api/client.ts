@@ -158,9 +158,7 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         return response.data;
       },
 
-      likePost: async (postId: number): Promise<void> => {
-        await client.post(`/api/posts/${postId}/like`);
-      },
+
 
       reactToPost: async (postId: number, reactionType: number): Promise<void> => {
         await client.post(`/api/posts/${postId}/react`, { reactionType });
@@ -219,13 +217,7 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         return response.data;
       },
 
-      likeComment: async (postId: number, commentId: number): Promise<void> => {
-        await client.post(`/api/posts/${postId}/comments/${commentId}/like`);
-      },
 
-      unlikeComment: async (postId: number, commentId: number): Promise<void> => {
-        await client.delete(`/api/posts/${postId}/comments/${commentId}/like`);
-      },
 
       reactToComment: async (postId: number, commentId: number, reactionType: number): Promise<void> => {
         await client.post(`/api/posts/${postId}/comments/${commentId}/react`, { reactionType });

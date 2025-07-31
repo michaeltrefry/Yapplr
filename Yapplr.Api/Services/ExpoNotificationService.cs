@@ -213,7 +213,7 @@ public class ExpoNotificationService : IRealtimeNotificationProvider
 
     public async Task<bool> SendLikeNotificationAsync(int userId, string likerUsername, int postId)
     {
-        var title = "New Like";
+        var title = "New React";
         var body = $"@{likerUsername} liked your post";
         var data = new Dictionary<string, string>
         {
@@ -227,7 +227,7 @@ public class ExpoNotificationService : IRealtimeNotificationProvider
 
     public async Task<bool> SendCommentLikeNotificationAsync(int userId, string likerUsername, int postId, int commentId)
     {
-        var title = "New Like";
+        var title = "New React";
         var body = $"@{likerUsername} liked your comment";
         var data = new Dictionary<string, string>
         {

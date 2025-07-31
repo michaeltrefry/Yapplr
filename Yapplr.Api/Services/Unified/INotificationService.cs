@@ -73,30 +73,13 @@ public interface INotificationService
     Task SendFollowRequestApprovedNotificationAsync(int userId, string approverUsername);
     
     /// <summary>
-    /// Sends a like notification
-    /// </summary>
-    Task SendLikeNotificationAsync(int userId, string likerUsername, int postId);
-
-    /// <summary>
-    /// Sends a comment like notification
-    /// </summary>
-    Task SendCommentLikeNotificationAsync(int userId, string likerUsername, int postId, int commentId);
-
-    /// <summary>
     /// Sends a repost notification
     /// </summary>
     Task SendRepostNotificationAsync(int userId, string reposterUsername, int postId);
-
-
-
+    
     #endregion
 
     #region Legacy Compatibility Methods (for gradual migration)
-
-    /// <summary>
-    /// Creates a like notification with blocking and validation logic
-    /// </summary>
-    Task CreateLikeNotificationAsync(int likedUserId, int likingUserId, int postId);
 
     /// <summary>
     /// Creates a comment notification with blocking and validation logic

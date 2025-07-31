@@ -196,7 +196,7 @@ public class EmailServiceTests
         Assert.Contains("testuser", htmlBody);
         Assert.Contains("You have a new like!", htmlBody);
         Assert.Contains("Someone liked your post about technology.", htmlBody);
-        Assert.Contains("❤️", htmlBody); // Like icon
+        Assert.Contains("❤️", htmlBody); // React icon
         Assert.Contains("https://yapplr.com/post/123", htmlBody);
         Assert.Contains("View on Yapplr", htmlBody);
 
@@ -268,7 +268,7 @@ public class EmailServiceTests
         Assert.Contains("testuser", htmlBody);
         Assert.Contains("Someone liked your post", htmlBody);
         Assert.Contains("New comment", htmlBody);
-        Assert.Contains("❤️", htmlBody); // Like icon
+        Assert.Contains("❤️", htmlBody); // React icon
         Assert.Contains("💭", htmlBody); // Comment icon
 
         Assert.Contains("testuser", textBody);

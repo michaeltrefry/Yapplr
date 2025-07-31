@@ -224,8 +224,8 @@ public class TrustScoreService : ITrustScoreService
 
     private async Task<float> CalculateEngagementRatioAsync(int userId)
     {
-        var likesGiven = await _context.Likes.CountAsync(l => l.UserId == userId);
-        var likesReceived = await _context.Likes
+        var likesGiven = await _context.PostReactions.CountAsync(l => l.UserId == userId);
+        var likesReceived = await _context.PostReactions
             .Where(l => l.Post.UserId == userId)
             .CountAsync();
 

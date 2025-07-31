@@ -181,7 +181,7 @@ public class NotificationDigestService : INotificationDigestService
 
         // For post-related notifications, use media-specific messages
         if (notification.PostId.HasValue &&
-            (notification.Type == NotificationType.Like ||
+            (notification.Type == NotificationType.React ||
              notification.Type == NotificationType.Comment ||
              notification.Type == NotificationType.Repost))
         {
@@ -189,7 +189,7 @@ public class NotificationDigestService : INotificationDigestService
 
             return notification.Type switch
             {
-                NotificationType.Like => $"{actorName} liked your {mediaTypeText}",
+                NotificationType.React => $"{actorName} liked your {mediaTypeText}",
                 NotificationType.Comment => $"{actorName} commented on your {mediaTypeText}",
                 NotificationType.Repost => $"{actorName} reposted your {mediaTypeText}",
                 _ => $"{actorName} interacted with your {mediaTypeText}"
@@ -199,7 +199,7 @@ public class NotificationDigestService : INotificationDigestService
         // For non-post notifications, use standard messages
         return notification.Type switch
         {
-            NotificationType.Like => $"{actorName} liked your post",
+            NotificationType.React => $"{actorName} liked your post",
             NotificationType.Comment => $"{actorName} commented on your post",
             NotificationType.Repost => $"{actorName} reposted your post",
             NotificationType.Follow => $"{actorName} started following you",
@@ -221,7 +221,7 @@ public class NotificationDigestService : INotificationDigestService
         {
             return notification.Type switch
             {
-                NotificationType.Like or NotificationType.Comment or NotificationType.Repost or NotificationType.Mention
+                NotificationType.React or NotificationType.Comment or NotificationType.Repost or NotificationType.Mention
                     when notification.PostId.HasValue => $"https://yapplr.com/post/{notification.PostId}",
                 NotificationType.Follow or NotificationType.FollowRequest
                     when notification.ActorUserId.HasValue => $"https://yapplr.com/user/{notification.ActorUserId}",

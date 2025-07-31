@@ -147,17 +147,6 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
     },
   });
 
-  const handleLikePost = async (postId: number) => {
-    try {
-      await api.posts.likePost(postId);
-      refetchTimeline();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to like post');
-    }
-  };
-
-
-
   const handleReact = async (postId: number, reactionType: ReactionType) => {
     try {
       await api.posts.reactToPost(postId, reactionType);
@@ -175,6 +164,10 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
       Alert.alert('Error', 'Failed to remove reaction');
     }
   };
+
+
+
+
 
   const onRefresh = async () => {
     await Promise.all([refetchProfile(), refetchTimeline()]);
@@ -286,7 +279,6 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
   const renderTimelineItem = ({ item }: { item: TimelineItem }) => (
     <PostCard
       item={item}
-      onLike={handleLikePost}
       onReact={handleReact}
       onRemoveReaction={handleRemoveReaction}
       onUserPress={handleUserPress}

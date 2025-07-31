@@ -201,7 +201,7 @@ public class PostDeletionTests : IDisposable
         // Create social interaction notifications
         var likeNotification = new Notification
         {
-            Type = NotificationType.Like,
+            Type = NotificationType.React,
             Message = "User liked your post",
             UserId = userId,
             PostId = postId,
@@ -273,7 +273,7 @@ public class PostDeletionTests : IDisposable
         var notificationTypesToDelete = new[]
         {
             NotificationType.Mention,
-            NotificationType.Like,
+            NotificationType.React,
             NotificationType.Repost,
             NotificationType.Follow,
             NotificationType.Comment,

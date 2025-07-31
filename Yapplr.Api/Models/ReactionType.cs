@@ -66,7 +66,7 @@ public static class ReactionTypeExtensions
         return reactionType switch
         {
             ReactionType.Heart => "Love",
-            ReactionType.ThumbsUp => "Like",
+            ReactionType.ThumbsUp => "React",
             ReactionType.Laugh => "Laugh",
             ReactionType.Surprised => "Surprised",
             ReactionType.Sad => "Sad",

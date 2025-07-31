@@ -145,6 +145,8 @@ services:
     image: content-moderation:local
     environment:
       - PORT=8000
+    ports:
+      - "8000:8000"  # Expose API for local access
     restart: unless-stopped
     networks:
       - yapplr-network
