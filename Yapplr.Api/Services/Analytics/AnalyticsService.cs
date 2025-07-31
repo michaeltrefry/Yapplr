@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models.Analytics;
 
-namespace Yapplr.Api.Services;
+namespace Yapplr.Api.Services.Analytics;
 
 /// <summary>
 /// Service for recording and analyzing user activities and content engagement

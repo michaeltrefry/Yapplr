@@ -2,9 +2,8 @@ using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Writes;
 using Yapplr.Api.Models.Analytics;
-using System.Text.Json;
 
-namespace Yapplr.Api.Services;
+namespace Yapplr.Api.Services.Analytics;
 
 /// <summary>
 /// InfluxDB implementation of external analytics service

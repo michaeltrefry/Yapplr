@@ -1,6 +1,6 @@
 using Yapplr.Api.Models.Analytics;
 
-namespace Yapplr.Api.Services;
+namespace Yapplr.Api.Services.Analytics;
 
 /// <summary>
 /// Service for sending analytics data to external systems (InfluxDB, etc.)

@@ -1,14 +1,14 @@
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
-using FluentAssertions;
-using Yapplr.Api.Services;
 using Yapplr.Api.Configuration;
+using Yapplr.Api.Services;
 using Yapplr.Api.Services.Notifications;
 using Yapplr.Api.Services.Notifications.Providers;
 
-namespace Yapplr.Tests.Services.Unified;
+namespace Yapplr.Api.Tests.Services.Unified;
 
 public class NotificationProviderManagerTests
 {

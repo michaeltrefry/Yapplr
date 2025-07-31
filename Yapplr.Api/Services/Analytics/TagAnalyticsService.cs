@@ -5,7 +5,7 @@ using Yapplr.Api.Extensions;
 using Yapplr.Api.Models;
 using Yapplr.Api.Models.Analytics;
 
-namespace Yapplr.Api.Services;
+namespace Yapplr.Api.Services.Analytics;
 
 public class TagAnalyticsService : ITagAnalyticsService
 {

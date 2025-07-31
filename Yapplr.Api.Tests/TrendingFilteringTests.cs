@@ -5,6 +5,7 @@ using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 using Xunit;
+using Yapplr.Api.Services.Analytics;
 using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Tests;

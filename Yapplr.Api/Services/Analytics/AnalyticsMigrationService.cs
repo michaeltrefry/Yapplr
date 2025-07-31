@@ -1,12 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Yapplr.Api.Common;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models.Analytics;
 
-namespace Yapplr.Api.Services;
+namespace Yapplr.Api.Services.Analytics;
 
 /// <summary>
 /// Service for migrating analytics data from database to InfluxDB

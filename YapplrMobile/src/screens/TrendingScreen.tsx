@@ -12,28 +12,56 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
-import { Tag } from '../types';
+import { Tag, Post } from '../types';
+import PostCard from '../components/PostCard';
 
 type TrendingPeriod = 'now' | 'today' | 'week';
+type TrendingTab = 'hashtags' | 'posts';
 
 const TrendingScreen = () => {
   const navigation = useNavigation();
   const { api } = useAuth();
   const [activePeriod, setActivePeriod] = useState<TrendingPeriod>('now');
+  const [activeTab, setActiveTab] = useState<TrendingTab>('hashtags');
 
-  const { data: trendingTags, isLoading, error, refetch } = useQuery({
+  const { data: trendingTags, isLoading: tagsLoading, error: tagsError, refetch: refetchTags } = useQuery({
     queryKey: ['trending-tags', activePeriod],
     queryFn: () => api.tags.getTrendingTags(20),
     refetchInterval: activePeriod === 'now' ? 30000 : 60000,
+    enabled: activeTab === 'hashtags',
+  });
+
+  const { data: trendingPosts, isLoading: postsLoading, error: postsError, refetch: refetchPosts } = useQuery({
+    queryKey: ['trending-posts', activePeriod],
+    queryFn: () => {
+      switch (activePeriod) {
+        case 'now':
+          return api.trending.getTrendingPostsNow(20);
+        case 'today':
+          return api.trending.getTrendingPostsToday(20);
+        case 'week':
+          return api.trending.getTrendingPostsWeek(20);
+        default:
+          return api.trending.getTrendingPostsToday(20);
+      }
+    },
+    refetchInterval: activePeriod === 'now' ? 30000 : 60000,
+    enabled: activeTab === 'posts',
   });
 
   const handleRefresh = () => {
-    refetch();
+    if (activeTab === 'hashtags') {
+      refetchTags();
+    } else {
+      refetchPosts();
+    }
   };
 
+  const isLoading = activeTab === 'hashtags' ? tagsLoading : postsLoading;
+  const error = activeTab === 'hashtags' ? tagsError : postsError;
+
   const navigateToHashtag = (tagName: string) => {
-    // TODO: Implement hashtag navigation
-    console.log('Navigate to hashtag:', tagName);
+    navigation.navigate('HashtagFeed', { hashtag: tagName });
   };
 
   const formatNumber = (num: number): string => {
@@ -90,11 +118,24 @@ const TrendingScreen = () => {
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Trending Hashtags</Text>
+          <Text style={styles.headerTitle}>
+            Trending {activeTab === 'hashtags' ? 'Hashtags' : 'Posts'}
+          </Text>
           <Text style={styles.headerSubtitle}>
-            {activePeriod === 'now' && 'Popular hashtags right now'}
-            {activePeriod === 'today' && 'Popular hashtags today'}
-            {activePeriod === 'week' && 'Popular hashtags this week'}
+            {activeTab === 'hashtags' && (
+              <>
+                {activePeriod === 'now' && 'Popular hashtags right now'}
+                {activePeriod === 'today' && 'Popular hashtags today'}
+                {activePeriod === 'week' && 'Popular hashtags this week'}
+              </>
+            )}
+            {activeTab === 'posts' && (
+              <>
+                {activePeriod === 'now' && 'Popular posts right now'}
+                {activePeriod === 'today' && 'Popular posts today'}
+                {activePeriod === 'week' && 'Popular posts this week'}
+              </>
+            )}
           </Text>
         </View>
         <View style={styles.liveIndicator}>
@@ -103,6 +144,28 @@ const TrendingScreen = () => {
             {activePeriod === 'now' ? 'Live' : 'Updated'}
           </Text>
         </View>
+      </View>
+
+      {/* Content Type Tabs */}
+      <View style={styles.contentTabContainer}>
+        <TouchableOpacity
+          style={[styles.contentTab, activeTab === 'hashtags' && styles.activeContentTab]}
+          onPress={() => setActiveTab('hashtags')}
+        >
+          <Ionicons name="pricetag" size={16} color={activeTab === 'hashtags' ? '#FF6B35' : '#666'} />
+          <Text style={[styles.contentTabText, activeTab === 'hashtags' && styles.activeContentTabText]}>
+            Hashtags
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.contentTab, activeTab === 'posts' && styles.activeContentTab]}
+          onPress={() => setActiveTab('posts')}
+        >
+          <Ionicons name="chatbubble" size={16} color={activeTab === 'posts' ? '#FF6B35' : '#666'} />
+          <Text style={[styles.contentTabText, activeTab === 'posts' && styles.activeContentTabText]}>
+            Posts
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Time Period Tabs */}
@@ -156,7 +219,7 @@ const TrendingScreen = () => {
               </View>
             ))}
           </View>
-        ) : trendingTags && trendingTags.length > 0 ? (
+        ) : activeTab === 'hashtags' && trendingTags && trendingTags.length > 0 ? (
           <View style={styles.trendingList}>
             {trendingTags.map((tag: Tag, index: number) => (
               <TouchableOpacity
@@ -213,18 +276,47 @@ const TrendingScreen = () => {
               </TouchableOpacity>
             ))}
           </View>
+        ) : activeTab === 'posts' && trendingPosts && trendingPosts.length > 0 ? (
+          <View style={styles.trendingList}>
+            {trendingPosts.map((post: Post, index: number) => (
+              <View key={post.id} style={styles.postContainer}>
+                {/* Trending Rank Badge */}
+                <View style={styles.postRankBadge}>
+                  <Text style={[styles.postRank, index < 3 && styles.topPostRank]}>
+                    {index + 1}
+                  </Text>
+                </View>
+
+                {/* Post Card */}
+                <View style={styles.postCardWrapper}>
+                  <PostCard
+                    post={post}
+                    onPress={() => {
+                      // Navigate to post detail if needed
+                    }}
+                  />
+                </View>
+              </View>
+            ))}
+          </View>
         ) : (
           <View style={styles.emptyContainer}>
             <Ionicons name="trending-up" size={64} color="#ccc" />
-            <Text style={styles.emptyTitle}>No trending hashtags yet</Text>
+            <Text style={styles.emptyTitle}>
+              {activeTab === 'hashtags' ? 'No trending hashtags yet' : 'No trending posts yet'}
+            </Text>
             <Text style={styles.emptyText}>
-              Start using hashtags in your posts to see them trend!
+              {activeTab === 'hashtags'
+                ? 'Start using hashtags in your posts to see them trend!'
+                : 'Create engaging content to see it trend!'
+              }
             </Text>
           </View>
         )}
 
         {/* Footer */}
-        {trendingTags && trendingTags.length > 0 && (
+        {((activeTab === 'hashtags' && trendingTags && trendingTags.length > 0) ||
+          (activeTab === 'posts' && trendingPosts && trendingPosts.length > 0)) && (
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               {activePeriod === 'now' && 'Rankings update every 30 seconds based on recent activity'}
@@ -306,6 +398,43 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   activeTabText: {
+    color: '#FF6B35',
+  },
+  contentTabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+    padding: 4,
+  },
+  contentTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  activeContentTab: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  contentTabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginLeft: 6,
+  },
+  activeContentTabText: {
     color: '#FF6B35',
   },
   content: {
@@ -488,6 +617,51 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#999',
     textAlign: 'center',
+  },
+  postContainer: {
+    position: 'relative',
+    marginBottom: 8,
+  },
+  postRankBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 8,
+    zIndex: 10,
+    backgroundColor: '#FF6B35',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  postRank: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  topPostRank: {
+    color: '#fff',
+  },
+  postCardWrapper: {
+    marginLeft: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
 });
 

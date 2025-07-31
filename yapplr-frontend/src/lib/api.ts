@@ -85,6 +85,9 @@ import type {
   UpdateSubscriptionTierDto,
   UserSubscription,
   AssignSubscriptionTierDto,
+  TrendingPost,
+  TrendingScore,
+  TrendingAnalytics,
 } from '@/types';
 
 import { getApiBaseUrl } from './config';
@@ -635,6 +638,58 @@ export const tagApi = {
 
   getPostsByTag: async (tagName: string, page = 1, pageSize = 25): Promise<Post[]> => {
     const response = await api.get(`/tags/tag/${encodeURIComponent(tagName)}/posts?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+};
+
+// Trending API
+export const trendingApi = {
+  getTrendingPosts: async (timeWindow = 24, limit = 20): Promise<Post[]> => {
+    const response = await api.get(`/trending/posts?timeWindow=${timeWindow}&limit=${limit}`);
+    return response.data;
+  },
+
+  getTrendingPostsDetailed: async (timeWindow = 24, limit = 20): Promise<TrendingPost[]> => {
+    const response = await api.get(`/trending/posts/detailed?timeWindow=${timeWindow}&limit=${limit}`);
+    return response.data;
+  },
+
+  getTrendingPostsByHashtag: async (hashtag?: string, timeWindow = 24, limit = 20): Promise<Post[]> => {
+    const url = hashtag
+      ? `/trending/posts/hashtag/${encodeURIComponent(hashtag)}?timeWindow=${timeWindow}&limit=${limit}`
+      : `/trending/posts/hashtag?timeWindow=${timeWindow}&limit=${limit}`;
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  getPersonalizedTrendingPosts: async (timeWindow = 24, limit = 20): Promise<Post[]> => {
+    const response = await api.get(`/trending/posts/personalized?timeWindow=${timeWindow}&limit=${limit}`);
+    return response.data;
+  },
+
+  getPostTrendingScore: async (postId: number, timeWindow = 24): Promise<TrendingScore> => {
+    const response = await api.get(`/trending/posts/${postId}/score?timeWindow=${timeWindow}`);
+    return response.data;
+  },
+
+  getTrendingAnalytics: async (timeWindow = 24): Promise<TrendingAnalytics> => {
+    const response = await api.get(`/trending/analytics?timeWindow=${timeWindow}`);
+    return response.data;
+  },
+
+  // Convenience methods for different time periods
+  getTrendingPostsNow: async (limit = 20): Promise<Post[]> => {
+    const response = await api.get(`/trending/posts/now?limit=${limit}`);
+    return response.data;
+  },
+
+  getTrendingPostsToday: async (limit = 20): Promise<Post[]> => {
+    const response = await api.get(`/trending/posts/today?limit=${limit}`);
+    return response.data;
+  },
+
+  getTrendingPostsWeek: async (limit = 20): Promise<Post[]> => {
+    const response = await api.get(`/trending/posts/week?limit=${limit}`);
     return response.data;
   },
 };

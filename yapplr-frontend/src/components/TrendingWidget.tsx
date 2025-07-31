@@ -67,11 +67,11 @@ export default function TrendingWidget({
           <h3 className="font-bold text-gray-900">Trending</h3>
         </div>
         {showViewAll && (
-          <Link 
-            href="/trending" 
+          <Link
+            href="/trending"
             className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1"
           >
-            <span>View all</span>
+            <span>Posts & More</span>
             <ExternalLink className="w-3 h-3" />
           </Link>
         )}
@@ -123,14 +123,17 @@ export default function TrendingWidget({
         ))}
       </div>
 
-      {showViewAll && trendingTags.length > limit && (
-        <div className="mt-4 pt-3 border-t border-gray-100">
+      {showViewAll && (
+        <div className="mt-4 pt-3 border-t border-gray-100 space-y-2">
           <Link
             href="/trending"
             className="block text-center text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
-            See {trendingTags.length - limit} more trending hashtags
+            View all trending content →
           </Link>
+          <p className="text-xs text-gray-500 text-center">
+            Hashtags • Posts • Hot topics
+          </p>
         </div>
       )}
 

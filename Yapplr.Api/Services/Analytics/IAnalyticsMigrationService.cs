@@ -1,6 +1,6 @@
 using Yapplr.Api.DTOs;
 
-namespace Yapplr.Api.Services;
+namespace Yapplr.Api.Services.Analytics;
 
 /// <summary>
 /// Service for migrating analytics data from database to InfluxDB

@@ -1168,3 +1168,84 @@ export interface UserSubscription {
 export interface AssignSubscriptionTierDto {
   subscriptionTierId: number;
 }
+
+// Trending Types
+export interface TrendingPost {
+  post: Post;
+  score: TrendingScore;
+  calculatedAt: string;
+}
+
+export interface TrendingScore {
+  totalScore: number;
+  engagementVelocityScore: number;
+  recencyScore: number;
+  qualityScore: number;
+  trustScore: number;
+  diversityScore: number;
+  breakdown: TrendingScoreBreakdown;
+}
+
+export interface TrendingScoreBreakdown {
+  totalEngagements: number;
+  likesCount: number;
+  commentsCount: number;
+  repostsCount: number;
+  viewsCount: number;
+  engagementRate: number;
+  engagementVelocity: number;
+  authorTrustScore: number;
+  contentQualityScore: number;
+  spamProbability: number;
+  postCreatedAt: string;
+  hoursSinceCreation: number;
+  recencyMultiplier: number;
+  hasMedia: boolean;
+  hasHashtags: boolean;
+  hasLinks: boolean;
+  hashtagCount: number;
+  isFromFollowedUser: boolean;
+  matchesUserInterests: boolean;
+  personalizationBoost: number;
+}
+
+export interface TrendingAnalytics {
+  analyzedAt: string;
+  timeWindowHours: number;
+  stats: TrendingStats;
+  topCategories: TrendingCategory[];
+  topAuthors: TrendingAuthor[];
+  metrics: TrendingMetrics;
+}
+
+export interface TrendingStats {
+  totalTrendingPosts: number;
+  totalEngagements: number;
+  averageEngagementRate: number;
+  averageTrendingScore: number;
+  uniqueAuthors: number;
+  uniqueHashtags: number;
+}
+
+export interface TrendingCategory {
+  hashtag: string;
+  postCount: number;
+  totalEngagements: number;
+  averageScore: number;
+  growthRate: number;
+}
+
+export interface TrendingAuthor {
+  author: User;
+  trendingPostsCount: number;
+  averageTrendingScore: number;
+  totalEngagements: number;
+}
+
+export interface TrendingMetrics {
+  calculationTimeMs: number;
+  postsAnalyzed: number;
+  postsFiltered: number;
+  filterRate: number;
+  lastCalculation: string;
+}

@@ -17,6 +17,7 @@ using Yapplr.Api.Authorization;
 using MassTransit;
 using Yapplr.Api.CQRS;
 using Yapplr.Api.Common;
+using Yapplr.Api.Services.Analytics;
 using Yapplr.Api.Services.Notifications;
 using Yapplr.Api.Services.Notifications.Providers;
 using Yapplr.Api.Services.Payment;
@@ -354,6 +355,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILinkPreviewService, LinkPreviewService>();
         services.AddScoped<ITrustScoreService, TrustScoreService>();
         services.AddScoped<ITrustBasedModerationService, TrustBasedModerationService>();
+        services.AddScoped<ITrendingService, TrendingService>();
 
         // Add trust score background service
         services.AddHostedService<TrustScoreBackgroundService>();

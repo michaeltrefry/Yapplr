@@ -240,6 +240,8 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
       deleteComment: async (commentId: number): Promise<void> => {
         await client.delete(`/api/posts/comments/${commentId}`);
       },
+
+
     },
 
     users: {
@@ -562,6 +564,52 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
     tags: {
       getTrendingTags: async (limit: number) => {
         const response = await client.get(`/api/tags/trending?limit=${limit}`);
+        return response.data;
+      },
+
+      getTagByName: async (tagName: string) => {
+        const response = await client.get(`/api/tags/tag/${encodeURIComponent(tagName)}`);
+        return response.data;
+      },
+
+      getPostsByTag: async (tagName: string, page: number = 1, pageSize: number = 25) => {
+        const response = await client.get(`/api/tags/tag/${encodeURIComponent(tagName)}/posts?page=${page}&pageSize=${pageSize}`);
+        return response.data;
+      },
+    },
+
+    trending: {
+      getTrendingPosts: async (timeWindow = 24, limit = 20) => {
+        const response = await client.get(`/api/trending/posts?timeWindow=${timeWindow}&limit=${limit}`);
+        return response.data;
+      },
+
+      getTrendingPostsByHashtag: async (hashtag?: string, timeWindow = 24, limit = 20) => {
+        const url = hashtag
+          ? `/api/trending/posts/hashtag/${encodeURIComponent(hashtag)}?timeWindow=${timeWindow}&limit=${limit}`
+          : `/api/trending/posts/hashtag?timeWindow=${timeWindow}&limit=${limit}`;
+        const response = await client.get(url);
+        return response.data;
+      },
+
+      getPersonalizedTrendingPosts: async (timeWindow = 24, limit = 20) => {
+        const response = await client.get(`/api/trending/posts/personalized?timeWindow=${timeWindow}&limit=${limit}`);
+        return response.data;
+      },
+
+      // Convenience methods for different time periods
+      getTrendingPostsNow: async (limit = 20) => {
+        const response = await client.get(`/api/trending/posts/now?limit=${limit}`);
+        return response.data;
+      },
+
+      getTrendingPostsToday: async (limit = 20) => {
+        const response = await client.get(`/api/trending/posts/today?limit=${limit}`);
+        return response.data;
+      },
+
+      getTrendingPostsWeek: async (limit = 20) => {
+        const response = await client.get(`/api/trending/posts/week?limit=${limit}`);
         return response.data;
       },
     },

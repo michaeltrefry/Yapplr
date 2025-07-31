@@ -7,6 +7,7 @@ using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Common;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Analytics;
 using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Tests;

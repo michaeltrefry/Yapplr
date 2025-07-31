@@ -1,8 +1,8 @@
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
-using FluentAssertions;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
@@ -10,7 +10,7 @@ using Yapplr.Api.Services.Notifications;
 using Yapplr.Api.Services.Notifications.Providers;
 using QueuedNotification = Yapplr.Api.Services.Notifications.QueuedNotification;
 
-namespace Yapplr.Tests.Services.Unified;
+namespace Yapplr.Api.Tests.Services.Unified;
 
 public class NotificationServiceTests : IDisposable
 {

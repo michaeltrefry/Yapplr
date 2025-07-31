@@ -1,6 +1,6 @@
 using Yapplr.Api.DTOs;
 
-namespace Yapplr.Api.Services;
+namespace Yapplr.Api.Services.Analytics;
 
 public interface ITagAnalyticsService
 {

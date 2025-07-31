@@ -26,6 +26,8 @@ import FollowersListScreen from '../screens/main/FollowersListScreen';
 import ConversationScreen from '../screens/main/ConversationScreen';
 import MessagesScreen from '../screens/main/MessagesScreen';
 import SearchScreen from '../screens/main/SearchScreen';
+import TrendingScreen from '../screens/TrendingScreen';
+import HashtagFeedScreen from '../screens/main/HashtagFeedScreen';
 
 import SettingsScreen from '../screens/main/SettingsScreen';
 import BlockedUsersScreen from '../screens/main/BlockedUsersScreen';
@@ -51,6 +53,8 @@ export type RootStackParamList = {
   FollowingList: { userId: number; username: string };
   FollowersList: { userId: number; username: string };
   Settings: undefined;
+  Search: undefined;
+  HashtagFeed: { hashtag: string };
   Subscription: undefined;
   Messages: undefined;
   BlockedUsers: undefined;
@@ -199,7 +203,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Groups" component={GroupsScreen} />
+      <Tab.Screen name="Trending" component={TrendingScreen} />
       <Tab.Screen
         name="CreatePost"
         component={CreatePostScreen}
@@ -242,6 +246,16 @@ function MainStack() {
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="HashtagFeed"
+        component={HashtagFeedScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

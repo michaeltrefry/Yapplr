@@ -10,6 +10,7 @@ using MassTransit;
 using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
 using Serilog.Context;
+using Yapplr.Api.Services.Analytics;
 using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Services;

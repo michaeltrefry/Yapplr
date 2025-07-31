@@ -11,6 +11,7 @@ using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
 using FluentAssertions;
 using MassTransit;
+using Yapplr.Api.Services.Analytics;
 using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Tests;

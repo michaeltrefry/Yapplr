@@ -1,14 +1,14 @@
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
-using FluentAssertions;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 using Yapplr.Api.Services.Notifications;
 
-namespace Yapplr.Tests.Services.Unified;
+namespace Yapplr.Api.Tests.Services.Unified;
 
 public class NotificationEnhancementServiceTests : IDisposable
 {

@@ -1,10 +1,7 @@
 using InfluxDB.Client;
-using InfluxDB.Client.Api.Domain;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Yapplr.Api.DTOs;
 
-namespace Yapplr.Api.Services;
+namespace Yapplr.Api.Services.Analytics;
 
 /// <summary>
 /// Admin analytics service using InfluxDB as the data source

@@ -8,6 +8,7 @@ using Yapplr.Api.Extensions;
 using Yapplr.Api.Models;
 using Yapplr.Api.Models.Analytics;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Analytics;
 
 namespace Yapplr.Api.Tests;
 

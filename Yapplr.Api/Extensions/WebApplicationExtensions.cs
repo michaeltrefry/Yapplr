@@ -78,6 +78,7 @@ public static class WebApplicationExtensions
         app.MapMetricsEndpoints();
         app.MapNotificationConfigurationEndpoints();
         app.MapTagEndpoints();
+        app.MapTrendingEndpoints();
         app.MapUserReportEndpoints();
         app.MapContentEndpoints();
         app.MapGifEndpoints();

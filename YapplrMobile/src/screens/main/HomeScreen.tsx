@@ -204,7 +204,14 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerLeft} />
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={() => navigation.navigate('Search')}
+          >
+            <Ionicons name="search-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
         <View style={styles.headerCenter}>
           <Image
             source={require('../../../assets/yapplr-logo-32.png')}
@@ -267,6 +274,10 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   headerLeft: {
     width: 40,
+    alignItems: 'flex-start',
+  },
+  searchButton: {
+    padding: 8,
   },
   headerCenter: {
     flex: 1,

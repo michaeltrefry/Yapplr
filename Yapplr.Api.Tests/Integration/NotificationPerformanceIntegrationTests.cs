@@ -1,22 +1,22 @@
+using System.Diagnostics;
+using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.SignalR;
-using System.Diagnostics;
-using Xunit;
-using FluentAssertions;
 using Moq;
+using Xunit;
+using Yapplr.Api.Common;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
-using Yapplr.Api.Common;
 using Yapplr.Api.Services.Notifications;
 using Yapplr.Api.Services.Notifications.Providers;
 using QueuedNotification = Yapplr.Api.Services.Notifications.QueuedNotification;
 
-namespace Yapplr.Tests.Integration;
+namespace Yapplr.Api.Tests.Integration;
 
 /// <summary>
 /// Performance and load testing for the unified notification system.

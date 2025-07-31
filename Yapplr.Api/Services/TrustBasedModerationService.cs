@@ -1,4 +1,5 @@
 using Yapplr.Api.Data;
+using Yapplr.Api.Services.Analytics;
 
 namespace Yapplr.Api.Services;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { tagApi } from '@/lib/api';
 import { Hash, ArrowLeft } from 'lucide-react';
@@ -12,6 +12,7 @@ import { useEffect } from 'react';
 import { formatNumber } from '@/lib/utils';
 
 export default function HashtagPage() {
+  const router = useRouter();
   const params = useParams();
   const tag = params?.tag as string;
   const decodedTag = tag ? decodeURIComponent(tag) : '';
@@ -72,9 +73,12 @@ export default function HashtagPage() {
               {/* Header */}
               <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-20">
                 <div className="flex items-center space-x-3">
-                  <Link href="/search" className="p-2 hover:bg-gray-100 rounded-full">
+                  <button
+                    onClick={() => router.back()}
+                    className="p-2 hover:bg-gray-100 rounded-full"
+                  >
                     <ArrowLeft className="w-5 h-5" />
-                  </Link>
+                  </button>
                   <div>
                     <h1 className="text-xl font-bold text-gray-900">#{decodedTag}</h1>
                     <p className="text-sm text-gray-500">Hashtag not found</p>
@@ -117,9 +121,12 @@ export default function HashtagPage() {
             {/* Header */}
             <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-20">
               <div className="flex items-center space-x-3">
-                <Link href="/search" className="p-2 hover:bg-gray-100 rounded-full">
+                <button
+                  onClick={() => router.back()}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
                   <ArrowLeft className="w-5 h-5" />
-                </Link>
+                </button>
                 <div className="flex-1">
                   <h1 className="text-xl font-bold text-gray-900">#{decodedTag}</h1>
                   {tagLoading ? (

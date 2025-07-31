@@ -2,6 +2,7 @@ using InfluxDB.Client;
 using Prometheus;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Services;
+using Yapplr.Api.Services.Analytics;
 
 namespace Yapplr.Api.Extensions;
 

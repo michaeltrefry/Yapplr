@@ -1,12 +1,12 @@
-using Xunit;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Xunit;
 using Yapplr.Api.Data;
 using Yapplr.Api.Services;
-using System.Reflection;
 
-namespace Yapplr.Tests.Services;
+namespace Yapplr.Api.Tests.Services;
 
 public class LinkPreviewServiceTests : IDisposable
 {

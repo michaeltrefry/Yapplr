@@ -1,4 +1,4 @@
-namespace Yapplr.Api.Services;
+namespace Yapplr.Api.Services.Analytics;
 
 public record TagAnalyticsDto(
     string Name,
