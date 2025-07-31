@@ -26,7 +26,7 @@ import FollowersListScreen from '../screens/main/FollowersListScreen';
 import ConversationScreen from '../screens/main/ConversationScreen';
 import MessagesScreen from '../screens/main/MessagesScreen';
 import SearchScreen from '../screens/main/SearchScreen';
-import CommentsScreen from '../screens/main/CommentsScreen';
+
 import SettingsScreen from '../screens/main/SettingsScreen';
 import BlockedUsersScreen from '../screens/main/BlockedUsersScreen';
 import HelpSupportScreen from '../screens/main/HelpSupportScreen';
@@ -37,6 +37,7 @@ import NotificationTestScreen from '../screens/NotificationTestScreen';
 import GroupsScreen from '../screens/main/GroupsScreen';
 import GroupDetailScreen from '../screens/main/GroupDetailScreen';
 import CreateGroupScreen from '../screens/main/CreateGroupScreen';
+import SinglePostScreen from '../screens/main/SinglePostScreen';
 import PrivacyPolicyScreen from '../screens/legal/PrivacyPolicyScreen';
 import TermsOfServiceScreen from '../screens/legal/TermsOfServiceScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
@@ -67,8 +68,10 @@ export type RootStackParamList = {
     conversationId: number;
     otherUser: { id: number; username: string }
   };
-  Comments: {
-    post: Post;
+  SinglePost: {
+    postId: number;
+    scrollToComment?: number;
+    showComments?: boolean;
   };
 };
 
@@ -307,10 +310,11 @@ function MainStack() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="Comments"
-        component={CommentsScreen}
+        name="SinglePost"
+        component={SinglePostScreen}
         options={{ headerShown: false }}
       />
+
     </Stack.Navigator>
   );
 }

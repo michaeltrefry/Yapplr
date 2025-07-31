@@ -154,8 +154,11 @@ class NotificationNavigationService {
         return;
       }
 
-      // Navigate to the comments screen with the post data
-      this.navigationRef?.navigate('Comments', { post });
+      // Navigate to the single post screen with comments enabled
+      this.navigationRef?.navigate('SinglePost', {
+        postId: post.id,
+        showComments: true
+      });
       console.log('📱🔔 Navigated to post comments:', postId);
 
     } catch (error) {

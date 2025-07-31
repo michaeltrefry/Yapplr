@@ -393,6 +393,53 @@ public class PostFilteringTests : IDisposable
 
     #endregion
 
+    [Fact]
+    public async Task ApplyVisibilityFilters_WithoutFeedFilters_ShouldIncludeReposts()
+    {
+        // Arrange
+        var user = await CreateTestUserAsync("testuser");
+
+        // Create original post
+        var originalPost = await CreateTestPostAsync(user, content: "Original post content");
+
+        // Create repost
+        var repost = new Post
+        {
+            Content = "This is my repost comment",
+            UserId = user.Id,
+            PostType = PostType.Repost,
+            RepostedPostId = originalPost.Id,
+            Privacy = PostPrivacy.Public,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Posts.Add(repost);
+        await _context.SaveChangesAsync();
+
+        var blockedUserIds = new HashSet<int>();
+        var followingIds = new HashSet<int>();
+
+        // Act - Test with feed filters (should exclude reposts)
+        var feedResults = await _context.GetPostsWithIncludes()
+            .Where(p => p.Id == repost.Id)
+            .ApplyVisibilityFilters(user.Id, blockedUserIds, followingIds, applyFeedFilters: true)
+            .ToListAsync();
+
+        // Act - Test without feed filters (should include reposts)
+        var individualResults = await _context.GetPostsWithIncludes()
+            .Where(p => p.Id == repost.Id)
+            .ApplyVisibilityFilters(user.Id, blockedUserIds, followingIds, applyFeedFilters: false)
+            .ToListAsync();
+
+        // Assert
+        Assert.Empty(feedResults); // Feed filters should exclude reposts
+        Assert.Single(individualResults); // Individual access should include reposts
+
+        var result = individualResults.First();
+        Assert.Equal(repost.Id, result.Id);
+        Assert.Equal(PostType.Repost, result.PostType);
+        Assert.Equal("This is my repost comment", result.Content);
+    }
+
     public void Dispose()
     {
         _context.Dispose();

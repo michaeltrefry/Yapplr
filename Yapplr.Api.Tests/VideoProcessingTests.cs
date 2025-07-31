@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Yapplr.Api.Data;
 using Yapplr.Api.Services;
-using Yapplr.Api.Services.Unified;
 using Yapplr.Api.CQRS.Consumers;
 using Yapplr.Api.Models;
 using Yapplr.Api.DTOs;
@@ -12,6 +11,7 @@ using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
 using FluentAssertions;
 using MassTransit;
+using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Tests;
 

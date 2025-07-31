@@ -198,6 +198,11 @@ export function createYapplrApi(config: ApiConfig): YapplrApi {
         return response.data;
       },
 
+      getPost: async (postId: number): Promise<Post> => {
+        const response = await client.get(`/api/posts/${postId}`);
+        return response.data;
+      },
+
 
 
 

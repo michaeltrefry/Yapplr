@@ -2,7 +2,8 @@ using System.Security.Claims;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
-using Yapplr.Api.Services.Unified;
+using Yapplr.Api.Services.Notifications;
+using Yapplr.Api.Services.Notifications.Providers;
 
 namespace Yapplr.Api.Endpoints;
 
@@ -155,7 +156,7 @@ public static class NotificationEndpoints
             .Produces(401);
 
             // Test Firebase-specific notification endpoint
-            notifications.MapPost("/test-firebase", async (ClaimsPrincipal user, IFirebaseService firebaseService, IUserService userService) =>
+            notifications.MapPost("/test-firebase", async (ClaimsPrincipal user, IFirebaseNotificationProvider firebaseNotificationProvider, IUserService userService) =>
             {
                 var userId = user.GetUserId(true);
                 var currentUser = await userService.GetUserByIdAsync(userId);
@@ -165,7 +166,7 @@ public static class NotificationEndpoints
                     return Results.BadRequest(new { error = "No FCM token found for user" });
                 }
 
-                var success = await firebaseService.SendTestNotificationAsync(currentUser.FcmToken);
+                var success = await firebaseNotificationProvider.SendTestNotificationAsync(currentUser.FcmToken);
 
                 return Results.Ok(new {
                     success = success,
@@ -182,12 +183,12 @@ public static class NotificationEndpoints
             .Produces(401);
 
             // Test Firebase service with mock token (for simulator testing)
-            notifications.MapPost("/test-firebase-mock", async (IFirebaseService firebaseService) =>
+            notifications.MapPost("/test-firebase-mock", async (IFirebaseNotificationProvider firebaseNotificationProvider) =>
             {
                 // Use a mock Expo push token format for testing
                 var mockToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
 
-                var success = await firebaseService.SendTestNotificationAsync(mockToken);
+                var success = await firebaseNotificationProvider.SendTestNotificationAsync(mockToken);
 
                 return Results.Ok(new {
                     success = success,
@@ -203,11 +204,11 @@ public static class NotificationEndpoints
             .Produces(401);
 
             // Test SignalR-specific notification endpoint
-            notifications.MapPost("/test-signalr", async (ClaimsPrincipal user, SignalRNotificationService signalRService) =>
+            notifications.MapPost("/test-signalr", async (ClaimsPrincipal user, SignalRNotificationProvider signalRProvider) =>
             {
                 var userId = user.GetUserId(true);
 
-                var success = await signalRService.SendTestNotificationAsync(userId);
+                var success = await signalRProvider.SendTestNotificationAsync(userId);
 
                 return Results.Ok(new {
                     success = success,
@@ -222,7 +223,7 @@ public static class NotificationEndpoints
             .Produces(401);
 
             // Test Expo-specific notification endpoint
-            notifications.MapPost("/test-expo", async (ClaimsPrincipal user, ExpoNotificationService expoService, IUserService userService) =>
+            notifications.MapPost("/test-expo", async (ClaimsPrincipal user, ExpoNotificationProvider expoProvider, IUserService userService) =>
             {
                 var userId = user.GetUserId(true);
                 var currentUser = await userService.GetUserByIdAsync(userId);
@@ -232,7 +233,7 @@ public static class NotificationEndpoints
                     return Results.BadRequest(new { error = "No Expo push token found for user" });
                 }
 
-                var success = await expoService.SendTestNotificationAsync(userId);
+                var success = await expoProvider.SendTestNotificationAsync(userId);
 
                 return Results.Ok(new {
                     success = success,

@@ -1,5 +1,6 @@
 using Yapplr.Api.Configuration;
 using Yapplr.Api.DTOs.Payment;
+using Yapplr.Api.Services.Payment.Providers;
 
 namespace Yapplr.Api.Services.Payment;
 

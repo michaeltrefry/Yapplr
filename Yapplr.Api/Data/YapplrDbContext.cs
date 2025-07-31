@@ -420,7 +420,6 @@ public class YapplrDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Username).IsRequired().HasMaxLength(50);
             entity.HasIndex(e => new { e.MentionedUserId, e.PostId }); // For efficient querying
-            entity.HasIndex(e => new { e.MentionedUserId, e.CommentId }); // For efficient querying
             entity.HasOne(e => e.MentionedUser)
                   .WithMany(u => u.MentionsReceived)
                   .HasForeignKey(e => e.MentionedUserId)
@@ -432,13 +431,10 @@ public class YapplrDbContext : DbContext
             entity.HasOne(e => e.Post)
                   .WithMany()
                   .HasForeignKey(e => e.PostId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Comment)
-                  .WithMany()
-                  .HasForeignKey(e => e.CommentId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.Cascade)
+                  .IsRequired(); // PostId is now required since it always references the post/comment
             entity.HasOne(e => e.Notification)
-                  .WithOne()
+                  .WithOne(n => n.Mention)
                   .HasForeignKey<Mention>(e => e.NotificationId)
                   .OnDelete(DeleteBehavior.Cascade);
         });

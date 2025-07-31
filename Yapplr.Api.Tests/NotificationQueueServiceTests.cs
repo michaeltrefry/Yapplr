@@ -4,8 +4,9 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Yapplr.Api.Data;
 using Yapplr.Api.Services;
-using Yapplr.Api.Services.Unified;
 using Xunit;
+using Yapplr.Api.Services.Notifications;
+using Yapplr.Api.Services.Notifications.Providers;
 
 namespace Yapplr.Api.Tests;
 

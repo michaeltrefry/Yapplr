@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.Services;
-using Yapplr.Api.Services.Unified;
+using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Endpoints;
 

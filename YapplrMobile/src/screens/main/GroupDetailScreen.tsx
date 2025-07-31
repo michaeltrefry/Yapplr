@@ -155,7 +155,10 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
   };
 
   const handleCommentPress = (post: Post) => {
-    navigation.navigate('Comments', { post });
+    navigation.navigate('SinglePost', {
+      postId: post.id,
+      showComments: true
+    });
   };
 
   const handleCommentCountUpdate = (postId: number, newCount: number) => {

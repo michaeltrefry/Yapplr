@@ -6,11 +6,11 @@ using Yapplr.Api.Models.Analytics;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Utils;
 using Yapplr.Api.Common;
-using Yapplr.Api.Services.Unified;
 using MassTransit;
 using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
 using Serilog.Context;
+using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Services;
 
@@ -539,7 +539,7 @@ public class PostService : BaseService, IPostService
             : new HashSet<int>();
 
         var visiblePosts = new[] { post }.AsQueryable()
-            .ApplyVisibilityFilters(currentUserId, blockedUserIds, followingIds)
+            .ApplyVisibilityFilters(currentUserId, blockedUserIds, followingIds, applyFeedFilters: false)
             .ToList();
 
         if (!visiblePosts.Any())
@@ -1495,7 +1495,7 @@ public class PostService : BaseService, IPostService
         }
 
         // Create mention notifications for users mentioned in the comment
-        await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, postId, comment.Id);
+        await _notificationService.CreateMentionNotificationsAsync(createDto.Content, userId, comment.Id);
 
         // Perform content moderation analysis on comment
         await ProcessCommentModerationAsync(comment.Id, createDto.Content, userId);
@@ -1695,7 +1695,7 @@ public class PostService : BaseService, IPostService
         await _context.SaveChangesAsync();
 
         // Create mention notifications for new mentions in the updated comment
-        await _notificationService.CreateMentionNotificationsAsync(updateDto.Content, userId, comment.ParentId ?? 0, comment.Id);
+        await _notificationService.CreateMentionNotificationsAsync(updateDto.Content, userId, comment.Id);
 
         // Perform content moderation analysis on updated comment
         await ProcessCommentModerationAsync(comment.Id, updateDto.Content, userId);

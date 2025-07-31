@@ -8,6 +8,7 @@ using Yapplr.Api.Data;
 using Yapplr.Api.DTOs.Payment;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services.Payment;
+using Yapplr.Api.Services.Payment.Providers;
 
 namespace Yapplr.Api.Tests.Services.Payment;
 

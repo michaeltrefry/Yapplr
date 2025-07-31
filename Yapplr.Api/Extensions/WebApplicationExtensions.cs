@@ -5,9 +5,9 @@ using Yapplr.Api.Services;
 using Yapplr.Api.Services.Payment;
 using Yapplr.Api.Endpoints;
 using Yapplr.Api.Middleware;
-using Yapplr.Api.Hubs;
 using Yapplr.Api.Configuration;
 using Yapplr.Api.Common;
+using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Extensions;
 

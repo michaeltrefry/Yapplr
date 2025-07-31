@@ -9,12 +9,12 @@ using Xunit;
 using FluentAssertions;
 using Moq;
 using Yapplr.Api.Data;
-using Yapplr.Api.Services.Unified;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
 using Yapplr.Api.Common;
-using Yapplr.Api.Hubs;
-using QueuedNotification = Yapplr.Api.Services.Unified.QueuedNotification;
+using Yapplr.Api.Services.Notifications;
+using Yapplr.Api.Services.Notifications.Providers;
+using QueuedNotification = Yapplr.Api.Services.Notifications.QueuedNotification;
 
 namespace Yapplr.Tests.Integration;
 
@@ -77,9 +77,9 @@ public class NotificationPerformanceIntegrationTests : IDisposable
                 // Add required services
                 services.AddScoped<ISignalRConnectionPool, SignalRConnectionPool>();
                 services.AddScoped<IActiveConversationTracker, ActiveConversationTracker>();
-                services.AddScoped<IFirebaseService, FirebaseService>();
-                services.AddScoped<ExpoNotificationService>();
-                services.AddScoped<SignalRNotificationService>();
+                services.AddScoped<IFirebaseNotificationProvider, FirebaseNotificationProvider>();
+                services.AddScoped<ExpoNotificationProvider>();
+                services.AddScoped<SignalRNotificationProvider>();
                 services.AddScoped<INotificationPreferencesService, NotificationPreferencesService>();
                 services.AddScoped<IUserService, UserService>();
                 services.AddScoped<IAuthService, AuthService>();

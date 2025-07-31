@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Yapplr.Api.Services;
-using Yapplr.Api.Services.Unified;
+using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Endpoints;
 

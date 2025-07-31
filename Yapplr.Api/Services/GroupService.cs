@@ -4,8 +4,8 @@ using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
 using Yapplr.Api.Extensions;
 using Yapplr.Api.Common;
-using Yapplr.Api.Services.Unified;
 using Serilog.Context;
+using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Services;
 

@@ -1,3 +1,5 @@
+using Yapplr.Api.Services.Notifications;
+
 namespace Yapplr.Api.Services;
 
 /// <summary>

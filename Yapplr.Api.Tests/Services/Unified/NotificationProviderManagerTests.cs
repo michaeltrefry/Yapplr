@@ -4,8 +4,9 @@ using Moq;
 using Xunit;
 using FluentAssertions;
 using Yapplr.Api.Services;
-using Yapplr.Api.Services.Unified;
 using Yapplr.Api.Configuration;
+using Yapplr.Api.Services.Notifications;
+using Yapplr.Api.Services.Notifications.Providers;
 
 namespace Yapplr.Tests.Services.Unified;
 

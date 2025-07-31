@@ -3,6 +3,7 @@ using Yapplr.Api.Configuration;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs.Payment;
 using Yapplr.Api.Models;
+using Yapplr.Api.Services.Payment.Providers;
 
 namespace Yapplr.Api.Services.Payment;
 

@@ -78,14 +78,15 @@ public static class QueryUtilities
     public static IQueryable<Post> ApplyVisibilityFilters(this IQueryable<Post> query,
         int? currentUserId,
         HashSet<int> blockedUserIds,
-        HashSet<int> followingIds)
+        HashSet<int> followingIds,
+        bool applyFeedFilters = true)
     {
         return query.Where(p =>
-            // POST TYPE FILTERING - only top-level posts in feeds, exclude comments
-            p.PostType == PostType.Post &&
+            // POST TYPE FILTERING - only apply for feeds, not for individual post access
+            (!applyFeedFilters || p.PostType == PostType.Post) &&
 
-            // GROUP POST FILTERING - exclude group posts from general feeds
-            p.GroupId == null &&
+            // GROUP POST FILTERING - exclude group posts from general feeds (but allow for individual access)
+            (!applyFeedFilters || p.GroupId == null) &&
 
             // PERMANENT POST-LEVEL HIDING (single optimized check)
             (!p.IsHidden ||

@@ -2,10 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.DTOs;
 using Yapplr.Api.Models;
-using Yapplr.Api.Services.Unified;
 using Yapplr.Api.Extensions;
 using Serilog.Context;
 using Yapplr.Api.Common;
+using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Services;
 

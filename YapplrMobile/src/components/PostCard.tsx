@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useAuth } from '../contexts/AuthContext';
 import { videoCoordinationService } from '../services/VideoCoordinationService';
-import { TimelineItem, Post, VideoProcessingStatus, ReactionType, MediaType } from '../types';
+import { TimelineItem, Post, VideoProcessingStatus, ReactionType, MediaType, PostType } from '../types';
 import ImageViewer from './ImageViewer';
 import VideoPlayer, { VideoPlayerRef } from './VideoPlayer';
 import FullScreenVideoViewer from './FullScreenVideoViewer';
@@ -226,7 +226,7 @@ export default function PostCard({ item, onReact, onRemoveReaction, onUserPress,
       </View>
 
       {/* Display repost content if it exists */}
-      {item.type === 'repost' && item.post.content && item.post.content.trim() && (
+      {item.post.postType === PostType.Repost && item.post.content && item.post.content.trim() && (
         <View style={styles.repostContentContainer}>
           {/* Add context for hashtag-only reposts */}
           {item.post.content.trim().match(/^(#\w+\s*)+$/g) && (
@@ -250,7 +250,7 @@ export default function PostCard({ item, onReact, onRemoveReaction, onUserPress,
       )}
 
       {/* Display original post content for non-reposts */}
-      {item.type !== 'repost' && item.post.content && item.post.content.trim() && (
+      {item.post.postType !== PostType.Repost && item.post.content && item.post.content.trim() && (
         <ContentWithGifs
           content={item.post.content}
           style={styles.postContent}
@@ -266,7 +266,7 @@ export default function PostCard({ item, onReact, onRemoveReaction, onUserPress,
       )}
 
       {/* Display original post content for reposts */}
-      {item.type === 'repost' && item.post.repostedPost && (
+      {item.post.postType === PostType.Repost && item.post.repostedPost && (
         <View style={styles.repostedPostContainer}>
           {/* Repost's own media (if any) */}
           {item.post.mediaItems && item.post.mediaItems.length > 0 && (
@@ -458,7 +458,7 @@ export default function PostCard({ item, onReact, onRemoveReaction, onUserPress,
 
 
       {/* Media Display - only for non-reposts (repost media is handled inside the reposted post container) */}
-      {item.type !== 'repost' && item.post.mediaItems && item.post.mediaItems.length > 0 && (
+      {item.post.postType !== PostType.Repost && item.post.mediaItems && item.post.mediaItems.length > 0 && (
         <View style={styles.mediaContainer}>
           {item.post.mediaItems.map((media, index) => (
             <View key={media.id} style={styles.mediaItem}>

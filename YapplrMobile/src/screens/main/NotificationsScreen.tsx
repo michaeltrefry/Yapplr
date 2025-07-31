@@ -164,23 +164,35 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
 
     // Navigate to the relevant content based on notification type
     if (notification.type === NotificationType.Mention && notification.mention) {
-      if (notification.mention.commentId && notification.post) {
-        // Mention in comment - go to post comments
-        navigation.navigate('Comments', { post: notification.post });
-      } else if (notification.mention.postId && notification.post) {
+      if (notification.mention.isCommentMention && notification.mention.parentPostId && notification.post) {
+        // Mention in comment - go to parent post comments
+        navigation.navigate('SinglePost', {
+          postId: notification.post.id,
+          showComments: true
+        });
+      } else if (notification.post) {
         // Mention in post - go to post comments
-        navigation.navigate('Comments', { post: notification.post });
+        navigation.navigate('SinglePost', {
+          postId: notification.post.id,
+          showComments: true
+        });
       }
     } else if (notification.post) {
       // Other post-related notifications (likes, reposts, comments)
-      navigation.navigate('Comments', { post: notification.post });
+      navigation.navigate('SinglePost', {
+        postId: notification.post.id,
+        showComments: true
+      });
     } else if (notification.actorUser) {
       // Follow notifications - go to user profile
       navigation.navigate('UserProfile', { username: notification.actorUser.username });
     } else if (notification.type >= 100 && notification.type <= 109) {
       // Moderation notifications - navigate to the moderated content if available
       if (notification.post) {
-        navigation.navigate('Comments', { post: notification.post });
+        navigation.navigate('SinglePost', {
+          postId: notification.post.id,
+          showComments: true
+        });
       }
       // For other moderation notifications, just mark as read (already done above)
     }

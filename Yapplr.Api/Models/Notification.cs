@@ -35,4 +35,5 @@ public class Notification
     public User? ActorUser { get; set; } // Actor who triggered the notification
     public Post? Post { get; set; }
     public Post? Comment { get; set; } // Now references Posts table with PostType.Comment
+    public Mention? Mention { get; set; } // Associated mention (for mention notifications)
 }

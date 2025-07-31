@@ -246,7 +246,10 @@ export default function UserProfileScreen({ route, navigation }: UserProfileScre
   };
 
   const handleCommentPress = (post: Post) => {
-    navigation.navigate('Comments', { post });
+    navigation.navigate('SinglePost', {
+      postId: post.id,
+      showComments: true
+    });
   };
 
   // Merge timeline data with local comment count updates

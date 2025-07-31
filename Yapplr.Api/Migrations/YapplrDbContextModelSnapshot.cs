@@ -964,9 +964,6 @@ namespace Yapplr.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CommentId")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -979,7 +976,7 @@ namespace Yapplr.Api.Migrations
                     b.Property<int>("NotificationId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("PostId")
+                    b.Property<int>("PostId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Username")
@@ -989,16 +986,12 @@ namespace Yapplr.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CommentId");
-
                     b.HasIndex("MentioningUserId");
 
                     b.HasIndex("NotificationId")
                         .IsUnique();
 
                     b.HasIndex("PostId");
-
-                    b.HasIndex("MentionedUserId", "CommentId");
 
                     b.HasIndex("MentionedUserId", "PostId");
 
@@ -3272,11 +3265,6 @@ namespace Yapplr.Api.Migrations
 
             modelBuilder.Entity("Yapplr.Api.Models.Mention", b =>
                 {
-                    b.HasOne("Yapplr.Api.Models.Post", "Comment")
-                        .WithMany()
-                        .HasForeignKey("CommentId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.HasOne("Yapplr.Api.Models.User", "MentionedUser")
                         .WithMany("MentionsReceived")
                         .HasForeignKey("MentionedUserId")
@@ -3290,7 +3278,7 @@ namespace Yapplr.Api.Migrations
                         .IsRequired();
 
                     b.HasOne("Yapplr.Api.Models.Notification", "Notification")
-                        .WithOne()
+                        .WithOne("Mention")
                         .HasForeignKey("Yapplr.Api.Models.Mention", "NotificationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -3298,9 +3286,8 @@ namespace Yapplr.Api.Migrations
                     b.HasOne("Yapplr.Api.Models.Post", "Post")
                         .WithMany()
                         .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("Comment");
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("MentionedUser");
 
@@ -3799,6 +3786,11 @@ namespace Yapplr.Api.Migrations
             modelBuilder.Entity("Yapplr.Api.Models.Message", b =>
                 {
                     b.Navigation("MessageStatuses");
+                });
+
+            modelBuilder.Entity("Yapplr.Api.Models.Notification", b =>
+                {
+                    b.Navigation("Mention");
                 });
 
             modelBuilder.Entity("Yapplr.Api.Models.PaymentProviderConfiguration", b =>

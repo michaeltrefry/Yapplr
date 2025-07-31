@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
-using Yapplr.Api.Services.Unified;
 using Yapplr.Api.Models.Analytics;
+using Yapplr.Api.Services.Notifications;
 using Yapplr.Shared.Messages;
 using Yapplr.Shared.Models;
 

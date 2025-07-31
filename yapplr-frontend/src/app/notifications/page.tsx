@@ -193,10 +193,10 @@ export default function NotificationsPage() {
 
     // Navigate to the relevant content based on notification type
     if (notification.type === 1 && notification.mention) { // Mention
-      if (notification.mention.commentId && notification.post) {
-        // Mention in comment - go to post and scroll to comment
-        router.push(`/yap/${notification.post.id}?scrollToComment=${notification.mention.commentId}`);
-      } else if (notification.mention.postId) {
+      if (notification.mention.isCommentMention && notification.mention.parentPostId) {
+        // Mention in comment - go to parent post and scroll to comment
+        router.push(`/yap/${notification.mention.parentPostId}?scrollToComment=${notification.mention.postId}`);
+      } else {
         // Mention in post - go to post
         router.push(`/yap/${notification.mention.postId}`);
       }

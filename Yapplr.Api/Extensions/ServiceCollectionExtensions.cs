@@ -17,8 +17,10 @@ using Yapplr.Api.Authorization;
 using MassTransit;
 using Yapplr.Api.CQRS;
 using Yapplr.Api.Common;
-using Yapplr.Api.Services.Unified;
+using Yapplr.Api.Services.Notifications;
+using Yapplr.Api.Services.Notifications.Providers;
 using Yapplr.Api.Services.Payment;
+using Yapplr.Api.Services.Payment.Providers;
 
 namespace Yapplr.Api.Extensions;
 
@@ -344,8 +346,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
 
         // Register background services
-        services.AddHostedService<Services.Background.NotificationDigestBackgroundService>();
-        services.AddHostedService<Services.Background.PaymentBackgroundService>();
+        services.AddHostedService<NotificationDigestBackgroundService>();
+        services.AddHostedService<PaymentBackgroundService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<ITagAnalyticsService, TagAnalyticsService>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
@@ -457,20 +459,20 @@ public static class ServiceCollectionExtensions
         // Add provider-specific services
         if (notificationConfig.Firebase.Enabled)
         {
-            services.AddScoped<IFirebaseService, FirebaseService>();
+            services.AddScoped<IFirebaseNotificationProvider, FirebaseNotificationProvider>();
         }
 
         if (notificationConfig.SignalR.Enabled)
         {
-            services.AddScoped<SignalRNotificationService>();
+            services.AddScoped<SignalRNotificationProvider>();
         }
 
         // Register Expo notification service
         var expoEnabled = configuration.GetValue<bool>("NotificationProviders:Expo:Enabled", false);
         if (expoEnabled)
         {
-            services.AddHttpClient<ExpoNotificationService>();
-            services.AddScoped<ExpoNotificationService>();
+            services.AddHttpClient<ExpoNotificationProvider>();
+            services.AddScoped<ExpoNotificationProvider>();
         }
 
         // Register provider collection for dependency injection
@@ -480,23 +482,24 @@ public static class ServiceCollectionExtensions
 
             if (notificationConfig.Firebase.Enabled)
             {
-                providers.Add(provider.GetRequiredService<IFirebaseService>());
+                providers.Add(provider.GetRequiredService<IFirebaseNotificationProvider>());
             }
 
             if (notificationConfig.SignalR.Enabled)
             {
-                providers.Add(provider.GetRequiredService<SignalRNotificationService>());
+                providers.Add(provider.GetRequiredService<SignalRNotificationProvider>());
             }
 
             if (expoEnabled)
             {
-                providers.Add(provider.GetRequiredService<ExpoNotificationService>());
+                providers.Add(provider.GetRequiredService<ExpoNotificationProvider>());
             }
 
             return providers;
         });
 
         // Register the new unified notification services
+        services.AddScoped<INotificationContentBuilder, NotificationContentBuilder>();
         services.AddScoped<INotificationProviderManager, NotificationProviderManager>();
         services.AddScoped<INotificationQueue, NotificationQueue>();
         services.AddScoped<INotificationEnhancementService, NotificationEnhancementService>();

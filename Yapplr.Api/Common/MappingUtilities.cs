@@ -1020,6 +1020,25 @@ public static class MappingUtilities
         };
     }
 
+    /// <summary>
+    /// Map Mention to MentionDto
+    /// </summary>
+    public static MentionDto MapToMentionDto(this Mention mention)
+    {
+        var isCommentMention = mention.Post.PostType == PostType.Comment;
+        return new MentionDto
+        {
+            Id = mention.Id,
+            Username = mention.Username,
+            CreatedAt = mention.CreatedAt,
+            MentionedUserId = mention.MentionedUserId,
+            MentioningUserId = mention.MentioningUserId,
+            PostId = mention.PostId,
+            IsCommentMention = isCommentMention,
+            ParentPostId = isCommentMention ? mention.Post.ParentId : null
+        };
+    }
+
     public static NotificationDto MapToNotificationDto(this Notification notification)
     {
         return new NotificationDto
@@ -1035,7 +1054,8 @@ public static class MappingUtilities
             ActorUser = notification.ActorUser?.MapToUserDto(),
             Post = notification.Post
                 ?.MapToPostDto(null), // Pass null for currentUserId since we don't need reaction info here
-            Comment = notification.Comment?.MapToCommentDto() // Use the basic mapping without like info
+            Comment = notification.Comment?.MapToCommentDto(), // Use the basic mapping without like info
+            Mention = notification.Mention?.MapToMentionDto() // Include mention data for mention notifications
         };
     }
 }

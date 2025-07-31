@@ -378,6 +378,7 @@ export interface Post {
   totalReactionCount?: number;
   postType?: PostType;
   quotedPost?: Post;
+  repostedPost?: Post; // The original post that was reposted
 }
 
 export interface Comment {
@@ -617,8 +618,9 @@ export interface Notification {
   mention?: {
     id: number;
     mentioningUserId: number;
-    postId?: number;
-    commentId?: number;
+    postId: number; // The post/comment where mention occurred
+    isCommentMention: boolean; // True if mentioned in a comment, false if in a post
+    parentPostId?: number; // If comment mention, this is the parent post ID
   };
 }
 
@@ -681,6 +683,7 @@ export interface YapplrApi {
     createRepost: (data: CreateRepostData) => Promise<Post>;
     createRepostWithMedia: (data: CreateRepostWithMediaData) => Promise<Post>;
     getReposts: (postId: number, page?: number, pageSize?: number) => Promise<Post[]>;
+    getPost: (postId: number) => Promise<Post>;
 
     getUserTimeline: (userId: number, page: number, limit: number) => Promise<TimelineItem[]>;
     getComments: (postId: number) => Promise<Comment[]>;

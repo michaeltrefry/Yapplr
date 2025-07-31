@@ -4,8 +4,8 @@ using Moq;
 using Yapplr.Api.Data;
 using Yapplr.Api.Models;
 using Yapplr.Api.Services;
-using Yapplr.Api.Services.Unified;
 using Xunit;
+using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.Tests;
 

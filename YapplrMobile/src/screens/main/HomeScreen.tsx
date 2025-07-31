@@ -122,7 +122,10 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
   };
 
   const handleCommentPress = (post: Post) => {
-    navigation.navigate('Comments', { post });
+    navigation.navigate('SinglePost', {
+      postId: post.id,
+      showComments: true
+    });
   };
 
   // Merge timeline data with local comment count updates

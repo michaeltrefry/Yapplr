@@ -15,14 +15,12 @@ public class Mention
     // Foreign keys
     public int MentionedUserId { get; set; } // User who was mentioned
     public int MentioningUserId { get; set; } // User who made the mention
-    public int? PostId { get; set; } // Post where the mention occurred (null if in comment)
-    public int? CommentId { get; set; } // Comment where the mention occurred (null if in post) - now references Posts table with PostType.Comment
+    public int PostId { get; set; } // Post/Comment where the mention occurred (always populated since comments are posts)
     public int NotificationId { get; set; } // Associated notification
 
     // Navigation properties
     public User MentionedUser { get; set; } = null!;
     public User MentioningUser { get; set; } = null!;
-    public Post? Post { get; set; }
-    public Post? Comment { get; set; } // Now references Posts table with PostType.Comment
+    public Post Post { get; set; } = null!; // The post or comment where mention occurred
     public Notification Notification { get; set; } = null!;
 }

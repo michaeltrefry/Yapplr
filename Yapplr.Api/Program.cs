@@ -1,8 +1,7 @@
+using Serilog;
+using Serilog.Events;
 using Yapplr.Api.Extensions;
 using Yapplr.Shared.Extensions;
-using Serilog;
-using Serilog.Enrichers;
-using Serilog.Events;
 
 
 // Auto-detect environment based on Git branch
@@ -119,4 +118,7 @@ app.MapHealthCheck();
 app.Run();
 
 // Make Program class accessible for testing
-public partial class Program { }
+namespace Yapplr.Api
+{
+    public partial class Program { }
+}

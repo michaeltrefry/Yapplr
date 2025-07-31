@@ -1,6 +1,6 @@
 using MassTransit;
 using Yapplr.Api.CQRS.Commands;
-using Yapplr.Api.Services.Unified;
+using Yapplr.Api.Services.Notifications;
 
 namespace Yapplr.Api.CQRS.Handlers;
 

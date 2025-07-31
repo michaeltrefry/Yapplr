@@ -568,8 +568,9 @@ export interface Mention {
   createdAt: string;
   mentionedUserId: number;
   mentioningUserId: number;
-  postId?: number;
-  commentId?: number;
+  postId: number; // The post/comment where mention occurred
+  isCommentMention: boolean; // True if mentioned in a comment, false if in a post
+  parentPostId?: number; // If comment mention, this is the parent post ID
 }
 
 export interface NotificationList {
