@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Yapplr.Api.DTOs;
+using Yapplr.Api.Extensions;
 using Yapplr.Api.Services;
 using Yapplr.Api.Services.Analytics;
 
@@ -101,5 +102,61 @@ public static class TagEndpoints
         .WithName("GetTagUsageOverTime")
         .WithSummary("Get hashtag usage over time")
         .Produces<IEnumerable<TagUsageDto>>(200);
+
+    // Enhanced trending endpoints
+    tags.MapGet("/trending/velocity", async (
+        ITagAnalyticsService tagAnalyticsService,
+        int timeWindow = 24,
+        int limit = 20,
+        string? category = null,
+        string? location = null) =>
+    {
+        var trendingHashtags = await tagAnalyticsService.GetTrendingHashtagsWithVelocityAsync(timeWindow, limit, category, location);
+        return Results.Ok(trendingHashtags);
+    })
+        .WithName("GetTrendingHashtagsWithVelocity")
+        .WithSummary("Get trending hashtags with velocity calculations")
+        .Produces<IEnumerable<TrendingHashtagDto>>(200);
+
+    tags.MapGet("/trending/categories", async (
+        ITagAnalyticsService tagAnalyticsService,
+        int timeWindow = 24,
+        int limit = 10) =>
+    {
+        var categoryTrending = await tagAnalyticsService.GetTrendingHashtagsByCategoryAsync(timeWindow, limit);
+        return Results.Ok(categoryTrending);
+    })
+        .WithName("GetTrendingHashtagsByCategory")
+        .WithSummary("Get trending hashtags grouped by category")
+        .Produces<IEnumerable<CategoryTrendingDto>>(200);
+
+    tags.MapGet("/trending/personalized", async (
+        ITagAnalyticsService tagAnalyticsService,
+        ClaimsPrincipal user,
+        int timeWindow = 24,
+        int limit = 20) =>
+    {
+        var userId = user.GetUserId();
+        if (userId == 0)
+            return Results.Unauthorized();
+
+        var personalizedTrending = await tagAnalyticsService.GetPersonalizedTrendingHashtagsAsync(userId, timeWindow, limit);
+        return Results.Ok(personalizedTrending);
+    })
+        .WithName("GetPersonalizedTrendingHashtags")
+        .WithSummary("Get personalized trending hashtags based on user interests")
+        .Produces<PersonalizedTrendingDto>(200)
+        .RequireAuthorization();
+
+    tags.MapGet("/trending/hashtag-analytics", async (
+        ITagAnalyticsService tagAnalyticsService,
+        int timeWindow = 24) =>
+    {
+        var analytics = await tagAnalyticsService.GetTrendingHashtagAnalyticsAsync(timeWindow);
+        return Results.Ok(analytics);
+    })
+        .WithName("GetTrendingHashtagAnalytics")
+        .WithSummary("Get comprehensive trending hashtag analytics")
+        .Produces<TrendingHashtagAnalyticsDto>(200);
     }
 }

@@ -28,6 +28,7 @@ import MessagesScreen from '../screens/main/MessagesScreen';
 import SearchScreen from '../screens/main/SearchScreen';
 import TrendingScreen from '../screens/TrendingScreen';
 import HashtagFeedScreen from '../screens/main/HashtagFeedScreen';
+import { TrendingScreen as NewTrendingScreen, ExploreScreen, TopicsScreen } from '../components/discovery';
 
 import SettingsScreen from '../screens/main/SettingsScreen';
 import BlockedUsersScreen from '../screens/main/BlockedUsersScreen';
@@ -77,6 +78,10 @@ export type RootStackParamList = {
     scrollToComment?: number;
     showComments?: boolean;
   };
+  // Discovery screens
+  DiscoveryTabs: undefined;
+  HashtagPosts: { hashtag: string };
+  TopicFeed: { topicName: string };
 };
 
 export type AuthStackParamList = {
@@ -95,6 +100,7 @@ export type AuthStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 const AuthStack = createStackNavigator<AuthStackParamList>();
 const Tab = createBottomTabNavigator();
+const DiscoveryTab = createBottomTabNavigator();
 
 
 
@@ -111,6 +117,58 @@ function AuthStackNavigator() {
       <AuthStack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <AuthStack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
     </AuthStack.Navigator>
+  );
+}
+
+function DiscoveryTabNavigator() {
+  const colors = useThemeColors();
+
+  return (
+    <DiscoveryTab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof Ionicons.glyphMap;
+
+          if (route.name === 'Trending') {
+            iconName = focused ? 'trending-up' : 'trending-up-outline';
+          } else if (route.name === 'Explore') {
+            iconName = focused ? 'compass' : 'compass-outline';
+          } else if (route.name === 'Topics') {
+            iconName = focused ? 'pricetag' : 'pricetag-outline';
+          } else {
+            iconName = 'ellipse-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.text + '80',
+        tabBarStyle: {
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
+        },
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: colors.text,
+      })}
+    >
+      <DiscoveryTab.Screen
+        name="Trending"
+        component={NewTrendingScreen}
+        options={{ title: '🔥 Trending' }}
+      />
+      <DiscoveryTab.Screen
+        name="Explore"
+        component={ExploreScreen}
+        options={{ title: '🌟 Explore' }}
+      />
+      <DiscoveryTab.Screen
+        name="Topics"
+        component={TopicsScreen}
+        options={{ title: '🎯 Topics' }}
+      />
+    </DiscoveryTab.Navigator>
   );
 }
 
@@ -141,6 +199,8 @@ function MainTabs() {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Discovery') {
+            iconName = focused ? 'compass' : 'compass-outline';
           } else if (route.name === 'Groups') {
             iconName = focused ? 'people' : 'people-outline';
           } else if (route.name === 'CreatePost') {
@@ -203,7 +263,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Trending" component={TrendingScreen} />
+      <Tab.Screen name="Discovery" component={DiscoveryTabNavigator} />
       <Tab.Screen
         name="CreatePost"
         component={CreatePostScreen}
@@ -326,6 +386,16 @@ function MainStack() {
       <Stack.Screen
         name="SinglePost"
         component={SinglePostScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="HashtagPosts"
+        component={HashtagFeedScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TopicFeed"
+        component={HashtagFeedScreen} // Reusing hashtag feed for now
         options={{ headerShown: false }}
       />
 

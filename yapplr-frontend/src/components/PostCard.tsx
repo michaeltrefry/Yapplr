@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Post, PostPrivacy, VideoProcessingStatus, ReactionType } from '@/types';
+import { Post, PostPrivacy, VideoProcessingStatus, ReactionType, MediaType } from '@/types';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { Heart, MessageCircle, Repeat2, Share, Users, Lock, Trash2, Edit3, Globe, ChevronDown, Flag, Play, Smile, X } from 'lucide-react';
 import { postApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import CommentList from './CommentList';
 import UserAvatar from './UserAvatar';
 import ShareModal from './ShareModal';
@@ -29,9 +30,11 @@ interface PostCardProps {
   showBorder?: boolean;
   onPostUpdate?: (updatedPost: Post) => void;
   onPostDelete?: (deletedPostId: number) => void;
+  compact?: boolean; // For discovery/explore contexts
 }
 
-export default function PostCard({ post, showCommentsDefault = false, showBorder = true, onPostUpdate, onPostDelete }: PostCardProps) {
+export default function PostCard({ post, showCommentsDefault = false, showBorder = true, onPostUpdate, onPostDelete, compact = false }: PostCardProps) {
+  const router = useRouter();
   const [showComments, setShowComments] = useState(showCommentsDefault);
   const [commentText, setCommentText] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
@@ -405,6 +408,102 @@ export default function PostCard({ post, showCommentsDefault = false, showBorder
     { value: PostPrivacy.Followers, label: 'Followers', description: 'Only your followers can see this post' },
     { value: PostPrivacy.Private, label: 'Private', description: 'Only you can see this post' },
   ];
+
+  const handleCompactPostClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest('a') || target.closest('button') || target.closest('[role="button"]')) {
+      return;
+    }
+
+    // Navigate to single post page
+    if (post.group) {
+      router.push(`/groups/${post.group.id}/posts/${post.id}`);
+    } else {
+      router.push(`/yap/${post.id}`);
+    }
+  };
+
+  // Compact layout for discovery/explore contexts
+  if (compact) {
+    return (
+      <article
+        className={`p-3 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer`}
+        onClick={handleCompactPostClick}
+      >
+        <div className="flex space-x-2">
+          {/* Compact Avatar */}
+          <UserAvatar user={post.user} size="sm" />
+
+          {/* Compact Content */}
+          <div className="flex-1 min-w-0">
+            {/* Compact Header */}
+            <div className="flex items-center space-x-1 mb-1">
+              <Link
+                href={`/profile/${post.user.username}`}
+                className="font-medium text-gray-900 hover:underline text-sm truncate"
+              >
+                @{post.user.username}
+              </Link>
+              <span className="text-gray-400 text-xs">·</span>
+              <span className="text-gray-500 text-xs">
+                {formatDate(post.createdAt)}
+              </span>
+            </div>
+
+            {/* Compact Post Content */}
+            <div className="text-sm text-gray-900 line-clamp-3 mb-2">
+              {post.content}
+            </div>
+
+            {/* Compact Media Preview */}
+            {((post.mediaItems && post.mediaItems.length > 0) || post.imageUrl) && (
+              <div className="mb-2">
+                {post.mediaItems && post.mediaItems.length > 0 ? (
+                  post.mediaItems[0].mediaType === MediaType.Image ? (
+                    <img
+                      src={post.mediaItems[0].imageUrl}
+                      alt="Post media"
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  ) : post.mediaItems[0].mediaType === MediaType.Video ? (
+                    <video
+                      src={post.mediaItems[0].videoUrl}
+                      className="w-full h-32 object-cover rounded-md"
+                      controls={false}
+                      muted
+                    />
+                  ) : null
+                ) : post.imageUrl ? (
+                  <img
+                    src={post.imageUrl}
+                    alt="Post media"
+                    className="w-full h-32 object-cover rounded-md"
+                  />
+                ) : null}
+              </div>
+            )}
+
+            {/* Compact Stats */}
+            <div className="flex items-center space-x-4 text-xs text-gray-500">
+              <span className="flex items-center space-x-1">
+                <Heart className="w-3 h-3" />
+                <span>{post.likeCount || 0}</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <MessageCircle className="w-3 h-3" />
+                <span>{post.commentCount || 0}</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <Repeat2 className="w-3 h-3" />
+                <span>{post.repostCount || 0}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <>

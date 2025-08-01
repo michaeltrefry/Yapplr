@@ -1249,3 +1249,443 @@ export interface TrendingMetrics {
   filterRate: number;
   lastCalculation: string;
 }
+
+// ===== DISCOVERY & PERSONALIZATION TYPES =====
+
+// Trending Dashboard Types
+export interface TrendingHashtagDto {
+  name: string;
+  postCount: number;
+  previousPeriodCount: number;
+  velocity: number;
+  trendingScore: number;
+  totalEngagements: number;
+  uniqueUsers: number;
+  averageUserTrustScore: number;
+  category: string;
+  growthRate: number;
+  engagementRate: number;
+  diversityScore: number;
+}
+
+export interface TagAnalyticsDto {
+  name: string;
+  totalPosts: number;
+  postsThisWeek: number;
+  postsThisMonth: number;
+  firstUsed: string;
+  lastUsed: string;
+  uniqueUsers: number;
+}
+
+export interface TrendingCategoryDto {
+  category: string;
+  trendingHashtags: TrendingHashtagDto[];
+  totalPosts: number;
+  categoryGrowthRate: number;
+  description: string;
+}
+
+export interface CategoryTrendingDto {
+  category: string;
+  trendingScore: number;
+  postCount: number;
+  topHashtags: TrendingHashtagDto[];
+  growthRate: number;
+  description?: string;
+}
+
+// Personalization Types
+export interface UserPersonalizationProfileDto {
+  userId: number;
+  interestScores: Record<string, number>;
+  contentTypePreferences: Record<string, number>;
+  engagementPatterns: Record<string, number>;
+  similarUsers: Record<string, number>;
+  personalizationConfidence: number;
+  diversityPreference: number;
+  noveltyPreference: number;
+  socialInfluenceFactor: number;
+  qualityThreshold: number;
+  lastMLUpdate: string;
+  dataPointCount: number;
+  algorithmVersion: string;
+}
+
+export interface PersonalizedRecommendationDto {
+  content: any; // Can be Post, User, Topic, etc.
+  contentType: string;
+  recommendationScore: number;
+  primaryReason: string;
+  reasonTags: string[];
+  scoreBreakdown: Record<string, number>;
+  confidenceLevel: number;
+  isExperimental: boolean;
+  generatedAt: string;
+}
+
+export interface InterestInsightDto {
+  interest: string;
+  score: number;
+  trendDirection: number; // -1.0 to 1.0
+  postCount: number;
+  engagementCount: number;
+  category: string;
+  isGrowing: boolean;
+}
+
+export interface ContentTypeInsightDto {
+  contentType: string;
+  preferenceScore: number;
+  engagementRate: number;
+  viewCount: number;
+  interactionCount: number;
+  averageViewTime: string; // TimeSpan as string
+}
+
+export interface EngagementPatternDto {
+  timeOfDay: string;
+  engagementScore: number;
+  activityCount: number;
+  preferredContentTypes: string[];
+  averageSessionDuration: number;
+}
+
+export interface UserSimilarityDto {
+  similarUser: User;
+  similarityScore: number;
+  commonInterests: string[];
+  sharedFollows: string[];
+  similarityReason: string;
+}
+
+export interface PersonalizationStatsDto {
+  overallConfidence: number;
+  totalInteractions: number;
+  uniqueInterests: number;
+  similarUsersCount: number;
+  diversityScore: number;
+  noveltyScore: number;
+  profileCreatedAt: string;
+  lastUpdated: string;
+}
+
+export interface PersonalizationInsightsDto {
+  userId: number;
+  topInterests: InterestInsightDto[];
+  contentPreferences: ContentTypeInsightDto[];
+  engagementPatterns: EngagementPatternDto[];
+  similarUsers: UserSimilarityDto[];
+  stats: PersonalizationStatsDto;
+  recommendationTips: string[];
+  generatedAt: string;
+}
+
+export interface PersonalizedFeedConfigDto {
+  userId: number;
+  postLimit: number;
+  diversityWeight: number;
+  noveltyWeight: number;
+  socialWeight: number;
+  qualityThreshold: number;
+  includeExperimental: boolean;
+  preferredContentTypes: string[];
+  excludedTopics: string[];
+  feedType: string; // "main", "discover", "following", "topics"
+}
+
+export interface UserInteractionEventDto {
+  userId: number;
+  interactionType: string;
+  targetEntityType?: string;
+  targetEntityId?: number;
+  interactionStrength: number;
+  durationMs?: number;
+  context?: string;
+  deviceInfo?: string;
+  sessionId?: string;
+  isImplicit: boolean;
+  sentiment: number;
+}
+
+// Topic Types
+export interface TopicDto {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  relatedHashtags: string[];
+  slug: string;
+  icon?: string;
+  color?: string;
+  isFeatured: boolean;
+  followerCount: number;
+  isFollowedByCurrentUser: boolean;
+  createdAt: string;
+}
+
+export interface TopicFollowDto {
+  id: number;
+  userId: number;
+  topicName: string;
+  topicDescription?: string;
+  category: string;
+  relatedHashtags: string[];
+  interestLevel: number;
+  includeInMainFeed: boolean;
+  enableNotifications: boolean;
+  notificationThreshold: number;
+  createdAt: string;
+}
+
+export interface CreateTopicFollowDto {
+  topicName: string;
+  topicDescription?: string;
+  category: string;
+  relatedHashtags: string[];
+  interestLevel?: number;
+  includeInMainFeed?: boolean;
+  enableNotifications?: boolean;
+  notificationThreshold?: number;
+}
+
+export interface UpdateTopicFollowDto {
+  interestLevel?: number;
+  includeInMainFeed?: boolean;
+  enableNotifications?: boolean;
+  notificationThreshold?: number;
+}
+
+export interface TopicFeedMetricsDto {
+  totalPosts: number;
+  totalEngagement: number;
+  uniqueContributors: number;
+  avgEngagementRate: number;
+  trendingScore: number;
+  growthRate: number;
+  generationTime: string; // TimeSpan as string
+}
+
+export interface TopicFeedDto {
+  topicName: string;
+  category: string;
+  posts: Post[];
+  trendingHashtags: TrendingHashtagDto[];
+  topContributors: User[];
+  metrics: TopicFeedMetricsDto;
+  generatedAt: string;
+}
+
+export interface PersonalizedFeedMetricsDto {
+  totalTopicsFollowed: number;
+  totalPosts: number;
+  personalizationScore: number;
+  activeTopics: string[];
+  generationTime: string; // TimeSpan as string
+}
+
+export interface PersonalizedTopicFeedDto {
+  userId: number;
+  topicFeeds: TopicFeedDto[];
+  mixedFeed: Post[];
+  metrics: PersonalizedFeedMetricsDto;
+  generatedAt: string;
+}
+
+export interface TopicRecommendationDto {
+  topic: TopicDto;
+  recommendationScore: number;
+  recommendationReason: string;
+  matchingInterests: string[];
+  samplePosts: Post[];
+  isPersonalized: boolean;
+}
+
+export interface TopicFeedConfigDto {
+  postsPerTopic: number;
+  maxTopics: number;
+  includeTrendingContent: boolean;
+  includePersonalizedContent: boolean;
+  minInterestLevel: number;
+  timeWindowHours: number;
+  sortBy: string; // "trending", "recent", "engagement", "personalized"
+}
+
+export interface TopicAnalyticsDto {
+  topicName: string;
+  category: string;
+  analyticsDate: string;
+  postCount: number;
+  totalEngagement: number;
+  uniquePosters: number;
+  avgEngagementRate: number;
+  trendingScore: number;
+  growthRate: number;
+  topHashtags: TrendingHashtagDto[];
+}
+
+export interface TopicTrendingDto {
+  topicName: string;
+  category: string;
+  currentTrendingScore: number;
+  previousTrendingScore: number;
+  velocityScore: number;
+  currentPosts: number;
+  previousPosts: number;
+  drivingHashtags: TrendingHashtagDto[];
+  analyzedAt: string;
+}
+
+export interface TopicStatsDto {
+  topicName: string;
+  totalFollowers: number;
+  postsToday: number;
+  postsThisWeek: number;
+  postsThisMonth: number;
+  avgDailyPosts: number;
+  engagementRate: number;
+  topContributors: User[];
+  lastUpdated: string;
+}
+
+export interface TopicSearchResultDto {
+  exactMatches: TopicDto[];
+  partialMatches: TopicDto[];
+  recommendations: TopicRecommendationDto[];
+  suggestedHashtags: string[];
+  totalResults: number;
+}
+
+// Explore Types
+export interface ExploreMetricsDto {
+  totalTrendingPosts: number;
+  totalTrendingHashtags: number;
+  totalRecommendedUsers: number;
+  averageEngagementRate: number;
+  personalizationScore: number;
+  generationTime: string; // TimeSpan as string
+  algorithmVersion: string;
+}
+
+export interface ExplorePageDto {
+  trendingPosts: Post[];
+  trendingHashtags: TrendingHashtagDto[];
+  trendingCategories: CategoryTrendingDto[];
+  recommendedUsers: UserRecommendationDto[];
+  personalizedPosts: Post[];
+  metrics: ExploreMetricsDto;
+  generatedAt: string;
+}
+
+export interface UserRecommendationDto {
+  user: User;
+  similarityScore: number;
+  recommendationReason: string;
+  commonInterests: string[];
+  mutualFollows: User[];
+  isNewUser: boolean;
+  activityScore: number;
+}
+
+export interface ContentClusterDto {
+  topic: string;
+  description: string;
+  posts: Post[];
+  relatedHashtags: TrendingHashtagDto[];
+  topContributors: User[];
+  clusterScore: number;
+  totalPosts: number;
+}
+
+export interface SimilarUserDto {
+  user: User;
+  similarityScore: number;
+  sharedInterests: string[];
+  mutualConnections: User[];
+  similarityReason: string;
+}
+
+export interface InterestBasedContentDto {
+  interest: string;
+  recommendedPosts: Post[];
+  topCreators: User[];
+  interestStrength: number;
+  isGrowing: boolean;
+}
+
+export interface TrendingTopicDto {
+  topic: string;
+  trendingPosts: Post[];
+  relatedHashtags: TrendingHashtagDto[];
+  topContributors: User[];
+  topicScore: number;
+  growthRate: number;
+  category: string;
+}
+
+export interface NetworkBasedUserDto {
+  user: User;
+  networkScore: number;
+  connectionPath: User[];
+  discoveryMethod: string;
+  degreesOfSeparation: number;
+}
+
+export interface ExplainedContentDto {
+  post: Post;
+  recommendationScore: number;
+  explanation: string;
+  reasonTags: string[];
+  isPersonalized: boolean;
+}
+
+export interface ExploreConfigDto {
+  trendingPostsLimit: number;
+  trendingHashtagsLimit: number;
+  recommendedUsersLimit: number;
+  timeWindowHours: number;
+  includePersonalizedContent: boolean;
+  includeUserRecommendations: boolean;
+  preferredCategories: string[];
+  minSimilarityScore: number;
+}
+
+export interface ExploreSectionDto {
+  sectionType: string;
+  title: string;
+  description: string;
+  content: any;
+  priority: number;
+  isPersonalized: boolean;
+}
+
+// Additional Personalization Types
+export interface PersonalizedSearchResultDto {
+  query: string;
+  results: PersonalizedRecommendationDto[];
+  queryExpansion: Record<string, number>;
+  personalizationStrength: number;
+  totalResults: number;
+  searchedAt: string;
+}
+
+export interface ContentSimilarityDto {
+  contentType: string;
+  contentId: number;
+  content: any;
+  similarityScore: number;
+  similarityReasons: string[];
+  calculatedAt: string;
+}
+
+export interface PersonalizationMetricsDto {
+  algorithmVersion: string;
+  averageConfidence: number;
+  engagementLift: number;
+  diversityScore: number;
+  noveltyScore: number;
+  totalUsers: number;
+  activeUsers: number;
+  calculatedAt: string;
+  performanceBreakdown: Record<string, number>;
+}

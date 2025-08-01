@@ -46,6 +46,8 @@ services:
       - Analytics__EnableDualWrite=true
       - Analytics__UseInfluxForAdminDashboard=true
       - API_BASE_URL=http://192.168.254.181:8080
+      # Logging configuration
+      - Logging__Seq__Url=http://seq:80
     volumes:
       - /Users/michael/Repos/Yapplr/uploads:/app/uploads
       - yapplr_logs:/app/logs
@@ -104,6 +106,8 @@ services:
       - HandBrake__WorkingDirectory=/tmp
       - HandBrake__TimeoutSeconds=300
       - HandBrake__LogLevel=info
+      # Logging configuration
+      - Logging__Seq__Url=http://seq:80
     volumes:
       - /Users/michael/Repos/Yapplr/uploads:/app/uploads
       - yapplr_logs:/app/logs

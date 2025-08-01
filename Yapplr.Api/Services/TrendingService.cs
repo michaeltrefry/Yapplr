@@ -15,6 +15,7 @@ public class TrendingService : ITrendingService
 {
     private readonly YapplrDbContext _context;
     private readonly IAnalyticsService _analyticsService;
+    private readonly ITagAnalyticsService _tagAnalyticsService;
     private readonly ILogger<TrendingService> _logger;
 
     // Trending algorithm weights
@@ -41,10 +42,12 @@ public class TrendingService : ITrendingService
     public TrendingService(
         YapplrDbContext context,
         IAnalyticsService analyticsService,
+        ITagAnalyticsService tagAnalyticsService,
         ILogger<TrendingService> logger)
     {
         _context = context;
         _analyticsService = analyticsService;
+        _tagAnalyticsService = tagAnalyticsService;
         _logger = logger;
     }
 
@@ -477,6 +480,45 @@ public class TrendingService : ITrendingService
             .ToListAsync();
 
         return interests.ToHashSet();
+    }
+
+    public async Task<IEnumerable<CategoryTrendingDto>> GetEnhancedTrendingCategoriesAsync(int timeWindow = 24, int limit = 10)
+    {
+        try
+        {
+            // Use the enhanced hashtag trending service for better velocity-based calculations
+            var enhancedCategories = await _tagAnalyticsService.GetTrendingHashtagsByCategoryAsync(timeWindow, limit);
+
+            _logger.LogInformation("Retrieved {CategoryCount} enhanced trending categories for timeWindow={TimeWindow}h",
+                enhancedCategories.Count(), timeWindow);
+
+            return enhancedCategories;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving enhanced trending categories for timeWindow={TimeWindow}h", timeWindow);
+
+            // Fallback to basic trending categories from existing analytics
+            return await GetBasicTrendingCategoriesAsync(timeWindow, limit);
+        }
+    }
+
+    private async Task<IEnumerable<CategoryTrendingDto>> GetBasicTrendingCategoriesAsync(int timeWindow, int limit)
+    {
+        // Fallback implementation using existing trending analytics
+        var analytics = await GetTrendingAnalyticsAsync(timeWindow);
+
+        // Convert existing TrendingCategoryDto to new CategoryTrendingDto format
+        var basicCategories = analytics.TopCategories.Take(limit).Select(tc =>
+            new CategoryTrendingDto(
+                Category: tc.Hashtag,
+                TrendingHashtags: new List<TrendingHashtagDto>(), // Empty for basic fallback
+                TotalPosts: tc.PostCount,
+                CategoryGrowthRate: tc.GrowthRate,
+                Description: $"Trending topic: {tc.Hashtag}"
+            ));
+
+        return basicCategories;
     }
 
     #endregion

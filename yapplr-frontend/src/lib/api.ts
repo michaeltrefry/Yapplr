@@ -88,6 +88,38 @@ import type {
   TrendingPost,
   TrendingScore,
   TrendingAnalytics,
+  // Discovery & Personalization Types
+  UserPersonalizationProfileDto,
+  PersonalizedRecommendationDto,
+  PersonalizationInsightsDto,
+  UserInteractionEventDto,
+  PersonalizedFeedConfigDto,
+  PersonalizedSearchResultDto,
+  UserSimilarityDto,
+  TopicDto,
+  TopicFollowDto,
+  CreateTopicFollowDto,
+  UpdateTopicFollowDto,
+  TopicFeedDto,
+  PersonalizedTopicFeedDto,
+  TopicRecommendationDto,
+  TopicFeedConfigDto,
+  TopicAnalyticsDto,
+  TopicTrendingDto,
+  TopicStatsDto,
+  TopicSearchResultDto,
+  ExplorePageDto,
+  ExploreConfigDto,
+  UserRecommendationDto,
+  SimilarUserDto,
+  NetworkBasedUserDto,
+  ContentClusterDto,
+  InterestBasedContentDto,
+  ExplainedContentDto,
+  TrendingTopicDto,
+  ExploreSectionDto,
+  TrendingHashtagDto,
+  CategoryTrendingDto,
 } from '@/types';
 
 import { getApiBaseUrl } from './config';
@@ -1179,5 +1211,301 @@ export const contentApi = {
     return response.data;
   },
 };
+
+// Discovery & Personalization APIs
+export const personalizationApi = {
+  // User Profiling
+  getProfile: async (): Promise<UserPersonalizationProfileDto> => {
+    const response = await api.get('/personalization/profile');
+    return response.data;
+  },
+
+  updateProfile: async (forceRebuild: boolean = false): Promise<UserPersonalizationProfileDto> => {
+    const response = await api.post(`/personalization/profile/update?forceRebuild=${forceRebuild}`);
+    return response.data;
+  },
+
+  getInsights: async (): Promise<PersonalizationInsightsDto> => {
+    const response = await api.get('/personalization/insights');
+    return response.data;
+  },
+
+  trackInteraction: async (interaction: UserInteractionEventDto): Promise<void> => {
+    await api.post('/personalization/interactions', interaction);
+  },
+
+  // Content Recommendations
+  getRecommendations: async (contentType: string, limit: number = 20): Promise<PersonalizedRecommendationDto[]> => {
+    const response = await api.get(`/personalization/recommendations/${contentType}?limit=${limit}`);
+    return response.data;
+  },
+
+  getPersonalizedFeed: async (config?: Partial<PersonalizedFeedConfigDto>): Promise<PersonalizedRecommendationDto[]> => {
+    const params = new URLSearchParams();
+    if (config?.postLimit) params.append('postLimit', config.postLimit.toString());
+    if (config?.diversityWeight) params.append('diversityWeight', config.diversityWeight.toString());
+    if (config?.noveltyWeight) params.append('noveltyWeight', config.noveltyWeight.toString());
+    if (config?.socialWeight) params.append('socialWeight', config.socialWeight.toString());
+    if (config?.qualityThreshold) params.append('qualityThreshold', config.qualityThreshold.toString());
+    if (config?.includeExperimental) params.append('includeExperimental', config.includeExperimental.toString());
+
+    const response = await api.get(`/personalization/feed?${params.toString()}`);
+    return response.data;
+  },
+
+  getPersonalizedSearch: async (query: string, contentTypes?: string[], limit: number = 20): Promise<PersonalizedSearchResultDto> => {
+    const params = new URLSearchParams({ query, limit: limit.toString() });
+    if (contentTypes) params.append('contentTypes', contentTypes.join(','));
+
+    const response = await api.get(`/personalization/search?${params.toString()}`);
+    return response.data;
+  },
+
+  // Similarity & Clustering
+  calculateUserSimilarity: async (targetUserId: number): Promise<{ userId: number; targetUserId: number; similarity: number }> => {
+    const response = await api.get(`/personalization/similarity/${targetUserId}`);
+    return response.data;
+  },
+
+  findSimilarUsers: async (limit: number = 10, minSimilarity: number = 0.1): Promise<UserSimilarityDto[]> => {
+    const response = await api.get(`/personalization/similar-users?limit=${limit}&minSimilarity=${minSimilarity}`);
+    return response.data;
+  },
+};
+
+export const topicApi = {
+  // Topic Management
+  getTopics: async (category?: string, featured?: boolean): Promise<TopicDto[]> => {
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (featured !== undefined) params.append('featured', featured.toString());
+
+    const response = await api.get(`/topics?${params.toString()}`);
+    return response.data;
+  },
+
+  getTopic: async (identifier: string): Promise<TopicDto> => {
+    const response = await api.get(`/topics/${identifier}`);
+    return response.data;
+  },
+
+  searchTopics: async (query: string, limit: number = 20): Promise<TopicSearchResultDto> => {
+    const response = await api.get(`/topics/search?query=${encodeURIComponent(query)}&limit=${limit}`);
+    return response.data;
+  },
+
+  getTopicRecommendations: async (limit: number = 10): Promise<TopicRecommendationDto[]> => {
+    const response = await api.get(`/topics/recommendations?limit=${limit}`);
+    return response.data;
+  },
+
+  // Topic Following
+  followTopic: async (data: CreateTopicFollowDto): Promise<TopicFollowDto> => {
+    const response = await api.post('/topics/follow', data);
+    return response.data;
+  },
+
+  unfollowTopic: async (topicName: string): Promise<void> => {
+    await api.delete(`/topics/follow/${encodeURIComponent(topicName)}`);
+  },
+
+  updateTopicFollow: async (topicName: string, data: UpdateTopicFollowDto): Promise<TopicFollowDto> => {
+    const response = await api.patch(`/topics/follow/${encodeURIComponent(topicName)}`, data);
+    return response.data;
+  },
+
+  getUserTopics: async (includeInMainFeed?: boolean): Promise<TopicFollowDto[]> => {
+    const params = includeInMainFeed !== undefined ? `?includeInMainFeed=${includeInMainFeed}` : '';
+    const response = await api.get(`/topics/following${params}`);
+    return response.data;
+  },
+
+  isFollowingTopic: async (topicName: string): Promise<{ topicName: string; isFollowing: boolean }> => {
+    const response = await api.get(`/topics/following/${encodeURIComponent(topicName)}/status`);
+    return response.data;
+  },
+
+  // Topic Feeds
+  getTopicFeed: async (topicName: string, config?: Partial<TopicFeedConfigDto>): Promise<TopicFeedDto> => {
+    const params = new URLSearchParams();
+    if (config?.postsPerTopic) params.append('postsPerTopic', config.postsPerTopic.toString());
+    if (config?.timeWindowHours) params.append('timeWindowHours', config.timeWindowHours.toString());
+    if (config?.sortBy) params.append('sortBy', config.sortBy);
+
+    const response = await api.get(`/topics/${encodeURIComponent(topicName)}/feed?${params.toString()}`);
+    return response.data;
+  },
+
+  getPersonalizedTopicFeed: async (config?: Partial<TopicFeedConfigDto>): Promise<PersonalizedTopicFeedDto> => {
+    const params = new URLSearchParams();
+    if (config?.postsPerTopic) params.append('postsPerTopic', config.postsPerTopic.toString());
+    if (config?.maxTopics) params.append('maxTopics', config.maxTopics.toString());
+    if (config?.timeWindowHours) params.append('timeWindowHours', config.timeWindowHours.toString());
+    if (config?.sortBy) params.append('sortBy', config.sortBy);
+
+    const response = await api.get(`/topics/feed/personalized?${params.toString()}`);
+    return response.data;
+  },
+
+  getMixedTopicFeed: async (config?: Partial<TopicFeedConfigDto>): Promise<Post[]> => {
+    const params = new URLSearchParams();
+    if (config?.postsPerTopic) params.append('postsPerTopic', config.postsPerTopic.toString());
+    if (config?.maxTopics) params.append('maxTopics', config.maxTopics.toString());
+    if (config?.timeWindowHours) params.append('timeWindowHours', config.timeWindowHours.toString());
+
+    const response = await api.get(`/topics/feed/mixed?${params.toString()}`);
+    return response.data;
+  },
+
+  // Topic Analytics
+  getTopicAnalytics: async (topicName: string, days: number = 7): Promise<TopicAnalyticsDto> => {
+    const response = await api.get(`/topics/${encodeURIComponent(topicName)}/analytics?days=${days}`);
+    return response.data;
+  },
+
+  getTrendingTopics: async (timeWindow: number = 24, limit: number = 10, category?: string): Promise<TopicTrendingDto[]> => {
+    const params = new URLSearchParams({ timeWindow: timeWindow.toString(), limit: limit.toString() });
+    if (category) params.append('category', category);
+
+    const response = await api.get(`/topics/trending?${params.toString()}`);
+    return response.data;
+  },
+
+  getTopicStats: async (topicName: string): Promise<TopicStatsDto> => {
+    const response = await api.get(`/topics/${encodeURIComponent(topicName)}/stats`);
+    return response.data;
+  },
+};
+
+export const exploreApi = {
+  // Main Explore Page
+  getExplorePage: async (config?: Partial<ExploreConfigDto>): Promise<ExplorePageDto> => {
+    const params = new URLSearchParams();
+    if (config?.trendingPostsLimit) params.append('trendingPostsLimit', config.trendingPostsLimit.toString());
+    if (config?.trendingHashtagsLimit) params.append('trendingHashtagsLimit', config.trendingHashtagsLimit.toString());
+    if (config?.recommendedUsersLimit) params.append('recommendedUsersLimit', config.recommendedUsersLimit.toString());
+    if (config?.timeWindowHours) params.append('timeWindowHours', config.timeWindowHours.toString());
+    if (config?.includePersonalizedContent !== undefined) params.append('includePersonalized', config.includePersonalizedContent.toString());
+    if (config?.includeUserRecommendations !== undefined) params.append('includeUserRecommendations', config.includeUserRecommendations.toString());
+    if (config?.minSimilarityScore) params.append('minSimilarityScore', config.minSimilarityScore.toString());
+
+    const response = await api.get(`/explore?${params.toString()}`);
+    return response.data;
+  },
+
+  // User Recommendations
+  getUserRecommendations: async (limit: number = 10, minSimilarityScore: number = 0.1): Promise<UserRecommendationDto[]> => {
+    const response = await api.get(`/explore/users/recommended?limit=${limit}&minSimilarityScore=${minSimilarityScore}`);
+    return response.data;
+  },
+
+  getSimilarUsers: async (limit: number = 10): Promise<SimilarUserDto[]> => {
+    const response = await api.get(`/explore/users/similar?limit=${limit}`);
+    return response.data;
+  },
+
+  getNetworkBasedUsers: async (maxDegrees: number = 3, limit: number = 10): Promise<NetworkBasedUserDto[]> => {
+    const response = await api.get(`/explore/users/network?maxDegrees=${maxDegrees}&limit=${limit}`);
+    return response.data;
+  },
+
+  // Content Discovery
+  getContentClusters: async (limit: number = 5): Promise<ContentClusterDto[]> => {
+    const response = await api.get(`/explore/content/clusters?limit=${limit}`);
+    return response.data;
+  },
+
+  getInterestBasedContent: async (limit: number = 5): Promise<InterestBasedContentDto[]> => {
+    const response = await api.get(`/explore/content/interests?limit=${limit}`);
+    return response.data;
+  },
+
+  getExplainedContentRecommendations: async (limit: number = 20): Promise<ExplainedContentDto[]> => {
+    const response = await api.get(`/explore/content/explained?limit=${limit}`);
+    return response.data;
+  },
+
+  // Trending Topics
+  getTrendingTopics: async (timeWindow: number = 24, limit: number = 10): Promise<TrendingTopicDto[]> => {
+    const response = await api.get(`/explore/topics/trending?timeWindow=${timeWindow}&limit=${limit}`);
+    return response.data;
+  },
+
+  // Modular Sections
+  getExploreSections: async (sectionTypes?: string[]): Promise<ExploreSectionDto[]> => {
+    const params = sectionTypes ? `?sectionTypes=${sectionTypes.join(',')}` : '';
+    const response = await api.get(`/explore/sections${params}`);
+    return response.data;
+  },
+
+  // Quick Access
+  getQuickTrendingPosts: async (): Promise<Post[]> => {
+    const response = await api.get('/explore/quick/posts');
+    return response.data;
+  },
+
+  getQuickTrendingHashtags: async (): Promise<TrendingHashtagDto[]> => {
+    const response = await api.get('/explore/quick/hashtags');
+    return response.data;
+  },
+
+  getQuickUserRecommendations: async (): Promise<UserRecommendationDto[]> => {
+    const response = await api.get('/explore/quick/users');
+    return response.data;
+  },
+
+  // Similarity Calculation
+  calculateUserSimilarity: async (targetUserId: number): Promise<{ userId: number; targetUserId: number; similarityScore: number }> => {
+    const response = await api.get(`/explore/users/${targetUserId}/similarity`);
+    return response.data;
+  },
+};
+
+// Enhanced Trending API (extending existing trending functionality)
+export const enhancedTrendingApi = {
+  // Velocity-based trending
+  getVelocityTrendingHashtags: async (limit: number = 20, timeWindow: number = 24): Promise<TrendingHashtagDto[]> => {
+    const response = await api.get(`/tags/trending/velocity?limit=${limit}&timeWindow=${timeWindow}`);
+    return response.data;
+  },
+
+  getTrendingByCategory: async (category: string, limit: number = 20): Promise<TrendingHashtagDto[]> => {
+    const response = await api.get(`/tags/trending/categories?limit=${limit}`);
+    const categories = response.data;
+
+    // Find the requested category and return its trending hashtags
+    const categoryData = categories.find((cat: any) => cat.category === category);
+    if (categoryData && categoryData.trendingHashtags) {
+      return categoryData.trendingHashtags.slice(0, limit);
+    }
+
+    // If category not found, return all hashtags from all categories (flattened)
+    const allHashtags: TrendingHashtagDto[] = [];
+    categories.forEach((cat: any) => {
+      if (cat.trendingHashtags) {
+        allHashtags.push(...cat.trendingHashtags);
+      }
+    });
+
+    return allHashtags.slice(0, limit);
+  },
+
+  getPersonalizedTrendingPosts: async (limit: number = 20): Promise<Post[]> => {
+    const response = await api.get(`/trending/posts/personalized?limit=${limit}`);
+    return response.data;
+  },
+
+  getHashtagAnalytics: async (hashtagName: string): Promise<any> => {
+    const response = await api.get(`/tags/tag/${encodeURIComponent(hashtagName)}/analytics`);
+    return response.data;
+  },
+
+  getTrendingHashtagAnalytics: async (timeWindow: number = 24): Promise<any> => {
+    const response = await api.get(`/tags/trending/hashtag-analytics?timeWindow=${timeWindow}`);
+    return response.data;
+  },
+};
+
+
 
 export default api;

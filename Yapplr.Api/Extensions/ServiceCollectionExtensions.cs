@@ -356,6 +356,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITrustScoreService, TrustScoreService>();
         services.AddScoped<ITrustBasedModerationService, TrustBasedModerationService>();
         services.AddScoped<ITrendingService, TrendingService>();
+        services.AddScoped<IExploreService, ExploreService>();
+        services.AddScoped<ITopicService, TopicService>();
+        services.AddScoped<IAdvancedPersonalizationService, AdvancedPersonalizationService>();
 
         // Add trust score background service
         services.AddHostedService<TrustScoreBackgroundService>();

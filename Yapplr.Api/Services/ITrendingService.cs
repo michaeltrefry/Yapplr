@@ -59,4 +59,12 @@ public interface ITrendingService
     /// <param name="timeWindow">Time window for analysis (hours)</param>
     /// <returns>Analytics data about trending posts</returns>
     Task<TrendingAnalyticsDto> GetTrendingAnalyticsAsync(int timeWindow = 24);
+
+    /// <summary>
+    /// Get enhanced trending categories using velocity-based hashtag analytics
+    /// </summary>
+    /// <param name="timeWindow">Time window for analysis (hours)</param>
+    /// <param name="limit">Maximum number of categories to return</param>
+    /// <returns>Enhanced trending categories with velocity metrics</returns>
+    Task<IEnumerable<CategoryTrendingDto>> GetEnhancedTrendingCategoriesAsync(int timeWindow = 24, int limit = 10);
 }

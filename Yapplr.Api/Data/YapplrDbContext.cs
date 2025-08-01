@@ -75,6 +75,18 @@ public class YapplrDbContext : DbContext
     public DbSet<PaymentProviderConfiguration> PaymentProviderConfigurations { get; set; }
     public DbSet<PaymentProviderSetting> PaymentProviderSettings { get; set; }
     public DbSet<PaymentGlobalConfiguration> PaymentGlobalConfigurations { get; set; }
+
+    // Topic-based feed entities
+    public DbSet<Topic> Topics { get; set; }
+    public DbSet<TopicFollow> TopicFollows { get; set; }
+    public DbSet<TopicAnalytics> TopicAnalytics { get; set; }
+
+    // Advanced personalization entities
+    public DbSet<Models.Personalization.UserPersonalizationProfile> UserPersonalizationProfiles { get; set; }
+    public DbSet<Models.Personalization.UserInteractionEvent> UserInteractionEvents { get; set; }
+    public DbSet<Models.Personalization.ContentEmbedding> ContentEmbeddings { get; set; }
+    public DbSet<Models.Personalization.PersonalizationExperiment> PersonalizationExperiments { get; set; }
+    public DbSet<Models.Personalization.UserExperimentParticipation> UserExperimentParticipations { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -966,6 +978,140 @@ public class YapplrDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.DefaultProvider).HasMaxLength(50);
             entity.Property(e => e.DefaultCurrency).HasMaxLength(3);
+        });
+
+        // Topic configuration
+        modelBuilder.Entity<Topic>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasIndex(e => e.Slug).IsUnique();
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsFeatured);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Category).HasMaxLength(50);
+            entity.Property(e => e.RelatedHashtags).HasMaxLength(1000);
+            entity.Property(e => e.Slug).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Icon).HasMaxLength(10);
+            entity.Property(e => e.Color).HasMaxLength(7);
+        });
+
+        // TopicFollow configuration
+        modelBuilder.Entity<TopicFollow>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.TopicName }).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.TopicName);
+            entity.HasIndex(e => e.Category);
+            entity.Property(e => e.TopicName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.TopicDescription).HasMaxLength(500);
+            entity.Property(e => e.Category).HasMaxLength(50);
+            entity.Property(e => e.RelatedHashtags).HasMaxLength(1000);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // TopicAnalytics configuration
+        modelBuilder.Entity<TopicAnalytics>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.TopicName, e.AnalyticsDate }).IsUnique();
+            entity.HasIndex(e => e.TopicId);
+            entity.HasIndex(e => e.AnalyticsDate);
+            entity.Property(e => e.TopicName).IsRequired().HasMaxLength(100);
+
+            entity.HasOne(e => e.Topic)
+                  .WithMany()
+                  .HasForeignKey(e => e.TopicId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // UserPersonalizationProfile configuration
+        modelBuilder.Entity<Models.Personalization.UserPersonalizationProfile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId).IsUnique();
+            entity.HasIndex(e => e.PersonalizationConfidence);
+            entity.HasIndex(e => e.LastMLUpdate);
+            entity.Property(e => e.InterestScores).HasMaxLength(5000);
+            entity.Property(e => e.ContentTypePreferences).HasMaxLength(1000);
+            entity.Property(e => e.EngagementPatterns).HasMaxLength(1000);
+            entity.Property(e => e.SimilarUsers).HasMaxLength(10000);
+            entity.Property(e => e.AlgorithmVersion).HasMaxLength(20);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserInteractionEvent configuration
+        modelBuilder.Entity<Models.Personalization.UserInteractionEvent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.InteractionType);
+            entity.HasIndex(e => new { e.TargetEntityType, e.TargetEntityId });
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.SessionId);
+            entity.Property(e => e.InteractionType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.TargetEntityType).HasMaxLength(50);
+            entity.Property(e => e.Context).HasMaxLength(1000);
+            entity.Property(e => e.DeviceInfo).HasMaxLength(100);
+            entity.Property(e => e.SessionId).HasMaxLength(100);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ContentEmbedding configuration
+        modelBuilder.Entity<Models.Personalization.ContentEmbedding>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ContentType, e.ContentId }).IsUnique();
+            entity.HasIndex(e => e.ModelVersion);
+            entity.HasIndex(e => e.QualityScore);
+            entity.Property(e => e.ContentType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.EmbeddingVector).HasMaxLength(10000);
+            entity.Property(e => e.ModelVersion).HasMaxLength(50);
+        });
+
+        // PersonalizationExperiment configuration
+        modelBuilder.Entity<Models.Personalization.PersonalizationExperiment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => new { e.StartDate, e.EndDate });
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Configuration).HasMaxLength(2000);
+        });
+
+        // UserExperimentParticipation configuration
+        modelBuilder.Entity<Models.Personalization.UserExperimentParticipation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.ExperimentId }).IsUnique();
+            entity.HasIndex(e => e.Variant);
+            entity.Property(e => e.Variant).IsRequired().HasMaxLength(50);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Experiment)
+                  .WithMany(e => e.Participants)
+                  .HasForeignKey(e => e.ExperimentId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
